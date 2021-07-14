@@ -1,9 +1,10 @@
 {% if top_node.uses_enum %}from enum import IntEnum, unique{% endif %}
 
-from .peakrdl_python_types import addr_map_cls, reg_cls, reg_file_cls
-from .peakrdl_python_types import reg_read_only_cls, reg_write_only_cls, reg_readwrite_only_cls
-from .peakrdl_python_types import field_read_only_cls, field_write_only_cls, field_readwrite_only_cls
-{% if top_node.uses_enum %}from .peakrdl_python_types import enumfield_read_only_cls, enumfield_readwrite_only_cls{% endif %}
+from .peakrdl_python_types import AddressMap, Reg, RegFile
+from .peakrdl_python_types import RegReadOnly, RegWriteOnly, RegReadWrite
+from .peakrdl_python_types import FieldReadOnly, FieldWriteOnly, FieldReadWrite
+{% if top_node.uses_enum %}from .peakrdl_python_types import EnumFieldReadOnly, EnumFieldReadWrite{% endif %}
+from .peakrdl_python_types import read_callback_type, write_callback_type
 
 {%- macro enum_definitions(node) %}
 # enums needed
@@ -20,16 +21,16 @@ class {{enum_needed.__name__}}(IntEnum):
 {%- macro field_class(node) %}
     {%- if 'encode' in node.list_properties() %}
         {% if node.is_sw_readable and node.is_sw_writable %}
-class {{get_inst_name(node)}}_cls(enumfield_readwrite_only_cls):
+class {{get_inst_name(node)}}_cls(EnumFieldReadWrite):
         {% elif node.is_sw_readable and not node.is_sw_writable %}
-class {{get_inst_name(node)}}_cls(enumfield_read_only_cls):
+class {{get_inst_name(node)}}_cls(EnumFieldReadOnly):
         {% elif not node.is_sw_readable and node.is_sw_writable %}
-class {{get_inst_name(node)}}_cls(enumfield_write_only_cls):
+class {{get_inst_name(node)}}_cls(EnumFieldWriteOnly):
         {% endif %}
 
     __slots__ = [{%- for child_node in node.children(unroll=False) -%}'__{{get_inst_name(child_node)}}'{% if not loop.last %}, {% endif %}{%- endfor %}]
 
-    def __init__(self, parent_register: reg_cls, logger_handle: str):
+    def __init__(self, parent_register: Reg, logger_handle: str):
         super().__init__(parent_register=parent_register,
                          lsb={{node.lsb}},
                          msb={{node.msb}},
@@ -37,16 +38,16 @@ class {{get_inst_name(node)}}_cls(enumfield_write_only_cls):
                          logger_handle=logger_handle)
     {% else %}
         {% if node.is_sw_readable and node.is_sw_writable %}
-class {{get_inst_name(node)}}_cls(field_readwrite_only_cls):
+class {{get_inst_name(node)}}_cls(FieldReadWrite):
         {% elif node.is_sw_readable and not node.is_sw_writable %}
-class {{get_inst_name(node)}}_cls(field_read_only_cls):
+class {{get_inst_name(node)}}_cls(FieldReadOnly):
         {% elif not node.is_sw_readable and node.is_sw_writable %}
-class {{get_inst_name(node)}}_cls(field_write_only_cls):
+class {{get_inst_name(node)}}_cls(FieldWriteOnly):
         {% endif %}
 
     __slots__ = [{%- for child_node in node.children(unroll=False) -%}'__{{get_inst_name(child_node)}}'{% if not loop.last %}, {% endif %}{%- endfor %}]
 
-    def __init__(self, parent_register: reg_cls, logger_handle: str):
+    def __init__(self, parent_register: Reg, logger_handle: str):
         super().__init__(parent_register=parent_register,
                          lsb={{node.lsb}},
                          msb={{node.msb}},
@@ -56,11 +57,11 @@ class {{get_inst_name(node)}}_cls(field_write_only_cls):
 
 {%- macro register_class(node) %}
     {%- if node.has_sw_readable and node.has_sw_writable %}
-    class {{get_type_name(node)}}_cls(reg_readwrite_only_cls):
+    class {{get_type_name(node)}}_cls(RegReadWrite):
     {%- elif node.has_sw_readable and not node.has_sw_writable %}
-    class {{get_type_name(node)}}_cls(reg_read_only_cls):
+    class {{get_type_name(node)}}_cls(RegReadOnly):
     {%- elif not node.has_sw_readable and node.has_sw_writable %}
-    class {{get_type_name(node)}}_cls(reg_write_only_cls):
+    class {{get_type_name(node)}}_cls(RegWriteOnly):
     {%- endif %}
 
         __slots__ = [{%- for child_node in node.children(unroll=False) -%}'__{{get_inst_name(child_node)}}'{% if not loop.last %}, {% endif %}{%- endfor %}]
@@ -68,8 +69,8 @@ class {{get_inst_name(node)}}_cls(field_write_only_cls):
     {%- if node.has_sw_readable and node.has_sw_writable %}
 
         def __init__(self,
-                     read_callback,
-                     write_callback,
+                     read_callback: read_callback_type,
+                     write_callback: write_callback_type,
                      logger_handle,
                      base_address={{top_node.absolute_address}},
                      address_width=32,
@@ -84,7 +85,7 @@ class {{get_inst_name(node)}}_cls(field_write_only_cls):
     {%- elif node.has_sw_readable and not node.has_sw_writable %}
 
         def __init__(self,
-                     read_callback,
+                     read_callback: read_callback_type,
                      logger_handle,
                      base_address={{top_node.absolute_address}},
                      address_width=32,
@@ -98,7 +99,7 @@ class {{get_inst_name(node)}}_cls(field_write_only_cls):
     {%- elif not node.has_sw_readable and node.has_sw_writable %}
 
         def __init__(self,
-                     write_callback,
+                     write_callback: write_callback_type,
                      logger_handle,
                      base_address={{top_node.absolute_address}},
                      address_width=32,
@@ -115,21 +116,21 @@ class {{get_inst_name(node)}}_cls(field_write_only_cls):
 
             # classes used within the register
             {%- for child_node in get_unique_scoped_component(node) -%}
-                {%- if isinstance(child_node, FieldNode) -%}
+                {%- if isinstance(child_node, systemrdlFieldNode) -%}
                     {{ field_class(child_node) | indent(12) }}
                 {%- endif -%}
             {%- endfor %}
 
             # build the field attributes
             {%- for child_node in node.fields() %}
-                {%- if isinstance(child_node, FieldNode) %}
+                {%- if isinstance(child_node, systemrdlFieldNode) %}
             self.__{{get_inst_name(child_node)}} = {{get_inst_name(child_node)}}_cls(parent_register=self, logger_handle=logger_handle+'{{get_inst_name(child_node)}}')
                 {%- endif -%}
             {%- endfor %}
 
         # build the properties for the fields
         {%- for child_node in node.children(unroll=False) -%}
-            {%- if isinstance(child_node, FieldNode) %}
+            {%- if isinstance(child_node, systemrdlFieldNode) %}
         @property
         def {{get_inst_name(child_node)}}(self):
             return self.__{{get_inst_name(child_node)}}
@@ -139,7 +140,7 @@ class {{get_inst_name(node)}}_cls(field_write_only_cls):
 {%- endmacro %}
 
 {%- macro regfile_or_addr_instance(node) %}
-    {%- if isinstance(node, RegNode) %}
+    {%- if isinstance(node, systemrdlRegNode) %}
         {%- if node.is_array %}
             {%- if node.has_sw_readable and node.has_sw_writable %}
     self.__{{get_inst_name(node)}} = ( {% for node_instance_index in range(get_array_dim(node))  %}
@@ -166,7 +167,7 @@ class {{get_inst_name(node)}}_cls(field_write_only_cls):
     self.__{{get_inst_name(node)}} = {{get_type_name(node)}}_cls(write_callback=write_callback, base_address=base_address+{{node.address_offset}},address_width=self.address_width,data_width=self.data_width, logger_handle=logger_handle+'{{get_inst_name(node)}}')
             {%- endif %}
         {%- endif %}
-    {%- elif isinstance(node, RegfileNode) %}
+    {%- elif isinstance(node, systemrdlRegfileNode) %}
         {%- if node.is_array %}
     self.__{{get_inst_name(node)}} = ( {% for node_instance_index in range(get_array_dim(node))  %}
                                        {{get_inst_name(node)}}_cls(read_callback=read_callback, write_callback=write_callback, base_address=base_address+{{node.raw_address_offset}}+({{node_instance_index}} * {{node.array_stride}}),address_width=self.address_width,data_width=self.data_width, logger_handle=logger_handle+'{{get_inst_name(node)}}[{{node_instance_index}}]')
@@ -179,13 +180,13 @@ class {{get_inst_name(node)}}_cls(field_write_only_cls):
 {%- endmacro %}
 
 {%- macro regfile_class(node) %}
-    class {{get_inst_name(node)}}_cls(reg_file_cls):
+    class {{get_inst_name(node)}}_cls(RegFile):
 
         __slots__ = [{%- for child_node in node.children(unroll=False) -%}'__{{get_inst_name(child_node)}}'{% if not loop.last %}, {% endif %}{%- endfor %}]
 
         def __init__(self,
-                     read_callback,
-                     write_callback,
+                     read_callback: read_callback_type,
+                     write_callback: write_callback_type,
                      logger_handle,
                      base_address={{top_node.absolute_address}},
                      address_width=32,
@@ -201,11 +202,11 @@ class {{get_inst_name(node)}}_cls(field_write_only_cls):
             # classes used within the register
             {%- for child_node in get_unique_scoped_component(node) -%}
                 {# only declare types if they are initially created at this level #}
-                {%- if isinstance(child_node, RegNode) -%}
+                {%- if isinstance(child_node, systemrdlRegNode) -%}
                     {{ register_class(child_node) | indent(8) }}
-                {%- elif isinstance(child_node, RegfileNode) -%}
+                {%- elif isinstance(child_node, systemrdlRegfileNode) -%}
                     {{ regfile_class(child_node) | indent(8) }}
-                {%- elif isinstance(child_node, FieldNode) -%}
+                {%- elif isinstance(child_node, systemrdlFieldNode) -%}
                     {{ field_class(child_node) | indent(12) }}
                 {%- endif -%}
             {%- endfor -%}
@@ -217,7 +218,7 @@ class {{get_inst_name(node)}}_cls(field_write_only_cls):
 
         # properties for Register and RegisterFiles
         {%- for child_node in node.children(unroll=False) %}
-            {%- if isinstance(child_node, RegNode) or isinstance(child_node, RegfileNode) %}
+            {%- if isinstance(child_node, systemrdlRegNode) or isinstance(child_node, systemrdlRegfileNode) %}
         @property
         def {{get_inst_name(child_node)}}(self):
             return self.__{{get_inst_name(child_node)}}
@@ -231,22 +232,22 @@ class {{get_inst_name(node)}}_cls(field_write_only_cls):
 
 # root level regfile, register and feild definitions
 {%- for node in get_unique_scoped_component(top_node.parent) -%}
-    {% if isinstance(node, RegNode) %}
+    {% if isinstance(node, systemrdlRegNode) %}
         {{ register_class(node)  }}
-    {% elif isinstance(node, RegfileNode) %}
+    {% elif isinstance(node, systemrdlRegfileNode) %}
         {{ regfile_class(node) }}
-    {% elif isinstance(node, FieldNode) %}
+    {% elif isinstance(node, systemrdlFieldNode) %}
         {{ field_class(node)  }}
     {% endif %}
 {% endfor %}
 
-class {{get_type_name(top_node)}}_cls(addr_map_cls):
+class {{get_type_name(top_node)}}_cls(AddressMap):
 
-    __slots__ = [{%- for node in top_node.children(unroll=False) -%}{%- if isinstance(node, RegNode) or isinstance(node, RegfileNode)  -%}'__{{get_inst_name(node)}}'{% if not loop.last %}, {% endif %}{% endif %}{%- endfor %}]
+    __slots__ = [{%- for node in top_node.children(unroll=False) -%}{%- if isinstance(node, systemrdlRegNode) or isinstance(node, systemrdlRegfileNode)  -%}'__{{get_inst_name(node)}}'{% if not loop.last %}, {% endif %}{% endif %}{%- endfor %}]
 
     def __init__(self,
-                 read_callback,
-                 write_callback,
+                 read_callback: read_callback_type,
+                 write_callback: write_callback_type,
                  base_address={{top_node.absolute_address}}):
 
         logger_handle = 'reg_model.{{top_node.get_path()}}'
@@ -259,11 +260,11 @@ class {{get_type_name(top_node)}}_cls(addr_map_cls):
         {{ enum_definitions(top_node) | indent(8) }}
 
         {%- for node in get_unique_scoped_component(top_node) -%}
-            {% if isinstance(node, RegNode) %}
+            {% if isinstance(node, systemrdlRegNode) %}
                 {{ register_class(node) | indent }}
-            {% elif isinstance(node, RegfileNode) %}
+            {% elif isinstance(node, systemrdlRegfileNode) %}
                 {{ regfile_class(node) | indent }}
-            {% elif isinstance(node, FieldNode) %}
+            {% elif isinstance(node, systemrdlFieldNode) %}
                 {{ field_class(node) | indent(8) }}
             {% endif %}
         {% endfor %}
@@ -273,7 +274,7 @@ class {{get_type_name(top_node)}}_cls(addr_map_cls):
         {% endfor %}
 
         {%- for node in top_node.children(unroll=False) -%}
-            {%- if isinstance(node, RegNode) or isinstance(node, RegfileNode) %}
+            {%- if isinstance(node, systemrdlRegNode) or isinstance(node, systemrdlRegfileNode) %}
     @property
     def {{get_inst_name(node)}}(self):
         return self.__{{get_inst_name(node)}}

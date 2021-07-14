@@ -8,8 +8,7 @@ import logging.config
 import logging
 
 import unittest
-from unittest.mock import patch, MagicMock
-
+from unittest.mock import patch
 
 from systemrdl import RDLCompiler, RegNode, FieldNode
 from peakrdl.python.exporter import PythonExporter
@@ -52,35 +51,43 @@ logging_config = {
             __name__:  {
                 'handlers': ['console', 'file'],
                 'level': 'DEBUG',
-                'propagate' : True
+                'propagate': True
             },
             'reg_model':  {
                 'handlers': ['console', 'file'],
                 'level': 'DEBUG',
-                'propagate' : True
+                'propagate': True
             }
         }
     }
 
 logging.config.dictConfig(logging_config)
 
-def read_addr_space(addr):
+
+def read_addr_space(addr: int):
+    assert isinstance(addr, int)
     return 0
 
-def write_addr_space(addr, data):
-    return 0
 
-def read_callback(addr):
+def write_addr_space(addr: int, data: int):
+    assert isinstance(addr, int)
+    assert isinstance(data, int)
+
+
+def read_callback(addr: int):
     return read_addr_space(addr)
 
-def write_callback(addr, data):
+
+def write_callback(addr: int, data: int):
     write_addr_space(addr, data)
+
 
 class BaseTestContainer:
     class BaseRDLTestCase(unittest.TestCase):
 
         root_systemRDL_file = None
         root_node_name = None
+        dut_cls = None
 
         @classmethod
         def setUpClass(cls):
@@ -96,7 +103,7 @@ class BaseTestContainer:
 
             sys.path.append(cls.tempdir.name)
             module = __import__('reg_model.' + cls.root_node_name, globals(), locals(),
-                                                   [cls.root_node_name + '_cls'], 0)
+                                [cls.root_node_name + '_cls'], 0)
             cls.dut_cls = getattr(module, cls.root_node_name + '_cls')
 
         def setUp(self):
@@ -110,7 +117,7 @@ class BaseTestContainer:
             for object_str in object_tree_str_list:
                 if object_str[-1] == ']':
                     # an array
-                    re_result_name = re.match(r'(\w+)(\[\d+\])', object_str )
+                    re_result_name = re.match(r'(\w+)(\[\d+\])', object_str)
                     index = int(re_result_name.group(2)[1:-1])
                     dut_obj = getattr(dut_obj, re_result_name.group(1))[index]
                 else:
@@ -134,7 +141,7 @@ class BaseTestContainer:
 
                 # generate a random string and see if is used on the object or not, and regenerate if that is the case
                 attribute_name = random_string()
-                while(hasattr(dut_obj, attribute_name) is True):
+                while hasattr(dut_obj, attribute_name) is True:
                     attribute_name = random_string()
 
                 with self.assertRaises(AttributeError):
@@ -169,9 +176,9 @@ class BaseTestContainer:
                     self.assertEqual(node.msb, dut_obj.msb)
 
                     logger.info('checking bitmask - node : {fqnode_path}'.format(fqnode_path=node.get_path()))
-                    for bit_position in range(dut_obj.register_datawidth):
+                    for bit_position in range(dut_obj.register_data_width):
                         if bit_position in range(node.lsb, node.msb+1):
-                            self.assertEqual(dut_obj.bitmask & (1 << bit_position), (1 << bit_position) )
+                            self.assertEqual(dut_obj.bitmask & (1 << bit_position), (1 << bit_position))
                         else:
                             self.assertEqual(dut_obj.bitmask & (1 << bit_position), 0)
 
@@ -189,11 +196,12 @@ class BaseTestContainer:
                     with patch(__name__ + '.' + 'write_addr_space') as write_callback_mock:
                         with patch(__name__ + '.' + 'read_addr_space', return_value=1) as read_callback_mock:
 
-                            expected_address = dut_obj.base_address # test_addresses checks that this has been set up correctly
+                            expected_address = dut_obj.base_address  # test_addresses checks that this
+                                                                     # has been set up correctly
 
                             max_value = (2**dut_obj.data_width)-1
 
-                            # test reading back 1 (note the unpatched version returns 0 so this confirms the patch works)
+                            # test reading back 1 (the unpatched version returns 0 so this confirms the patch works)
                             self.assertEqual(dut_obj.read(), 1)
                             self.assertEqual(read_callback_mock.call_args.args[0], expected_address)
 
@@ -266,7 +274,7 @@ class BaseTestContainer:
                                 # read back test
                                 for possible_enum_value in enum_cls:
                                     # set the simulated read_back value to
-                                    random_value = random.randrange(0, dut_obj.register_datawidth + 1)
+                                    random_value = random.randrange(0, dut_obj.register_data_width + 1)
                                     read_callback_mock.reset_mock()
                                     read_callback_mock.return_value = (random_value & dut_obj.inverse_bitmask) | \
                                                                       (dut_obj.bitmask & (possible_enum_value.value << dut_obj.lsb))
@@ -280,7 +288,7 @@ class BaseTestContainer:
                                 # write back test
                                 if node.is_sw_writable:
                                     for possible_enum_value in enum_cls:
-                                        random_value = random.randrange(0, dut_obj.register_datawidth + 1)
+                                        random_value = random.randrange(0, dut_obj.register_data_width + 1)
                                         read_callback_mock.reset_mock()
                                         write_callback_mock.reset_mock()
                                         read_callback_mock.return_value = random_value
@@ -355,30 +363,36 @@ class BaseTestContainer:
             if cls.dut_cls is not None:
                 cls.tempdir.cleanup()
 
+
 class Test_regfiles_and_arrays(BaseTestContainer.BaseRDLTestCase):
 
     root_systemRDL_file = 'regfile_and_arrays.rdl'
     root_node_name = 'regfile_and_arrays'
+
 
 class Test_enum_example(BaseTestContainer.BaseRDLTestCase):
 
     root_systemRDL_file = 'enum_example.rdl'
     root_node_name = 'enum_example'
 
+
 class Test_basic(BaseTestContainer.BaseRDLTestCase):
 
     root_systemRDL_file = 'basic.rdl'
     root_node_name = 'basic'
+
 
 class Test_field_scope(BaseTestContainer.BaseRDLTestCase):
 
     root_systemRDL_file = 'field_scope.rdl'
     root_node_name = 'field_scope'
 
+
 class Test_addrmap(BaseTestContainer.BaseRDLTestCase):
 
     root_systemRDL_file = 'addr_map.rdl'
     root_node_name = 'addr_map'
+
 
 if __name__ == '__main__':
     unittest.main()
