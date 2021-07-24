@@ -1,0 +1,135 @@
+import unittest
+from unittest.mock import patch
+import random
+
+
+from ..reg_model.{{get_type_name(top_node)}} import {{get_type_name(top_node)}}_cls
+
+def read_addr_space(addr: int):
+    assert isinstance(addr, int)
+    return 0
+
+def write_addr_space(addr: int, data: int):
+    assert isinstance(addr, int)
+    assert isinstance(data, int)
+
+def read_callback(addr: int):
+    return read_addr_space(addr)
+
+def write_callback(addr: int, data: int):
+    write_addr_space(addr, data)
+
+
+class {{get_type_name(top_node)}}_TestCase(unittest.TestCase):
+
+    def setUp(self):
+        self.dut = {{get_type_name(top_node)}}_cls(read_callback=read_callback, write_callback=write_callback)
+
+    def test_addresses_default_baseaddress(self):
+        """
+        Walk the address map and check the address of every register is correct
+        """
+        {%- for node in top_node.descendants(unroll=True) -%}
+            {%- if isinstance(node, systemrdlRegNode) %}
+        self.assertEqual(self.dut.{{'.'.join(node.get_path_segments()[1:])}}.base_address, {{node.absolute_address}})
+            {%- endif %}
+        {%- endfor %}
+
+    def test_field_properties(self):
+        """
+        walk the address map and check that the lsb and msb of every field is correct
+        """
+        {%- for node in top_node.descendants(unroll=True) -%}
+            {%- if isinstance(node, systemrdlFieldNode) %}
+        self.assertEqual(self.dut.{{'.'.join(node.get_path_segments()[1:])}}.lsb, {{node.lsb}})
+        self.assertEqual(self.dut.{{'.'.join(node.get_path_segments()[1:])}}.msb, {{node.msb}})
+        self.assertEqual(self.dut.{{'.'.join(node.get_path_segments()[1:])}}.bitmask, {{get_field_bitmask_hex_string(node)}})
+        self.assertEqual(self.dut.{{'.'.join(node.get_path_segments()[1:])}}.inverse_bitmask, {{get_field_inv_bitmask_hex_string(node)}})
+            {%- endif -%}
+        {%- endfor %}
+
+    def test_register_read_and_write(self):
+        """
+        Walk the register map and check every register can be read and written to correctly
+        """
+        {%- for node in top_node.descendants(unroll=True) -%}
+            {%- if isinstance(node, systemrdlRegNode) %}
+        # test access operations (read and/or write) to register:
+        # {{'.'.join(node.get_path_segments())}}
+        with patch(__name__ + '.' + 'write_addr_space') as write_callback_mock:
+            with patch(__name__ + '.' + 'read_addr_space', return_value=1) as read_callback_mock:
+
+                # test reading back 1 (the unpatched version returns 0 so this confirms the patch works)
+                self.assertEqual(self.dut.{{'.'.join(node.get_path_segments()[1:])}}.read(), 1)
+                self.assertEqual(read_callback_mock.call_args.args[0], {{node.absolute_address}})  # check address passed to read
+
+                # test the read check with high value
+                read_callback_mock.reset_mock()
+                read_callback_mock.return_value = {{get_reg_max_value_hex_string(node)}}
+                self.assertEqual(self.dut.{{'.'.join(node.get_path_segments()[1:])}}.read(), {{get_reg_max_value_hex_string(node)}})
+                read_callback_mock.assert_called_once()
+
+                # test the read of the low value
+                read_callback_mock.reset_mock()
+                read_callback_mock.return_value = 0
+                self.assertEqual(self.dut.{{'.'.join(node.get_path_segments()[1:])}}.read(), 0x0)
+                read_callback_mock.assert_called_once()
+
+                # test the read of a random value
+                random_value = random.randrange(0, {{get_reg_max_value_hex_string(node)}}+1)
+                read_callback_mock.reset_mock()
+                read_callback_mock.return_value = random_value
+                self.assertEqual(self.dut.{{'.'.join(node.get_path_segments()[1:])}}.read(), random_value)
+                read_callback_mock.assert_called_once()
+
+                # at the end of the read tests the write should not have been called
+                read_callback_mock.reset_mock()
+                write_callback_mock.assert_not_called()
+
+                {% if node.has_sw_writable -%}
+                # test the write with high value
+                self.dut.{{'.'.join(node.get_path_segments()[1:])}}.write({{get_reg_max_value_hex_string(node)}})
+                write_callback_mock.assert_called_once()
+                self.assertEqual(write_callback_mock.call_args.args[0], {{node.absolute_address}})  # check address passed to read
+                self.assertEqual(write_callback_mock.call_args.args[1], {{get_reg_max_value_hex_string(node)}})
+                write_callback_mock.reset_mock()
+
+                # test the write of a low value
+                self.dut.{{'.'.join(node.get_path_segments()[1:])}}.write(0)
+                write_callback_mock.assert_called_once()
+                self.assertEqual(write_callback_mock.call_args.args[0], {{node.absolute_address}})  # check address passed to read
+                self.assertEqual(write_callback_mock.call_args.args[1], 0)
+                write_callback_mock.reset_mock()
+
+                # test the write of a random
+                random_value = random.randrange(0, {{get_reg_max_value_hex_string(node)}}+1)
+                self.dut.{{'.'.join(node.get_path_segments()[1:])}}.write(random_value)
+                write_callback_mock.assert_called_once()
+                self.assertEqual(write_callback_mock.call_args.args[0], {{node.absolute_address}})  # check address passed to read
+                self.assertEqual(write_callback_mock.call_args.args[1], random_value)
+                write_callback_mock.reset_mock()
+
+                # test writting a value beyond the register range is blocked with an exception being raised
+                with self.assertRaises(ValueError):
+                    self.dut.{{'.'.join(node.get_path_segments()[1:])}}.write(-1)
+
+                with self.assertRaises(ValueError):
+                    self.dut.{{'.'.join(node.get_path_segments()[1:])}}.write({{get_reg_max_value_hex_string(node)}}+1)
+
+                {%- else %}
+                # test that a non-writable register has no write method and attempting one generates and error
+                with self.assertRaises(AttributeError):
+                    self.dut.{{'.'.join(node.get_path_segments()[1:])}}.write(0)
+                {%- endif %}
+
+                # check the read has not been called in the write test
+                read_callback_mock.assert_not_called()
+            {%- endif %}
+        {%- endfor %}
+
+if __name__ == '__main__':
+    unittest.main()
+
+
+
+

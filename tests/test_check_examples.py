@@ -81,6 +81,8 @@ def read_callback(addr: int):
 def write_callback(addr: int, data: int):
     write_addr_space(addr, data)
 
+#def setUpModule():
+#    print('running module setup')
 
 class BaseTestContainer:
     class BaseRDLTestCase(unittest.TestCase):
@@ -99,12 +101,13 @@ class BaseTestContainer:
             cls.tempdir = tempfile.TemporaryDirectory()
 
             exporter = PythonExporter()
-            exporter.export(node=cls.spec, path=os.path.join(cls.tempdir.name, 'reg_model'))
+            exporter.export(node=cls.spec, path=os.path.join(cls.tempdir.name, root_node_name))
 
             sys.path.append(cls.tempdir.name)
-            module = __import__('reg_model.' + cls.root_node_name, globals(), locals(),
+            module = __import__(root_node_name+'.reg_model.' + cls.root_node_name, globals(), locals(),
                                 [cls.root_node_name + '_cls'], 0)
             cls.dut_cls = getattr(module, cls.root_node_name + '_cls')
+
 
         def setUp(self):
             self.dut = self.dut_cls(read_callback=read_callback, write_callback=write_callback)
@@ -392,7 +395,6 @@ class Test_addrmap(BaseTestContainer.BaseRDLTestCase):
 
     root_systemRDL_file = 'addr_map.rdl'
     root_node_name = 'addr_map'
-
 
 if __name__ == '__main__':
     unittest.main()

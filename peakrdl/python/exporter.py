@@ -4,6 +4,8 @@ from pathlib import Path
 from shutil import copyfile
 from typing import List
 
+import autopep8
+
 import jinja2 as jj
 from systemrdl.node import RootNode, Node, RegNode, AddrmapNode, RegfileNode
 from systemrdl.node import FieldNode, MemNode, AddressableNode
@@ -80,7 +82,7 @@ class PythonExporter:
             Top-level node to export. Can be the top-level `RootNode` or any
             internal `AddrmapNode`.
         path: str
-            Output file.
+            Output package path.
         """
 
 
@@ -92,10 +94,15 @@ class PythonExporter:
         if isinstance(node, RootNode):
             node = node.top
 
+        package_path = os.path.join(path, node.inst_name)
+        Path(package_path).mkdir(parents=True, exist_ok=True)
+        Path(os.path.join(package_path, 'reg_model')).mkdir(parents=True, exist_ok=True)
+        Path(os.path.join(package_path, 'tests')).mkdir(parents=True, exist_ok=True)
+
         # find all the addrmap types in the, these will be converted to seperate files
         modules = []
         for desc in node.descendants():
-            if ((isinstance(desc, (RegfileNode, RegNode))) and
+            if ((isinstance(desc, (RegfileNode, RegNode, AddrmapNode))) and
                     isinstance(desc.parent, AddrmapNode)):
                 if desc.parent not in modules:
                     modules.append(desc.parent)
@@ -124,26 +131,36 @@ class PythonExporter:
                 'get_type_name': self._get_type_name,
                 'get_array_dim': self._get_array_dim,
                 'get_unique_scoped_component': self._get_unique_scoped_component,
-                'get_unique_scoped_enums': self._get_unique_scoped_enums
+                'get_unique_scoped_enums': self._get_unique_scoped_enums,
+                'get_field_bitmask_hex_string' : self._get_field_bitmask_hex_string,
+                'get_field_inv_bitmask_hex_string' : self._get_field_inv_bitmask_hex_string,
+                'get_reg_max_value_hex_string' : self._get_reg_max_value_hex_string
             }
 
             context.update(self.user_template_context)
 
-            # ensure directory exists
-            Path(path).mkdir(parents=True, exist_ok=True)
-
             template = self.jj_env.get_template("addrmap.py.jinja")
-            stream = template.stream(context)
-            stream.dump(os.path.join(path, node.inst_name + '.py'))
-            #template = self.jj_env.get_template("addrmap_tb.sv")
-            #stream = template.stream(context)
-            #stream.dump(os.path.join(path, node.inst_name + '_tb.sv'))
+            module_code_str = autopep8.fix_code(template.render(context))
+            module_fqfn = os.path.join(package_path,
+                                       'reg_model',
+                                       node.inst_name + '.py')
+            with open(module_fqfn, "w") as fid:
+                fid.write(module_code_str)
+
+            template = self.jj_env.get_template("addrmap_tb.py.jinja")
+            module_tb_code_str = autopep8.fix_code(template.render(context))
+            module_tb_fqfn = os.path.join(package_path,
+                                       'tests',
+                                       'test_'+ node.inst_name + '.py')
+            with open(module_tb_fqfn, "w") as fid:
+                fid.write(module_tb_code_str)
+
             #template = self.jj_env.get_template("tb.cpp")
             #stream = template.stream(context)
             #stream.dump(os.path.join(path, node.inst_name + '_tb.cpp'))
 
         copyfile(src=os.path.join(os.path.dirname(__file__), "templates", "peakrdl_python_types.py"),
-                 dst=os.path.join(path, "peakrdl_python_types.py" ))
+                 dst=os.path.join(os.path.join(package_path, 'reg_model'), "peakrdl_python_types.py" ))
 
         return [self._get_inst_name(m) for m in modules]
 
@@ -210,6 +227,15 @@ class PythonExporter:
                             enum_needed.append(field_enum.__name__)
                             yield field_enum
 
+
+    def _get_field_bitmask_hex_string(self, node: FieldNode) -> str:
+        return '0x%X' % sum(2**x for x in range(node.lsb, node.msb+1))
+
+
+    def _get_field_inv_bitmask_hex_string(self, node: FieldNode) -> str:
+        reg_bitmask = (2 ** (node.parent.size * 8))-1
+        return '0x%X' % (reg_bitmask ^ sum(2**x for x in range(node.lsb, node.msb+1)))
+
     def _uses_enum(self, node: AddressableNode):
         for child_node in node.descendants():
             if isinstance(child_node, FieldNode):
@@ -217,6 +243,9 @@ class PythonExporter:
                     return True
         else:
             return False
+
+    def _get_reg_max_value_hex_string(self, node: RegNode) -> str:
+        return '0x%X' % ((2 ** (node.size * 8))-1)
 
 
 
