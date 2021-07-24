@@ -101,10 +101,10 @@ class BaseTestContainer:
             cls.tempdir = tempfile.TemporaryDirectory()
 
             exporter = PythonExporter()
-            exporter.export(node=cls.spec, path=os.path.join(cls.tempdir.name, root_node_name))
+            exporter.export(node=cls.spec, path=cls.tempdir.name)
 
             sys.path.append(cls.tempdir.name)
-            module = __import__(root_node_name+'.reg_model.' + cls.root_node_name, globals(), locals(),
+            module = __import__(cls.root_node_name+'.reg_model.' + cls.root_node_name, globals(), locals(),
                                 [cls.root_node_name + '_cls'], 0)
             cls.dut_cls = getattr(module, cls.root_node_name + '_cls')
 
