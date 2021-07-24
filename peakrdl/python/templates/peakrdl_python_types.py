@@ -69,8 +69,15 @@ class RegReadOnly(Reg):
 
     __slots__ = ['__read_callback']
 
-    def __init__(self, read_callback: read_callback_type, base_address, address_width, data_width, logger_handle):
-        super().__init__(base_address=base_address, address_width=address_width, data_width=data_width,
+    def __init__(self,
+                 read_callback: read_callback_type,
+                 base_address,
+                 address_width,
+                 data_width,
+                 logger_handle):
+        super().__init__(base_address=base_address,
+                         address_width=address_width,
+                         data_width=data_width,
                          logger_handle=logger_handle)
         self.__read_callback = read_callback
 
@@ -82,8 +89,14 @@ class RegWriteOnly(Reg):
 
     __slots__ = ['__write_callback']
 
-    def __init__(self, write_callback: write_callback_type, base_address, address_width, data_width, logger_handle):
-        super().__init__(base_address=base_address, address_width=address_width, data_width=data_width,
+    def __init__(self, write_callback: write_callback_type,
+                 base_address,
+                 address_width,
+                 data_width,
+                 logger_handle):
+        super().__init__(base_address=base_address,
+                         address_width=address_width,
+                         data_width=data_width,
                          logger_handle=logger_handle)
         self.__write_callback = write_callback
 
@@ -95,7 +108,8 @@ class RegWriteOnly(Reg):
         if data < 0:
             raise ValueError('data out of range')
 
-        self._logger.info(f'Writing data:{data:X} to address:{self.base_address:X}')
+        self._logger.info(f'Writing data:{data:X} to '
+                          f'address:{self.base_address:X}')
 
         self.__write_callback(self.base_address, data)
 
@@ -104,9 +118,14 @@ class RegReadWrite(Reg):
 
     __slots__ = ['__write_callback', '__read_callback']
 
-    def __init__(self, write_callback: write_callback_type, read_callback: read_callback_type,
-                 base_address, address_width, data_width, logger_handle):
-        super().__init__(base_address=base_address, address_width=address_width, data_width=data_width,
+    def __init__(self, write_callback: write_callback_type,
+                 read_callback: read_callback_type,
+                 base_address: int,
+                 address_width: int,
+                 data_width, logger_handle):
+        super().__init__(base_address=base_address,
+                         address_width=address_width,
+                         data_width=data_width,
                          logger_handle=logger_handle)
         self.__write_callback = write_callback
         self.__read_callback = read_callback
@@ -119,7 +138,8 @@ class RegReadWrite(Reg):
         if data < 0:
             raise ValueError('data out of range')
 
-        self._logger.info(f'Writing data:0x{data:X} to address:0x{self.base_address:X}')
+        self._logger.info(f'Writing data:0x{data:X} to '
+                          f'address:0x{self.base_address:X}')
 
         self.__write_callback(self.base_address, data)
 
@@ -131,12 +151,14 @@ class Field(_Base):
 
     __slots__ = ['__parent_register', '__msb', '__lsb', '__bitmask']
 
-    def __init__(self, parent_register: Reg, msb: int, lsb: int, logger_handle: str):
+    def __init__(self, parent_register: Reg,
+                 msb: int, lsb: int, logger_handle: str):
 
         super().__init__(logger_handle=logger_handle)
 
         if not isinstance(parent_register, Reg):
-            raise TypeError('parent register must be of type reg_cls but got %s' % type(parent_register))
+            raise TypeError('parent register must be of type reg_cls '
+                            'but got %s' % type(parent_register))
         self.__parent_register = parent_register
 
         if msb < lsb:
@@ -189,12 +211,16 @@ class FieldReadOnly(Field):
 
     __slots__ = []
 
-    def __init__(self, parent_register: readable_reg_type, msb: int, lsb: int, logger_handle: str):
+    def __init__(self, parent_register: readable_reg_type,
+                 msb: int, lsb: int, logger_handle: str):
 
         if not isinstance(parent_register, (RegReadWrite, RegReadOnly)):
-            raise TypeError('parent register must be of type reg_cls but got %s' % type(parent_register))
+            raise TypeError('parent register must be of type reg_cls but'
+                            ' got %s' % type(parent_register))
 
-        super().__init__(logger_handle=logger_handle, msb=msb, lsb=lsb, parent_register=parent_register)
+        super().__init__(logger_handle=logger_handle,
+                         msb=msb, lsb=lsb,
+                         parent_register=parent_register)
 
     def read(self):
         return (self.parent_register.read() & self.bitmask) >> self.lsb
@@ -212,19 +238,26 @@ class FieldWriteOnly(Field):
 
     __slots__ = []
 
-    def __init__(self, parent_register: writeable_reg_type, msb: int, lsb: int, logger_handle: str):
+    def __init__(self, parent_register: writeable_reg_type,
+                 msb: int, lsb: int, logger_handle: str):
 
         if not isinstance(parent_register, (RegReadWrite, RegWriteOnly)):
-            raise TypeError('parent register must be of type reg_cls but got %s' % type(parent_register))
+            raise TypeError('parent register must be of type reg_cls but '
+                            'got %s' % type(parent_register))
 
-        super().__init__(logger_handle=logger_handle, msb=msb, lsb=lsb, parent_register=parent_register)
+        super().__init__(logger_handle=logger_handle,
+                         msb=msb,
+                         lsb=lsb,
+                         parent_register=parent_register)
 
     def write(self, value):
-        # TODO need to consider what makes sense here, the following special cases can be handled
+        # TODO need to consider what makes sense here, the following special
+        #      cases can be handled
         #      * field is the same width as the reg
         #      * there is only one field in the reg
         #      other case don't make that much sense
-        raise NotImplementedError('Need to make a decision about what behaviour happens here')
+        raise NotImplementedError('Need to make a decision about what '
+                                  'behaviour happens here')
 
     @Field.parent_register.getter
     def parent_register(self) -> writeable_reg_type:
@@ -235,12 +268,19 @@ class FieldReadWrite(FieldReadOnly, FieldWriteOnly):
 
     __slots__ = []
 
-    def __init__(self, parent_register: RegReadWrite, msb: int, lsb: int, logger_handle: str):
+    def __init__(self, parent_register: RegReadWrite,
+                 msb: int,
+                 lsb: int,
+                 logger_handle: str):
 
         if not isinstance(parent_register, RegReadWrite):
-            raise TypeError('parent register must be of type reg_cls but got %s' % type(parent_register))
+            raise TypeError('parent register must be of type reg_cls but'
+                            ' got %s' % type(parent_register))
 
-        super().__init__(logger_handle=logger_handle, msb=msb, lsb=lsb, parent_register=parent_register)
+        super().__init__(logger_handle=logger_handle,
+                         msb=msb,
+                         lsb=lsb,
+                         parent_register=parent_register)
 
     def write(self, value):
 
@@ -248,19 +288,24 @@ class FieldReadWrite(FieldReadOnly, FieldWriteOnly):
             raise TypeError('value must be an int but got %s' % type(value))
 
         if value < 0:
-            raise ValueError('value to be written to register must be greater than or equal to 0')
+            raise ValueError('value to be written to register must be greater '
+                             'than or equal to 0')
 
         if value > self.max_value:
-            raise ValueError('value to be written to register must be less than or equal to %d' % self.max_value)
+            raise ValueError('value to be written to register must be less '
+                             'than or equal to %d' % self.max_value)
 
-        if (self.msb == (self.parent_register.data_width-1)) and (self.lsb == 0):
-            # special case where the field occupies the whole register, there a straight write can be performed
+        if (self.msb == (self.parent_register.data_width-1)) and\
+                (self.lsb == 0):
+            # special case where the field occupies the whole register,
+            # there a straight write can be performed
             new_reg_value = value
         else:
             # do a read, modify write
             reg_value = self.parent_register.read()
+            masked_reg_value = reg_value & self.inverse_bitmask
 
-            new_reg_value = (reg_value & self.inverse_bitmask) | (value << self.lsb)
+            new_reg_value = masked_reg_value | (value << self.lsb)
 
         self.parent_register.write(new_reg_value)
 
@@ -273,7 +318,11 @@ class EnumField(Field):
 
     __slots__ = ['__enum_cls']
 
-    def __init__(self, parent_register: Reg, msb: int, lsb: int, encoding_enum, logger_handle):
+    def __init__(self, parent_register: Reg,
+                 msb: int,
+                 lsb: int,
+                 encoding_enum,
+                 logger_handle):
 
         super().__init__(parent_register=parent_register,
                          msb=msb,
@@ -291,13 +340,21 @@ class EnumFieldReadOnly(EnumField):
 
     __slots__ = []
 
-    def __init__(self, parent_register: readable_reg_type, msb: int, lsb: int, encoding_enum, logger_handle: str):
+    def __init__(self, parent_register: readable_reg_type,
+                 msb: int,
+                 lsb: int,
+                 encoding_enum,
+                 logger_handle: str):
 
         if not isinstance(parent_register, (RegReadWrite, RegReadOnly)):
-            raise TypeError('parent register must be of type reg_cls but got %s' % type(parent_register))
+            raise TypeError('parent register must be of type reg_cls but '
+                            'got %s' % type(parent_register))
 
-        super().__init__(logger_handle=logger_handle, msb=msb, lsb=lsb,
-                         parent_register=parent_register, encoding_enum=encoding_enum)
+        super().__init__(logger_handle=logger_handle,
+                         msb=msb,
+                         lsb=lsb,
+                         parent_register=parent_register,
+                         encoding_enum=encoding_enum)
 
     @Field.parent_register.getter
     def parent_register(self) -> readable_reg_type:
@@ -321,12 +378,19 @@ class EnumFieldReadWrite(EnumFieldReadOnly):
 
     __slots__ = []
 
-    def __init__(self, parent_register: RegReadWrite, msb: int, lsb: int, encoding_enum, logger_handle: str):
+    def __init__(self, parent_register: RegReadWrite,
+                 msb: int,
+                 lsb: int,
+                 encoding_enum,
+                 logger_handle: str):
 
         if not isinstance(parent_register, RegReadWrite):
-            raise TypeError('parent register must be of type reg_cls but got %s' % type(parent_register))
+            raise TypeError('parent register must be of type reg_cls '
+                            'but got %s' % type(parent_register))
 
-        super().__init__(logger_handle=logger_handle, msb=msb, lsb=lsb, encoding_enum=encoding_enum,
+        super().__init__(logger_handle=logger_handle,
+                         msb=msb, lsb=lsb,
+                         encoding_enum=encoding_enum,
                          parent_register=parent_register)
 
     @Field.parent_register.getter
@@ -338,13 +402,16 @@ class EnumFieldReadWrite(EnumFieldReadOnly):
         if not isinstance(value, self.enum_cls):
             raise TypeError('value must be an int but got %s' % type(value))
 
-        if (self.msb == (self.parent_register.data_width - 1)) and (self.lsb == 0):
-            # special case where the field occupies the whole register, there a straight write can be performed
+        if (self.msb == (self.parent_register.data_width - 1)) and \
+                (self.lsb == 0):
+            # special case where the field occupies the whole register,
+            # there a straight write can be performed
             new_reg_value = value.value
         else:
             # do a read, modify write
             reg_value = self.parent_register.read()
+            masked_reg_value = reg_value & self.inverse_bitmask
 
-            new_reg_value = (reg_value & self.inverse_bitmask) | (value.value << self.lsb)
+            new_reg_value = masked_reg_value | (value.value << self.lsb)
 
         self.parent_register.write(new_reg_value)
