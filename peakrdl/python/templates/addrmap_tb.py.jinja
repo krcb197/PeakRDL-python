@@ -54,6 +54,7 @@ class {{get_type_name(top_node)}}_TestCase(unittest.TestCase):
         """
         {%- for node in top_node.descendants(unroll=True) -%}
             {%- if isinstance(node, systemrdlRegNode) %}
+
         # test access operations (read and/or write) to register:
         # {{'.'.join(node.get_path_segments())}}
         with patch(__name__ + '.' + 'write_addr_space') as write_callback_mock:
