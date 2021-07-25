@@ -175,7 +175,7 @@ class BaseTestContainer:
 
                 if isinstance(node, FieldNode):
 
-                    self.assertEqual(node.lsb, dut_obj.lsb)
+                    self.assertEqual(node.lsb, dut_obj.lsb, msg='lsb mismatch on {fqnode_path}'.format(fqnode_path=node.get_path()))
                     self.assertEqual(node.msb, dut_obj.msb)
 
                     logger.info('checking bitmask - node : {fqnode_path}'.format(fqnode_path=node.get_path()))

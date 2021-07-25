@@ -20,9 +20,9 @@ class {{get_fully_qualified_type_name(node)}}_cls(EnumFieldWriteOnly):
 
     def __init__(self,
                  parent_register: Reg,
-                 logger_handle: str,
                  lsb: int,
-                 msb: int):
+                 msb: int,
+                 logger_handle: str,):
         super().__init__(parent_register=parent_register,
                          lsb=lsb,
                          msb=msb,
@@ -39,10 +39,13 @@ class {{get_fully_qualified_type_name(node)}}_cls(FieldWriteOnly):
 
     __slots__ = [{%- for child_node in node.children(unroll=False) -%}'__{{get_inst_name(child_node)}}'{% if not loop.last %}, {% endif %}{%- endfor %}]
 
-    def __init__(self, parent_register: Reg, logger_handle: str):
+    def __init__(self, parent_register: Reg,
+                 lsb: int,
+                 msb: int,
+                 logger_handle: str):
         super().__init__(parent_register=parent_register,
-                         lsb={{node.lsb}},
-                         msb={{node.msb}},
+                         lsb=lsb,
+                         msb=msb,
                          logger_handle=logger_handle)
     {% endif %}
 {%- endmacro -%}
