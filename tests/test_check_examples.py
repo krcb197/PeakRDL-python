@@ -185,6 +185,34 @@ class BaseTestContainer:
                         else:
                             self.assertEqual(dut_obj.bitmask & (1 << bit_position), 0)
 
+        def test_feild_enum(self):
+            """
+            test that the enum associated with a field has been correctly
+            configured, it is possible to redefine an enum at a different
+            scope in systemRDL (with the same name as an earlier definition),
+            this needs to be caught
+            :return:
+            """
+            logger = logging.getLogger(self.id())
+
+            for node in self.spec.descendants(unroll=True):
+                dut_obj = self._get_dut_object(node)
+
+                if isinstance(node, FieldNode):
+
+                    if 'encode' in node.list_properties():
+
+                        node_enum = node.get_property('encode')
+                        dut_enum = dut_obj.enum_cls
+
+                        self.assertEqual(len(node_enum), len(dut_enum))
+
+                        for node_enum_possibility in node_enum:
+                            self.assertTrue(hasattr(dut_enum, node_enum_possibility.name))
+                            self.assertEqual(getattr(dut_enum, node_enum_possibility.name).value,
+                                             node_enum_possibility.value,
+                                             msg=f'test {node.inst_name} enum name:{node_enum_possibility.name}, value mismatch')
+
         def test_register_read_and_write(self):
             """
             Check the ability to read and write to all registers
