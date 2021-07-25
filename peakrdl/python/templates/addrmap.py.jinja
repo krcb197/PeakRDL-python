@@ -20,10 +20,12 @@ class {{get_fully_qualified_type_name(node)}}_cls(EnumFieldWriteOnly):
 
     def __init__(self,
                  parent_register: Reg,
-                 logger_handle: str):
+                 logger_handle: str,
+                 lsb: int,
+                 msb: int):
         super().__init__(parent_register=parent_register,
-                         lsb={{node.lsb}},
-                         msb={{node.msb}},
+                         lsb=lsb,
+                         msb=msb,
                          encoding_enum={{get_fully_qualified_enum_type(node.get_property('encode'), top_node.parent)}}_enumcls,
                          logger_handle=logger_handle)
     {% else %}
@@ -106,6 +108,8 @@ class {{get_fully_qualified_type_name(node)}}_cls(RegWriteOnly):
         {%- for child_node in node.fields() %}
             {%- if isinstance(child_node, systemrdlFieldNode) %}
         self.__{{get_inst_name(child_node)}} = {{get_fully_qualified_type_name(child_node)}}_cls(parent_register=self,
+                                                                                 lsb={{child_node.lsb}},
+                                                                                 msb={{child_node.msb}},
                                                                                  logger_handle=logger_handle+'{{get_inst_name(child_node)}}')
             {%- endif -%}
         {%- endfor %}
