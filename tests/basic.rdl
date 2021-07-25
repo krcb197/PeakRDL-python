@@ -16,7 +16,8 @@ addrmap basic {
     reg {
         default sw = r;
         default hw = r;
-        field {  } basicfield_d[31:16];
+        field { fieldwidth=1;  } basicfield_d[0:0];
+        field {  } basicfield_e[2:1];
 
     } basicreg_c;
 
