@@ -29,15 +29,15 @@ class _Node(_Base):
         self.__data_width = data_width
 
     @property
-    def base_address(self):
+    def base_address(self) -> int:
         return self.__base_address
 
     @property
-    def address_width(self):
+    def address_width(self) -> int:
         return self.__address_width
 
     @property
-    def data_width(self):
+    def data_width(self) -> int:
         """
         width of the data register
         """
@@ -55,13 +55,15 @@ class RegFile(_Node):
 
     __slots__ = []
 
+    pass
+
 
 class Reg(_Node):
 
     __slots__ = []
 
     @property
-    def max_value(self):
+    def max_value(self) -> int:
         return (2 ** self.data_width) - 1
 
 
@@ -81,7 +83,7 @@ class RegReadOnly(Reg):
                          logger_handle=logger_handle)
         self.__read_callback = read_callback
 
-    def read(self):
+    def read(self) -> int:
         return self.__read_callback(self.base_address)
 
 
@@ -100,7 +102,7 @@ class RegWriteOnly(Reg):
                          logger_handle=logger_handle)
         self.__write_callback = write_callback
 
-    def write(self, data):
+    def write(self, data: int):
 
         if data > self.max_value:
             raise ValueError('data out of range')
@@ -130,7 +132,7 @@ class RegReadWrite(Reg):
         self.__write_callback = write_callback
         self.__read_callback = read_callback
 
-    def write(self, data):
+    def write(self, data: int):
 
         if data > self.max_value:
             raise ValueError('data out of range')
@@ -143,7 +145,7 @@ class RegReadWrite(Reg):
 
         self.__write_callback(self.base_address, data)
 
-    def read(self):
+    def read(self) -> int:
         return self.__read_callback(self.base_address)
 
 
@@ -312,106 +314,3 @@ class FieldReadWrite(FieldReadOnly, FieldWriteOnly):
     @Field.parent_register.getter
     def parent_register(self) -> RegReadWrite:
         return super().parent_register
-
-
-class EnumField(Field):
-
-    __slots__ = ['__enum_cls']
-
-    def __init__(self, parent_register: Reg,
-                 msb: int,
-                 lsb: int,
-                 encoding_enum,
-                 logger_handle):
-
-        super().__init__(parent_register=parent_register,
-                         msb=msb,
-                         lsb=lsb,
-                         logger_handle=logger_handle)
-
-        self.__enum_cls = encoding_enum
-
-    @property
-    def enum_cls(self):
-        return self.__enum_cls
-
-
-class EnumFieldReadOnly(EnumField):
-
-    __slots__ = []
-
-    def __init__(self, parent_register: readable_reg_type,
-                 msb: int,
-                 lsb: int,
-                 encoding_enum,
-                 logger_handle: str):
-
-        if not isinstance(parent_register, (RegReadWrite, RegReadOnly)):
-            raise TypeError('parent register must be of type reg_cls but '
-                            'got %s' % type(parent_register))
-
-        super().__init__(logger_handle=logger_handle,
-                         msb=msb,
-                         lsb=lsb,
-                         parent_register=parent_register,
-                         encoding_enum=encoding_enum)
-
-    @Field.parent_register.getter
-    def parent_register(self) -> readable_reg_type:
-        assert isinstance(super().parent_register, (RegReadOnly, RegReadWrite))
-        return super().parent_register
-
-    def __reverse_enum_value_lookup(self, int_value: int):
-
-        for potential_value in self.enum_cls:
-            if int_value == potential_value.value:
-                return potential_value
-        else:
-            raise('Unable to match value %d' % int_value)
-
-    def read(self):
-        int_value = (self.parent_register.read() & self.bitmask) >> self.lsb
-        return self.__reverse_enum_value_lookup(int_value)
-
-
-class EnumFieldReadWrite(EnumFieldReadOnly):
-
-    __slots__ = []
-
-    def __init__(self, parent_register: RegReadWrite,
-                 msb: int,
-                 lsb: int,
-                 encoding_enum,
-                 logger_handle: str):
-
-        if not isinstance(parent_register, RegReadWrite):
-            raise TypeError('parent register must be of type reg_cls '
-                            'but got %s' % type(parent_register))
-
-        super().__init__(logger_handle=logger_handle,
-                         msb=msb, lsb=lsb,
-                         encoding_enum=encoding_enum,
-                         parent_register=parent_register)
-
-    @Field.parent_register.getter
-    def parent_register(self) -> RegReadWrite:
-        return super().parent_register
-
-    def write(self, value):
-
-        if not isinstance(value, self.enum_cls):
-            raise TypeError('value must be an int but got %s' % type(value))
-
-        if (self.msb == (self.parent_register.data_width - 1)) and \
-                (self.lsb == 0):
-            # special case where the field occupies the whole register,
-            # there a straight write can be performed
-            new_reg_value = value.value
-        else:
-            # do a read, modify write
-            reg_value = self.parent_register.read()
-            masked_reg_value = reg_value & self.inverse_bitmask
-
-            new_reg_value = masked_reg_value | (value.value << self.lsb)
-
-        self.parent_register.write(new_reg_value)
