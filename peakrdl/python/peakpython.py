@@ -55,8 +55,14 @@ if __name__ == '__main__':
     #overrides = {k.prop: k.new for k in args.O}
     blocks = generate(spec, args.outdir)
     if args.lint:
+        print('***************************************************************')
+        print('* Lint Checks                                                 *')
+        print('***************************************************************')
         subprocess.run(['flake8', os.path.join(args.outdir, 'basic'), '--doctests'])
     if args.test:
-        tests = unittest.TestLoader().discover(start_dir=os.path.join(args.outdir, 'basic', 'tests'))
+        print('***************************************************************')
+        print('* Unit Test Run                                               *')
+        print('***************************************************************')
+        tests = unittest.TestLoader().discover(start_dir=os.path.join(args.outdir, 'basic', 'tests'), top_level_dir='.')
         runner = unittest.TextTestRunner()
         result = runner.run(tests)
