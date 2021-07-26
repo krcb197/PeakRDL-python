@@ -4,41 +4,22 @@ from typing import Tuple
 from .peakrdl_python_types import AddressMap, Reg, RegFile
 from .peakrdl_python_types import RegReadOnly, RegWriteOnly, RegReadWrite
 from .peakrdl_python_types import FieldReadOnly, FieldWriteOnly, FieldReadWrite
-{% if top_node.uses_enum %}from .peakrdl_python_types import EnumFieldReadOnly, EnumFieldReadWrite{% endif %}
 from .peakrdl_python_types import read_callback_type, write_callback_type
 
 {%- macro field_class(node) %}
-    {%- if 'encode' in node.list_properties() %}
-        {% if node.is_sw_readable and node.is_sw_writable %}
-class {{get_fully_qualified_type_name(node)}}_cls(EnumFieldReadWrite):
-        {% elif node.is_sw_readable and not node.is_sw_writable %}
-class {{get_fully_qualified_type_name(node)}}_cls(EnumFieldReadOnly):
-        {% elif not node.is_sw_readable and node.is_sw_writable %}
-class {{get_fully_qualified_type_name(node)}}_cls(EnumFieldWriteOnly):
-        {% endif %}
-
-    __slots__ = [{%- for child_node in node.children(unroll=False) -%}'__{{get_inst_name(child_node)}}'{% if not loop.last %}, {% endif %}{%- endfor %}]
-
-    def __init__(self,
-                 parent_register: Reg,
-                 lsb: int,
-                 msb: int,
-                 logger_handle: str,):
-        super().__init__(parent_register=parent_register,
-                         lsb=lsb,
-                         msb=msb,
-                         encoding_enum={{get_fully_qualified_enum_type(node.get_property('encode'), top_node.parent)}}_enumcls,
-                         logger_handle=logger_handle)
-    {% else %}
-        {% if node.is_sw_readable and node.is_sw_writable %}
+    {% if node.is_sw_readable and node.is_sw_writable %}
 class {{get_fully_qualified_type_name(node)}}_cls(FieldReadWrite):
-        {% elif node.is_sw_readable and not node.is_sw_writable %}
+    {% elif node.is_sw_readable and not node.is_sw_writable %}
 class {{get_fully_qualified_type_name(node)}}_cls(FieldReadOnly):
-        {% elif not node.is_sw_readable and node.is_sw_writable %}
+    {% elif not node.is_sw_readable and node.is_sw_writable %}
 class {{get_fully_qualified_type_name(node)}}_cls(FieldWriteOnly):
-        {% endif %}
+    {% endif %}
 
-    __slots__ = [{%- for child_node in node.children(unroll=False) -%}'__{{get_inst_name(child_node)}}'{% if not loop.last %}, {% endif %}{%- endfor %}]
+    {%- if 'encode' in node.list_properties() %}
+    __enum_cls = {{get_fully_qualified_enum_type(node.get_property('encode'), top_node.parent)}}_enumcls
+    {% endif %}
+
+    __slots__ = []
 
     def __init__(self, parent_register: Reg,
                  lsb: int,
@@ -48,7 +29,38 @@ class {{get_fully_qualified_type_name(node)}}_cls(FieldWriteOnly):
                          lsb=lsb,
                          msb=msb,
                          logger_handle=logger_handle)
+
+    {%- if 'encode' in node.list_properties() %}
+    @classmethod
+    @property
+    def enum_cls(cls):
+        return cls.__enum_cls
+
+    {%- if node.is_sw_readable %}
+    @classmethod
+    def __reverse_enum_value_lookup(cls, int_value: int) -> {{get_fully_qualified_enum_type(node.get_property('encode'), top_node.parent)}}_enumcls:
+
+        for potential_value in cls.__enum_cls:
+            if int_value == potential_value.value:
+                return potential_value
+        else:
+            raise('Unable to match value %d' % int_value)
+
+    def read(self) -> {{get_fully_qualified_enum_type(node.get_property('encode'), top_node.parent)}}_enumcls:
+        int_value = super().read()
+        return self.__reverse_enum_value_lookup(int_value)
     {% endif %}
+
+    {%- if node.is_sw_writable %}
+    def write(self, value : {{get_fully_qualified_enum_type(node.get_property('encode'), top_node.parent)}}_enumcls):
+
+        if not isinstance(value, self.enum_cls):
+            raise TypeError('value must be an {{get_fully_qualified_enum_type(node.get_property('encode'), top_node.parent)}}_enumcls but got %s' % type(value))
+
+        super().write(value.value)
+    {% endif %}
+    {% endif %}
+
 {%- endmacro -%}
 
 {%- macro register_class(node) %}
