@@ -1,4 +1,5 @@
 {% if top_node.uses_enum %}from enum import IntEnum, unique{% endif %}
+from typing import Tuple
 
 from .peakrdl_python_types import AddressMap, Reg, RegFile
 from .peakrdl_python_types import RegReadOnly, RegWriteOnly, RegReadWrite
@@ -230,7 +231,7 @@ class {{get_fully_qualified_type_name(node)}}_cls(RegFile):
     {%- for child_node in node.children(unroll=False) %}
         {%- if isinstance(child_node, systemrdlRegNode) or isinstance(child_node, systemrdlRegfileNode) %}
     @property
-    def {{get_inst_name(child_node)}}(self) -> {{get_fully_qualified_type_name(child_node)}}_cls:
+    def {{get_inst_name(child_node)}}(self) -> {%- if child_node.is_array -%}Tuple[{%- endif -%}{{get_fully_qualified_type_name(child_node)}}_cls{%- if child_node.is_array -%}, ...]{%- endif -%}:
         return self.__{{get_inst_name(child_node)}}
         {%- endif %}
     {% endfor %}
@@ -261,12 +262,13 @@ class {{get_fully_qualified_type_name(top_node)}}_cls(AddressMap):
         {%- for node in top_node.children(unroll=False) -%}
             {%- if isinstance(node, systemrdlRegNode) or isinstance(node, systemrdlRegfileNode) %}
     @property
-    def {{get_inst_name(node)}}(self) -> {{get_fully_qualified_type_name(node)}}_cls:
+    def {{get_inst_name(node)}}(self) ->  {%- if node.is_array -%}Tuple[{%- endif -%}{{get_fully_qualified_type_name(node)}}_cls{%- if node.is_array -%},...]{%- endif -%}:
         return self.__{{get_inst_name(node)}}
             {%- endif %}
         {% endfor %}
 {%- endmacro %}
 
+{% if top_node.uses_enum %}
 # root level enum definitions
 {%- for enum_needed in get_dependent_enum(top_node.parent) %}
 @unique
@@ -276,9 +278,10 @@ class {{get_fully_qualified_enum_type(enum_needed, top_node.parent)}}_enumcls(In
     {{ value_of_enum_needed.name }} = {{ value_of_enum_needed.value }}
     {% endfor %}
 {% endfor -%}
+{% endif %}
 
 
-# regfile, register and feild definitions
+# regfile, register and field definitions
 {%- for node in get_dependent_component(top_node.parent) -%}
     {% if isinstance(node, systemrdlRegNode) %}
         {{ register_class(node)  }}
