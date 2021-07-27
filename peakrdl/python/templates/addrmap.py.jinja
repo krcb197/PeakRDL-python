@@ -287,7 +287,7 @@ class {{get_fully_qualified_type_name(top_node)}}_cls(AddressMap):
 class {{get_fully_qualified_enum_type(enum_needed, top_node.parent)}}_enumcls(IntEnum):
 
     {% for value_of_enum_needed in enum_needed -%}
-    {{ value_of_enum_needed.name }} = {{ value_of_enum_needed.value }}
+    {{ value_of_enum_needed.name }} = {{ value_of_enum_needed.value }}  {%- if value_of_enum_needed.rdl_desc is not none -%}# {{ value_of_enum_needed.rdl_desc }} {%- endif %}
     {% endfor %}
 {% endfor -%}
 {% endif %}
