@@ -39,7 +39,7 @@ class _Node(_Base):
     @property
     def data_width(self) -> int:
         """
-        width of the data register
+        width of the data access in bits
         """
         return self.__data_width
 
@@ -59,15 +59,50 @@ class RegFile(_Node):
 
 
 class Reg(_Node):
+    """
+    base class of register wrappers
+
+    Note:
+        It is not expected that this class will be instantiated under normal
+        circumstances however, it is useful for type checking
+    """
 
     __slots__ = []
 
     @property
     def max_value(self) -> int:
+        """maximum unsigned integer value that can be stored in the register
+
+        For example:
+
+        * 8-bit register returns 0xFF (255)
+        * 16-bit register returns 0xFFFF (65535)
+        * 32-bit register returns 0xFFFF_FFFF (4294967295)
+
+        """
         return (2 ** self.data_width) - 1
 
 
 class RegReadOnly(Reg):
+    """
+    class for a read only register
+
+    Args:
+        read_callback: function that is called with the address of the register
+            when the read method of this class is called. This will normally be
+            linked to the read method of a device driver or the register
+            simulator
+        base_address: register address (to be pass into the read callback)
+        address_width: width of the address in bits
+        data_width: width of the register access in bits
+        logger_handle: name to be used logging messages associate with this
+            object
+
+    Note:
+        The actual width of the register may be less then the data_width, the
+        width refers to the width of a "normal" read/write operation
+
+    """
 
     __slots__ = ['__read_callback']
 
@@ -84,10 +119,34 @@ class RegReadOnly(Reg):
         self.__read_callback = read_callback
 
     def read(self) -> int:
+        """Read value from the register
+
+        Returns:
+            The value from register
+
+        """
         return self.__read_callback(self.base_address)
 
 
 class RegWriteOnly(Reg):
+    """
+    class for a write only register
+
+    Args:
+        write_callback: function that is called with the address of the register
+            when the write method of this class is called. This will normally be
+            linked to the write method of a device driver or the register
+            simulator
+        base_address: register address (to be pass into the read callback)
+        address_width: width of the address in bits
+        data_width: width of the register access in bits
+        logger_handle: name to be used logging messages associate with this
+            object
+
+    Note:
+        The actual width of the register may be less then the data_width, the
+        width refers to the width of a "normal" read/write operation
+    """
 
     __slots__ = ['__write_callback']
 
@@ -103,6 +162,18 @@ class RegWriteOnly(Reg):
         self.__write_callback = write_callback
 
     def write(self, data: int):
+        """Writes a value to the register
+
+        Args:
+            data: data to be written
+
+        Raises:
+            ValueError: if the value provided is outside the range of the
+                permissible values for the register
+            TypeError: if the type of data is wrong
+        """
+        if not isinstance(data, int):
+            raise TypeError(f'data should be an int got {type(data)=}')
 
         if data > self.max_value:
             raise ValueError('data out of range')
@@ -117,14 +188,36 @@ class RegWriteOnly(Reg):
 
 
 class RegReadWrite(Reg):
+    """
+    class for a write only register
 
+    Args:
+        read_callback: function that is called with the address of the register
+            when the read method of this class is called. This will normally be
+            linked to the read method of a device driver or the register
+            simulator
+        write_callback: function that is called with the address of the register
+            when the write method of this class is called. This will normally be
+            linked to the write method of a device driver or the register
+            simulator
+        base_address: register address (to be pass into the read callback)
+        address_width: width of the address in bits
+        data_width: width of the register access in bits
+        logger_handle: name to be used logging messages associate with this
+            object
+
+    Note:
+        The actual width of the register may be less then the data_width, the
+        width refers to the width of a "normal" read/write operation
+    """
     __slots__ = ['__write_callback', '__read_callback']
 
     def __init__(self, write_callback: write_callback_type,
                  read_callback: read_callback_type,
                  base_address: int,
                  address_width: int,
-                 data_width, logger_handle):
+                 data_width: int,
+                 logger_handle: str):
         super().__init__(base_address=base_address,
                          address_width=address_width,
                          data_width=data_width,
@@ -133,6 +226,18 @@ class RegReadWrite(Reg):
         self.__read_callback = read_callback
 
     def write(self, data: int):
+        """Writes a value to the register
+
+        Args:
+            data: data to be written
+
+        Raises:
+            ValueError: if the value provided is outside the range of the
+                permissible values for the register
+            TypeError: if the type of data is wrong
+        """
+        if not isinstance(data, int):
+            raise TypeError(f'data should be an int got {type(data)=}')
 
         if data > self.max_value:
             raise ValueError('data out of range')
@@ -146,10 +251,23 @@ class RegReadWrite(Reg):
         self.__write_callback(self.base_address, data)
 
     def read(self) -> int:
+        """Read value from the register
+
+        Returns:
+            The value from register
+
+        """
         return self.__read_callback(self.base_address)
 
 
 class Field(_Base):
+    """
+    base class of register feild wrappers
+
+    Note:
+        It is not expected that this class will be instantiated under normal
+        circumstances however, it is useful for type checking
+    """
 
     __slots__ = ['__parent_register', '__msb', '__lsb', '__bitmask']
 
@@ -166,6 +284,15 @@ class Field(_Base):
         if msb < lsb:
             raise ValueError('field msb can not be less than the lsb')
 
+        if lsb < 0:
+            raise ValueError('field lsb cannot be less than zero')
+
+        if msb > self.parent_register.data_width:
+            raise ValueError('field msb must be less than the parent register width')
+
+        if lsb > self.parent_register.data_width:
+            raise ValueError('field lsb must be less than the parent register width')
+
         self.__msb = msb
         self.__lsb = lsb
 
@@ -175,34 +302,83 @@ class Field(_Base):
 
     @property
     def parent_register(self) -> Reg:
+        """
+        Register within which the field is located
+
+        Note:
+            This is an advanced user feature, and will not be needed in most
+            normal usage
+        """
         return self.__parent_register
 
     @property
     def lsb(self) -> int:
+        """
+        bit position of the least significant bit (lsb) of the field in the
+        parent register
+
+        Note:
+            The first bit in the register is bit 0
+        """
         return self.__lsb
 
     @property
     def msb(self) -> int:
+        """
+        bit position of the most significant bit (msb) of the field in the
+        parent register
+
+        Note:
+            The first bit in the register is bit 0
+        """
         return self.__msb
 
     @property
     def field_width(self) -> int:
+        """
+        The width of the field in bits
+        """
         return self.msb - self.lsb + 1
 
     @property
-    def max_value(self):
+    def max_value(self) -> int:
+        """maximum unsigned integer value that can be stored in the field
+
+        For example:
+
+        * 8-bit field returns 0xFF (255)
+        * 16-bit field returns 0xFFFF (65535)
+        * 32-bit field returns 0xFFFF_FFFF (4294967295)
+
+        """
         return (2 ** self.field_width) - 1
 
     @property
-    def bitmask(self):
+    def bitmask(self) -> int:
+        """
+        The bit mask needed to extract the field from its register
+
+        For example a register field occupying bits 7 to 4 in a 16-bit register
+        will have a bit mask of 0x00F0
+        """
         return self.__bitmask
 
     @property
-    def register_data_width(self):
+    def register_data_width(self) -> int:
+        """
+        The width of the register within which the field resides in bits
+        """
         return self.parent_register.data_width
 
     @property
-    def inverse_bitmask(self):
+    def inverse_bitmask(self) -> int:
+        """
+        The bitwise inverse of the bitmask needed to extract the field from its
+        register
+
+        For example a register field occupying bits 7 to 4 in a 16-bit register
+        will have a inverse bit mask of 0xFF0F
+        """
         return self.parent_register.max_value ^ self.bitmask
 
 
@@ -210,7 +386,17 @@ readable_reg_type = TypeVar('readable_reg_type', RegReadOnly, RegReadWrite)
 
 
 class FieldReadOnly(Field):
+    """
+    class for a read only register field
 
+    Args:
+        parent_register: register within which the field resides
+        lsb: bit position of the field lsb in the register
+        msb: bit position of the field lsb in the register
+        logger_handle: name to be used logging messages associate with this
+            object
+
+    """
     __slots__ = []
 
     def __init__(self, parent_register: readable_reg_type,
@@ -237,7 +423,17 @@ writeable_reg_type = TypeVar('writeable_reg_type', RegWriteOnly, RegReadWrite)
 
 
 class FieldWriteOnly(Field):
+    """
+    class for a write only register field
 
+    Args:
+        parent_register: register within which the field resides
+        lsb: bit position of the field lsb in the register
+        msb: bit position of the field lsb in the register
+        logger_handle: name to be used logging messages associate with this
+            object
+
+    """
     __slots__ = []
 
     def __init__(self, parent_register: writeable_reg_type,
@@ -267,7 +463,17 @@ class FieldWriteOnly(Field):
 
 
 class FieldReadWrite(FieldReadOnly, FieldWriteOnly):
+    """
+    class for a read/write only register field
 
+    Args:
+        parent_register: register within which the field resides
+        lsb: bit position of the field lsb in the register
+        msb: bit position of the field lsb in the register
+        logger_handle: name to be used logging messages associate with this
+            object
+
+    """
     __slots__ = []
 
     def __init__(self, parent_register: RegReadWrite,
