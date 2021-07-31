@@ -190,10 +190,23 @@ class PythonExporter:
         Returns the fully qualified class type name, i.e. with scope prefix
         """
         scope_path = node.inst.get_scope_path(scope_separator='_')
-        if scope_path == '':
-            return node.type_name
+
+
+        # This code handles cases where a field has a reset value such that
+        # it end up with the reset value appended to the type name. For the
+        # register model we don't care about reset signal and these value
+        original_type_name = node.inst.original_def.type_name
+        inst_type_name = node.inst.type_name
+
+        if original_type_name is None:
+            type_name = inst_type_name
         else:
-            return scope_path + '_' + node.type_name
+            type_name = original_type_name
+
+        if scope_path == '':
+            return type_name
+        else:
+            return scope_path + '_' + type_name
 
     def _get_array_dim(self, node: AddressableNode):
         """
@@ -202,29 +215,6 @@ class PythonExporter:
         assert node.is_array
         assert len(node.array_dimensions) == 1
         return node.array_dimensions[0]
-
-    def _get_unique_scoped_component(self, node: AddressableNode):
-
-        """
-        return a list of nodes that have a component which needs to be declared in the scope of the current node.
-        This list is de-duplicated
-
-        :param node:
-        :return: list(node)
-        """
-        node_component = node.inst.original_def
-
-        components_needed = []
-        for child_node in node.descendants():
-            child_node_component_scope = child_node.inst.original_def.parent_scope
-            if child_node_component_scope == node_component:
-                if child_node.inst.original_def in components_needed:
-                    # already covered the component
-                    continue
-
-                components_needed.append(child_node.inst.original_def)
-
-                yield child_node
 
     def _get_dependent_component(self, node: AddressableNode):
 
@@ -240,33 +230,14 @@ class PythonExporter:
 
         components_needed = []
         for child_node in node.descendants(in_post_order=True):
-            if child_node.inst.original_def in components_needed:
+            child_orig_def = child_node.inst.original_def
+            if child_orig_def in components_needed:
                 # already covered the component
                 continue
 
             components_needed.append(child_node.inst.original_def)
 
             yield child_node
-
-    def _get_unique_scoped_enums(self, node: AddressableNode):
-
-        node_component = node.inst.original_def
-
-        enum_needed = []
-        for child_node in node.descendants():
-            if isinstance(child_node, FieldNode):
-                if 'encode' in child_node.list_properties():
-                    # found an field with an enumeration
-
-                    field_enum = child_node.get_property('encode')
-                    feild_enum_parent = field_enum._parent_scope
-
-                    if feild_enum_parent == node_component:
-                        #needs to be declared at this level
-
-                        if field_enum.__name__ not in enum_needed:
-                            enum_needed.append(field_enum.__name__)
-                            yield field_enum
 
     def _get_dependent_enum(self, node: AddressableNode):
 
