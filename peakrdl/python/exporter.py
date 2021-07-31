@@ -99,6 +99,11 @@ class PythonExporter:
         Path(os.path.join(package_path, 'reg_model')).mkdir(parents=True, exist_ok=True)
         Path(os.path.join(package_path, 'tests')).mkdir(parents=True, exist_ok=True)
 
+        """
+        The long term plan is to put separate addr_maps in separate files but this
+        has proven to be very complex to implement so has been shelved for now
+        in favour of a single file approach
+        
         # find all the addrmap types in the, these will be converted to seperate files
         modules = []
         for desc in node.descendants():
@@ -106,6 +111,8 @@ class PythonExporter:
                     isinstance(desc.parent, AddrmapNode)):
                 if desc.parent not in modules:
                     modules.append(desc.parent)
+        """
+        modules = [node]
 
         for block in modules:
 
@@ -131,9 +138,7 @@ class PythonExporter:
                 'get_type_name': self._get_type_name,
                 'get_fully_qualified_type_name': self._get_fully_qualified_type_name,
                 'get_array_dim': self._get_array_dim,
-                'get_unique_scoped_component': self._get_unique_scoped_component,
                 'get_dependent_component': self._get_dependent_component,
-                'get_unique_scoped_enums': self._get_unique_scoped_enums,
                 'get_dependent_enum': self._get_dependent_enum,
                 'get_fully_qualified_enum_type': self._fully_qualified_enum_type,
                 'get_field_bitmask_hex_string' : self._get_field_bitmask_hex_string,
@@ -147,7 +152,7 @@ class PythonExporter:
             module_code_str = autopep8.fix_code(template.render(context))
             module_fqfn = os.path.join(package_path,
                                        'reg_model',
-                                       node.inst_name + '.py')
+                                       block.inst_name + '.py')
             with open(module_fqfn, "w") as fid:
                 fid.write(module_code_str)
 
@@ -155,7 +160,7 @@ class PythonExporter:
             module_tb_code_str = autopep8.fix_code(template.render(context))
             module_tb_fqfn = os.path.join(package_path,
                                        'tests',
-                                       'test_'+ node.inst_name + '.py')
+                                       'test_'+ block.inst_name + '.py')
             with open(module_tb_fqfn, "w") as fid:
                 fid.write(module_tb_code_str)
 

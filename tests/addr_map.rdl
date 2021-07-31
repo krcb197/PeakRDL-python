@@ -16,7 +16,14 @@ addrmap child_addr_map_type_b {
 };
 
 addrmap child_addr_map_type_c {
+
     child_addr_map_type_b child_c_b;
+
+    reg {
+        default sw = rw;
+        default hw = r;
+        field {} basicfield_a[15:0];
+    } basicreg_c;
 };
 
 addrmap addr_map {
