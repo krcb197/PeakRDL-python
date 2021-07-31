@@ -4,6 +4,7 @@ import os
 import subprocess
 
 import flake8
+import coverage
 import unittest.loader
 from systemrdl import RDLCompiler
 
@@ -58,11 +59,16 @@ if __name__ == '__main__':
         print('***************************************************************')
         print('* Lint Checks                                                 *')
         print('***************************************************************')
-        subprocess.run(['flake8', os.path.join(args.outdir, 'basic'), '--doctests'])
+        subprocess.run(['flake8', os.path.join(args.outdir, spec.inst_name), '--doctests'])
     if args.test:
         print('***************************************************************')
         print('* Unit Test Run                                               *')
         print('***************************************************************')
-        tests = unittest.TestLoader().discover(start_dir=os.path.join(args.outdir, 'basic', 'tests'), top_level_dir='.')
+        cov = coverage.Coverage()
+        cov.start()
+        tests = unittest.TestLoader().discover(start_dir=os.path.join(args.outdir, spec.inst_name, 'tests'), top_level_dir='.')
         runner = unittest.TextTestRunner()
         result = runner.run(tests)
+        cov.stop()
+        cov.save()
+        cov.html_report()
