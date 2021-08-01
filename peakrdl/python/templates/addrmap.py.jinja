@@ -1,3 +1,8 @@
+"""Python Wrapper for the {{top_node.inst_name}} register model
+
+This code was generated from the PeakRDL-python package
+
+"""
 {% if top_node.uses_enum %}from enum import IntEnum, unique{% endif %}
 from typing import Tuple, NoReturn
 
@@ -14,6 +19,11 @@ class {{get_fully_qualified_type_name(node)}}_cls(FieldReadOnly):
     {% elif not node.is_sw_readable and node.is_sw_writable %}
 class {{get_fully_qualified_type_name(node)}}_cls(FieldWriteOnly):
     {% endif %}
+    """
+    Class to represent a register field in the register model
+
+    {{get_table_block(node) | indent}}
+    """
 
     {%- if 'encode' in node.list_properties() %}
     __enum_cls = {{get_fully_qualified_enum_type(node.get_property('encode'), top_node.parent)}}_enumcls
@@ -36,19 +46,26 @@ class {{get_fully_qualified_type_name(node)}}_cls(FieldWriteOnly):
     @classmethod
     @property
     def enum_cls(cls):
+        """
+        The enumeration class for this field
+        """
         return cls.__enum_cls
 
         {%- if node.is_sw_readable %}
     def decode_read_value(self, reg_value: int) -> {{get_fully_qualified_enum_type(node.get_property('encode'), top_node.parent)}}_enumcls:
         """
         extracts the field value from a register value, by applying the bit
-        mask and shift needed
+        mask and shift needed and conversion to the enum associated with the
+        field
 
         Args:
             value: value to decode, normally read from a register
 
         Returns:
             field value
+
+        Raises:
+            ValueError - if the value read back for the field can not be matched to the enum
         """
         field_value = super().decode_read_value(reg_value)
 
@@ -59,6 +76,17 @@ class {{get_fully_qualified_type_name(node)}}_cls(FieldWriteOnly):
             raise ValueError('Unable to match value %d' % field_value)
 
     def read(self) -> {{get_fully_qualified_enum_type(node.get_property('encode'), top_node.parent)}}_enumcls:
+        """
+        read the register and then perform the necessary actions, to report the
+        value as the enumeration including:
+
+        * application of bit mask
+        * bit shifting
+        * converting integer value to enum
+
+        Returns:
+            field value
+        """
         reg_value = self.parent_register.read()
         return self.decode_read_value(reg_value=reg_value)
         {% endif %}
@@ -90,6 +118,11 @@ class {{get_fully_qualified_type_name(node)}}_cls(RegReadOnly):
     {%- elif not node.has_sw_readable and node.has_sw_writable %}
 class {{get_fully_qualified_type_name(node)}}_cls(RegWriteOnly):
     {%- endif %}
+    """
+    Class to represent a register in the register model
+
+    {{get_table_block(node) | indent}}
+    """
 
     __slots__ = [{%- for child_node in node.children(unroll=False) -%}'__{{get_inst_name(child_node)}}'{% if not loop.last %}, {% endif %}{%- endfor %}]
 
@@ -301,6 +334,11 @@ class {{get_fully_qualified_type_name(node)}}_cls(RegWriteOnly):
 
 {%- macro regfile_class(node) %}
 class {{get_fully_qualified_type_name(node)}}_cls(RegFile):
+    """
+    Class to represent a register file in the register model
+
+    {{get_table_block(node) | indent}}
+    """
 
     __slots__ = [{%- for child_node in node.children(unroll=False) -%}'__{{get_inst_name(child_node)}}'{% if not loop.last %}, {% endif %}{%- endfor %}]
 
@@ -335,6 +373,11 @@ class {{get_fully_qualified_type_name(node)}}_cls(RegFile):
 
 {%- macro addrmap_class(node) %}
 class {{get_fully_qualified_type_name(node)}}_cls(AddressMap):
+    """
+    Class to represent a address map in the register model
+
+    {{get_table_block(node) | indent}}
+    """
 
     __slots__ = [{%- for child_node in node.children(unroll=False) -%}{%- if isinstance(child_node, systemrdlRegNode) or isinstance(child_node, systemrdlRegfileNode) or isinstance(child_node, systemrdlAddrmapNode) -%}'__{{get_inst_name(child_node)}}'{% if not loop.last %}, {% endif %}{% endif %}{%- endfor %}]
 
