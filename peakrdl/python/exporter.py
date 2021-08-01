@@ -3,6 +3,7 @@ import os
 from pathlib import Path
 from shutil import copyfile
 from typing import List
+import textwrap
 
 import autopep8
 
@@ -137,7 +138,8 @@ class PythonExporter:
                 'get_fully_qualified_enum_type': self._fully_qualified_enum_type,
                 'get_field_bitmask_hex_string' : self._get_field_bitmask_hex_string,
                 'get_field_inv_bitmask_hex_string' : self._get_field_inv_bitmask_hex_string,
-                'get_reg_max_value_hex_string' : self._get_reg_max_value_hex_string
+                'get_reg_max_value_hex_string' : self._get_reg_max_value_hex_string,
+                'get_table_block' : self._get_table_block
             }
 
             context.update(self.user_template_context)
@@ -270,7 +272,35 @@ class PythonExporter:
 
         raise RuntimeError('Failed to find parent node to reference')
 
+    def _get_table_block(self, node: Node):
+        """
 
+        Args:
+            node:
+
+        Returns:
+            A string that represents a sphinx table
+        """
+        if ('name' in node.list_properties()) or ('desc' in node.list_properties()):
+            table_strs = ['+-------------------+------------------------------------------------+',
+                          '| System RDL Field  | Value                                          |',
+                          '+===================+================================================+']
+            if ('name' in node.list_properties()):
+                name_rows = textwrap.wrap(node.get_property('name'),width = 68,initial_indent="| Name              | ", subsequent_indent="|                   | ")
+                for name_row in name_rows:
+                    table_strs.append(name_row.ljust(68,' ') + ' |')
+                table_strs.append('+-------------------+------------------------------------------------+')
+
+            if ('desc' in node.list_properties()):
+                desc_rows = textwrap.wrap(node.get_property('desc'),width = 68,initial_indent="| Description       | ", subsequent_indent="|                   | ")
+                for desc_row in desc_rows:
+                    table_strs.append(desc_row.ljust(68,' ') + ' |')
+                table_strs.append('+-------------------+------------------------------------------------+')
+
+            return '\n'.join(table_strs)
+
+        else:
+            return ''
 
     def _get_field_bitmask_hex_string(self, node: FieldNode) -> str:
         return '0x%X' % sum(2**x for x in range(node.lsb, node.msb+1))

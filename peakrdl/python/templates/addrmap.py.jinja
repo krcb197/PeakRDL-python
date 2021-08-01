@@ -5,10 +5,11 @@ This code was generated from the PeakRDL-python package
 """
 {% if top_node.uses_enum %}from enum import IntEnum, unique{% endif %}
 from typing import Tuple, NoReturn
+from collections.abc import Iterable
 
 from .peakrdl_python_types import AddressMap, Reg, RegFile
 from .peakrdl_python_types import RegReadOnly, RegWriteOnly, RegReadWrite
-from .peakrdl_python_types import FieldReadOnly, FieldWriteOnly, FieldReadWrite
+from .peakrdl_python_types import Field, FieldReadOnly, FieldWriteOnly, FieldReadWrite
 from .peakrdl_python_types import read_callback_type, write_callback_type
 
 {%- macro field_class(node) %}
@@ -200,9 +201,32 @@ class {{get_fully_qualified_type_name(node)}}_cls(RegWriteOnly):
                       }
 
         return return_dict
+
+    @property
+    def readable_fields(self) -> Iterable[Field]:
+        """
+        generator that produces has all the readable fields within the register
+        """
+        {%- for child_node in node.fields() %}
+        {%- if child_node.is_sw_readable == True %}
+        yield self.{{get_inst_name(child_node)}}
+        {%- endif -%}
+        {% endfor %}
+
     {% endif %}
 
     {% if node.has_sw_writable %}
+    @property
+    def writeble_fields(self) -> Iterable[Field]:
+        """
+        generator that produces has all the writable fields within the register
+        """
+        {%- for child_node in node.fields() %}
+        {%- if child_node.is_sw_writable == True %}
+        yield self.{{get_inst_name(child_node)}}
+        {%- endif -%}
+        {% endfor %}
+
     {% if node.has_sw_readable %}
     def write_fields(self, **kwargs) -> NoReturn:
         """
