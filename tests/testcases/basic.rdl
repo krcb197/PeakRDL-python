@@ -21,4 +21,12 @@ addrmap basic {
 
     } basicreg_c;
 
+    reg {
+        default sw = w;
+        default hw = r;
+        field { fieldwidth=1;  } basicfield_f[0:0];
+        field {  } basicfield_g[2:1];
+
+    } basicreg_d;
+
 };

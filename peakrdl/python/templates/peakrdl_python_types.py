@@ -1,6 +1,6 @@
 
 import logging
-from typing import Callable, TypeVar
+from typing import Callable, TypeVar, NoReturn
 
 read_callback_type = Callable[[int], int]
 write_callback_type = Callable[[int, int], type(None)]
@@ -15,7 +15,7 @@ class _Base:
         self._logger.info(f'creating instance of {self.__class__}')
 
     @property
-    def _logger(self):
+    def _logger(self) -> logging.Logger:
         return self.__logger
 
 
@@ -30,10 +30,16 @@ class _Node(_Base):
 
     @property
     def base_address(self) -> int:
+        """
+        address of the node
+        """
         return self.__base_address
 
     @property
     def address_width(self) -> int:
+        """
+        width of the address in bits
+        """
         return self.__address_width
 
     @property
@@ -45,6 +51,13 @@ class _Node(_Base):
 
 
 class AddressMap(_Node):
+    """
+    base class of address map wrappers
+
+    Note:
+        It is not expected that this class will be instantiated under normal
+        circumstances however, it is useful for type checking
+    """
 
     __slots__ = []
 
@@ -52,6 +65,13 @@ class AddressMap(_Node):
 
 
 class RegFile(_Node):
+    """
+    base class of register file wrappers
+
+    Note:
+        It is not expected that this class will be instantiated under normal
+        circumstances however, it is useful for type checking
+    """
 
     __slots__ = []
 
@@ -161,7 +181,7 @@ class RegWriteOnly(Reg):
                          logger_handle=logger_handle)
         self.__write_callback = write_callback
 
-    def write(self, data: int):
+    def write(self, data: int) -> NoReturn:
         """Writes a value to the register
 
         Args:
@@ -225,7 +245,7 @@ class RegReadWrite(Reg):
         self.__write_callback = write_callback
         self.__read_callback = read_callback
 
-    def write(self, data: int):
+    def write(self, data: int) -> NoReturn:
         """Writes a value to the register
 
         Args:
@@ -269,9 +289,9 @@ class Field(_Base):
         circumstances however, it is useful for type checking
     """
 
-    __slots__ = ['__parent_register', '__msb', '__lsb', '__bitmask']
+    __slots__ = ['__parent_register', '__msb', '__lsb', '__bitmask', '__width']
 
-    def __init__(self, parent_register: Reg,
+    def __init__(self, parent_register: Reg, width: int,
                  msb: int, lsb: int, logger_handle: str):
 
         super().__init__(logger_handle=logger_handle)
@@ -280,6 +300,14 @@ class Field(_Base):
             raise TypeError('parent register must be of type reg_cls '
                             'but got %s' % type(parent_register))
         self.__parent_register = parent_register
+
+        if width < 1:
+            raise ValueError('width must be greater than 0')
+
+        if width > self.parent_register.data_width:
+            raise ValueError('width can not be greater than parent width')
+
+        self.__width = width
 
         if msb < lsb:
             raise ValueError('field msb can not be less than the lsb')
@@ -292,6 +320,9 @@ class Field(_Base):
 
         if lsb > self.parent_register.data_width:
             raise ValueError('field lsb must be less than the parent register width')
+
+        if msb - lsb + 1 != width:
+            raise ValueError('field width defined by lsb and msb does not match specified width')
 
         self.__msb = msb
         self.__lsb = lsb
@@ -334,11 +365,11 @@ class Field(_Base):
         return self.__msb
 
     @property
-    def field_width(self) -> int:
+    def width(self) -> int:
         """
         The width of the field in bits
         """
-        return self.msb - self.lsb + 1
+        return self.__width
 
     @property
     def max_value(self) -> int:
@@ -351,7 +382,7 @@ class Field(_Base):
         * 32-bit field returns 0xFFFF_FFFF (4294967295)
 
         """
-        return (2 ** self.field_width) - 1
+        return (2 ** self.width) - 1
 
     @property
     def bitmask(self) -> int:
@@ -391,6 +422,7 @@ class FieldReadOnly(Field):
 
     Args:
         parent_register: register within which the field resides
+        width: field width in bits
         lsb: bit position of the field lsb in the register
         msb: bit position of the field lsb in the register
         logger_handle: name to be used logging messages associate with this
@@ -399,7 +431,7 @@ class FieldReadOnly(Field):
     """
     __slots__ = []
 
-    def __init__(self, parent_register: readable_reg_type,
+    def __init__(self, parent_register: readable_reg_type, width:int,
                  msb: int, lsb: int, logger_handle: str):
 
         if not isinstance(parent_register, (RegReadWrite, RegReadOnly)):
@@ -407,11 +439,44 @@ class FieldReadOnly(Field):
                             ' got %s' % type(parent_register))
 
         super().__init__(logger_handle=logger_handle,
+                         width=width,
                          msb=msb, lsb=lsb,
                          parent_register=parent_register)
 
-    def read(self):
-        return (self.parent_register.read() & self.bitmask) >> self.lsb
+    def decode_read_value(self, value) -> int:
+        """
+        extracts the field value from a register value, by applying the bit
+        mask and shift needed
+
+        Args:
+            value: value to decode, normally read from a register
+
+        Returns:
+            field value
+        """
+        if not isinstance(value, int):
+            raise TypeError('value must be an int but got %s' % type(value))
+
+        if value < 0:
+            raise ValueError('value to be decoded must be greater '
+                             'than or equal to 0')
+
+        if value > self.parent_register.max_value:
+            raise ValueError(f'value to bede coded must be less than or equal '
+                             f'to {self.parent_register.max_value:d}')
+
+        return (value & self.bitmask) >> self.lsb
+
+    def read(self) -> int:
+        """
+        Reads the register that this field is located in and retries the field
+        value applying the required masking and shifting
+
+        Returns:
+            field value
+
+        """
+        return self.decode_read_value(self.parent_register.read())
 
     @Field.parent_register.getter
     def parent_register(self) -> readable_reg_type:
@@ -428,6 +493,7 @@ class FieldWriteOnly(Field):
 
     Args:
         parent_register: register within which the field resides
+        width: field width in bits
         lsb: bit position of the field lsb in the register
         msb: bit position of the field lsb in the register
         logger_handle: name to be used logging messages associate with this
@@ -436,7 +502,7 @@ class FieldWriteOnly(Field):
     """
     __slots__ = []
 
-    def __init__(self, parent_register: writeable_reg_type,
+    def __init__(self, parent_register: writeable_reg_type, width:int,
                  msb: int, lsb: int, logger_handle: str):
 
         if not isinstance(parent_register, (RegReadWrite, RegWriteOnly)):
@@ -444,11 +510,12 @@ class FieldWriteOnly(Field):
                             'got %s' % type(parent_register))
 
         super().__init__(logger_handle=logger_handle,
+                         width=width,
                          msb=msb,
                          lsb=lsb,
                          parent_register=parent_register)
 
-    def write(self, value):
+    def write(self, value) -> NoReturn:
         # TODO need to consider what makes sense here, the following special
         #      cases can be handled
         #      * field is the same width as the reg
@@ -468,6 +535,7 @@ class FieldReadWrite(FieldReadOnly, FieldWriteOnly):
 
     Args:
         parent_register: register within which the field resides
+        width: field width in bits
         lsb: bit position of the field lsb in the register
         msb: bit position of the field lsb in the register
         logger_handle: name to be used logging messages associate with this
@@ -477,6 +545,7 @@ class FieldReadWrite(FieldReadOnly, FieldWriteOnly):
     __slots__ = []
 
     def __init__(self, parent_register: RegReadWrite,
+                 width: int,
                  msb: int,
                  lsb: int,
                  logger_handle: str):
@@ -486,11 +555,35 @@ class FieldReadWrite(FieldReadOnly, FieldWriteOnly):
                             ' got %s' % type(parent_register))
 
         super().__init__(logger_handle=logger_handle,
+                         width=width,
                          msb=msb,
                          lsb=lsb,
                          parent_register=parent_register)
 
-    def write(self, value):
+    def encode_write_value(self, value: int) -> int:
+
+        if not isinstance(value, int):
+            raise TypeError('value must be an int but got %s' % type(value))
+
+        if value < 0:
+            raise ValueError('value to be written to register must be greater '
+                             'than or equal to 0')
+
+        if value > self.max_value:
+            raise ValueError('value to be written to register must be less '
+                             'than or equal to %d' % self.max_value)
+
+        return value << self.lsb
+
+    def write(self, value: int) -> NoReturn:
+        """
+        perform a read-modify-write on the register updating the field with the
+        value provided
+
+        Args:
+            value: field value to update to
+
+        """
 
         if not isinstance(value, int):
             raise TypeError('value must be an int but got %s' % type(value))
@@ -507,7 +600,7 @@ class FieldReadWrite(FieldReadOnly, FieldWriteOnly):
                 (self.lsb == 0):
             # special case where the field occupies the whole register,
             # there a straight write can be performed
-            new_reg_value = value
+            new_reg_value = (value << self.lsb)
         else:
             # do a read, modify write
             reg_value = self.parent_register.read()

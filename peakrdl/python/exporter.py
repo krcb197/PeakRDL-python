@@ -62,11 +62,6 @@ class PythonExporter:
             name = name or func.__name__.replace('is_', '')
             self.jj_env.tests[name] = func
 
-        #add_filter(self.full_array_dimensions)
-        #add_filter(self.full_array_ranges)
-        #add_filter(self.full_array_indexes)
-        #add_filter(self.bit_range)
-
         # Dictionary of root-level type definitions
         # key = definition type name
         # value = representative object
@@ -84,7 +79,6 @@ class PythonExporter:
         path: str
             Output package path.
         """
-
 
         # Check for stray kwargs
         if kwargs:
@@ -170,6 +164,13 @@ class PythonExporter:
 
         copyfile(src=os.path.join(os.path.dirname(__file__), "templates", "peakrdl_python_types.py"),
                  dst=os.path.join(os.path.join(package_path, 'reg_model'), "peakrdl_python_types.py" ))
+
+        with open(os.path.join(package_path, 'reg_model','__init__.py'), 'w') as fid:
+            fid.write('pass\n')
+        with open(os.path.join(package_path, 'tests','__init__.py'), 'w') as fid:
+            fid.write('pass\n')
+        with open(os.path.join(package_path, '__init__.py'), 'w') as fid:
+             fid.write('pass\n')
 
         return [self._get_inst_name(m) for m in modules]
 

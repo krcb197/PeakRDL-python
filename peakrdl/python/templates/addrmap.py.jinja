@@ -1,5 +1,5 @@
 {% if top_node.uses_enum %}from enum import IntEnum, unique{% endif %}
-from typing import Tuple
+from typing import Tuple, NoReturn
 
 from .peakrdl_python_types import AddressMap, Reg, RegFile
 from .peakrdl_python_types import RegReadOnly, RegWriteOnly, RegReadWrite
@@ -24,8 +24,10 @@ class {{get_fully_qualified_type_name(node)}}_cls(FieldWriteOnly):
     def __init__(self, parent_register: Reg,
                  lsb: int,
                  msb: int,
+                 width: int,
                  logger_handle: str):
         super().__init__(parent_register=parent_register,
+                         width=width,
                          lsb=lsb,
                          msb=msb,
                          logger_handle=logger_handle)
@@ -37,22 +39,39 @@ class {{get_fully_qualified_type_name(node)}}_cls(FieldWriteOnly):
         return cls.__enum_cls
 
         {%- if node.is_sw_readable %}
-    @classmethod
-    def __reverse_enum_value_lookup(cls, int_value: int) -> {{get_fully_qualified_enum_type(node.get_property('encode'), top_node.parent)}}_enumcls:
+    def decode_read_value(self, reg_value: int) -> {{get_fully_qualified_enum_type(node.get_property('encode'), top_node.parent)}}_enumcls:
+        """
+        extracts the field value from a register value, by applying the bit
+        mask and shift needed
 
-        for potential_value in cls.__enum_cls:
-            if int_value == potential_value.value:
+        Args:
+            value: value to decode, normally read from a register
+
+        Returns:
+            field value
+        """
+        field_value = super().decode_read_value(reg_value)
+
+        for potential_value in self.enum_cls:
+            if field_value == potential_value.value:
                 return potential_value
         else:
-            raise('Unable to match value %d' % int_value)
+            raise ValueError('Unable to match value %d' % field_value)
 
     def read(self) -> {{get_fully_qualified_enum_type(node.get_property('encode'), top_node.parent)}}_enumcls:
-        int_value = super().read()
-        return self.__reverse_enum_value_lookup(int_value)
+        reg_value = self.parent_register.read()
+        return self.decode_read_value(reg_value=reg_value)
         {% endif %}
 
         {%- if node.is_sw_writable %}
-    def write(self, value : {{get_fully_qualified_enum_type(node.get_property('encode'), top_node.parent)}}_enumcls):
+    def encode_write_value(self, value: {{get_fully_qualified_enum_type(node.get_property('encode'), top_node.parent)}}_enumcls) -> int:
+
+        if not isinstance(value, self.enum_cls):
+            raise TypeError('value must be an {{get_fully_qualified_enum_type(node.get_property('encode'), top_node.parent)}}_enumcls but got %s' % type(value))
+
+        return super().encode_write_value(value.value)
+
+    def write(self, value : {{get_fully_qualified_enum_type(node.get_property('encode'), top_node.parent)}}_enumcls) -> NoReturn:
 
         if not isinstance(value, self.enum_cls):
             raise TypeError('value must be an {{get_fully_qualified_enum_type(node.get_property('encode'), top_node.parent)}}_enumcls but got %s' % type(value))
@@ -124,11 +143,73 @@ class {{get_fully_qualified_type_name(node)}}_cls(RegWriteOnly):
         {%- for child_node in node.fields() %}
             {%- if isinstance(child_node, systemrdlFieldNode) %}
         self.__{{get_inst_name(child_node)}} = {{get_fully_qualified_type_name(child_node)}}_cls(parent_register=self,
+                                                                                 width={{child_node.width}},
                                                                                  lsb={{child_node.lsb}},
                                                                                  msb={{child_node.msb}},
                                                                                  logger_handle=logger_handle+'.{{get_inst_name(child_node)}}')
             {%- endif -%}
         {%- endfor %}
+
+    {% if node.has_sw_readable %}
+    def read_fields(self):
+        """
+        read the register and return a dictionary of the field values
+        """
+        reg_value = self.read()
+
+        return_dict = {
+                        {%- for child_node in node.fields() %}
+                        {%- if child_node.is_sw_readable == True %}
+                        '{{get_inst_name(child_node)}}' : self.{{get_inst_name(child_node)}}.decode_read_value(reg_value)
+                        {%- endif -%}
+                        {%- if not loop.last -%} ,  {%- endif -%}
+                        {% endfor %}
+                      }
+
+        return return_dict
+    {% endif %}
+
+    {% if node.has_sw_writable %}
+    {% if node.has_sw_readable %}
+    def write_fields(self, **kwargs) -> NoReturn:
+        """
+        Do a read-modify-write to the register, updating any field included in
+        the arguments
+        """
+
+        if len(kwargs) == 0:
+            raise ValueError('no command args')
+
+        bit_mask = 0
+        reg_value = 0
+        {%- for child_node in node.fields() -%}
+        {%- if child_node.is_sw_writable == True %}
+        if {{get_inst_name(child_node)}} in kwargs.values():
+            reg_value |= self.{{get_inst_name(child_node)}}.encode_write_value(kwargs[{{get_inst_name(child_node)}}])
+            bit_mask |= self.{{get_inst_name(child_node)}}.bitmask
+            kwargs.pop({{get_inst_name(child_node)}})
+        {%- endif -%}
+        {%- endfor %}
+        if len(kwargs) != 0:
+            # left over unhandled arguments
+            raise ValueError('unrecognised arguments in field')
+
+        inverse_bit_mask = self.max_value ^ self.bit_mask
+
+        reg_value = self.read()
+
+        self.write((reg_value & inverse_bit_mask) | reg_value)
+
+
+
+    {% else %}
+    def write_fields(self, {%- for child_node in node.fields() -%} {{get_inst_name(child_node)}} : int{%- if not loop.last -%},{%- endif -%}{%- endfor -%}) -> NoReturn:
+        """
+        Do a write to the register, updating all fields
+        """
+        pass
+    {% endif %}
+    {% endif %}
 
     # build the properties for the fields
     {%- for child_node in node.children(unroll=False) -%}
@@ -138,6 +219,8 @@ class {{get_fully_qualified_type_name(node)}}_cls(RegWriteOnly):
         return self.__{{get_inst_name(child_node)}}
         {% endif %}
     {%- endfor %}
+
+
 
 {%- endmacro %}
 

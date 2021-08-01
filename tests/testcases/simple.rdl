@@ -1,0 +1,8 @@
+addrmap simple {
+
+    reg {
+        default sw = rw;
+        default hw = r;
+        field {} field_a[31:0];
+    } reg_a;
+};

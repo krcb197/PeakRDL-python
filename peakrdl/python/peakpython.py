@@ -30,6 +30,9 @@ def parse_args():
                          help='run Flake8 lint on the generated python')
     checker.add_argument('--test', action='store_true',
                          help='run unittests for the created')
+    checker.add_argument('--coverage', action='store_true',
+                         help='run a coverage report on the unittests')
+    checker.add_argument('--html_coverage_out', help='output director (default: %(default)s)')
 
     temp = parser.parse_args()
 
@@ -64,11 +67,17 @@ if __name__ == '__main__':
         print('***************************************************************')
         print('* Unit Test Run                                               *')
         print('***************************************************************')
-        cov = coverage.Coverage()
-        cov.start()
-        tests = unittest.TestLoader().discover(start_dir=os.path.join(args.outdir, spec.inst_name, 'tests'), top_level_dir='.')
+        if args.coverage:
+            cov = coverage.Coverage(include=[f'*\\{spec.inst_name}\\reg_model\\*.py',
+                                             f'*\\{spec.inst_name}\\tests\\*.py'])
+            cov.start()
+        tests = unittest.TestLoader().discover(start_dir=os.path.join(args.outdir, spec.inst_name, 'tests'), top_level_dir=args.outdir)
         runner = unittest.TextTestRunner()
         result = runner.run(tests)
-        cov.stop()
-        cov.save()
-        cov.html_report()
+
+        if args.coverage:
+            cov.stop()
+            #cov.save()
+
+        if args.html_coverage_out != None:
+            cov.html_report(directory=args.html_coverage_out )
