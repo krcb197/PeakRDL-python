@@ -32,17 +32,6 @@ class {{get_fully_qualified_type_name(node)}}_cls(FieldWriteOnly):
 
     __slots__ = []
 
-    def __init__(self, parent_register: Reg,
-                 lsb: int,
-                 msb: int,
-                 width: int,
-                 logger_handle: str):
-        super().__init__(parent_register=parent_register,
-                         width=width,
-                         lsb=lsb,
-                         msb=msb,
-                         logger_handle=logger_handle)
-
     {%- if 'encode' in node.list_properties() %}
     @classmethod
     @property
@@ -135,42 +124,48 @@ class {{get_fully_qualified_type_name(node)}}_cls(RegWriteOnly):
                  logger_handle,
                  base_address,
                  address_width,
-                 data_width):
+                 data_width,
+                 inst_name):
 
         super().__init__(read_callback=read_callback,
                          write_callback=write_callback,
                          base_address=base_address,
                          address_width=address_width,
                          data_width=data_width,
-                         logger_handle=logger_handle)
+                         logger_handle=logger_handle,
+                         inst_name=inst_name)
     {%- elif node.has_sw_readable and not node.has_sw_writable %}
 
     def __init__(self,
                  read_callback: read_callback_type,
                  logger_handle,
-                 base_address={{top_node.absolute_address}},
-                 address_width=32,
-                 data_width=32):
+                 base_address,
+                 address_width,
+                 data_width,
+                 inst_name):
 
         super().__init__(read_callback=read_callback,
                          base_address=base_address,
                          address_width=address_width,
                          data_width=data_width,
-                         logger_handle=logger_handle)
+                         logger_handle=logger_handle,
+                         inst_name=inst_name)
     {%- elif not node.has_sw_readable and node.has_sw_writable %}
 
     def __init__(self,
                  write_callback: write_callback_type,
                  logger_handle,
-                 base_address={{top_node.absolute_address}},
-                 address_width=32,
-                 data_width=32):
+                 base_address,
+                 address_width,
+                 data_width,
+                 inst_name):
 
         super().__init__(write_callback=write_callback,
                          base_address=base_address,
                          address_width=address_width,
                          data_width=data_width,
-                         logger_handle=logger_handle)
+                         logger_handle=logger_handle,
+                         inst_name=inst_name)
     {%- endif %}
 
         # build the field attributes
@@ -180,7 +175,8 @@ class {{get_fully_qualified_type_name(node)}}_cls(RegWriteOnly):
                                                                                  width={{child_node.width}},
                                                                                  lsb={{child_node.lsb}},
                                                                                  msb={{child_node.msb}},
-                                                                                 logger_handle=logger_handle+'.{{get_inst_name(child_node)}}')
+                                                                                 logger_handle=logger_handle+'.{{get_inst_name(child_node)}}',
+                                                                                 inst_name='{{get_inst_name(child_node)}}')
             {%- endif -%}
         {%- endfor %}
 
@@ -217,7 +213,7 @@ class {{get_fully_qualified_type_name(node)}}_cls(RegWriteOnly):
 
     {% if node.has_sw_writable %}
     @property
-    def writeble_fields(self) -> Iterable[Field]:
+    def writable_fields(self) -> Iterable[Field]:
         """
         generator that produces has all the writable fields within the register
         """
@@ -290,7 +286,8 @@ class {{get_fully_qualified_type_name(node)}}_cls(RegWriteOnly):
                                                                    write_callback=write_callback,
                                                                    base_address=base_address+{{node.raw_address_offset}}+({{node_instance_index}} * {{node.array_stride}}),
                                                                    address_width=self.address_width,data_width=self.data_width,
-                                                                   logger_handle=logger_handle+'.{{get_inst_name(node)}}[{{node_instance_index}}]')
+                                                                   logger_handle=logger_handle+'.{{get_inst_name(node)}}[{{node_instance_index}}]',
+                                                                                   inst_name='{{get_inst_name(node)}}')
                                        {%- if not loop.last -%} ,  {%- endif -%}
                                        {% endfor %} )
             {%- elif node.has_sw_readable and not node.has_sw_writable %}
@@ -299,7 +296,8 @@ class {{get_fully_qualified_type_name(node)}}_cls(RegWriteOnly):
                                                                    base_address=base_address+{{node.raw_address_offset}}+({{node_instance_index}} * {{node.array_stride}}),
                                                                    address_width=self.address_width,
                                                                    data_width=self.data_width,
-                                                                   logger_handle=logger_handle+'.{{get_inst_name(node)}}[{{node_instance_index}}]')
+                                                                   logger_handle=logger_handle+'.{{get_inst_name(node)}}[{{node_instance_index}}]',
+                                                                                   inst_name='{{get_inst_name(node)}}')
                                        {%- if not loop.last -%} ,  {%- endif -%}
                                        {% endfor %} )
             {%- elif not node.has_sw_readable and node.has_sw_writable %}
@@ -308,7 +306,8 @@ class {{get_fully_qualified_type_name(node)}}_cls(RegWriteOnly):
                                                                    base_address=base_address+{{node.raw_address_offset}}+({{node_instance_index}} * {{node.array_stride}}),
                                                                    address_width=self.address_width,
                                                                    data_width=self.data_width,
-                                                                   logger_handle=logger_handle+'.{{get_inst_name(node)}}[{{node_instance_index}}]')
+                                                                   logger_handle=logger_handle+'.{{get_inst_name(node)}}[{{node_instance_index}}]',
+                                                                                   inst_name='{{get_inst_name(node)}}')
                                        {%- if not loop.last -%} ,  {%- endif -%}
                                        {% endfor %} )
             {%- endif %}
@@ -319,19 +318,22 @@ class {{get_fully_qualified_type_name(node)}}_cls(RegWriteOnly):
                                                                  base_address=base_address+{{node.address_offset}},
                                                                  address_width=self.address_width,
                                                                  data_width=self.data_width,
-                                                                 logger_handle=logger_handle+'.{{get_inst_name(node)}}')
+                                                                 logger_handle=logger_handle+'.{{get_inst_name(node)}}',
+                                                                                   inst_name='{{get_inst_name(node)}}')
             {%- elif node.has_sw_readable and not node.has_sw_writable %}
     self.__{{get_inst_name(node)}} = {{get_fully_qualified_type_name(node)}}_cls(read_callback=read_callback,
                                                                  base_address=base_address+{{node.address_offset}},
                                                                  address_width=self.address_width,
                                                                  data_width=self.data_width,
-                                                                 logger_handle=logger_handle+'.{{get_inst_name(node)}}')
+                                                                 logger_handle=logger_handle+'.{{get_inst_name(node)}}',
+                                                                                   inst_name='{{get_inst_name(node)}}')
             {%- elif not node.has_sw_readable and node.has_sw_writable %}
     self.__{{get_inst_name(node)}} = {{get_fully_qualified_type_name(node)}}_cls(write_callback=write_callback,
                                                                                  base_address=base_address+{{node.address_offset}},
                                                                                  address_width=self.address_width,
                                                                                  data_width=self.data_width,
-                                                                                 logger_handle=logger_handle+'.{{get_inst_name(node)}}')
+                                                                                 logger_handle=logger_handle+'.{{get_inst_name(node)}}',
+                                                                                   inst_name='{{get_inst_name(node)}}')
             {%- endif %}
         {%- endif %}
     {%- elif isinstance(node, systemrdlRegfileNode) or isinstance(node, systemrdlAddrmapNode) %}
@@ -342,7 +344,8 @@ class {{get_fully_qualified_type_name(node)}}_cls(RegWriteOnly):
                                                                                    base_address=base_address+{{node.raw_address_offset}}+({{node_instance_index}} * {{node.array_stride}}),
                                                                                    address_width=self.address_width,
                                                                                    data_width=self.data_width,
-                                                                                   logger_handle=logger_handle+'.{{get_inst_name(node)}}[{{node_instance_index}}]')
+                                                                                   logger_handle=logger_handle+'.{{get_inst_name(node)}}[{{node_instance_index}}]',
+                                                                                   inst_name='{{get_inst_name(node)}}')
                                        {%- if not loop.last -%} ,  {%- endif -%}
                                        {% endfor %} )
         {%- else -%}
@@ -351,7 +354,8 @@ class {{get_fully_qualified_type_name(node)}}_cls(RegWriteOnly):
                                                                                  base_address=base_address+{{node.address_offset}},
                                                                                  address_width=self.address_width,
                                                                                  data_width=self.data_width,
-                                                                                 logger_handle=logger_handle+'.{{get_inst_name(node)}}')
+                                                                                 logger_handle=logger_handle+'.{{get_inst_name(node)}}',
+                                                                                 inst_name='{{get_inst_name(node)}}')
         {%- endif %}
     {%- endif %}
 {%- endmacro %}
@@ -371,13 +375,15 @@ class {{get_fully_qualified_type_name(node)}}_cls(RegFile):
                  write_callback: write_callback_type,
                  logger_handle:str,
                  base_address:int,
-                 address_width=32,
-                 data_width=32):
+                 address_width,
+                 data_width,
+                 inst_name):
 
         super().__init__(base_address=base_address,
                          address_width=address_width,
                          data_width=data_width,
-                         logger_handle=logger_handle)
+                         logger_handle=logger_handle,
+                         inst_name=inst_name)
 
         # instance of objects within the class
         {%- for child_node in node.children(unroll=False) -%}
@@ -410,13 +416,15 @@ class {{get_fully_qualified_type_name(node)}}_cls(AddressMap):
                  write_callback: write_callback_type,
                  base_address:int {%- if node == top_node -%}={{top_node.absolute_address}}{%- endif -%},
                  logger_handle:str {%- if node == top_node -%}='reg_model.{{top_node.get_path()}}'{%- endif -%},
+                 inst_name{%- if node == top_node -%}='{{get_inst_name(node)}}'{%- endif -%},
                  address_width=32,
                  data_width=32):
 
         super().__init__(base_address=base_address,
                          address_width=address_width,
                          data_width=data_width,
-                         logger_handle=logger_handle)
+                         logger_handle=logger_handle,
+                         inst_name=inst_name)
 
         {% for child_node in node.children(unroll=False) -%}
             {{ regfile_or_addr_instance(child_node) | indent }}
