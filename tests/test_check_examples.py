@@ -6,6 +6,7 @@ import string
 import re
 import logging.config
 import logging
+from itertools import combinations
 
 import unittest
 from unittest.mock import patch
@@ -300,7 +301,7 @@ class BaseTestContainer:
                         # check the read has not been called in the write test
                         read_callback_mock.assert_not_called()
 
-        def test_field_read_and_write(self):
+        def test_int_field_read_and_write(self):
             """
             Check the ability to read and write to all registers
             """
@@ -313,121 +314,141 @@ class BaseTestContainer:
                     logger.info('checking read/write - node : {fqnode_path}'.format(fqnode_path=node.get_path()))
 
                     if 'encode' in node.list_properties():
-                        # enumerated field
+                        # skip the field if it is an enumerated fields
+                        continue
 
-                        with patch(__name__ + '.' + 'write_addr_space') as write_callback_mock,\
-                                patch(__name__ + '.' + 'read_addr_space', return_value=0) as read_callback_mock:
-                            enum_cls = dut_obj.enum_cls
+                    with patch(__name__ + '.' + 'write_addr_space') as write_callback_mock,\
+                            patch(__name__ + '.' + 'read_addr_space', return_value=0) as read_callback_mock:
 
-                            if node.is_sw_readable:
-                                # read back test
-                                legal_values = []
-                                for possible_enum_value in enum_cls:
-                                    # set the simulated read_back value to
-                                    random_value = random.randrange(0, dut_obj.register_data_width + 1)
-                                    read_callback_mock.reset_mock()
-                                    read_callback_mock.return_value = (random_value & dut_obj.inverse_bitmask) | \
-                                                                      (dut_obj.bitmask & (possible_enum_value.value << dut_obj.lsb))
+                        if node.is_sw_readable:
 
-                                    self.assertEqual(dut_obj.read(), possible_enum_value)
-                                    legal_values.append(possible_enum_value.value)
-                                    read_callback_mock.assert_called_once()
+                            #read back - zero, this is achieved by setting the register to inverse bitmask
+                            read_callback_mock.reset_mock()
+                            read_callback_mock.return_value = dut_obj.inverse_bitmask
+                            self.assertEqual(dut_obj.read(), 0)
+                            read_callback_mock.assert_called_once()
 
-                                read_callback_mock.reset_mock()
+                            # read back - max_value, this is achieved by setting the register to bitmask
+                            read_callback_mock.reset_mock()
+                            read_callback_mock.return_value = dut_obj.bitmask
+                            self.assertEqual(dut_obj.read(), dut_obj.max_value)
+                            read_callback_mock.assert_called_once()
 
-                                # check that other values of the field int
-                                # that don't appear in the enum generate an
-                                # error
-                                possible_field_values = 2 ** dut_obj.width
+                            # read back - random value
+                            read_callback_mock.reset_mock()
+                            random_value = random.randrange(0, dut_obj.parent_register.max_value + 1)
+                            read_callback_mock.return_value = random_value
+                            random_field_value = (random_value & dut_obj.bitmask) >> dut_obj.lsb
+                            self.assertEqual(dut_obj.read(), random_field_value)
+                            read_callback_mock.assert_called_once()
 
-                                if possible_field_values != len(enum_cls):
-                                    for field_value in range(0, dut_obj.max_value+1):
-                                        if field_value in legal_values:
-                                            continue
-                                        with self.assertRaises(ValueError):
-                                            read_callback_mock.reset_mock()
-                                            random_value = random.randrange(0, dut_obj.register_data_width + 1)
-                                            read_callback_mock.return_value = ( random_value & dut_obj.inverse_bitmask) | ( dut_obj.bitmask & ( field_value << dut_obj.lsb))
-                                            decode_field_value = dut_obj.read()
+                            # at the end of the read tests the write should not have been called
+                            read_callback_mock.reset_mock()
 
+                        write_callback_mock.assert_not_called()
 
-                            write_callback_mock.assert_not_called()
-
-                            # write back test
-                            if node.is_sw_writable:
-                                for possible_enum_value in enum_cls:
-                                    random_value = random.randrange(0, dut_obj.register_data_width + 1)
+                        # check the write
+                        if node.is_sw_writable:
+                            random_reg_value = random.randrange(0, dut_obj.parent_register.max_value + 1)
+                            random_field_value = random.randrange(0, dut_obj.max_value + 1)
+                            for reg_base_value in [0, dut_obj.parent_register.max_value, random_reg_value]:
+                                for field_value in [0, dut_obj.max_value, random_field_value]:
                                     read_callback_mock.reset_mock()
                                     write_callback_mock.reset_mock()
-                                    read_callback_mock.return_value = random_value
+                                    read_callback_mock.return_value = reg_base_value
 
-                                    dut_obj.write(possible_enum_value)
+                                    dut_obj.write(field_value)
 
-                                    read_callback_mock.assert_called_once()
+                                    if (((dut_obj.msb+1) - dut_obj.lsb) < dut_obj.parent_register.data_width) and (node.parent.has_sw_readable):
+                                        read_callback_mock.assert_called_once()
                                     write_callback_mock.assert_called_once()
-                                    self.assertEqual(write_callback_mock.call_args.args[0], dut_obj.parent_register.base_address)
-                                    self.assertEqual(write_callback_mock.call_args.args[1], (random_value & dut_obj.inverse_bitmask) | \
-                                                                                            (dut_obj.bitmask & (possible_enum_value.value << dut_obj.lsb)))
-
-                    else:
-                        # normal integer field
-                        with patch(__name__ + '.' + 'write_addr_space') as write_callback_mock,\
-                                patch(__name__ + '.' + 'read_addr_space', return_value=0) as read_callback_mock:
-
-                            if node.is_sw_readable:
-
-                                #read back - zero, this is achieved by setting the register to inverse bitmask
-                                read_callback_mock.reset_mock()
-                                read_callback_mock.return_value = dut_obj.inverse_bitmask
-                                self.assertEqual(dut_obj.read(), 0)
-                                read_callback_mock.assert_called_once()
-
-                                # read back - max_value, this is achieved by setting the register to bitmask
-                                read_callback_mock.reset_mock()
-                                read_callback_mock.return_value = dut_obj.bitmask
-                                self.assertEqual(dut_obj.read(), dut_obj.max_value)
-                                read_callback_mock.assert_called_once()
-
-                                # read back - random value
-                                read_callback_mock.reset_mock()
-                                random_value = random.randrange(0, dut_obj.parent_register.max_value + 1)
-                                read_callback_mock.return_value = random_value
-                                random_field_value = (random_value & dut_obj.bitmask) >> dut_obj.lsb
-                                self.assertEqual(dut_obj.read(), random_field_value)
-                                read_callback_mock.assert_called_once()
-
-                                # at the end of the read tests the write should not have been called
-                                read_callback_mock.reset_mock()
-
-                            write_callback_mock.assert_not_called()
-
-                            # check the write
-                            if node.is_sw_writable:
-                                random_reg_value = random.randrange(0, dut_obj.parent_register.max_value + 1)
-                                random_field_value = random.randrange(0, dut_obj.max_value + 1)
-                                for reg_base_value in [0, dut_obj.parent_register.max_value, random_reg_value]:
-                                    for field_value in [0, dut_obj.max_value, random_field_value]:
-                                        read_callback_mock.reset_mock()
-                                        write_callback_mock.reset_mock()
-                                        read_callback_mock.return_value = reg_base_value
-
-                                        dut_obj.write(field_value)
-
-                                        if ((dut_obj.msb+1) - dut_obj.lsb) < dut_obj.parent_register.data_width:
-                                            read_callback_mock.assert_called_once()
-                                        write_callback_mock.assert_called_once()
-                                        self.assertEqual(write_callback_mock.call_args.args[0],
-                                                         dut_obj.parent_register.base_address)
+                                    self.assertEqual(write_callback_mock.call_args.args[0],
+                                                     dut_obj.parent_register.base_address)
+                                    if node.parent.has_sw_readable:
                                         self.assertEqual(write_callback_mock.call_args.args[1],
                                                          (reg_base_value & dut_obj.inverse_bitmask) | \
                                                          (dut_obj.bitmask & (field_value << dut_obj.lsb)))
+                                    else:
+                                        # if the register is not readable, the value is simply written
+                                        self.assertEqual(write_callback_mock.call_args.args[1],
+                                                         field_value << dut_obj.lsb)
 
-                                # check invalid write values bounce
-                                with self.assertRaises(ValueError):
-                                    dut_obj.write(dut_obj.max_value + 1)
+                            # check invalid write values bounce
+                            with self.assertRaises(ValueError):
+                                dut_obj.write(dut_obj.max_value + 1)
 
-                                with self.assertRaises(ValueError):
-                                    dut_obj.write(-1)
+                            with self.assertRaises(ValueError):
+                                dut_obj.write(-1)
+
+        def test_enum_field_read_and_write(self):
+            """
+            Check the ability to read and write to all registers
+            """
+            logger = logging.getLogger(self.id())
+
+            for node in self.spec.descendants(unroll=True):
+                dut_obj = self._get_dut_object(node)
+
+                if isinstance(node, FieldNode):
+                    logger.info('checking read/write - node : {fqnode_path}'.format(fqnode_path=node.get_path()))
+
+                    if 'encode' not in node.list_properties():
+                        # skip any field that is not an enum
+                        continue
+
+                    with patch(__name__ + '.' + 'write_addr_space') as write_callback_mock,\
+                            patch(__name__ + '.' + 'read_addr_space', return_value=0) as read_callback_mock:
+                        enum_cls = dut_obj.enum_cls
+
+                        if node.is_sw_readable:
+                            # read back test
+                            legal_values = []
+                            for possible_enum_value in enum_cls:
+                                # set the simulated read_back value to
+                                random_value = random.randrange(0, dut_obj.register_data_width + 1)
+                                read_callback_mock.reset_mock()
+                                read_callback_mock.return_value = (random_value & dut_obj.inverse_bitmask) | \
+                                                                  (dut_obj.bitmask & (possible_enum_value.value << dut_obj.lsb))
+
+                                self.assertEqual(dut_obj.read(), possible_enum_value)
+                                legal_values.append(possible_enum_value.value)
+                                read_callback_mock.assert_called_once()
+
+                            read_callback_mock.reset_mock()
+
+                            # check that other values of the field int
+                            # that don't appear in the enum generate an
+                            # error
+                            possible_field_values = 2 ** dut_obj.width
+
+                            if possible_field_values != len(enum_cls):
+                                for field_value in range(0, dut_obj.max_value+1):
+                                    if field_value in legal_values:
+                                        continue
+                                    with self.assertRaises(ValueError):
+                                        read_callback_mock.reset_mock()
+                                        random_value = random.randrange(0, dut_obj.register_data_width + 1)
+                                        read_callback_mock.return_value = ( random_value & dut_obj.inverse_bitmask) | ( dut_obj.bitmask & ( field_value << dut_obj.lsb))
+                                        decode_field_value = dut_obj.read()
+
+
+                        write_callback_mock.assert_not_called()
+
+                        # write back test
+                        if node.is_sw_writable:
+                            for possible_enum_value in enum_cls:
+                                random_value = random.randrange(0, dut_obj.register_data_width + 1)
+                                read_callback_mock.reset_mock()
+                                write_callback_mock.reset_mock()
+                                read_callback_mock.return_value = random_value
+
+                                dut_obj.write(possible_enum_value)
+
+                                read_callback_mock.assert_called_once()
+                                write_callback_mock.assert_called_once()
+                                self.assertEqual(write_callback_mock.call_args.args[0], dut_obj.parent_register.base_address)
+                                self.assertEqual(write_callback_mock.call_args.args[1], (random_value & dut_obj.inverse_bitmask) | \
+                                                                                        (dut_obj.bitmask & (possible_enum_value.value << dut_obj.lsb)))
 
         def test_register_read_fields(self):
             """
@@ -440,13 +461,31 @@ class BaseTestContainer:
 
                 if isinstance(node, RegNode):
 
+                    if node.has_sw_readable is False:
+                        # skip this if there is software readable fields
+                        continue
+
                     # as this test is based on random data we will repeat it
                     # 100 times to be confident that all combinations get covered
 
                     for i in range(100):
+
                         rand_reg_value = random.randrange(0, dut_obj.max_value + 1)
+                        for field in dut_obj.readable_fields:
+                            if hasattr(field, 'enum_cls'):
+                                # enum field
+                                rand_field_value = random.choice(list(field.enum_cls)).value
+                            else:
+                                # normal int field
+                                rand_field_value = random.randrange(0, field.max_value + 1)
+
+                            rand_reg_value = (rand_reg_value & field.inverse_bitmask) | (rand_field_value << field.lsb)
+
                         with patch(__name__ + '.' + 'read_addr_space', return_value=rand_reg_value) as read_callback_mock:
 
+                            # the read_fields method gets a dictionary back
+                            # from the object with all the read back field
+                            # values
                             read_fields = dut_obj.read_fields()
 
                             #build_reference_dict
@@ -456,15 +495,54 @@ class BaseTestContainer:
                                     dut_field = getattr(dut_obj,field.inst_name)
                                     reference_read_fields[field.inst_name] = dut_field.read()
 
-
                             self.assertDictEqual(read_fields, reference_read_fields)
 
         def test_register_write_fields(self):
-            self.skipTest(reason='Not Implemented yet')
+            """
+            test the writable_fields on all the registers
+            Returns:
 
-            #TODO this test needs to be implemented
-            # look at using itertool permuations to get all the possible
-            # combinations of field values to try
+            """
+            logger = logging.getLogger(self.id())
+
+            for node in self.spec.descendants(unroll=True):
+                dut_obj = self._get_dut_object(node)
+
+                if isinstance(node, RegNode):
+
+                    logger.info('checking write_fields - node : {fqnode_path}'.format(fqnode_path=node.get_path()))
+
+                    if node.has_sw_writable is False:
+                        # skip this if there is software readable fields
+                        continue
+
+                    writable_fields = list(dut_obj.writable_fields)
+
+                    for num_parm in range(1,len(writable_fields)):
+                        for fields_to_write in combinations(writable_fields, num_parm):
+                            kwargs={}
+                            expected_value=0
+                            for field_to_write in fields_to_write:
+                                if hasattr(field_to_write, 'enum_cls'):
+                                    # enum field
+                                    rand_enum_value = random.choice(list(field_to_write.enum_cls))
+                                    rand_field_value = rand_enum_value.value
+                                    kwargs[field_to_write.inst_name] = rand_enum_value
+                                else:
+                                    # normal int field
+                                    rand_field_value = random.randrange(0,field_to_write.max_value + 1)
+                                    kwargs[field_to_write.inst_name] = rand_field_value
+
+                                expected_value = (expected_value & field_to_write.inverse_bitmask) | (rand_field_value << field_to_write.lsb)
+
+                        with patch(__name__ + '.' + 'write_addr_space') as write_callback_mock, \
+                                patch(__name__ + '.' + 'read_addr_space', return_value=0) as read_callback_mock:
+                            dut_obj.write_fields(kwargs)
+                            write_callback_mock.assert_called_once()
+                            self.assertEqual(write_callback_mock.call_args.args[0],
+                                             dut_obj.parent_register.base_address)
+                            self.assertEqual(write_callback_mock.call_args.args[1],expected_value)
+
 
 
 
