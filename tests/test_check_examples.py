@@ -62,7 +62,6 @@ logging_config = {
         }
     }
 
-logging.config.dictConfig(logging_config)
 
 # dummy functions to support the test cases, note that these are not used as
 # they get patched
@@ -70,15 +69,19 @@ def read_addr_space(addr: int):
     assert isinstance(addr, int)
     return 0
 
+
 def write_addr_space(addr: int, data: int):
     assert isinstance(addr, int)
     assert isinstance(data, int)
 
+
 def read_callback(addr: int):
     return read_addr_space(addr)
 
+
 def write_callback(addr: int, data: int):
     write_addr_space(addr, data)
+
 
 class BaseTestContainer:
     class BaseRDLTestCase(unittest.TestCase):
@@ -90,8 +93,10 @@ class BaseTestContainer:
         @classmethod
         def setUpClass(cls):
 
+            logging.config.dictConfig(logging_config)
+
             rdlc = RDLCompiler()
-            rdlc.compile_file(os.path.join('testcases',cls.root_systemRDL_file))
+            rdlc.compile_file(os.path.join('testcases', cls.root_systemRDL_file))
             cls.spec = rdlc.elaborate(top_def_name=cls.root_node_name).top
 
             cls.tempdir = tempfile.TemporaryDirectory()
@@ -322,7 +327,7 @@ class BaseTestContainer:
 
                         if node.is_sw_readable:
 
-                            #read back - zero, this is achieved by setting the register to inverse bitmask
+                            # read back - zero, this is achieved by setting the register to inverse bitmask
                             read_callback_mock.reset_mock()
                             read_callback_mock.return_value = dut_obj.inverse_bitmask
                             self.assertEqual(dut_obj.read(), 0)
@@ -361,6 +366,8 @@ class BaseTestContainer:
 
                                     if (((dut_obj.msb+1) - dut_obj.lsb) < dut_obj.parent_register.data_width) and (node.parent.has_sw_readable):
                                         read_callback_mock.assert_called_once()
+                                    else:
+                                        read_callback_mock.assert_not_called()
                                     write_callback_mock.assert_called_once()
                                     self.assertEqual(write_callback_mock.call_args.args[0],
                                                      dut_obj.parent_register.base_address)
@@ -431,7 +438,6 @@ class BaseTestContainer:
                                         read_callback_mock.return_value = ( random_value & dut_obj.inverse_bitmask) | ( dut_obj.bitmask & ( field_value << dut_obj.lsb))
                                         decode_field_value = dut_obj.read()
 
-
                         write_callback_mock.assert_not_called()
 
                         # write back test
@@ -443,12 +449,20 @@ class BaseTestContainer:
                                 read_callback_mock.return_value = random_value
 
                                 dut_obj.write(possible_enum_value)
-
-                                read_callback_mock.assert_called_once()
+                                if (((dut_obj.msb + 1) - dut_obj.lsb) < dut_obj.parent_register.data_width) and (node.parent.has_sw_readable):
+                                    read_callback_mock.assert_called_once()
+                                else:
+                                    read_callback_mock.assert_not_called()
                                 write_callback_mock.assert_called_once()
                                 self.assertEqual(write_callback_mock.call_args.args[0], dut_obj.parent_register.base_address)
-                                self.assertEqual(write_callback_mock.call_args.args[1], (random_value & dut_obj.inverse_bitmask) | \
-                                                                                        (dut_obj.bitmask & (possible_enum_value.value << dut_obj.lsb)))
+                                if node.parent.has_sw_readable:
+                                    self.assertEqual(write_callback_mock.call_args.args[1],
+                                                     (random_value & dut_obj.inverse_bitmask) | \
+                                                     (dut_obj.bitmask & (possible_enum_value.value << dut_obj.lsb)))
+                                else:
+                                    # if the register is not readable, the value is simply written
+                                    self.assertEqual(write_callback_mock.call_args.args[1],
+                                                     possible_enum_value.value  << dut_obj.lsb)
 
         def test_register_read_fields(self):
             """
@@ -518,10 +532,19 @@ class BaseTestContainer:
 
                     writable_fields = list(dut_obj.writable_fields)
 
-                    for num_parm in range(1,len(writable_fields)):
+                    if node.has_sw_readable is True:
+                        min_range = 1
+                    else:
+                        # if the register is not readable it is only possible
+                        # to write all the fields
+                        min_range = len(writable_fields)
+
+
+                    for num_parm in range(min_range,len(writable_fields)+1):
+
                         for fields_to_write in combinations(writable_fields, num_parm):
-                            kwargs={}
-                            expected_value=0
+                            kwargs = {}
+                            expected_value = 0
                             for field_to_write in fields_to_write:
                                 if hasattr(field_to_write, 'enum_cls'):
                                     # enum field
@@ -535,13 +558,13 @@ class BaseTestContainer:
 
                                 expected_value = (expected_value & field_to_write.inverse_bitmask) | (rand_field_value << field_to_write.lsb)
 
-                        with patch(__name__ + '.' + 'write_addr_space') as write_callback_mock, \
-                                patch(__name__ + '.' + 'read_addr_space', return_value=0) as read_callback_mock:
-                            dut_obj.write_fields(kwargs)
-                            write_callback_mock.assert_called_once()
-                            self.assertEqual(write_callback_mock.call_args.args[0],
-                                             dut_obj.parent_register.base_address)
-                            self.assertEqual(write_callback_mock.call_args.args[1],expected_value)
+                            with patch(__name__ + '.' + 'write_addr_space') as write_callback_mock, \
+                                    patch(__name__ + '.' + 'read_addr_space', return_value=0) as read_callback_mock:
+                                dut_obj.write_fields(**kwargs)
+                                write_callback_mock.assert_called_once()
+                                self.assertEqual(write_callback_mock.call_args.args[0],
+                                                 dut_obj.base_address)
+                                self.assertEqual(write_callback_mock.call_args.args[1],expected_value)
 
 
 

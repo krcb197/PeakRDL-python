@@ -138,6 +138,7 @@ class PythonExporter:
                 'get_fully_qualified_enum_type': self._fully_qualified_enum_type,
                 'get_field_bitmask_hex_string' : self._get_field_bitmask_hex_string,
                 'get_field_inv_bitmask_hex_string' : self._get_field_inv_bitmask_hex_string,
+                'get_field_max_value_hex_string' : self._get_field_max_value_hex_string,
                 'get_reg_max_value_hex_string' : self._get_reg_max_value_hex_string,
                 'get_table_block' : self._get_table_block
             }
@@ -305,10 +306,12 @@ class PythonExporter:
     def _get_field_bitmask_hex_string(self, node: FieldNode) -> str:
         return '0x%X' % sum(2**x for x in range(node.lsb, node.msb+1))
 
-
     def _get_field_inv_bitmask_hex_string(self, node: FieldNode) -> str:
         reg_bitmask = (2 ** (node.parent.size * 8))-1
         return '0x%X' % (reg_bitmask ^ sum(2**x for x in range(node.lsb, node.msb+1)))
+
+    def _get_field_max_value_hex_string(self, node: FieldNode) -> str:
+        return '0x%X' % ((2 ** (node.msb - node.lsb + 1)) - 1)
 
     def _uses_enum(self, node: AddressableNode):
         for child_node in node.descendants():

@@ -8,9 +8,9 @@ write_callback_type = Callable[[int, int], type(None)]
 
 class _Base:
 
-    __slots__ = ['__logger','__inst_name']
+    __slots__ = ['__logger', '__inst_name']
 
-    def __init__(self, logger_handle: str, inst_name:str):
+    def __init__(self, logger_handle: str, inst_name: str):
         self.__logger = logging.getLogger(logger_handle)
         self._logger.info(f'creating instance of {self.__class__}')
 
@@ -42,7 +42,6 @@ class _Node(_Base):
         self.__address_width = address_width
         self.__data_width = data_width
 
-
     @property
     def base_address(self) -> int:
         """
@@ -63,8 +62,6 @@ class _Node(_Base):
         width of the data access in bits
         """
         return self.__data_width
-
-
 
 
 class AddressMap(_Node):
@@ -305,7 +302,7 @@ class RegReadWrite(Reg):
 
 class Field(_Base):
     """
-    base class of register feild wrappers
+    base class of register field wrappers
 
     Note:
         It is not expected that this class will be instantiated under normal
@@ -340,13 +337,16 @@ class Field(_Base):
             raise ValueError('field lsb cannot be less than zero')
 
         if msb > self.parent_register.data_width:
-            raise ValueError('field msb must be less than the parent register width')
+            raise ValueError('field msb must be less than the parent '
+                             'register width')
 
         if lsb > self.parent_register.data_width:
-            raise ValueError('field lsb must be less than the parent register width')
+            raise ValueError('field lsb must be less than the parent '
+                             'register width')
 
         if msb - lsb + 1 != width:
-            raise ValueError('field width defined by lsb and msb does not match specified width')
+            raise ValueError('field width defined by lsb and msb does not match'
+                             ' specified width')
 
         self.__msb = msb
         self.__lsb = lsb
@@ -455,7 +455,7 @@ class FieldReadOnly(Field):
     """
     __slots__ = []
 
-    def __init__(self, parent_register: readable_reg_type, width:int,
+    def __init__(self, parent_register: readable_reg_type, width: int,
                  msb: int, lsb: int, logger_handle: str, inst_name: str):
 
         if not isinstance(parent_register, (RegReadWrite, RegReadOnly)):
@@ -527,7 +527,7 @@ class FieldWriteOnly(Field):
     """
     __slots__ = []
 
-    def __init__(self, parent_register: writeable_reg_type, width:int,
+    def __init__(self, parent_register: writeable_reg_type, width: int,
                  msb: int, lsb: int, logger_handle: str, inst_name: str):
 
         if not isinstance(parent_register, (RegReadWrite, RegWriteOnly)):

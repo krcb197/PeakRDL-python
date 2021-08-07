@@ -237,21 +237,19 @@ class {{get_fully_qualified_type_name(node)}}_cls(RegWriteOnly):
         reg_value = 0
         {%- for child_node in node.fields() -%}
         {%- if child_node.is_sw_writable == True %}
-        if {{get_inst_name(child_node)}} in kwargs.values():
-            reg_value |= self.{{get_inst_name(child_node)}}.encode_write_value(kwargs[{{get_inst_name(child_node)}}])
+        if '{{get_inst_name(child_node)}}' in kwargs:
+            reg_value |= self.{{get_inst_name(child_node)}}.encode_write_value(kwargs['{{get_inst_name(child_node)}}'])
             bit_mask |= self.{{get_inst_name(child_node)}}.bitmask
-            kwargs.pop({{get_inst_name(child_node)}})
+            kwargs.pop('{{get_inst_name(child_node)}}')
         {%- endif -%}
         {%- endfor %}
         if len(kwargs) != 0:
             # left over unhandled arguments
             raise ValueError('unrecognised arguments in field')
 
-        inverse_bit_mask = self.max_value ^ self.bit_mask
+        inverse_bit_mask = self.max_value ^ bit_mask
 
-        reg_value = self.read()
-
-        self.write((reg_value & inverse_bit_mask) | reg_value)
+        self.write((self.read() & inverse_bit_mask) | reg_value)
 
 
 
@@ -260,7 +258,12 @@ class {{get_fully_qualified_type_name(node)}}_cls(RegWriteOnly):
         """
         Do a write to the register, updating all fields
         """
-        pass
+        reg_value = 0
+        {%- for child_node in node.fields() %}
+        reg_value |= self.{{get_inst_name(child_node)}}.encode_write_value({{get_inst_name(child_node)}})
+        {% endfor %}
+
+        self.write(reg_value)
     {% endif %}
     {% endif %}
 
