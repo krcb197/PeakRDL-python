@@ -19,7 +19,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: [3.5, 3.6, 3.7, 3.8, 3.9]
+        python-version: [3.6, 3.7, 3.8, 3.9]
 
     steps:
     - uses: actions/checkout@v2
@@ -37,9 +37,6 @@ jobs:
 
     - name: Lint with pylint
       run: pylint --rcfile tests/pylint.rc peakrdl
-
-    - name: run the test
-      run: pytest testcase_output/
 
     - name: Generate testcases
       run: |
