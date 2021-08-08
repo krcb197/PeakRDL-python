@@ -2,15 +2,18 @@
 import os
 from pathlib import Path
 from shutil import copyfile
-from typing import List
 import textwrap
+from typing import Iterable, Tuple
+from itertools import combinations
+
 
 import autopep8
 
 import jinja2 as jj
 from systemrdl.node import RootNode, Node, RegNode, AddrmapNode, RegfileNode
 from systemrdl.node import FieldNode, MemNode, AddressableNode
-from systemrdl.rdltypes import AccessType, OnReadType, OnWriteType, InterruptType, PropertyReference
+from systemrdl.rdltypes import OnReadType, OnWriteType, PropertyReference
+
 
 class PythonExporter:
 
@@ -26,8 +29,8 @@ class PythonExporter:
         """
         user_template_dir = kwargs.pop("user_template_dir", None)
         self.user_template_context = kwargs.pop("user_template_context", dict())
-        #self.signal_overrides = {}
-        self.strict = False  # strict RDL rules rather than helpful impliciti behaviour
+        self.strict = False  # strict RDL rules rather than helpful impliciti
+                             # behaviour
 
         # Check for stray kwargs
         if kwargs:
@@ -54,14 +57,6 @@ class PythonExporter:
             loader=loader,
             undefined=jj.StrictUndefined
         )
-
-        # Define custom filters and tests
-        def add_filter(func):
-            self.jj_env.filters[func.__name__] = func
-
-        def add_test(func, name=None):
-            name = name or func.__name__.replace('is_', '')
-            self.jj_env.tests[name] = func
 
         # Dictionary of root-level type definitions
         # key = definition type name
@@ -123,12 +118,10 @@ class PythonExporter:
                 'systemrdlAddrmapNode': AddrmapNode,
                 'systemrdlMemNode': MemNode,
                 'systemrdlAddressableNode': AddressableNode,
-                #'SignalNode': SignalNode,
                 'OnWriteType': OnWriteType,
                 'OnReadType': OnReadType,
                 'PropertyReference': PropertyReference,
                 'isinstance': isinstance,
-                #'full_idx': self._full_idx,
                 'get_inst_name': self._get_inst_name,
                 'get_type_name': self._get_type_name,
                 'get_fully_qualified_type_name': self._get_fully_qualified_type_name,
@@ -136,11 +129,14 @@ class PythonExporter:
                 'get_dependent_component': self._get_dependent_component,
                 'get_dependent_enum': self._get_dependent_enum,
                 'get_fully_qualified_enum_type': self._fully_qualified_enum_type,
-                'get_field_bitmask_hex_string' : self._get_field_bitmask_hex_string,
-                'get_field_inv_bitmask_hex_string' : self._get_field_inv_bitmask_hex_string,
-                'get_field_max_value_hex_string' : self._get_field_max_value_hex_string,
-                'get_reg_max_value_hex_string' : self._get_reg_max_value_hex_string,
-                'get_table_block' : self._get_table_block
+                'get_field_bitmask_hex_string': self._get_field_bitmask_hex_string,
+                'get_field_inv_bitmask_hex_string': self._get_field_inv_bitmask_hex_string,
+                'get_field_max_value_hex_string': self._get_field_max_value_hex_string,
+                'get_reg_max_value_hex_string': self._get_reg_max_value_hex_string,
+                'get_table_block': self._get_table_block,
+                'get_reg_writable_fields' : self._get_reg_writable_fields,
+                'get_reg_writable_field_combinations' : self._get_reg_writable_field_combinations
+
             }
 
             context.update(self.user_template_context)
@@ -156,17 +152,17 @@ class PythonExporter:
             template = self.jj_env.get_template("addrmap_tb.py.jinja")
             module_tb_code_str = autopep8.fix_code(template.render(context))
             module_tb_fqfn = os.path.join(package_path,
-                                       'tests',
-                                       'test_'+ block.inst_name + '.py')
+                                          'tests',
+                                          'test_'+ block.inst_name + '.py')
             with open(module_tb_fqfn, "w") as fid:
                 fid.write(module_tb_code_str)
 
-            #template = self.jj_env.get_template("tb.cpp")
-            #stream = template.stream(context)
-            #stream.dump(os.path.join(path, node.inst_name + '_tb.cpp'))
-
-        copyfile(src=os.path.join(os.path.dirname(__file__), "templates", "peakrdl_python_types.py"),
-                 dst=os.path.join(os.path.join(package_path, 'reg_model'), "peakrdl_python_types.py" ))
+        copyfile(src=os.path.join(os.path.dirname(__file__),
+                                  "templates",
+                                  "peakrdl_python_types.py"),
+                 dst=os.path.join(package_path,
+                                  'reg_model',
+                                  'peakrdl_python_types.py' ))
 
         with open(os.path.join(package_path, 'reg_model','__init__.py'), 'w') as fid:
             fid.write('pass\n')
@@ -295,7 +291,7 @@ class PythonExporter:
             if ('desc' in node.list_properties()):
                 desc_rows = textwrap.wrap(node.get_property('desc'),width = 68,initial_indent="| Description       | ", subsequent_indent="|                   | ")
                 for desc_row in desc_rows:
-                    table_strs.append(desc_row.ljust(68,' ') + ' |')
+                    table_strs.append(desc_row.ljust(68, ' ') + ' |')
                 table_strs.append('+-------------------+------------------------------------------------+')
 
             return '\n'.join(table_strs)
@@ -324,21 +320,28 @@ class PythonExporter:
     def _get_reg_max_value_hex_string(self, node: RegNode) -> str:
         return '0x%X' % ((2 ** (node.size * 8))-1)
 
+    def _get_reg_writable_field_combinations(self, node: RegNode) -> Tuple[FieldNode, ...]:
+
+        writable_fields = list(self._get_reg_writable_fields(node))
+
+        for num_parm in range(1, len(writable_fields) + 1):
+            for fields_to_write in combinations(writable_fields, num_parm):
+                yield fields_to_write
 
 
+    def _get_reg_writable_fields(self, node: RegNode) -> Iterable[FieldNode] :
+        """
+        Iterable that writable fields from the reg node
+        as opposed to all the
+        Args:
+            node:
 
+        yeild
 
-
-
-
-
-
-
-
-
-
-
-
+        """
+        for field in node.fields():
+            if field.is_sw_writable is True:
+                yield field
 
 
 
