@@ -44,4 +44,4 @@ jobs:
         pip install pytest-cov
         # python generate_testcases.py # commented out as it took too long to run
         python generate_testcases.py simple
-        pytest testcase_output/ --cov-report=html
+        pytest testcase_output/
