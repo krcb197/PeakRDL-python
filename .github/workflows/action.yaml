@@ -40,8 +40,10 @@ jobs:
 
     - name: Generate testcases
       run: |
+        pip install pytest
+        pip install pytest-cov
         python generate_testcases.py basic
         python generate_testcases.py enum_example
         python generate_testcases.py regfile_and_arrays
         python generate_testcases.py addr_map
-        pytest testcase_output/
+        pytest testcase_output/ --cov-report=html
