@@ -40,5 +40,8 @@ jobs:
 
     - name: Generate testcases
       run: |
-        python generate_testcases.py
+        python generate_testcases.py basic
+        python generate_testcases.py enum_example
+        python generate_testcases.py regfile_and_arrays
+        python generate_testcases.py addr_map
         pytest testcase_output/
