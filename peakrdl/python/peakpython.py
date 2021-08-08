@@ -3,7 +3,6 @@ import argparse
 import os
 import subprocess
 
-import flake8
 import coverage
 import unittest.loader
 from systemrdl import RDLCompiler
@@ -27,7 +26,7 @@ def parse_args():
 
     checker = parser.add_argument_group('post-generate checks')
     checker.add_argument('--lint', action='store_true',
-                         help='run Flake8 lint on the generated python')
+                         help='run pylint on the generated python')
     checker.add_argument('--test', action='store_true',
                          help='run unittests for the created')
     checker.add_argument('--coverage', action='store_true',
@@ -52,7 +51,7 @@ def generate(root, outdir):
     return modules
 
 def run_lint(root, outdir):
-    subprocess.run(['flake8', os.path.join(outdir, root), '--doctests'])
+    subprocess.run(['pylint', '--rcfile', os.path.join('tests','pylint.rc'), os.path.join(outdir, root)])
 
 if __name__ == '__main__':
     args = parse_args()
@@ -63,7 +62,7 @@ if __name__ == '__main__':
         print('***************************************************************')
         print('* Lint Checks                                                 *')
         print('***************************************************************')
-        run_lint(args.outdir, spec.inst_name)
+        run_lint(outdir=args.outdir, root=spec.inst_name)
     if args.test:
         print('***************************************************************')
         print('* Unit Test Run                                               *')

@@ -75,8 +75,6 @@ class AddressMap(_Node):
 
     __slots__ = []
 
-    pass
-
 
 class RegFile(_Node):
     """
@@ -88,8 +86,6 @@ class RegFile(_Node):
     """
 
     __slots__ = []
-
-    pass
 
 
 class Reg(_Node):

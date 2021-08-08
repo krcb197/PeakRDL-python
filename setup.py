@@ -22,7 +22,8 @@ setuptools.setup(
     install_requires=[
         "systemrdl-compiler>=1.12.0",
         "autopep8",
-        "flake8",
+        "pylint",
+        "coverage",
         "jinja2",
     ],
     classifiers=[

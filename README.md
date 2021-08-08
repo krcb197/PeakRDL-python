@@ -36,7 +36,7 @@ run within a unittest framework.
 ## Reference
 
 ### `PythonExporter(**kwargs)`
-Constructor for the Verilog Exporter class
+Constructor for the Python Exporter class
 
 **Optional Parameters**
 

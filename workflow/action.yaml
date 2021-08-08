@@ -42,7 +42,6 @@ jobs:
         run: pytest testcase_output/
 
     - name: Generate testcases
-        run: python generate_testcases.py
-
-    - name: run the generated test cases
-        run: pytest testcase_output/
+        run: |
+          python generate_testcases.py
+          pytest testcase_output/
