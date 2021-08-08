@@ -19,7 +19,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: [3.6, 3.7, 3.8, 3.9]
+        python-version: [3.9]
 
     steps:
     - uses: actions/checkout@v2
@@ -41,6 +41,6 @@ jobs:
     - name: Generate testcases
       run: |
         pip install pytest
-        pip install pytest-cov
-        python generate_testcases.py
-        pytest testcase_output/ --cov-report=html
+        # python generate_testcases.py # commented out as it took too long to run
+        python generate_testcases.py simple
+        pytest testcase_output/
