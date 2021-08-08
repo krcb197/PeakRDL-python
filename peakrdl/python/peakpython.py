@@ -2,9 +2,10 @@
 import argparse
 import os
 import subprocess
+import unittest.loader
 
 import coverage
-import unittest.loader
+
 from systemrdl import RDLCompiler
 
 from peakrdl.python.exporter import PythonExporter
@@ -79,5 +80,5 @@ if __name__ == '__main__':
             cov.stop()
             #cov.save()
 
-        if args.html_coverage_out != None:
+        if args.html_coverage_out is not None:
             cov.html_report(directory=args.html_coverage_out )

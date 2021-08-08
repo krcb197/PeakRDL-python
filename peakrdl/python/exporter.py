@@ -89,19 +89,6 @@ class PythonExporter:
         Path(os.path.join(package_path, 'reg_model')).mkdir(parents=True, exist_ok=True)
         Path(os.path.join(package_path, 'tests')).mkdir(parents=True, exist_ok=True)
 
-        """
-        The long term plan is to put separate addr_maps in separate files but this
-        has proven to be very complex to implement so has been shelved for now
-        in favour of a single file approach
-        
-        # find all the addrmap types in the, these will be converted to seperate files
-        modules = []
-        for desc in node.descendants():
-            if ((isinstance(desc, (RegfileNode, RegNode, AddrmapNode))) and
-                    isinstance(desc.parent, AddrmapNode)):
-                if desc.parent not in modules:
-                    modules.append(desc.parent)
-        """
         modules = [node]
 
         for block in modules:
@@ -169,7 +156,7 @@ class PythonExporter:
         with open(os.path.join(package_path, 'tests','__init__.py'), 'w') as fid:
             fid.write('pass\n')
         with open(os.path.join(package_path, '__init__.py'), 'w') as fid:
-             fid.write('pass\n')
+            fid.write('pass\n')
 
         return [self._get_inst_name(m) for m in modules]
 
@@ -282,13 +269,13 @@ class PythonExporter:
             table_strs = ['+-------------------+------------------------------------------------+',
                           '| System RDL Field  | Value                                          |',
                           '+===================+================================================+']
-            if ('name' in node.list_properties()):
+            if 'name' in node.list_properties():
                 name_rows = textwrap.wrap(node.get_property('name'),width = 68,initial_indent="| Name              | ", subsequent_indent="|                   | ")
                 for name_row in name_rows:
                     table_strs.append(name_row.ljust(68,' ') + ' |')
                 table_strs.append('+-------------------+------------------------------------------------+')
 
-            if ('desc' in node.list_properties()):
+            if 'desc' in node.list_properties():
                 desc_rows = textwrap.wrap(node.get_property('desc'),width = 68,initial_indent="| Description       | ", subsequent_indent="|                   | ")
                 for desc_row in desc_rows:
                     table_strs.append(desc_row.ljust(68, ' ') + ' |')
@@ -310,12 +297,16 @@ class PythonExporter:
         return '0x%X' % ((2 ** (node.msb - node.lsb + 1)) - 1)
 
     def _uses_enum(self, node: AddressableNode):
+
         for child_node in node.descendants():
             if isinstance(child_node, FieldNode):
                 if 'encode' in child_node.list_properties():
-                    return True
+                    return_value = True
+                    break
         else:
-            return False
+            return_value = False
+
+        return return_value
 
     def _get_reg_max_value_hex_string(self, node: RegNode) -> str:
         return '0x%X' % ((2 ** (node.size * 8))-1)
@@ -342,6 +333,3 @@ class PythonExporter:
         for field in node.fields():
             if field.is_sw_writable is True:
                 yield field
-
-
-
