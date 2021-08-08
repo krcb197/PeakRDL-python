@@ -1,0 +1,32 @@
+addrmap basic {
+
+    reg {
+        default sw = rw;
+        default hw = r;
+        field {} basicfield_a[31:0];
+    } basicreg_a;
+
+    reg {
+        default sw = rw;
+        default hw = r;
+        field { sw = r; } basicfield_b[31:16];
+        field {} basicfield_c[15:0];
+    } basicreg_b;
+
+    reg {
+        default sw = r;
+        default hw = r;
+        field { fieldwidth=1;  } basicfield_d[0:0];
+        field {  } basicfield_e[2:1];
+
+    } basicreg_c;
+
+    reg {
+        default sw = w;
+        default hw = r;
+        field { fieldwidth=1;  } basicfield_f[0:0];
+        field {  } basicfield_g[2:1];
+
+    } basicreg_d;
+
+};

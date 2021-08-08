@@ -1,0 +1,25 @@
+field field_typeA { fieldwidth = 2; };
+field field_typeB { fieldwidth = 2; };
+field field_typeC { fieldwidth = 2; reset = 1; };
+
+addrmap field_with_overridden_reset {
+
+    reg {
+        field_typeA field_a[1:0] = 0;
+        field_typeA field_b[3:2] = 1;
+
+        field_b -> reset  = 2;
+
+    } reg_a;
+
+    reg {
+        field_typeB field_c[1:0];
+
+    } reg_b;
+
+    reg {
+        field_typeC field_d[1:0];
+
+    } reg_c;
+
+};
