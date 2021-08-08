@@ -18,9 +18,9 @@ addrmap regfile_and_arrays {
                 default hw = r;
                 field {} basicfield_a[31:0];
             };
-            basic_reg_Type basic_reg_a[3];
+            basic_reg_Type basic_reg_a[2];
             basic_reg_Type2 basic_reg_b;
-        } layer2_regfile_a[4];
+        } layer2_regfile_a[2];
     } layer1_regfile_b;
 
 };
