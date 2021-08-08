@@ -36,7 +36,7 @@ jobs:
         python -m pip install pylint
 
     - name: Lint with pylint
-      run: pylint --rcfile test/pylint.rc peakrdl
+      run: pylint --rcfile tests/pylint.rc peakrdl
 
     - name: run the test
       run: pytest testcase_output/
