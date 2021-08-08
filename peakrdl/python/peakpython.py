@@ -48,10 +48,11 @@ def generate(root, outdir):
     '''generate the python'''
     print('Info: Generating python for {} in {}'.format(root.inst_name, outdir))
     modules = PythonExporter().export(root, outdir)
-    for m in modules:
-        print(" - Generated: " + ' '.join(os.path.join(outdir, '{}_{}'.format(m, k)) for k in ('rf.sv', 'tb.sv', 'tb.cpp')))
 
     return modules
+
+def run_lint(root, outdir):
+    subprocess.run(['flake8', os.path.join(outdir, root), '--doctests'])
 
 if __name__ == '__main__':
     args = parse_args()
@@ -62,7 +63,7 @@ if __name__ == '__main__':
         print('***************************************************************')
         print('* Lint Checks                                                 *')
         print('***************************************************************')
-        subprocess.run(['flake8', os.path.join(args.outdir, spec.inst_name), '--doctests'])
+        run_lint(args.outdir, spec.inst_name)
     if args.test:
         print('***************************************************************')
         print('* Unit Test Run                                               *')
