@@ -124,6 +124,10 @@ disable=
         # Disable for now during development
         fixme,
         no-member,
+        subprocess-run-check,
+        logging-fstring-interpolation, 
+        invalid-overridden-method,
+        
 
         # User ignored limits
         too-many-locals,
