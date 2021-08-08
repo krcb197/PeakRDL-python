@@ -42,8 +42,6 @@ jobs:
       run: |
         pip install pytest
         pip install pytest-cov
-        python generate_testcases.py basic
-        python generate_testcases.py enum_example
-        python generate_testcases.py regfile_and_arrays
-        python generate_testcases.py addr_map
+        # python generate_testcases.py # commented out as it took too long to run
+        python generate_testcases.py simple
         pytest testcase_output/ --cov-report=html
