@@ -123,6 +123,7 @@ disable=
 
         # Disable for now during development
         fixme,
+        no-member,
 
         # User ignored limits
         too-many-locals,
