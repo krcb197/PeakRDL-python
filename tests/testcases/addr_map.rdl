@@ -29,6 +29,6 @@ addrmap child_addr_map_type_c {
 addrmap addr_map {
 
     child_addr_map_type_a child_a;
-    child_addr_map_type_a child_b[10];
+    child_addr_map_type_a child_b[2];
     child_addr_map_type_b child_c;
 };
