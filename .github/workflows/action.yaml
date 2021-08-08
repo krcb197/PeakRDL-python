@@ -41,6 +41,5 @@ jobs:
     - name: Generate testcases
       run: |
         pip install pytest
-        pip install pytest-cov
         python generate_testcases.py
-        pytest testcase_output/ --cov-report=html
+        pytest testcase_output/
