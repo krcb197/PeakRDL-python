@@ -16,11 +16,13 @@ setuptools.setup(
     description="Generate python wrapper for a register model compiled SystemRDL input",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    url="https://github.com/SystemRDL/PeakRDL-python",
+    url="https://github.com/krcb197/PeakRDL-python",
     packages=['peakrdl.python'],
     include_package_data=True,
     install_requires=[
         "systemrdl-compiler>=1.12.0",
+        "autopep8",
+        "flake8",
         "jinja2",
     ],
     classifiers=[
@@ -39,7 +41,7 @@ setuptools.setup(
         "Topic :: Scientific/Engineering :: Electronic Design Automation (EDA)",
     ],
     project_urls={
-        "Source": "https://github.com/SystemRDL/PeakRDL-python",
-        "Tracker": "https://github.com/SystemRDL/PeakRDL-python/issues"
+        "Source": "https://github.com/krcb197/PeakRDL-python",
+        "Tracker": "https://github.com/krcb197/PeakRDL-python/issues"
     },
 )
