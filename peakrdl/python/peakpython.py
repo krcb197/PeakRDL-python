@@ -24,6 +24,9 @@ def parse_args():
                         help='specify top level addrmap (default operation will use last defined global addrmap)')
     parser.add_argument('--verbose', '-v', action='count', default=0,
                         help='set logging verbosity')
+    parser.add_argument('--autoformat', action='store_true',
+                        help='use autopep8 on generated code')
+
 
     checker = parser.add_argument_group('post-generate checks')
     checker.add_argument('--lint', action='store_true',
@@ -44,10 +47,11 @@ def compile_rdl(infile, incl_search_paths=None, top=None):
     rdlc.compile_file(infile, incl_search_paths=incl_search_paths)
     return rdlc.elaborate(top_def_name=top).top
 
-def generate(root, outdir):
+def generate(root, outdir, autoformatoutputs=True):
     '''generate the python'''
     print('Info: Generating python for {} in {}'.format(root.inst_name, outdir))
-    modules = PythonExporter().export(root, outdir)
+    modules = PythonExporter().export(root, outdir,
+                                      autoformatoutputs=autoformatoutputs)
 
     return modules
 
@@ -58,7 +62,7 @@ if __name__ == '__main__':
     args = parse_args()
     spec = compile_rdl(args.infile, incl_search_paths=args.include_dir, top=args.top)
     #overrides = {k.prop: k.new for k in args.O}
-    blocks = generate(spec, args.outdir)
+    blocks = generate(spec, args.outdir, args.autoformat)
     if args.lint:
         print('***************************************************************')
         print('* Lint Checks                                                 *')

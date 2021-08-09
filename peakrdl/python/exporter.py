@@ -64,7 +64,7 @@ class PythonExporter:
         #   components, this is the original_def (which can be None in some cases)
         self.namespace_db = {}
 
-    def export(self, node: Node, path: str, **kwargs):
+    def export(self, node: Node, path: str, autoformatoutputs: bool=True, **kwargs):
         """
         Perform the export!
         Parameters
@@ -74,6 +74,9 @@ class PythonExporter:
             internal `AddrmapNode`.
         path: str
             Output package path.
+        autoformatoutputs: bool
+            If set to True the code will be run through autopep8 to clean it up
+            This can slow down large jobs or mask problems
         """
 
         # Check for stray kwargs
@@ -129,20 +132,29 @@ class PythonExporter:
             context.update(self.user_template_context)
 
             template = self.jj_env.get_template("addrmap.py.jinja")
-            module_code_str = autopep8.fix_code(template.render(context))
             module_fqfn = os.path.join(package_path,
                                        'reg_model',
                                        block.inst_name + '.py')
-            with open(module_fqfn, "w") as fid:
-                fid.write(module_code_str)
+            if autoformatoutputs is True:
+                module_code_str = autopep8.fix_code(template.render(context))
+                with open(module_fqfn, "w") as fid:
+                    fid.write(module_code_str)
+            else:
+                stream = template.stream(context)
+                stream.dump(module_fqfn)
+
 
             template = self.jj_env.get_template("addrmap_tb.py.jinja")
-            module_tb_code_str = autopep8.fix_code(template.render(context))
             module_tb_fqfn = os.path.join(package_path,
                                           'tests',
                                           'test_'+ block.inst_name + '.py')
-            with open(module_tb_fqfn, "w") as fid:
-                fid.write(module_tb_code_str)
+            if autoformatoutputs is True:
+                module_tb_code_str = autopep8.fix_code(template.render(context))
+                with open(module_tb_fqfn, "w") as fid:
+                    fid.write(module_tb_code_str)
+            else:
+                stream = template.stream(context)
+                stream.dump(module_tb_fqfn)
 
         copyfile(src=os.path.join(os.path.dirname(__file__),
                                   "templates",

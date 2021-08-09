@@ -390,7 +390,7 @@ class {{get_fully_qualified_type_name(node)}}_cls(RegFile):
 
         # instance of objects within the class
         {%- for child_node in node.children(unroll=False) -%}
-            {{ regfile_or_addr_instance(child_node) | indent(8) }}
+            {{ regfile_or_addr_instance(child_node) | indent }}
         {%- endfor %}
 
     # properties for Register and RegisterFiles
