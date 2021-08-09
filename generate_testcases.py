@@ -6,8 +6,6 @@ import os
 import peakrdl.python.peakpython as pp
 
 from glob import glob
-from shutil import which
-import re
 
 if len(sys.argv) == 1:
     testcases = glob('tests/testcases/*.rdl')
@@ -22,7 +20,7 @@ for case in testcases:
     testcase_name = os.path.splitext(os.path.basename(case))[0]
 
     root = pp.compile_rdl(rdl_file)
-    modules = pp.generate(root, 'testcase_output')
+    modules = pp.generate(root, 'testcase_output', autoformatoutputs=False)
 
 
     print("\n-----------------------------------------------------------------\n")
