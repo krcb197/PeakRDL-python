@@ -29,4 +29,13 @@ addrmap basic {
 
     } basicreg_d;
 
+    reg {
+        default sw = rw;
+        default hw = r;
+        field { fieldwidth=8; } basicfield_h;
+        field { fieldwidth=8; } basicfield_i;
+        field { fieldwidth=8; } basicfield_j;
+        field { fieldwidth=8; } basicfield_k;
+    } basicreg_e;
+
 };

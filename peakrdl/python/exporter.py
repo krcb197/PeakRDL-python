@@ -3,9 +3,7 @@ import os
 from pathlib import Path
 from shutil import copyfile
 import textwrap
-from typing import Iterable, Tuple
-from itertools import combinations
-
+from collections.abc import Iterable
 
 import autopep8
 
@@ -124,8 +122,7 @@ class PythonExporter:
                 'get_field_max_value_hex_string': self._get_field_max_value_hex_string,
                 'get_reg_max_value_hex_string': self._get_reg_max_value_hex_string,
                 'get_table_block': self._get_table_block,
-                'get_reg_writable_fields' : self._get_reg_writable_fields,
-                'get_reg_writable_field_combinations' : self._get_reg_writable_field_combinations
+                'get_reg_writable_fields' : self._get_reg_writable_fields
 
             }
 
@@ -323,16 +320,7 @@ class PythonExporter:
     def _get_reg_max_value_hex_string(self, node: RegNode) -> str:
         return '0x%X' % ((2 ** (node.size * 8))-1)
 
-    def _get_reg_writable_field_combinations(self, node: RegNode) -> Tuple[FieldNode, ...]:
-
-        writable_fields = list(self._get_reg_writable_fields(node))
-
-        for num_parm in range(1, len(writable_fields) + 1):
-            for fields_to_write in combinations(writable_fields, num_parm):
-                yield fields_to_write
-
-
-    def _get_reg_writable_fields(self, node: RegNode) -> Iterable[FieldNode] :
+    def _get_reg_writable_fields(self, node: RegNode) -> Iterable[FieldNode]:
         """
         Iterable that writable fields from the reg node
         as opposed to all the

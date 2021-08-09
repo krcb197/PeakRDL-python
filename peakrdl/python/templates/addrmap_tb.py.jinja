@@ -6,6 +6,7 @@ This code was generated from the PeakRDL-python package
 import unittest
 from unittest.mock import patch
 import random
+from itertools import combinations
 
 
 from ..reg_model.{{get_type_name(top_node)}} import {{get_type_name(top_node)}}_cls
@@ -353,6 +354,35 @@ class {{get_type_name(top_node)}}_TestCase(unittest.TestCase):
         """
         Walk the register map and check every register write_fields method
         """
+        def write_field_cominbinations(reg, writable_fields):
+            with patch(__name__ + '.' + 'write_addr_space') as write_callback_mock, \
+                patch(__name__ + '.' + 'read_addr_space', return_value=0) as read_callback_mock:
+                for num_parm in range(1, len(writable_fields) + 1):
+                    for fields_to_write in combinations(writable_fields, num_parm):
+                        kwargs = {}
+                        expected_value = 0
+                        for field_str in fields_to_write:
+                            field = getattr(reg, field_str)
+                            if hasattr(field, 'enum_cls'):
+                                rand_enum_value = random.choice(list(field.enum_cls))
+                                rand_field_value = rand_enum_value.value
+                                kwargs[field_str] = rand_enum_value
+                            else:
+                                rand_field_value = random.randrange(0, field.max_value + 1)
+                                kwargs[field_str] = rand_field_value
+
+                            expected_value = ( expected_value & field.inverse_bitmask ) | (rand_field_value << field.lsb)
+
+                        reg.write_fields(**kwargs)
+                        write_callback_mock.assert_called_once()
+                        self.assertEqual(write_callback_mock.call_args.args[0],
+                                         reg.base_address)
+                        self.assertEqual(write_callback_mock.call_args.args[1],expected_value)
+                        read_callback_mock.assert_called_once()
+                        write_callback_mock.reset_mock()
+                        read_callback_mock.reset_mock()
+
+
         {%- for node in top_node.descendants(unroll=True) -%}
         {%- if isinstance(node, systemrdlRegNode) %}
         {% if node.has_sw_writable %}
@@ -361,29 +391,10 @@ class {{get_type_name(top_node)}}_TestCase(unittest.TestCase):
 
 
         {% if node.has_sw_readable %}
-        {% for fields_to_write in get_reg_writable_field_combinations(node) %}
-        kwargs = {}
-        expected_value = 0
-        {% for field in fields_to_write %}
-        {%- if 'encode' in field.list_properties() %}
-        rand_enum_value = random.choice(list(self.dut.{{'.'.join(field.get_path_segments()[1:])}}.enum_cls))
-        rand_field_value = rand_enum_value.value
-        kwargs['{{field.inst_name}}'] = rand_enum_value
-        {%- else %}
-        rand_field_value = random.randrange(0, {{ get_field_max_value_hex_string(field) }} + 1)
-        kwargs['{{field.inst_name}}'] = rand_field_value
-        {%- endif  %}
-        expected_value = ( expected_value & {{get_field_inv_bitmask_hex_string(field)}} ) | (rand_field_value << {{ field.lsb }})
-        {% endfor %}
-        with patch(__name__ + '.' + 'write_addr_space') as write_callback_mock, \
-            patch(__name__ + '.' + 'read_addr_space', return_value=0) as read_callback_mock:
-            self.dut.{{'.'.join(node.get_path_segments()[1:])}}.write_fields(**kwargs)
-            write_callback_mock.assert_called_once()
-            self.assertEqual(write_callback_mock.call_args.args[0],
-                             {{node.absolute_address}})
-            self.assertEqual(write_callback_mock.call_args.args[1],expected_value)
-
-        {% endfor %}
+        write_field_cominbinations(reg=self.dut.{{'.'.join(node.get_path_segments()[1:])}},
+                                   writable_fields = [ {% for field in get_reg_writable_fields(node) -%}
+                                                       '{{ field.inst_name }}' {%- if not loop.last -%},{%- endif %}
+                                                       {% endfor -%} ])
         {% else %}
         kwargs = {}
         expected_value = 0
@@ -402,9 +413,12 @@ class {{get_type_name(top_node)}}_TestCase(unittest.TestCase):
             patch(__name__ + '.' + 'read_addr_space', return_value=0) as read_callback_mock:
             self.dut.{{'.'.join(node.get_path_segments()[1:])}}.write_fields(**kwargs)
             write_callback_mock.assert_called_once()
+            read_callback_mock.assert_not_called
             self.assertEqual(write_callback_mock.call_args.args[0],
                              {{node.absolute_address}})
             self.assertEqual(write_callback_mock.call_args.args[1],expected_value)
+            write_callback_mock.reset_mock()
+            read_callback_mock.reset_mock()
 
         {% endif %}
 
