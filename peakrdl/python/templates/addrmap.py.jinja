@@ -134,7 +134,7 @@ class {{get_fully_qualified_type_name(node)}}_cls(RegFile):
     {%- for child_node in node.children(unroll=False) %}
         {%- if isinstance(child_node, systemrdlRegNode) or isinstance(child_node, systemrdlRegfileNode) %}
     @property
-    def {{get_inst_name(child_node)}}(self) -> {%- if child_node.is_array -%}Tuple[{%- endif -%}{{get_fully_qualified_type_name(child_node)}}_cls{%- if child_node.is_array -%}, ...]{%- endif -%}:
+    def {{get_inst_name(child_node)}}(self) -> {% if child_node.is_array -%}Tuple[{%- endif -%}{{get_fully_qualified_type_name(child_node)}}_cls{%- if child_node.is_array -%}, ...]{%- endif -%}:
         return self.__{{get_inst_name(child_node)}}
         {%- endif %}
     {% endfor %}
@@ -173,7 +173,7 @@ class {{get_fully_qualified_type_name(node)}}_cls(AddressMap):
         {%- for child_node in node.children(unroll=False) -%}
             {%- if isinstance(child_node, systemrdlRegNode) or isinstance(child_node, systemrdlRegfileNode) or isinstance(child_node, systemrdlAddrmapNode) %}
     @property
-    def {{get_inst_name(child_node)}}(self) ->  {%- if child_node.is_array -%}Tuple[{%- endif -%}{{get_fully_qualified_type_name(child_node)}}_cls{%- if child_node.is_array -%},...]{%- endif -%}:
+    def {{get_inst_name(child_node)}}(self) ->  {% if child_node.is_array -%}Tuple[{%- endif -%}{{get_fully_qualified_type_name(child_node)}}_cls{%- if child_node.is_array -%},...]{%- endif -%}:
         return self.__{{get_inst_name(child_node)}}
             {%- endif %}
         {% endfor %}

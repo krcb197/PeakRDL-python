@@ -188,10 +188,17 @@ class PythonExporter:
         """
         scope_path = node.inst.get_scope_path(scope_separator='_')
 
+        # TODO if the node is a integer field we can use the base class no
+        #      need to generate a unique instance, if it has not documentation
+        #      properties
 
         # This code handles cases where a field has a reset value such that
         # it end up with the reset value appended to the type name. For the
         # register model we don't care about reset signal and these value
+        if node.inst.original_def is None:
+            return node.inst_name
+
+
         original_type_name = node.inst.original_def.type_name
         inst_type_name = node.inst.type_name
 
@@ -200,7 +207,7 @@ class PythonExporter:
         else:
             type_name = original_type_name
 
-        if scope_path == '':
+        if (scope_path == '') or (scope_path is None):
             return type_name
         else:
             return scope_path + '_' + type_name
@@ -228,11 +235,15 @@ class PythonExporter:
         components_needed = []
         for child_node in node.descendants(in_post_order=True):
             child_orig_def = child_node.inst.original_def
-            if child_orig_def in components_needed:
-                # already covered the component
-                continue
 
-            components_needed.append(child_node.inst.original_def)
+            if child_orig_def is None:
+                components_needed.append(child_node)
+            else:
+                if child_orig_def in components_needed:
+                    # already covered the component
+                    continue
+
+                components_needed.append(child_node.inst.original_def)
 
             yield child_node
 
@@ -253,7 +264,10 @@ class PythonExporter:
 
     def _fully_qualified_enum_type(self, field_enum, root_node: AddressableNode):
 
-        assert hasattr(field_enum, '_parent_scope')
+        if not hasattr(field_enum, '_parent_scope'):
+            # this happens if the enum is has been declared in an IPXACT file
+            # which is imported
+            return field_enum.__name__
 
         if root_node.inst.original_def == field_enum._parent_scope:
             return field_enum.__name__
