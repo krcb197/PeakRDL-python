@@ -122,7 +122,8 @@ class PythonExporter:
                 'get_field_max_value_hex_string': self._get_field_max_value_hex_string,
                 'get_reg_max_value_hex_string': self._get_reg_max_value_hex_string,
                 'get_table_block': self._get_table_block,
-                'get_reg_writable_fields' : self._get_reg_writable_fields
+                'get_reg_writable_fields' : self._get_reg_writable_fields,
+                'get_reg_readable_fields' : self._get_reg_readable_fields
 
             }
 
@@ -332,4 +333,18 @@ class PythonExporter:
         """
         for field in node.fields():
             if field.is_sw_writable is True:
+                yield field
+
+    def _get_reg_readable_fields(self, node: RegNode) -> Iterable[FieldNode]:
+        """
+        Iterable that readable fields from the reg node
+        as opposed to all the
+        Args:
+            node:
+
+        yeild
+
+        """
+        for field in node.fields():
+            if field.is_sw_readable is True:
                 yield field

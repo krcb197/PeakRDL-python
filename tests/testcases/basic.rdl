@@ -38,4 +38,20 @@ addrmap basic {
         field { fieldwidth=8; } basicfield_k;
     } basicreg_e;
 
+    reg {
+        default sw = rw;
+        default hw = r;
+        field { fieldwidth=8; sw = w; } basicfield_l;
+        field { fieldwidth=8; } basicfield_m;
+        field { fieldwidth=8; sw = w; } basicfield_n;
+    } basicreg_f;
+
+    reg {
+        default sw = rw;
+        default hw = r;
+        field { fieldwidth=8; sw = r; } basicfield_p;
+        field { fieldwidth=8; } basicfield_1;
+        field { fieldwidth=8; sw = r; } basicfield_r;
+    } basicreg_g;
+
 };

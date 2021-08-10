@@ -188,10 +188,8 @@ class {{get_fully_qualified_type_name(node)}}_cls(RegWriteOnly):
         reg_value = self.read()
 
         return_dict = {
-                        {%- for child_node in node.fields() %}
-                        {%- if child_node.is_sw_readable == True %}
+                        {%- for child_node in get_reg_readable_fields(node) %}
                         '{{get_inst_name(child_node)}}' : self.{{get_inst_name(child_node)}}.decode_read_value(reg_value)
-                        {%- endif -%}
                         {%- if not loop.last -%} ,  {%- endif -%}
                         {% endfor %}
                       }
@@ -203,10 +201,8 @@ class {{get_fully_qualified_type_name(node)}}_cls(RegWriteOnly):
         """
         generator that produces has all the readable fields within the register
         """
-        {%- for child_node in node.fields() %}
-        {%- if child_node.is_sw_readable == True %}
+        {%- for child_node in get_reg_readable_fields(node) %}
         yield self.{{get_inst_name(child_node)}}
-        {%- endif -%}
         {% endfor %}
 
     {% endif %}
@@ -217,10 +213,8 @@ class {{get_fully_qualified_type_name(node)}}_cls(RegWriteOnly):
         """
         generator that produces has all the writable fields within the register
         """
-        {%- for child_node in node.fields() %}
-        {%- if child_node.is_sw_writable == True %}
+        {% for child_node in get_reg_writable_fields(node) -%}
         yield self.{{get_inst_name(child_node)}}
-        {%- endif -%}
         {% endfor %}
 
     {% if node.has_sw_readable %}
@@ -235,13 +229,11 @@ class {{get_fully_qualified_type_name(node)}}_cls(RegWriteOnly):
 
         bit_mask = 0
         reg_value = 0
-        {%- for child_node in node.fields() -%}
-        {%- if child_node.is_sw_writable == True %}
+        {%- for child_node in get_reg_writable_fields(node) %}
         if '{{get_inst_name(child_node)}}' in kwargs:
             reg_value |= self.{{get_inst_name(child_node)}}.encode_write_value(kwargs['{{get_inst_name(child_node)}}'])
             bit_mask |= self.{{get_inst_name(child_node)}}.bitmask
             kwargs.pop('{{get_inst_name(child_node)}}')
-        {%- endif -%}
         {%- endfor %}
         if len(kwargs) != 0:
             # left over unhandled arguments
