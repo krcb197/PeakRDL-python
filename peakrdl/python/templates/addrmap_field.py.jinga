@@ -1,0 +1,87 @@
+{%- macro field_class(node) %}
+    {% if node.is_sw_readable and node.is_sw_writable %}
+class {{get_fully_qualified_type_name(node)}}_cls(FieldReadWrite):
+    {% elif node.is_sw_readable and not node.is_sw_writable %}
+class {{get_fully_qualified_type_name(node)}}_cls(FieldReadOnly):
+    {% elif not node.is_sw_readable and node.is_sw_writable %}
+class {{get_fully_qualified_type_name(node)}}_cls(FieldWriteOnly):
+    {% endif %}
+    """
+    Class to represent a register field in the register model
+
+    {{get_table_block(node) | indent}}
+    """
+
+    {%- if 'encode' in node.list_properties() %}
+    __enum_cls = {{get_fully_qualified_enum_type(node.get_property('encode'), top_node.parent)}}_enumcls
+    {% endif %}
+
+    __slots__ = []
+
+    {%- if 'encode' in node.list_properties() %}
+    @classmethod
+    @property
+    def enum_cls(cls):
+        """
+        The enumeration class for this field
+        """
+        return cls.__enum_cls
+
+        {%- if node.is_sw_readable %}
+    def decode_read_value(self, reg_value: int) -> {{get_fully_qualified_enum_type(node.get_property('encode'), top_node.parent)}}_enumcls:
+        """
+        extracts the field value from a register value, by applying the bit
+        mask and shift needed and conversion to the enum associated with the
+        field
+
+        Args:
+            value: value to decode, normally read from a register
+
+        Returns:
+            field value
+
+        Raises:
+            ValueError - if the value read back for the field can not be matched to the enum
+        """
+        field_value = super().decode_read_value(reg_value)
+
+        for potential_value in self.enum_cls:
+            if field_value == potential_value.value:
+                return potential_value
+        else:
+            raise ValueError('Unable to match value %d' % field_value)
+
+    def read(self) -> {{get_fully_qualified_enum_type(node.get_property('encode'), top_node.parent)}}_enumcls:
+        """
+        read the register and then perform the necessary actions, to report the
+        value as the enumeration including:
+
+        * application of bit mask
+        * bit shifting
+        * converting integer value to enum
+
+        Returns:
+            field value
+        """
+        reg_value = self.parent_register.read()
+        return self.decode_read_value(reg_value=reg_value)
+        {% endif %}
+
+        {%- if node.is_sw_writable %}
+    def encode_write_value(self, value: {{get_fully_qualified_enum_type(node.get_property('encode'), top_node.parent)}}_enumcls) -> int:
+
+        if not isinstance(value, self.enum_cls):
+            raise TypeError('value must be an {{get_fully_qualified_enum_type(node.get_property('encode'), top_node.parent)}}_enumcls but got %s' % type(value))
+
+        return super().encode_write_value(value.value)
+
+    def write(self, value : {{get_fully_qualified_enum_type(node.get_property('encode'), top_node.parent)}}_enumcls) -> NoReturn:
+
+        if not isinstance(value, self.enum_cls):
+            raise TypeError('value must be an {{get_fully_qualified_enum_type(node.get_property('encode'), top_node.parent)}}_enumcls but got %s' % type(value))
+
+        super().write(value.value)
+        {% endif %}
+    {% endif %}
+
+{%- endmacro -%}
