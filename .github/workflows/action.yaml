@@ -41,6 +41,6 @@ jobs:
     - name: Generate testcases
       run: |
         pip install pytest
-        # python generate_testcases.py # commented out as it took too long to run
-        python generate_testcases.py simple
+        python generate_testcases.py # commented out as it took too long to run
+        # python generate_testcases.py simple
         pytest testcase_output/
