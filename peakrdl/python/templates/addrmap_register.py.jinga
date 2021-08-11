@@ -99,7 +99,7 @@ class {{get_fully_qualified_type_name(node)}}_cls(RegWriteOnly):
         """
         generator that produces has all the readable fields within the register
         """
-        {%- for child_node in get_reg_readable_fields(node) %}
+        {% for child_node in get_reg_readable_fields(node) -%}
         yield self.{{get_inst_name(child_node)}}
         {% endfor %}
 
