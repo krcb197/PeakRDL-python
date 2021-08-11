@@ -54,5 +54,7 @@ Perform the export!
     * Top-level node to export. Can be the top-level `RootNode` or any internal `AddrmapNode`.
 * `path`
     * Output directory.
+* `autoformatoutputs`
+    * True - All the generated code is run through autopep8 (warning this can be slow for large designs)
 
 
