@@ -12,4 +12,11 @@ addrmap simple {
         field {} simple_field_a[15:0];
         field { encode = value_field; fieldwidth=4; } simple_field_b;
     } simple_reg_a;
+
+    regfile {
+        reg {
+            field { fieldwidth=1; } field_c;
+        } reg_b[2];
+    } simple_regfile_b;
+
 };

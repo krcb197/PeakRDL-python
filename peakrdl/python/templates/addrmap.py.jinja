@@ -126,9 +126,9 @@ class {{get_fully_qualified_type_name(node)}}_cls(RegFile):
                          inst_name=inst_name)
 
         # instance of objects within the class
-        {%- for child_node in node.children(unroll=False) -%}
+        {% for child_node in node.children(unroll=False) -%}
             {{ regfile_or_addr_instance(child_node) | indent }}
-        {%- endfor %}
+        {% endfor %}
 
     # properties for Register and RegisterFiles
     {%- for child_node in node.children(unroll=False) %}
