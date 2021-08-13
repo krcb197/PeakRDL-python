@@ -10,9 +10,10 @@ addrmap regfile_and_arrays {
         basic_reg_Type basic_reg_a;
     } layer1_regfile_a[2];
 
+    basic_reg_Type layer0_reg_a;
     regfile {
         regfile {
-			desc = "some description of the";
+			desc = "some description of the regfile";
             reg basic_reg_Type2 {
                 default sw = r;
                 default hw = r;
