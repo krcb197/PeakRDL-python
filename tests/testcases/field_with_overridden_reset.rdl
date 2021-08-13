@@ -1,25 +1,34 @@
 field field_typeA { fieldwidth = 2; };
-field field_typeB { fieldwidth = 2; };
-field field_typeC { fieldwidth = 2; reset = 1; };
+field field_typeB { fieldwidth = 2; reset = 1; };
+
+signal { signalwidth = 2; } reset_value;
+
 
 addrmap field_with_overridden_reset {
 
     reg {
-        field_typeA field_a[1:0] = 0;
-        field_typeA field_b[3:2] = 1;
+        field_typeA field_a1 = 0;
+        field_typeA field_a2 = 1;
+        field_typeA field_a3 = 0;
+        field_typeA field_a4 = 0;
 
-        field_b -> reset  = 2;
+        field_typeB field_b1 = 0;
+        field_typeB field_b2 = 1;
+        field_typeB field_b3 = 0;
+        field_typeB field_b4 = 0;
+
+        field_a2 -> reset  = 2;
+        field_b2 -> reset  = 2;
+        field_a3 -> reset  = reset_value;
+        field_b3 -> reset  = reset_value;
 
     } reg_a;
 
     reg {
-        field_typeB field_c[1:0];
-
+        field_typeA field_c[1:0] = 2;
     } reg_b;
 
-    reg {
-        field_typeC field_d[1:0];
-
-    } reg_c;
+    reg_a.field_a4 -> reset  = reg_b.field_c;
+    reg_a.field_b4 -> reset  = reg_b.field_c;
 
 };
