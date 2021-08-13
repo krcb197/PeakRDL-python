@@ -15,7 +15,7 @@ addrmap simple {
 
     regfile {
         reg {
-            field { fieldwidth=1; } field_c;
+            field { fieldwidth=1; } simple_regfile_b;
         } reg_b[2];
     } simple_regfile_b;
 

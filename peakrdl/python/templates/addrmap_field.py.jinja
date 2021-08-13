@@ -45,11 +45,7 @@ class {{get_fully_qualified_type_name(node)}}_cls(FieldWriteOnly):
         """
         field_value = super().decode_read_value(reg_value)
 
-        for potential_value in self.enum_cls:
-            if field_value == potential_value.value:
-                return potential_value
-        else:
-            raise ValueError('Unable to match value %d' % field_value)
+        return self.enum_cls(field_value)
 
     def read(self) -> {{get_fully_qualified_enum_type(node.get_property('encode'), top_node.parent)}}_enumcls:
         """
