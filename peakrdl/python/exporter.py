@@ -3,7 +3,8 @@ import os
 from pathlib import Path
 from shutil import copyfile
 import textwrap
-from collections.abc import Iterable
+
+from typing import Iterable
 
 import autopep8
 

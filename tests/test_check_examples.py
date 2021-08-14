@@ -247,7 +247,7 @@ class BaseTestContainer:
 
                             # test reading back 1 (the unpatched version returns 0 so this confirms the patch works)
                             self.assertEqual(dut_obj.read(), 1)
-                            self.assertEqual(read_callback_mock.call_args.args[0], expected_address)
+                            self.assertEqual(read_callback_mock.call_args[0][0], expected_address)
 
                             # test the read check with high value, low value and a random value in between
                             read_callback_mock.reset_mock()
@@ -276,21 +276,21 @@ class BaseTestContainer:
                             # test the write with high value, low value and a random value in between
                             dut_obj.write(max_value)
                             write_callback_mock.assert_called_once()
-                            self.assertEqual(write_callback_mock.call_args.args[0], expected_address)
-                            self.assertEqual(write_callback_mock.call_args.args[1], max_value)
+                            self.assertEqual(write_callback_mock.call_args[0][0], expected_address)
+                            self.assertEqual(write_callback_mock.call_args[0][1], max_value)
                             write_callback_mock.reset_mock()
 
                             dut_obj.write(0)
                             write_callback_mock.assert_called_once()
-                            self.assertEqual(write_callback_mock.call_args.args[0], expected_address)
-                            self.assertEqual(write_callback_mock.call_args.args[1], 0)
+                            self.assertEqual(write_callback_mock.call_args[0][0], expected_address)
+                            self.assertEqual(write_callback_mock.call_args[0][1], 0)
                             write_callback_mock.reset_mock()
 
                             random_value = random.randrange(0, max_value+1)
                             dut_obj.write(random_value)
                             write_callback_mock.assert_called_once()
-                            self.assertEqual(write_callback_mock.call_args.args[0], expected_address)
-                            self.assertEqual(write_callback_mock.call_args.args[1], random_value)
+                            self.assertEqual(write_callback_mock.call_args[0][0], expected_address)
+                            self.assertEqual(write_callback_mock.call_args[0][1], random_value)
                             write_callback_mock.reset_mock()
 
                             with self.assertRaises(ValueError):
@@ -369,15 +369,15 @@ class BaseTestContainer:
                                     else:
                                         read_callback_mock.assert_not_called()
                                     write_callback_mock.assert_called_once()
-                                    self.assertEqual(write_callback_mock.call_args.args[0],
+                                    self.assertEqual(write_callback_mock.call_args[0][0],
                                                      dut_obj.parent_register.base_address)
                                     if node.parent.has_sw_readable:
-                                        self.assertEqual(write_callback_mock.call_args.args[1],
+                                        self.assertEqual(write_callback_mock.call_args[0][1],
                                                          (reg_base_value & dut_obj.inverse_bitmask) | \
                                                          (dut_obj.bitmask & (field_value << dut_obj.lsb)))
                                     else:
                                         # if the register is not readable, the value is simply written
-                                        self.assertEqual(write_callback_mock.call_args.args[1],
+                                        self.assertEqual(write_callback_mock.call_args[0][1],
                                                          field_value << dut_obj.lsb)
 
                             # check invalid write values bounce
@@ -454,14 +454,14 @@ class BaseTestContainer:
                                 else:
                                     read_callback_mock.assert_not_called()
                                 write_callback_mock.assert_called_once()
-                                self.assertEqual(write_callback_mock.call_args.args[0], dut_obj.parent_register.base_address)
+                                self.assertEqual(write_callback_mock.call_args[0][0], dut_obj.parent_register.base_address)
                                 if node.parent.has_sw_readable:
-                                    self.assertEqual(write_callback_mock.call_args.args[1],
+                                    self.assertEqual(write_callback_mock.call_args[0][1],
                                                      (random_value & dut_obj.inverse_bitmask) | \
                                                      (dut_obj.bitmask & (possible_enum_value.value << dut_obj.lsb)))
                                 else:
                                     # if the register is not readable, the value is simply written
-                                    self.assertEqual(write_callback_mock.call_args.args[1],
+                                    self.assertEqual(write_callback_mock.call_args[0][1],
                                                      possible_enum_value.value  << dut_obj.lsb)
 
         def test_register_read_fields(self):
@@ -562,9 +562,9 @@ class BaseTestContainer:
                                     patch(__name__ + '.' + 'read_addr_space', return_value=0) as read_callback_mock:
                                 dut_obj.write_fields(**kwargs)
                                 write_callback_mock.assert_called_once()
-                                self.assertEqual(write_callback_mock.call_args.args[0],
+                                self.assertEqual(write_callback_mock.call_args[0][0],
                                                  dut_obj.base_address)
-                                self.assertEqual(write_callback_mock.call_args.args[1],expected_value)
+                                self.assertEqual(write_callback_mock.call_args[0][1],expected_value)
 
 
 
