@@ -206,7 +206,7 @@ class RegWriteOnly(Reg):
             TypeError: if the type of data is wrong
         """
         if not isinstance(data, int):
-            raise TypeError(f'data should be an int got {type(data)=}')
+            raise TypeError(f'data should be an int got {type(data)}')
 
         if data > self.max_value:
             raise ValueError('data out of range')
@@ -272,7 +272,7 @@ class RegReadWrite(Reg):
             TypeError: if the type of data is wrong
         """
         if not isinstance(data, int):
-            raise TypeError(f'data should be an int got {type(data)=}')
+            raise TypeError(f'data should be an int got {type(data)}')
 
         if data > self.max_value:
             raise ValueError('data out of range')
