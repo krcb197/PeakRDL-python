@@ -197,7 +197,12 @@ class PythonExporter:
         # it end up with the reset value appended to the type name. For the
         # register model we don't care about reset signal and these value
         if node.inst.original_def is None:
-            return node.inst_name
+            # if the node has no orignal def, it likely cam from IPXACT, the
+            # best choice is to mane the type after the fuller qualified path
+            fqnode = node.get_path(hier_separator='___',
+                                   array_suffix='_{index:d}_of_{dim:d}',
+                                   empty_array_suffix='_of_{dim:d}')
+            return fqnode
 
 
         original_type_name = node.inst.original_def.type_name
