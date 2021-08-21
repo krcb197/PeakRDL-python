@@ -193,9 +193,7 @@ class PythonExporter:
         #      need to generate a unique instance, if it has not documentation
         #      properties
 
-        # This code handles cases where a field has a reset value such that
-        # it end up with the reset value appended to the type name. For the
-        # register model we don't care about reset signal and these value
+
         if node.inst.original_def is None:
             # if the node has no orignal def, it likely cam from IPXACT, the
             # best choice is to mane the type after the fuller qualified path
@@ -204,7 +202,9 @@ class PythonExporter:
                                    empty_array_suffix='_of_{dim:d}')
             return fqnode
 
-
+        # This code handles cases where a field has a reset value such that
+        # it end up with the reset value appended to the type name. For the
+        # register model we don't care about reset signal and these value
         original_type_name = node.inst.original_def.type_name
         inst_type_name = node.inst.type_name
 
