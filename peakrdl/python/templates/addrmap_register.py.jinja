@@ -73,6 +73,8 @@ class {{get_fully_qualified_type_name(node)}}_cls(RegWriteOnly):
                                                                                  width={{child_node.width}},
                                                                                  lsb={{child_node.lsb}},
                                                                                  msb={{child_node.msb}},
+                                                                                 low={{child_node.low}},
+                                                                                 high={{child_node.high}},
                                                                                  logger_handle=logger_handle+'.{{get_inst_name(child_node)}}',
                                                                                  inst_name='{{get_inst_name(child_node)}}')
             {%- endif -%}

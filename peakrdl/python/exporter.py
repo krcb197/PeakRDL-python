@@ -317,14 +317,14 @@ class PythonExporter:
             return ''
 
     def _get_field_bitmask_hex_string(self, node: FieldNode) -> str:
-        return '0x%X' % sum(2**x for x in range(node.lsb, node.msb+1))
+        return '0x%X' % sum(2**x for x in range(node.low, node.high+1))
 
     def _get_field_inv_bitmask_hex_string(self, node: FieldNode) -> str:
         reg_bitmask = (2 ** (node.parent.size * 8))-1
-        return '0x%X' % (reg_bitmask ^ sum(2**x for x in range(node.lsb, node.msb+1)))
+        return '0x%X' % (reg_bitmask ^ sum(2**x for x in range(node.low, node.high+1)))
 
     def _get_field_max_value_hex_string(self, node: FieldNode) -> str:
-        return '0x%X' % ((2 ** (node.msb - node.lsb + 1)) - 1)
+        return '0x%X' % ((2 ** (node.high - node.low + 1)) - 1)
 
     def _uses_enum(self, node: AddressableNode):
 

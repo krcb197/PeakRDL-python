@@ -185,13 +185,23 @@ class BaseTestContainer:
 
                 if isinstance(node, FieldNode):
 
-                    self.assertEqual(node.lsb, dut_obj.lsb, msg='lsb mismatch on {fqnode_path}'.format(fqnode_path=node.get_path()))
-                    self.assertEqual(node.msb, dut_obj.msb)
+                    self.assertEqual(node.lsb, dut_obj.lsb,
+                                     msg='lsb mismatch on {fqnode_path}'.format(
+                                         fqnode_path=node.get_path()))
+                    self.assertEqual(node.msb, dut_obj.msb,
+                                     msg='msb mismatch on {fqnode_path}'.format(
+                                         fqnode_path=node.get_path()))
+                    self.assertEqual(node.high, dut_obj.high,
+                                     msg='high mismatch on {fqnode_path}'.format(
+                                         fqnode_path=node.get_path()))
+                    self.assertEqual(node.low, dut_obj.low,
+                                     msg='low mismatch on {fqnode_path}'.format(
+                                         fqnode_path=node.get_path()))
                     self.assertEqual(node.width, dut_obj.width)
 
                     logger.info('checking bitmask - node : {fqnode_path}'.format(fqnode_path=node.get_path()))
                     for bit_position in range(dut_obj.register_data_width):
-                        if bit_position in range(node.lsb, node.msb+1):
+                        if bit_position in range(node.low, node.high+1):
                             self.assertEqual(dut_obj.bitmask & (1 << bit_position), (1 << bit_position))
                         else:
                             self.assertEqual(dut_obj.bitmask & (1 << bit_position), 0)
@@ -306,6 +316,51 @@ class BaseTestContainer:
                         # check the read has not been called in the write test
                         read_callback_mock.assert_not_called()
 
+        @staticmethod
+        def _reverse_bits(x: int, n: int) -> int:
+            """
+
+            Args:
+                x: value to reverse
+
+            Returns:
+                reversed valued
+
+            """
+            result = 0
+            for i in range(n):
+                if (x >> i) & 1:
+                    result |= 1 << (n - 1 - i)
+            return result
+
+        def test_reverse_bits(self):
+            """
+            Test that the reverse bits functions as expected
+            Returns:
+
+            """
+            self.assertEqual(0x1, self._reverse_bits(0x8, 4))
+            self.assertEqual(0x2, self._reverse_bits(0x4, 4))
+            self.assertEqual(0x4, self._reverse_bits(0x2, 4))
+            self.assertEqual(0x8, self._reverse_bits(0x1, 4))
+
+            self.assertEqual(0x3, self._reverse_bits(0xC, 4))
+            self.assertEqual(0x5, self._reverse_bits(0xA, 4))
+
+            self.assertEqual(0x0001, self._reverse_bits(0x8000, 16))
+            self.assertEqual(0x0002, self._reverse_bits(0x4000, 16))
+            self.assertEqual(0x0004, self._reverse_bits(0x2000, 16))
+            self.assertEqual(0x0008, self._reverse_bits(0x1000, 16))
+            self.assertEqual(0x0010, self._reverse_bits(0x0800, 16))
+            self.assertEqual(0x0020, self._reverse_bits(0x0400, 16))
+            self.assertEqual(0x0040, self._reverse_bits(0x0200, 16))
+            self.assertEqual(0x0080, self._reverse_bits(0x0100, 16))
+
+            self.assertEqual(0x3000, self._reverse_bits(0x000C, 16))
+            self.assertEqual(0x5555, self._reverse_bits(0xAAAA, 16))
+
+
+
         def test_int_field_read_and_write(self):
             """
             Check the ability to read and write to all registers
@@ -343,8 +398,17 @@ class BaseTestContainer:
                             read_callback_mock.reset_mock()
                             random_value = random.randrange(0, dut_obj.parent_register.max_value + 1)
                             read_callback_mock.return_value = random_value
-                            random_field_value = (random_value & dut_obj.bitmask) >> dut_obj.lsb
-                            self.assertEqual(dut_obj.read(), random_field_value)
+                            random_field_value = (random_value & dut_obj.bitmask) >> dut_obj.low
+                            read_back_value=dut_obj.read()
+                            if dut_obj.high == dut_obj.msb:
+                                self.assertEqual(read_back_value,
+                                                 random_field_value)
+                            elif dut_obj.high == dut_obj.lsb:
+                                self.assertEqual(read_back_value,
+                                                 self._reverse_bits(random_field_value, node.width),
+                                                 msg=f'{read_back_value=:X}, {self._reverse_bits(random_field_value, node.width)=:X} , {random_value=:X}, {random_field_value=:X}')
+                            else:
+                                raise RuntimeError('unhandled condition high does not equal msb or lsb')
                             read_callback_mock.assert_called_once()
 
                             # at the end of the read tests the write should not have been called
@@ -364,21 +428,34 @@ class BaseTestContainer:
 
                                     dut_obj.write(field_value)
 
-                                    if (((dut_obj.msb+1) - dut_obj.lsb) < dut_obj.parent_register.data_width) and (node.parent.has_sw_readable):
+                                    if (((dut_obj.high+1) - dut_obj.low) < dut_obj.parent_register.data_width) and (node.parent.has_sw_readable):
                                         read_callback_mock.assert_called_once()
                                     else:
                                         read_callback_mock.assert_not_called()
                                     write_callback_mock.assert_called_once()
                                     self.assertEqual(write_callback_mock.call_args[0][0],
                                                      dut_obj.parent_register.base_address)
+
+                                    if dut_obj.high == dut_obj.msb:
+                                        original_field_value = field_value
+                                    elif dut_obj.high == dut_obj.lsb:
+                                        original_field_value = field_value
+                                        field_value = self._reverse_bits(field_value, node.width)
+                                    else:
+                                        raise RuntimeError(
+                                            'unhandled condition high does not equal msb or lsb')
+
                                     if node.parent.has_sw_readable:
-                                        self.assertEqual(write_callback_mock.call_args[0][1],
-                                                         (reg_base_value & dut_obj.inverse_bitmask) | \
-                                                         (dut_obj.bitmask & (field_value << dut_obj.lsb)))
+                                        writen_value = write_callback_mock.call_args[0][1]
+                                        expected_value = (reg_base_value & dut_obj.inverse_bitmask) | \
+                                                         (dut_obj.bitmask & (field_value << dut_obj.low))
+                                        self.assertEqual(writen_value,
+                                                         expected_value,
+                                                         msg=f'{writen_value=:X}, {expected_value=:X}, {original_field_value=:X}, {field_value=:X}, {node.inst_name}, {reg_base_value=:X}')
                                     else:
                                         # if the register is not readable, the value is simply written
                                         self.assertEqual(write_callback_mock.call_args[0][1],
-                                                         field_value << dut_obj.lsb)
+                                                         field_value << dut_obj.low)
 
                             # check invalid write values bounce
                             with self.assertRaises(ValueError):
@@ -414,8 +491,14 @@ class BaseTestContainer:
                                 # set the simulated read_back value to
                                 random_value = random.randrange(0, dut_obj.register_data_width + 1)
                                 read_callback_mock.reset_mock()
-                                read_callback_mock.return_value = (random_value & dut_obj.inverse_bitmask) | \
-                                                                  (dut_obj.bitmask & (possible_enum_value.value << dut_obj.lsb))
+
+                                if dut_obj.high == dut_obj.msb:
+                                    read_callback_mock.return_value = (random_value & dut_obj.inverse_bitmask) | (dut_obj.bitmask & (possible_enum_value.value << dut_obj.low))
+                                elif dut_obj.high == dut_obj.lsb:
+                                    read_callback_mock.return_value = (random_value & dut_obj.inverse_bitmask) | (dut_obj.bitmask & (self._reverse_bits(x=possible_enum_value.value, n=node.width) << dut_obj.low))
+                                else:
+                                    raise RuntimeError(
+                                        'unhandled condition high does not equal msb or lsb')
 
                                 self.assertEqual(dut_obj.read(), possible_enum_value)
                                 legal_values.append(possible_enum_value.value)
@@ -435,7 +518,13 @@ class BaseTestContainer:
                                     with self.assertRaises(ValueError):
                                         read_callback_mock.reset_mock()
                                         random_value = random.randrange(0, dut_obj.register_data_width + 1)
-                                        read_callback_mock.return_value = ( random_value & dut_obj.inverse_bitmask) | ( dut_obj.bitmask & ( field_value << dut_obj.lsb))
+                                        if dut_obj.high == dut_obj.msb:
+                                            read_callback_mock.return_value = (random_value & dut_obj.inverse_bitmask) | (dut_obj.bitmask & (field_value << dut_obj.low))
+                                        elif dut_obj.high == dut_obj.lsb:
+                                            read_callback_mock.return_value = (random_value & dut_obj.inverse_bitmask) | (dut_obj.bitmask & (self._reverse_bits(x=field_value,n=node.width) << dut_obj.low))
+                                        else:
+                                            raise RuntimeError(
+                                                'unhandled condition high does not equal msb or lsb')
                                         decode_field_value = dut_obj.read()
 
                         write_callback_mock.assert_not_called()
@@ -449,20 +538,27 @@ class BaseTestContainer:
                                 read_callback_mock.return_value = random_value
 
                                 dut_obj.write(possible_enum_value)
-                                if (((dut_obj.msb + 1) - dut_obj.lsb) < dut_obj.parent_register.data_width) and (node.parent.has_sw_readable):
+                                if (((dut_obj.high + 1) - dut_obj.low) < dut_obj.parent_register.data_width) and (node.parent.has_sw_readable):
                                     read_callback_mock.assert_called_once()
                                 else:
                                     read_callback_mock.assert_not_called()
                                 write_callback_mock.assert_called_once()
                                 self.assertEqual(write_callback_mock.call_args[0][0], dut_obj.parent_register.base_address)
+                                if dut_obj.high == dut_obj.msb:
+                                    field_content = possible_enum_value.value
+                                elif dut_obj.high == dut_obj.lsb:
+                                    field_content = self._reverse_bits(x=possible_enum_value.value, n=node.width)
+                                else:
+                                    raise RuntimeError('unhandled condition high does not equal msb or lsb')
+
                                 if node.parent.has_sw_readable:
                                     self.assertEqual(write_callback_mock.call_args[0][1],
                                                      (random_value & dut_obj.inverse_bitmask) | \
-                                                     (dut_obj.bitmask & (possible_enum_value.value << dut_obj.lsb)))
+                                                     (dut_obj.bitmask & (field_content << dut_obj.low)))
                                 else:
                                     # if the register is not readable, the value is simply written
                                     self.assertEqual(write_callback_mock.call_args[0][1],
-                                                     possible_enum_value.value  << dut_obj.lsb)
+                                                     field_content  << dut_obj.low)
 
         def test_register_read_fields(self):
             """
@@ -493,7 +589,11 @@ class BaseTestContainer:
                                 # normal int field
                                 rand_field_value = random.randrange(0, field.max_value + 1)
 
-                            rand_reg_value = (rand_reg_value & field.inverse_bitmask) | (rand_field_value << field.lsb)
+                            if field.msb0 is False:
+                                rand_reg_value = (rand_reg_value & field.inverse_bitmask) | (rand_field_value << field.low)
+                            else:
+                                rand_reg_value = (rand_reg_value & field.inverse_bitmask) | \
+                                                 (self._reverse_bits(x=rand_field_value,n=field.width) << field.low)
 
                         with patch(__name__ + '.' + 'read_addr_space', return_value=rand_reg_value) as read_callback_mock:
 
@@ -556,7 +656,11 @@ class BaseTestContainer:
                                     rand_field_value = random.randrange(0,field_to_write.max_value + 1)
                                     kwargs[field_to_write.inst_name] = rand_field_value
 
-                                expected_value = (expected_value & field_to_write.inverse_bitmask) | (rand_field_value << field_to_write.lsb)
+                                if field_to_write.msb0 is False:
+                                    expected_value = (expected_value & field_to_write.inverse_bitmask) | (rand_field_value << field_to_write.low)
+                                else:
+                                    expected_value = (expected_value & field_to_write.inverse_bitmask) | \
+                                                     (self._reverse_bits(x=rand_field_value, n=field_to_write.width) << field_to_write.low)
 
                             with patch(__name__ + '.' + 'write_addr_space') as write_callback_mock, \
                                     patch(__name__ + '.' + 'read_addr_space', return_value=0) as read_callback_mock:
@@ -565,9 +669,6 @@ class BaseTestContainer:
                                 self.assertEqual(write_callback_mock.call_args[0][0],
                                                  dut_obj.base_address)
                                 self.assertEqual(write_callback_mock.call_args[0][1],expected_value)
-
-
-
 
         @classmethod
         def tearDownClass(cls) -> None:
@@ -608,6 +709,11 @@ class Test_field_with_overridden_reset(BaseTestContainer.BaseRDLTestCase):
 
     root_systemRDL_file = 'field_with_overridden_reset.rdl'
     root_node_name = 'field_with_overridden_reset'
+
+class Test_msb0_and_lsb0(BaseTestContainer.BaseRDLTestCase):
+
+    root_systemRDL_file = 'msb0_and_lsb0.rdl'
+    root_node_name = 'msb0_and_lsb0'
 
 if __name__ == '__main__':
     unittest.main()
