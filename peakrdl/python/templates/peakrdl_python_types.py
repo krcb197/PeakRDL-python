@@ -490,6 +490,16 @@ class Field(_Base):
         """
         return self.__msb0
 
+    @property
+    def lsb0(self) -> bool:
+        """
+        The field can either be lsb0 or msb0
+
+        Returns: true if lsb0
+
+        """
+        return self.__lsb0
+
 
 readable_reg_type = TypeVar('readable_reg_type', RegReadOnly, RegReadWrite)
 

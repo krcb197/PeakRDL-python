@@ -27,7 +27,8 @@ class PythonExporter:
             Additional context variables to load into the template namespace.
         """
         user_template_dir = kwargs.pop("user_template_dir", None)
-        self.user_template_context = kwargs.pop("user_template_context", dict())
+        self.user_template_context = kwargs.pop("user_template_context",
+                                                {})
         self.strict = False  # strict RDL rules rather than helpful impliciti
                              # behaviour
 
@@ -136,11 +137,11 @@ class PythonExporter:
                                        block.inst_name + '.py')
             if autoformatoutputs is True:
                 module_code_str = autopep8.fix_code(template.render(context))
-                with open(module_fqfn, "w") as fid:
+                with open(module_fqfn, "w", encoding='utf-8') as fid:
                     fid.write(module_code_str)
             else:
                 stream = template.stream(context)
-                stream.dump(module_fqfn)
+                stream.dump(module_fqfn, encoding='utf-8')
 
 
             template = self.jj_env.get_template("addrmap_tb.py.jinja")
@@ -149,11 +150,11 @@ class PythonExporter:
                                           'test_'+ block.inst_name + '.py')
             if autoformatoutputs is True:
                 module_tb_code_str = autopep8.fix_code(template.render(context))
-                with open(module_tb_fqfn, "w") as fid:
+                with open(module_tb_fqfn, "w", encoding='utf-8') as fid:
                     fid.write(module_tb_code_str)
             else:
                 stream = template.stream(context)
-                stream.dump(module_tb_fqfn)
+                stream.dump(module_tb_fqfn, encoding='utf-8')
 
         copyfile(src=os.path.join(os.path.dirname(__file__),
                                   "templates",
