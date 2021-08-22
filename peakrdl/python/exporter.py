@@ -1,4 +1,3 @@
-
 import os
 from pathlib import Path
 from shutil import copyfile
@@ -29,7 +28,7 @@ class PythonExporter:
         user_template_dir = kwargs.pop("user_template_dir", None)
         self.user_template_context = kwargs.pop("user_template_context",
                                                 {})
-        self.strict = False  # strict RDL rules rather than helpful impliciti
+        self.strict = False  # strict RDL rules rather than helpful implicit
                              # behaviour
 
         # Check for stray kwargs
@@ -124,8 +123,8 @@ class PythonExporter:
                 'get_field_max_value_hex_string': self._get_field_max_value_hex_string,
                 'get_reg_max_value_hex_string': self._get_reg_max_value_hex_string,
                 'get_table_block': self._get_table_block,
-                'get_reg_writable_fields' : self._get_reg_writable_fields,
-                'get_reg_readable_fields' : self._get_reg_readable_fields
+                'get_reg_writable_fields': self._get_reg_writable_fields,
+                'get_reg_readable_fields': self._get_reg_readable_fields
 
             }
 
@@ -143,11 +142,10 @@ class PythonExporter:
                 stream = template.stream(context)
                 stream.dump(module_fqfn, encoding='utf-8')
 
-
             template = self.jj_env.get_template("addrmap_tb.py.jinja")
             module_tb_fqfn = os.path.join(package_path,
                                           'tests',
-                                          'test_'+ block.inst_name + '.py')
+                                          'test_' + block.inst_name + '.py')
             if autoformatoutputs is True:
                 module_tb_code_str = autopep8.fix_code(template.render(context))
                 with open(module_tb_fqfn, "w", encoding='utf-8') as fid:
@@ -161,9 +159,9 @@ class PythonExporter:
                                   "peakrdl_python_types.py"),
                  dst=os.path.join(package_path,
                                   'reg_model',
-                                  'peakrdl_python_types.py' ))
+                                  'peakrdl_python_types.py'))
 
-        module_fqfn = os.path.join(package_path, 'reg_model','__init__.py')
+        module_fqfn = os.path.join(package_path, 'reg_model', '__init__.py')
         with open(module_fqfn, 'w', encoding='utf-8') as fid:
             fid.write('pass\n')
         module_fqfn = os.path.join(package_path, 'tests', '__init__.py')
@@ -196,7 +194,6 @@ class PythonExporter:
         # TODO if the node is a integer field we can use the base class no
         #      need to generate a unique instance, if it has not documentation
         #      properties
-
 
         if node.inst.original_def is None:
             # if the node has no orignal def, it likely cam from IPXACT, the
