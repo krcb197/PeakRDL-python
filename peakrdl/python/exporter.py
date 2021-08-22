@@ -163,11 +163,14 @@ class PythonExporter:
                                   'reg_model',
                                   'peakrdl_python_types.py' ))
 
-        with open(os.path.join(package_path, 'reg_model','__init__.py'), 'w') as fid:
+        module_fqfn = os.path.join(package_path, 'reg_model','__init__.py')
+        with open(module_fqfn, 'w', encoding='utf-8') as fid:
             fid.write('pass\n')
-        with open(os.path.join(package_path, 'tests','__init__.py'), 'w') as fid:
+        module_fqfn = os.path.join(package_path, 'tests', '__init__.py')
+        with open(module_fqfn, 'w', encoding='utf-8') as fid:
             fid.write('pass\n')
-        with open(os.path.join(package_path, '__init__.py'), 'w') as fid:
+        module_fqfn = os.path.join(package_path, '__init__.py')
+        with open(module_fqfn, 'w', encoding='utf-8') as fid:
             fid.write('pass\n')
 
         return [self._get_inst_name(m) for m in modules]
