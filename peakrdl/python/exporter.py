@@ -1,4 +1,3 @@
-
 import os
 from pathlib import Path
 from shutil import copyfile
@@ -27,8 +26,9 @@ class PythonExporter:
             Additional context variables to load into the template namespace.
         """
         user_template_dir = kwargs.pop("user_template_dir", None)
-        self.user_template_context = kwargs.pop("user_template_context", dict())
-        self.strict = False  # strict RDL rules rather than helpful impliciti
+        self.user_template_context = kwargs.pop("user_template_context",
+                                                {})
+        self.strict = False  # strict RDL rules rather than helpful implicit
                              # behaviour
 
         # Check for stray kwargs
@@ -123,8 +123,8 @@ class PythonExporter:
                 'get_field_max_value_hex_string': self._get_field_max_value_hex_string,
                 'get_reg_max_value_hex_string': self._get_reg_max_value_hex_string,
                 'get_table_block': self._get_table_block,
-                'get_reg_writable_fields' : self._get_reg_writable_fields,
-                'get_reg_readable_fields' : self._get_reg_readable_fields
+                'get_reg_writable_fields': self._get_reg_writable_fields,
+                'get_reg_readable_fields': self._get_reg_readable_fields
 
             }
 
@@ -136,37 +136,39 @@ class PythonExporter:
                                        block.inst_name + '.py')
             if autoformatoutputs is True:
                 module_code_str = autopep8.fix_code(template.render(context))
-                with open(module_fqfn, "w") as fid:
+                with open(module_fqfn, "w", encoding='utf-8') as fid:
                     fid.write(module_code_str)
             else:
                 stream = template.stream(context)
-                stream.dump(module_fqfn)
-
+                stream.dump(module_fqfn, encoding='utf-8')
 
             template = self.jj_env.get_template("addrmap_tb.py.jinja")
             module_tb_fqfn = os.path.join(package_path,
                                           'tests',
-                                          'test_'+ block.inst_name + '.py')
+                                          'test_' + block.inst_name + '.py')
             if autoformatoutputs is True:
                 module_tb_code_str = autopep8.fix_code(template.render(context))
-                with open(module_tb_fqfn, "w") as fid:
+                with open(module_tb_fqfn, "w", encoding='utf-8') as fid:
                     fid.write(module_tb_code_str)
             else:
                 stream = template.stream(context)
-                stream.dump(module_tb_fqfn)
+                stream.dump(module_tb_fqfn, encoding='utf-8')
 
         copyfile(src=os.path.join(os.path.dirname(__file__),
                                   "templates",
                                   "peakrdl_python_types.py"),
                  dst=os.path.join(package_path,
                                   'reg_model',
-                                  'peakrdl_python_types.py' ))
+                                  'peakrdl_python_types.py'))
 
-        with open(os.path.join(package_path, 'reg_model','__init__.py'), 'w') as fid:
+        module_fqfn = os.path.join(package_path, 'reg_model', '__init__.py')
+        with open(module_fqfn, 'w', encoding='utf-8') as fid:
             fid.write('pass\n')
-        with open(os.path.join(package_path, 'tests','__init__.py'), 'w') as fid:
+        module_fqfn = os.path.join(package_path, 'tests', '__init__.py')
+        with open(module_fqfn, 'w', encoding='utf-8') as fid:
             fid.write('pass\n')
-        with open(os.path.join(package_path, '__init__.py'), 'w') as fid:
+        module_fqfn = os.path.join(package_path, '__init__.py')
+        with open(module_fqfn, 'w', encoding='utf-8') as fid:
             fid.write('pass\n')
 
         return [self._get_inst_name(m) for m in modules]
@@ -193,13 +195,17 @@ class PythonExporter:
         #      need to generate a unique instance, if it has not documentation
         #      properties
 
+        if node.inst.original_def is None:
+            # if the node has no orignal def, it likely cam from IPXACT, the
+            # best choice is to mane the type after the fuller qualified path
+            fqnode = node.get_path(hier_separator='___',
+                                   array_suffix='_{index:d}_of_{dim:d}',
+                                   empty_array_suffix='_of_{dim:d}')
+            return fqnode
+
         # This code handles cases where a field has a reset value such that
         # it end up with the reset value appended to the type name. For the
         # register model we don't care about reset signal and these value
-        if node.inst.original_def is None:
-            return node.inst_name
-
-
         original_type_name = node.inst.original_def.type_name
         inst_type_name = node.inst.type_name
 
@@ -312,14 +318,14 @@ class PythonExporter:
             return ''
 
     def _get_field_bitmask_hex_string(self, node: FieldNode) -> str:
-        return '0x%X' % sum(2**x for x in range(node.lsb, node.msb+1))
+        return '0x%X' % sum(2**x for x in range(node.low, node.high+1))
 
     def _get_field_inv_bitmask_hex_string(self, node: FieldNode) -> str:
         reg_bitmask = (2 ** (node.parent.size * 8))-1
-        return '0x%X' % (reg_bitmask ^ sum(2**x for x in range(node.lsb, node.msb+1)))
+        return '0x%X' % (reg_bitmask ^ sum(2**x for x in range(node.low, node.high+1)))
 
     def _get_field_max_value_hex_string(self, node: FieldNode) -> str:
-        return '0x%X' % ((2 ** (node.msb - node.lsb + 1)) - 1)
+        return '0x%X' % ((2 ** (node.high - node.low + 1)) - 1)
 
     def _uses_enum(self, node: AddressableNode):
 

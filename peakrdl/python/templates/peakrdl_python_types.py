@@ -294,72 +294,32 @@ class RegReadWrite(Reg):
         """
         return self.__read_callback(self.base_address)
 
-
-class Field(_Base):
+def _swap_msb_lsb_ordering(width:int, value:int) -> int:
     """
-    base class of register field wrappers
+    swaps the msb/lsb on a integer
 
-    Note:
-        It is not expected that this class will be instantiated under normal
-        circumstances however, it is useful for type checking
+    Returns:
+        swapped value
     """
+    value_to_return=0
+    for bit_positions in zip(range(0,width), range(width-1, -1, -1)):
+        bit_value = (value >> bit_positions[0]) & 0x1
+        value_to_return |= bit_value << bit_positions[1]
 
-    __slots__ = ['__parent_register', '__msb', '__lsb', '__bitmask', '__width']
+    return value_to_return
 
-    def __init__(self, parent_register: Reg, width: int,
-                 msb: int, lsb: int, logger_handle: str, inst_name: str):
+class FieldSizeProps():
+    """
+    class that holds the size properties of a register field
+    """
+    __slots__ = ['__msb', '__lsb', '__width', '__high', '__low']
 
-        super().__init__(logger_handle=logger_handle,
-                         inst_name=inst_name)
-
-        if not isinstance(parent_register, Reg):
-            raise TypeError('parent register must be of type reg_cls '
-                            'but got %s' % type(parent_register))
-        self.__parent_register = parent_register
-
-        if width < 1:
-            raise ValueError('width must be greater than 0')
-
-        if width > self.parent_register.data_width:
-            raise ValueError('width can not be greater than parent width')
-
+    def __init__(self, width: int, msb: int, lsb: int, high: int, low: int):
         self.__width = width
-
-        if msb < lsb:
-            raise ValueError('field msb can not be less than the lsb')
-
-        if lsb < 0:
-            raise ValueError('field lsb cannot be less than zero')
-
-        if msb > self.parent_register.data_width:
-            raise ValueError('field msb must be less than the parent '
-                             'register width')
-
-        if lsb > self.parent_register.data_width:
-            raise ValueError('field lsb must be less than the parent '
-                             'register width')
-
-        if msb - lsb + 1 != width:
-            raise ValueError('field width defined by lsb and msb does not match'
-                             ' specified width')
-
         self.__msb = msb
         self.__lsb = lsb
-
-        self.__bitmask = 0
-        for bit_position in range(self.__lsb, self.__msb+1):
-            self.__bitmask |= (1 << bit_position)
-
-    @property
-    def parent_register(self) -> Reg:
-        """
-        Register within which the field is located
-
-        Note:
-            This is an advanced user feature, and will not be needed in most
-            normal usage
-        """
-        return self.__parent_register
+        self.__high = high
+        self.__low = low
 
     @property
     def lsb(self) -> int:
@@ -368,7 +328,7 @@ class Field(_Base):
         parent register
 
         Note:
-            The first bit in the register is bit 0
+            fields can be defined as msb in bit 0 or as lsb in bit 0
         """
         return self.__lsb
 
@@ -379,7 +339,7 @@ class Field(_Base):
         parent register
 
         Note:
-            The first bit in the register is bit 0
+            fields can be defined as msb in bit 0 or as lsb in bit 0
         """
         return self.__msb
 
@@ -402,6 +362,169 @@ class Field(_Base):
 
         """
         return (2 ** self.width) - 1
+
+    @property
+    def high(self) -> int:
+        """
+        low index of the bit range of the field in the
+        parent register
+
+        Note:
+            The first bit in the register is bit 0
+        """
+        return self.__high
+
+    @property
+    def low(self) -> int:
+        """
+        low index of the bit range of the field in the
+        parent register
+
+        Note:
+            The first bit in the register is bit 0
+        """
+        return self.__low
+
+class Field(_Base):
+    """
+    base class of register field wrappers
+
+    Note:
+        It is not expected that this class will be instantiated under normal
+        circumstances however, it is useful for type checking
+    """
+
+    __slots__ = ['__parent_register', '__size_props',
+                 '__bitmask', '__msb0', '__lsb0']
+
+    def __init__(self, parent_register: Reg, size_props: FieldSizeProps,
+                 logger_handle: str, inst_name: str):
+
+        super().__init__(logger_handle=logger_handle,
+                         inst_name=inst_name)
+
+        if not isinstance(size_props, FieldSizeProps):
+            raise TypeError('size_props must be of type FieldSizeProps '
+                            'but got %s' % type(size_props))
+        self.__size_props = size_props
+
+        if not isinstance(parent_register, Reg):
+            raise TypeError('parent register must be of type reg_cls '
+                            'but got %s' % type(parent_register))
+        self.__parent_register = parent_register
+
+        if self.width < 1:
+            raise ValueError('width must be greater than 0')
+
+        if self.width > self.parent_register.data_width:
+            raise ValueError('width can not be greater than parent width')
+
+        if self.high < self.low:
+            raise ValueError('field high bit position can not be less than the '
+                             'low bit position')
+
+        if self.lsb < 0:
+            raise ValueError('field low bit position cannot be less than zero')
+
+        if self.high > self.parent_register.data_width:
+            raise ValueError('field high bit position must be less than the '
+                             'parent register width')
+
+        if self.low > self.parent_register.data_width:
+            raise ValueError('field lsb must be less than the parent '
+                             'register width')
+
+        if self.high - self.low + 1 != self.width:
+            raise ValueError('field width defined by lsb and msb does not match'
+                             ' specified width')
+
+        if ((self.msb == self.high) and (self.lsb == self.low)):
+            self.__lsb0 = True
+            self.__msb0 = False
+        elif ((self.msb == self.low) and (self.lsb == self.high)):
+            self.__lsb0 = False
+            self.__msb0 = True
+        else:
+            raise ValueError('msb/lsb are inconsistent with low/high')
+
+        self.__bitmask = 0
+        for bit_position in range(self.low, self.high+1):
+            self.__bitmask |= (1 << bit_position)
+
+    @property
+    def parent_register(self) -> Reg:
+        """
+        Register within which the field is located
+
+        Note:
+            This is an advanced user feature, and will not be needed in most
+            normal usage
+        """
+        return self.__parent_register
+
+    @property
+    def lsb(self) -> int:
+        """
+        bit position of the least significant bit (lsb) of the field in the
+        parent register
+
+        Note:
+            fields can be defined as msb in bit 0 or as lsb in bit 0
+        """
+        return self.__size_props.lsb
+
+    @property
+    def msb(self) -> int:
+        """
+        bit position of the most significant bit (msb) of the field in the
+        parent register
+
+        Note:
+            fields can be defined as msb in bit 0 or as lsb in bit 0
+        """
+        return self.__size_props.msb
+
+    @property
+    def width(self) -> int:
+        """
+        The width of the field in bits
+        """
+        return self.__size_props.width
+
+    @property
+    def max_value(self) -> int:
+        """maximum unsigned integer value that can be stored in the field
+
+        For example:
+
+        * 8-bit field returns 0xFF (255)
+        * 16-bit field returns 0xFFFF (65535)
+        * 32-bit field returns 0xFFFF_FFFF (4294967295)
+
+        """
+        return (2 ** self.width) - 1
+
+    @property
+    def high(self) -> int:
+        """
+        low index of the bit range of the field in the
+        parent register
+
+        Note:
+            The first bit in the register is bit 0
+        """
+        return self.__size_props.high
+
+    @property
+    def low(self) -> int:
+        """
+        low index of the bit range of the field in the
+        parent register
+
+        Note:
+            The first bit in the register is bit 0
+        """
+        return self.__size_props.low
 
     @property
     def bitmask(self) -> int:
@@ -431,6 +554,26 @@ class Field(_Base):
         """
         return self.parent_register.max_value ^ self.bitmask
 
+    @property
+    def msb0(self) -> bool:
+        """
+        The field can either be lsb0 or msb0
+
+        Returns: true if msb0
+
+        """
+        return self.__msb0
+
+    @property
+    def lsb0(self) -> bool:
+        """
+        The field can either be lsb0 or msb0
+
+        Returns: true if lsb0
+
+        """
+        return self.__lsb0
+
 
 readable_reg_type = TypeVar('readable_reg_type', RegReadOnly, RegReadWrite)
 
@@ -441,25 +584,25 @@ class FieldReadOnly(Field):
 
     Args:
         parent_register: register within which the field resides
-        width: field width in bits
-        lsb: bit position of the field lsb in the register
-        msb: bit position of the field lsb in the register
+        size_props: object defining the msb, lsb, high bit, low bit and width
         logger_handle: name to be used logging messages associate with this
             object
 
     """
     __slots__ = []
 
-    def __init__(self, parent_register: readable_reg_type, width: int,
-                 msb: int, lsb: int, logger_handle: str, inst_name: str):
+    def __init__(self,
+                 parent_register: readable_reg_type,
+                 size_props: FieldSizeProps,
+                 logger_handle: str,
+                 inst_name: str):
 
         if not isinstance(parent_register, (RegReadWrite, RegReadOnly)):
             raise TypeError('parent register must be of type reg_cls but'
                             ' got %s' % type(parent_register))
 
         super().__init__(logger_handle=logger_handle,
-                         width=width,
-                         msb=msb, lsb=lsb,
+                         size_props=size_props,
                          parent_register=parent_register,
                          inst_name=inst_name)
 
@@ -485,7 +628,11 @@ class FieldReadOnly(Field):
             raise ValueError(f'value to bede coded must be less than or equal '
                              f'to {self.parent_register.max_value:d}')
 
-        return (value & self.bitmask) >> self.lsb
+        if self.msb0 is False:
+            return (value & self.bitmask) >> self.low
+        else:
+            return _swap_msb_lsb_ordering(value = (value & self.bitmask) >> self.low,
+                                          width = self.width)
 
     def read(self) -> int:
         """
@@ -513,26 +660,25 @@ class FieldWriteOnly(Field):
 
     Args:
         parent_register: register within which the field resides
-        width: field width in bits
-        lsb: bit position of the field lsb in the register
-        msb: bit position of the field lsb in the register
+        size_props: object defining the msb, lsb, high bit, low bit and width
         logger_handle: name to be used logging messages associate with this
             object
 
     """
     __slots__ = []
 
-    def __init__(self, parent_register: writeable_reg_type, width: int,
-                 msb: int, lsb: int, logger_handle: str, inst_name: str):
+    def __init__(self,
+                 parent_register: writeable_reg_type,
+                 size_props: FieldSizeProps,
+                 logger_handle: str,
+                 inst_name: str):
 
         if not isinstance(parent_register, (RegReadWrite, RegWriteOnly)):
             raise TypeError('parent register must be of type reg_cls but '
                             'got %s' % type(parent_register))
 
         super().__init__(logger_handle=logger_handle,
-                         width=width,
-                         msb=msb,
-                         lsb=lsb,
+                         size_props=size_props,
                          parent_register=parent_register,
                          inst_name=inst_name)
 
@@ -549,7 +695,11 @@ class FieldWriteOnly(Field):
             raise ValueError('value to be written to register must be less '
                              'than or equal to %d' % self.max_value)
 
-        return value << self.lsb
+        if self.msb0 is False:
+            return value << self.low
+        else:
+            return _swap_msb_lsb_ordering(value = value,  width = self.width) << self.low
+
 
     def write(self, value: int) -> NoReturn:
         """
@@ -578,19 +728,22 @@ class FieldWriteOnly(Field):
             raise ValueError('value to be written to register must be less '
                              'than or equal to %d' % self.max_value)
 
-        if (self.msb == (self.parent_register.data_width - 1)) and \
-                (self.lsb == 0):
+        if self.msb0:
+            value = _swap_msb_lsb_ordering(value=value, width=self.width)
+
+        if (self.high == (self.parent_register.data_width - 1)) and \
+                (self.low == 0):
             # special case where the field occupies the whole register,
             # there a straight write can be performed
-            new_reg_value = (value << self.lsb)
+            new_reg_value = value
         else:
             # do a read, modify write
             if isinstance(self.parent_register, RegReadWrite):
                 reg_value = self.parent_register.read()
                 masked_reg_value = reg_value & self.inverse_bitmask
-                new_reg_value = masked_reg_value | (value << self.lsb)
+                new_reg_value = masked_reg_value | (value << self.low)
             elif isinstance(self.parent_register, RegWriteOnly):
-                new_reg_value = (value << self.lsb)
+                new_reg_value = (value << self.low)
             else:
                 raise TypeError('Unhandled parent type')
 
@@ -607,9 +760,7 @@ class FieldReadWrite(FieldReadOnly, FieldWriteOnly):
 
     Args:
         parent_register: register within which the field resides
-        width: field width in bits
-        lsb: bit position of the field lsb in the register
-        msb: bit position of the field lsb in the register
+        size_props: object defining the msb, lsb, high bit, low bit and width
         logger_handle: name to be used logging messages associate with this
             object
 
@@ -617,9 +768,7 @@ class FieldReadWrite(FieldReadOnly, FieldWriteOnly):
     __slots__ = []
 
     def __init__(self, parent_register: RegReadWrite,
-                 width: int,
-                 msb: int,
-                 lsb: int,
+                 size_props: FieldSizeProps,
                  logger_handle: str,
                  inst_name: str):
 
@@ -628,9 +777,7 @@ class FieldReadWrite(FieldReadOnly, FieldWriteOnly):
                             ' got %s' % type(parent_register))
 
         super().__init__(logger_handle=logger_handle,
-                         width=width,
-                         msb=msb,
-                         lsb=lsb,
+                         size_props=size_props,
                          parent_register=parent_register,
                          inst_name=inst_name)
 

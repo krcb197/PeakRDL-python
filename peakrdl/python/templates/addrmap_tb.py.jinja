@@ -31,6 +31,23 @@ class {{get_type_name(top_node)}}_TestCase(unittest.TestCase):
     def setUp(self):
         self.dut = {{get_type_name(top_node)}}_cls(read_callback=read_callback, write_callback=write_callback)
 
+    @staticmethod
+    def _reverse_bits(x: int, n: int) -> int:
+        """
+
+        Args:
+            x: value to reverse
+            n: number of bits used in the value
+
+        Returns:
+            reversed valued
+        """
+        result = 0
+        for i in range(n):
+            if (x >> i) & 1:
+                result |= 1 << (n - 1 - i)
+        return result
+
     def test_addresses_default_baseaddress(self):
         """
         Walk the address map and check the address of every register is correct
@@ -52,6 +69,10 @@ class {{get_type_name(top_node)}}_TestCase(unittest.TestCase):
                         {{node.lsb}})
         self.assertEqual(self.dut.{{'.'.join(node.get_path_segments()[1:])}}.msb,
                          {{node.msb}})
+        self.assertEqual(self.dut.{{'.'.join(node.get_path_segments()[1:])}}.low,
+                        {{node.low}})
+        self.assertEqual(self.dut.{{'.'.join(node.get_path_segments()[1:])}}.high,
+                         {{node.high}})
         self.assertEqual(self.dut.{{'.'.join(node.get_path_segments()[1:])}}.bitmask,
                          {{get_field_bitmask_hex_string(node)}})
         self.assertEqual(self.dut.{{'.'.join(node.get_path_segments()[1:])}}.inverse_bitmask,
@@ -175,9 +196,14 @@ class {{get_type_name(top_node)}}_TestCase(unittest.TestCase):
             read_callback_mock.reset_mock()
             random_value = random.randrange(0, {{get_reg_max_value_hex_string(node.parent)}}+1)
             read_callback_mock.return_value = random_value
-            random_field_value = (random_value & {{get_field_bitmask_hex_string(node)}}) >> {{node.lsb}}
+            random_field_value = (random_value & {{get_field_bitmask_hex_string(node)}}) >> {{node.low}}
+            {% if node.msb == node.high -%}
             self.assertEqual(self.dut.{{'.'.join(node.get_path_segments()[1:])}}.read(),
                              random_field_value)
+            {% else -%}
+            self.assertEqual(self.dut.{{'.'.join(node.get_path_segments()[1:])}}.read(),
+                             self._reverse_bits(x=random_field_value, n={{node.width}}))
+            {% endif -%}
             read_callback_mock.assert_called_once()
 
             # at the end of the read tests the write should not have been called
@@ -197,7 +223,7 @@ class {{get_type_name(top_node)}}_TestCase(unittest.TestCase):
 
                     self.dut.{{'.'.join(node.get_path_segments()[1:])}}.write(field_value)
 
-                    {% if (((node.msb+1) - node.lsb) < (node.parent.size*8)) and (node.parent.has_sw_readable) %}
+                    {% if (((node.high+1) - node.low) < (node.parent.size*8)) and (node.parent.has_sw_readable) %}
                     read_callback_mock.assert_called_once()
                     {% else %}
                     read_callback_mock.assert_not_called()
@@ -205,14 +231,25 @@ class {{get_type_name(top_node)}}_TestCase(unittest.TestCase):
                     write_callback_mock.assert_called_once()
                     self.assertEqual(write_callback_mock.call_args[0][0],
                                      {{node.parent.absolute_address}})
-                    {% if node.parent.has_sw_readable %}
+                    {% if node.parent.has_sw_readable -%}
+                    {% if node.msb == node.high -%}
                     self.assertEqual(write_callback_mock.call_args[0][1],
                                      (reg_base_value & {{get_field_inv_bitmask_hex_string(node)}}) | \
-                                     ({{get_field_bitmask_hex_string(node)}} & (field_value << {{node.lsb}})))
-                    {% else %}
-                    # if the register is not readable, the value is simply written
+                                     ({{get_field_bitmask_hex_string(node)}} & (field_value << {{node.low}})))
+                    {% else -%}
                     self.assertEqual(write_callback_mock.call_args[0][1],
-                                     field_value << {{node.lsb}})
+                                     (reg_base_value & {{get_field_inv_bitmask_hex_string(node)}}) | \
+                                     ({{get_field_bitmask_hex_string(node)}} & (self._reverse_bits(x=field_value, n={{node.width}}) << {{node.low}})))
+                    {% endif -%}
+                    {% else -%}
+                    # if the register is not readable, the value is simply written
+                    {% if node.msb == node.high -%}
+                    self.assertEqual(write_callback_mock.call_args[0][1],
+                                     field_value << {{node.low}})
+                    {% else -%}
+                    self.assertEqual(write_callback_mock.call_args[0][1],
+                                     self._reverse_bits(x=field_value, n={{node.width}}) << {{node.low}})
+                    {% endif -%}
                     {% endif %}
 
             # check invalid write values bounce
@@ -247,15 +284,20 @@ class {{get_type_name(top_node)}}_TestCase(unittest.TestCase):
             # set the simulated read_back value to {{value_of_enum_needed.name}}
             random_reg_value = random.randrange(0, {{get_reg_max_value_hex_string(node.parent)}} + 1)
             read_callback_mock.reset_mock()
+            {% if node.msb == node.high -%}
             read_callback_mock.return_value = (random_reg_value & {{get_field_inv_bitmask_hex_string(node)}}) | \
-                                              ({{get_field_bitmask_hex_string(node)}} & ({{value_of_enum_needed.value}} << {{node.lsb}} ))
+                                              ({{get_field_bitmask_hex_string(node)}} & ({{value_of_enum_needed.value}} << {{node.low}} ))
+            {% else -%}
+            read_callback_mock.return_value = (random_reg_value & {{get_field_inv_bitmask_hex_string(node)}}) | \
+                                              ({{get_field_bitmask_hex_string(node)}} & (self._reverse_bits(x={{value_of_enum_needed.value}}, n={{node.width}}) << {{node.low}} ))
+            {% endif -%}
 
             self.assertEqual(self.dut.{{'.'.join(node.get_path_segments()[1:])}}.read(),
                              self.dut.{{'.'.join(node.get_path_segments()[1:])}}.enum_cls.{{value_of_enum_needed.name}})
             read_callback_mock.assert_called_once()
             {% endfor %}
 
-            {% if node.get_property('encode').__len__() < (2**((node.msb+1) - node.lsb)) %}
+            {% if node.get_property('encode').__len__() < (2**((node.high+1) - node.low)) %}
             # check that other values of the field int
             # that don't appear in the enum generate an
             # error
@@ -266,8 +308,13 @@ class {{get_type_name(top_node)}}_TestCase(unittest.TestCase):
                 with self.assertRaises(ValueError):
                     read_callback_mock.reset_mock()
                     random_reg_value = random.randrange(0, {{get_reg_max_value_hex_string(node.parent)}} + 1)
+                    {% if node.msb == node.high -%}
                     read_callback_mock.return_value = (random_reg_value & {{get_field_inv_bitmask_hex_string(node)}}) | \
-                                     ({{get_field_bitmask_hex_string(node)}} & (field_value << {{node.lsb}}))
+                                     ({{get_field_bitmask_hex_string(node)}} & (field_value << {{node.low}}))
+                    {% else -%}
+                    read_callback_mock.return_value = (random_reg_value & {{get_field_inv_bitmask_hex_string(node)}}) | \
+                                     ({{get_field_bitmask_hex_string(node)}} & (self._reverse_bits(x=field_value, n={{node.width}}) << {{node.low}}))
+                    {% endif -%}
                     decode_field_value = self.dut.{{'.'.join(node.get_path_segments()[1:])}}.read()
             {% endif %}
             write_callback_mock.assert_not_called()
@@ -283,7 +330,7 @@ class {{get_type_name(top_node)}}_TestCase(unittest.TestCase):
 
             self.dut.{{'.'.join(node.get_path_segments()[1:])}}.write(enum_cls.{{value_of_enum_needed.name}})
 
-            {% if (((node.msb+1) - node.lsb) < (node.parent.size*8)) and (node.parent.has_sw_readable) %}
+            {% if ( node.width < (node.parent.size*8)) and (node.parent.has_sw_readable) %}
             read_callback_mock.assert_called_once()
             {% else %}
             read_callback_mock.assert_not_called()
@@ -292,14 +339,25 @@ class {{get_type_name(top_node)}}_TestCase(unittest.TestCase):
             write_callback_mock.assert_called_once()
             self.assertEqual(write_callback_mock.call_args[0][0],
                              {{node.parent.absolute_address}})
-            {% if node.parent.has_sw_readable %}
+            {% if node.parent.has_sw_readable -%}
+            {% if node.msb == node.high -%}
             self.assertEqual(write_callback_mock.call_args[0][1],
                              (random_reg_value & {{get_field_inv_bitmask_hex_string(node)}}) | \
-                             ({{get_field_bitmask_hex_string(node)}} & ({{value_of_enum_needed.value}} << {{node.lsb}})))
-            {% else %}
-            # if the register is not readable, the value is simply written
+                             ({{get_field_bitmask_hex_string(node)}} & ({{value_of_enum_needed.value}} << {{node.low}})))
+            {% else -%}
             self.assertEqual(write_callback_mock.call_args[0][1],
-                             {{value_of_enum_needed.value}} << {{node.lsb}})
+                             (random_reg_value & {{get_field_inv_bitmask_hex_string(node)}}) | \
+                             ({{get_field_bitmask_hex_string(node)}} & (self._reverse_bits(x={{value_of_enum_needed.value}}, n={{node.width}}) << {{node.low}})))
+            {% endif -%}
+            {% else -%}
+            # if the register is not readable, the value is simply written
+            {% if node.msb == node.high -%}
+            self.assertEqual(write_callback_mock.call_args[0][1],
+                             {{value_of_enum_needed.value}} << {{node.low}})
+            {% else -%}
+            self.assertEqual(write_callback_mock.call_args[0][1],
+                             self._reverse_bits(x={{value_of_enum_needed.value}}, n={{node.width}}) << {{node.low}})
+            {% endif -%}
             {% endif %}
 
             {% endfor %}
@@ -329,7 +387,11 @@ class {{get_type_name(top_node)}}_TestCase(unittest.TestCase):
         {%- else %}
         rand_field_value = random.randrange(0, {{ get_field_max_value_hex_string(field) }} + 1)
         {%- endif %}
-        rand_reg_value = (rand_reg_value & {{get_field_inv_bitmask_hex_string(field)}}) | (rand_field_value << {{ field.lsb }})
+        {% if field.msb == field.high -%}
+        rand_reg_value = (rand_reg_value & {{get_field_inv_bitmask_hex_string(field)}}) | (rand_field_value << {{ field.low }})
+        {% else -%}
+        rand_reg_value = (rand_reg_value & {{get_field_inv_bitmask_hex_string(field)}}) | (self._reverse_bits(x=rand_field_value, n={{field.width}}) << {{ field.low }})
+        {% endif -%}
         {%- endif %}
         {% endfor %}
         with patch(__name__ + '.' + 'read_addr_space', return_value=rand_reg_value):
@@ -371,7 +433,12 @@ class {{get_type_name(top_node)}}_TestCase(unittest.TestCase):
                                 rand_field_value = random.randrange(0, field.max_value + 1)
                                 kwargs[field_str] = rand_field_value
 
-                            expected_value = ( expected_value & field.inverse_bitmask ) | (rand_field_value << field.lsb)
+                            if field.msb == field.high:
+                                expected_value = ( expected_value & field.inverse_bitmask ) | (rand_field_value << field.low)
+                            elif field.msb == field.low:
+                                expected_value = ( expected_value & field.inverse_bitmask ) | (self._reverse_bits(x=rand_field_value, n=field.width) << field.low)
+                            else:
+                                raise RuntimeError('invalid msb/lsb high/low combination')
 
                         reg.write_fields(**kwargs)
                         write_callback_mock.assert_called_once()
@@ -407,7 +474,7 @@ class {{get_type_name(top_node)}}_TestCase(unittest.TestCase):
         rand_field_value = random.randrange(0, {{ get_field_max_value_hex_string(field) }} + 1)
         kwargs['{{field.inst_name}}'] = rand_field_value
         {%- endif  %}
-        expected_value = ( expected_value & {{get_field_inv_bitmask_hex_string(field)}} ) | (rand_field_value << {{ field.lsb }})
+        expected_value = ( expected_value & {{get_field_inv_bitmask_hex_string(field)}} ) | (rand_field_value << {{ field.low }})
         {% endfor %}
         with patch(__name__ + '.' + 'write_addr_space') as write_callback_mock, \
             patch(__name__ + '.' + 'read_addr_space', return_value=0) as read_callback_mock:
