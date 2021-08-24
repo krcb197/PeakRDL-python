@@ -1,3 +1,6 @@
+"""
+Blah Blah
+"""
 import os
 from pathlib import Path
 from shutil import copyfile
@@ -18,12 +21,12 @@ class PythonExporter:
     def __init__(self, **kwargs):
         """
         Constructor for the Python Exporter class
-        Parameters
-        ----------
-        user_template_dir: str
-            Path to a directory where user-defined template overrides are stored.
-        user_template_context: dict
-            Additional context variables to load into the template namespace.
+
+        Args:
+            user_template_dir (str) : Path to a directory where user-defined
+                template overrides are stored.
+            user_template_context (dict) : Additional context variables to load
+                into the template namespace.
         """
         user_template_dir = kwargs.pop("user_template_dir", None)
         self.user_template_context = kwargs.pop("user_template_context",
@@ -63,19 +66,21 @@ class PythonExporter:
         #   components, this is the original_def (which can be None in some cases)
         self.namespace_db = {}
 
-    def export(self, node: Node, path: str, autoformatoutputs: bool=True, **kwargs):
+    def export(self, node: Node, path: str,
+               autoformatoutputs: bool=True,
+               **kwargs):
         """
-        Perform the export!
-        Parameters
-        ----------
-        node: systemrdl.Node
-            Top-level node to export. Can be the top-level `RootNode` or any
-            internal `AddrmapNode`.
-        path: str
-            Output package path.
-        autoformatoutputs: bool
-            If set to True the code will be run through autopep8 to clean it up
-            This can slow down large jobs or mask problems
+        Generated Python Code and Testbench
+
+        Args:
+            node (str) : Top-level node to export. Can be the top-level `RootNode` or any
+                  internal `AddrmapNode`.
+            path (str) : Output package path.
+            autoformatoutputs (bool) : If set to True the code will be run through autopep8 to clean it up
+                This can slow down large jobs or mask problems
+
+        Returns:
+            List[str] : modules that have been exported:
         """
 
         # Check for stray kwargs

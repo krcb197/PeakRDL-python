@@ -11,13 +11,14 @@ class _Base:
 
     def __init__(self, logger_handle: str, inst_name: str):
         self.__logger = logging.getLogger(logger_handle)
-        self._logger.info(f'creating instance of {self.__class__}')
+        self._logger.debug(f'creating instance of {self.__class__}')
 
         self.__inst_name = inst_name
 
     @property
     def _logger(self) -> logging.Logger:
         return self.__logger
+
 
     @property
     def inst_name(self) -> str:

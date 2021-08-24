@@ -10,13 +10,15 @@ from systemrdl import RDLCompiler
 
 from peakrdl.python.exporter import PythonExporter
 
-def parse_args():
+def build_command_line_parser():
     '''Program specific argument parsing'''
-    parser = argparse.ArgumentParser(description='Generate Python output from systemRDL')
+    parser = argparse.ArgumentParser(
+        description='Generate Python output from systemRDL')
     parser.add_argument('infile', metavar='file', type=str,
                         help='input systemRDL file')
 
-    parser.add_argument('--include_dir', type=str, action='append', metavar='dir',
+    parser.add_argument('--include_dir', type=str, action='append',
+                        metavar='dir',
                         help='add dir to include search path')
     parser.add_argument('--outdir', type=str, default='.',
                         help='output director (default: %(default)s)')
@@ -27,7 +29,6 @@ def parse_args():
     parser.add_argument('--autoformat', action='store_true',
                         help='use autopep8 on generated code')
 
-
     checker = parser.add_argument_group('post-generate checks')
     checker.add_argument('--lint', action='store_true',
                          help='run pylint on the generated python')
@@ -35,11 +36,16 @@ def parse_args():
                          help='run unittests for the created')
     checker.add_argument('--coverage', action='store_true',
                          help='run a coverage report on the unittests')
-    checker.add_argument('--html_coverage_out', help='output director (default: %(default)s)')
+    checker.add_argument('--html_coverage_out',
+                         help='output director (default: %(default)s)')
 
-    temp = parser.parse_args()
+    return parser
 
-    return temp
+def parse_args():
+
+    cli_parser = build_command_line_parser()
+
+    return cli_parser.parse_args()
 
 def compile_rdl(infile, incl_search_paths=None, top=None):
     '''compile the rdl'''
@@ -82,7 +88,6 @@ if __name__ == '__main__':
 
         if args.coverage:
             cov.stop()
-            #cov.save()
 
         if args.html_coverage_out is not None:
             cov.html_report(directory=args.html_coverage_out )
