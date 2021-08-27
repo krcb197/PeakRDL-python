@@ -64,10 +64,11 @@ def generate(root, outdir, autoformatoutputs=True):
 def run_lint(root, outdir):
     subprocess.run(['pylint', '--rcfile', os.path.join('tests','pylint.rc'), os.path.join(outdir, root)])
 
-if __name__ == '__main__':
+def main_function():
     args = parse_args()
-    spec = compile_rdl(args.infile, incl_search_paths=args.include_dir, top=args.top)
-    #overrides = {k.prop: k.new for k in args.O}
+    spec = compile_rdl(args.infile, incl_search_paths=args.include_dir,
+                       top=args.top)
+    # overrides = {k.prop: k.new for k in args.O}
     blocks = generate(spec, args.outdir, args.autoformat)
     if args.lint:
         print('***************************************************************')
@@ -79,10 +80,13 @@ if __name__ == '__main__':
         print('* Unit Test Run                                               *')
         print('***************************************************************')
         if args.coverage:
-            cov = coverage.Coverage(include=[f'*\\{spec.inst_name}\\reg_model\\*.py',
-                                             f'*\\{spec.inst_name}\\tests\\*.py'])
+            cov = coverage.Coverage(
+                include=[f'*\\{spec.inst_name}\\reg_model\\*.py',
+                         f'*\\{spec.inst_name}\\tests\\*.py'])
             cov.start()
-        tests = unittest.TestLoader().discover(start_dir=os.path.join(args.outdir, spec.inst_name, 'tests'), top_level_dir=args.outdir)
+        tests = unittest.TestLoader().discover(
+            start_dir=os.path.join(args.outdir, spec.inst_name, 'tests'),
+            top_level_dir=args.outdir)
         runner = unittest.TextTestRunner()
         result = runner.run(tests)
 
@@ -90,4 +94,9 @@ if __name__ == '__main__':
             cov.stop()
 
         if args.html_coverage_out is not None:
-            cov.html_report(directory=args.html_coverage_out )
+            cov.html_report(directory=args.html_coverage_out)
+
+
+if __name__ == '__main__':
+    main_function()
+

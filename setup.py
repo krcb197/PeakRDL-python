@@ -4,7 +4,7 @@ import setuptools
 with open("README.md", "r") as fh:
     long_description = fh.read()
 
-with open(os.path.join("peakrdl/python", "__about__.py")) as f:
+with open(os.path.join("peakrdl", "python", "__about__.py")) as f:
     v_dict = {}
     exec(f.read(), v_dict)
     version = v_dict['__version__']
@@ -19,6 +19,7 @@ setuptools.setup(
     url="https://github.com/krcb197/PeakRDL-python",
     packages=['peakrdl.python'],
     include_package_data=True,
+    entry_points= { 'console_scripts' : ['peakpython=peakrdl.python.peakpython:main_function'] },
     install_requires=[
         "systemrdl-compiler>=1.12.0",
         "autopep8",
