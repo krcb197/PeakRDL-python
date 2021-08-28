@@ -5,6 +5,6 @@
 Generate Python wrapper for a register model compiled SystemRDL input
 
 ## Documentation
-See the [PeakRDL Python Documentation]https://peakrdl-python.readthedocs.io/) for more details
+See the [PeakRDL Python Documentation](https://peakrdl-python.readthedocs.io/) for more details
 
 
