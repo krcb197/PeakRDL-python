@@ -14,7 +14,7 @@ import coverage
 from systemrdl import RDLCompiler
 from systemrdl.node import Node, AddrmapNode
 
-from .exporter import PythonExporter
+from peakrdl.python.exporter import PythonExporter
 
 
 def build_command_line_parser() -> argparse.ArgumentParser:
