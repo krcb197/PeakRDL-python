@@ -3,14 +3,31 @@
 # A comma-separated list of package or module names from where C extensions may
 # be loaded. Extensions are loading into the active Python interpreter and may
 # run arbitrary code.
+extension-pkg-allow-list=
+
+# A comma-separated list of package or module names from where C extensions may
+# be loaded. Extensions are loading into the active Python interpreter and may
+# run arbitrary code. (This is an alternative name to extension-pkg-allow-list
+# for backward compatibility.)
 extension-pkg-whitelist=
 
-# Add files or directories to the blacklist. They should be base names, not
-# paths.
-ignore=CVS, parser, docs, test
+# Return non-zero exit code if any of these messages/categories are detected,
+# even if score is above --fail-under value. Syntax same as enable. Messages
+# specified are enabled, while categories only check already-enabled messages.
+fail-on=
 
-# Add files or directories matching the regex patterns to the blacklist. The
-# regex matches against base names, not paths.
+# Specify a score threshold to be exceeded before program exits with error.
+fail-under=10.0
+
+# Files or directories to be skipped. They should be base names, not paths.
+ignore=CVS
+
+# Add files or directories matching the regex patterns to the ignore-list. The
+# regex matches against paths.
+ignore-paths=
+
+# Files or directories matching the regex patterns are skipped. The regex
+# matches against base names, not paths.
 ignore-patterns=
 
 # Python code to execute, usually for sys.path manipulation such as
@@ -19,7 +36,7 @@ ignore-patterns=
 
 # Use multiple processes to speed up Pylint. Specifying 0 will auto-detect the
 # number of processors available to use.
-jobs=0
+jobs=1
 
 # Control the amount of potential inferred values when inferring a single
 # object. This can help the performance when dealing with large functions or
@@ -32,9 +49,6 @@ load-plugins=
 
 # Pickle collected data for later comparisons.
 persistent=yes
-
-# Specify a configuration file.
-#rcfile=
 
 # When enabled, pylint would attempt to guess common misconfiguration and emit
 # user-friendly hints instead of false-positive error messages.
@@ -60,20 +74,24 @@ confidence=
 # --enable=similarities". If you want to run only the classes checker, but have
 # no Warning level messages displayed, use "--disable=all --enable=classes
 # --disable=W".
-disable=
+disable=print-statement,
         parameter-unpacking,
         unpacking-in-except,
+        old-raise-syntax,
         backtick,
         long-suffix,
+        old-ne-operator,
+        old-octal-literal,
         import-star-module-level,
+        non-ascii-bytes-literal,
         raw-checker-failed,
         bad-inline-option,
         locally-disabled,
-        locally-enabled,
         file-ignored,
         suppressed-message,
         useless-suppression,
         deprecated-pragma,
+        use-symbolic-message-instead,
         apply-builtin,
         basestring-builtin,
         buffer-builtin,
@@ -92,6 +110,7 @@ disable=
         getslice-method,
         setslice-method,
         no-absolute-import,
+        old-division,
         dict-iter-method,
         dict-view-method,
         next-method-called,
@@ -120,39 +139,25 @@ disable=
         invalid-str-codec,
         sys-max-int,
         bad-python3-import,
+        deprecated-string-function,
+        deprecated-str-translate-call,
+        deprecated-itertools-function,
+        deprecated-types-field,
+        next-method-defined,
+        dict-items-not-iterating,
+        dict-keys-not-iterating,
+        dict-values-not-iterating,
+        deprecated-operator-function,
+        deprecated-urllib-function,
+        xreadlines-attribute,
+        deprecated-sys-function,
+        exception-escape,
+        comprehension-escape,
 
-        # Disable for now during development
+        #additional items for this library
         fixme,
-        no-member,
-        subprocess-run-check,
-        logging-fstring-interpolation, 
-        invalid-overridden-method,
-        
-
-        # User ignored limits
-        too-many-locals,
-        too-many-branches,
-        too-many-return-statements,
-        too-few-public-methods,
-        too-many-public-methods,
-        too-many-statements,
-        too-many-instance-attributes,
-        line-too-long,
-
-        useless-return,
-        no-else-return,
-        inconsistent-return-statements,
-        cyclic-import,
-        no-self-use,
-        unused-variable,
-
-        bad-continuation,
-        invalid-name,
-        missing-docstring,
-
-        unidiomatic-typecheck,
-        abstract-method,
-        protected-access
+        import-error,
+        no-name-in-module
 
 # Enable the message, report, category or checker with the given id(s). You can
 # either give multiple identifier separated by comma (,) or put this option
@@ -195,15 +200,201 @@ max-nested-blocks=5
 # inconsistent-return-statements if a never returning function is called then
 # it will be considered as an explicit return statement and no message will be
 # printed.
-never-returning-functions=sys.exit
+never-returning-functions=sys.exit,argparse.parse_error
 
 
-[STRING]
+[BASIC]
 
-# This flag controls whether the implicit-str-concat-in-sequence should
-# generate a warning on implicit string concatenation in sequences defined over
-# several lines.
-check-str-concat-over-line-jumps=no
+# Naming style matching correct argument names.
+argument-naming-style=snake_case
+
+# Regular expression matching correct argument names. Overrides argument-
+# naming-style.
+#argument-rgx=
+
+# Naming style matching correct attribute names.
+attr-naming-style=snake_case
+
+# Regular expression matching correct attribute names. Overrides attr-naming-
+# style.
+#attr-rgx=
+
+# Bad variable names which should always be refused, separated by a comma.
+bad-names=foo,
+          bar,
+          baz,
+          toto,
+          tutu,
+          tata
+
+# Bad variable names regexes, separated by a comma. If names match any regex,
+# they will always be refused
+bad-names-rgxs=
+
+# Naming style matching correct class attribute names.
+class-attribute-naming-style=any
+
+# Regular expression matching correct class attribute names. Overrides class-
+# attribute-naming-style.
+#class-attribute-rgx=
+
+# Naming style matching correct class constant names.
+class-const-naming-style=UPPER_CASE
+
+# Regular expression matching correct class constant names. Overrides class-
+# const-naming-style.
+#class-const-rgx=
+
+# Naming style matching correct class names.
+class-naming-style=PascalCase
+
+# Regular expression matching correct class names. Overrides class-naming-
+# style.
+#class-rgx=
+
+# Naming style matching correct constant names.
+const-naming-style=UPPER_CASE
+
+# Regular expression matching correct constant names. Overrides const-naming-
+# style.
+#const-rgx=
+
+# Minimum line length for functions/classes that require docstrings, shorter
+# ones are exempt.
+docstring-min-length=-1
+
+# Naming style matching correct function names.
+function-naming-style=snake_case
+
+# Regular expression matching correct function names. Overrides function-
+# naming-style.
+#function-rgx=
+
+# Good variable names which should always be accepted, separated by a comma.
+good-names=i,
+           j,
+           k,
+           ex,
+           Run,
+           _
+
+# Good variable names regexes, separated by a comma. If names match any regex,
+# they will always be accepted
+good-names-rgxs=
+
+# Include a hint for the correct naming format with invalid-name.
+include-naming-hint=no
+
+# Naming style matching correct inline iteration names.
+inlinevar-naming-style=any
+
+# Regular expression matching correct inline iteration names. Overrides
+# inlinevar-naming-style.
+#inlinevar-rgx=
+
+# Naming style matching correct method names.
+method-naming-style=snake_case
+
+# Regular expression matching correct method names. Overrides method-naming-
+# style.
+#method-rgx=
+
+# Naming style matching correct module names.
+module-naming-style=snake_case
+
+# Regular expression matching correct module names. Overrides module-naming-
+# style.
+#module-rgx=
+
+# Colon-delimited sets of names that determine each other's naming style when
+# the name regexes allow several styles.
+name-group=
+
+# Regular expression which should only match function or class names that do
+# not require a docstring.
+no-docstring-rgx=^_
+
+# List of decorators that produce properties, such as abc.abstractproperty. Add
+# to this list to register other decorators that produce valid properties.
+# These decorators are taken in consideration only for invalid-name.
+property-classes=abc.abstractproperty
+
+# Naming style matching correct variable names.
+variable-naming-style=snake_case
+
+# Regular expression matching correct variable names. Overrides variable-
+# naming-style.
+#variable-rgx=
+
+
+[FORMAT]
+
+# Expected format of line ending, e.g. empty (any line ending), LF or CRLF.
+expected-line-ending-format=
+
+# Regexp for a line that is allowed to be longer than the limit.
+ignore-long-lines=^\s*(# )?<?https?://\S+>?$
+
+# Number of spaces of indent required inside a hanging or continued line.
+indent-after-paren=4
+
+# String used as indentation unit. This is usually "    " (4 spaces) or "\t" (1
+# tab).
+indent-string='    '
+
+# Maximum number of characters on a single line.
+max-line-length=100
+
+# Maximum number of lines in a module.
+max-module-lines=1000
+
+# Allow the body of a class to be on the same line as the declaration if body
+# contains single statement.
+single-line-class-stmt=no
+
+# Allow the body of an if to be on the same line as the test if there is no
+# else.
+single-line-if-stmt=no
+
+
+[LOGGING]
+
+# The type of string formatting that logging methods do. `old` means using %
+# formatting, `new` is for `{}` formatting.
+logging-format-style=old
+
+# Logging modules to check that the string format arguments are in logging
+# function parameter format.
+logging-modules=logging
+
+
+[MISCELLANEOUS]
+
+# List of note tags to take in consideration, separated by a comma.
+notes=FIXME,
+      XXX,
+      TODO
+
+# Regular expression of note tags to take in consideration.
+#notes-rgx=
+
+
+[SIMILARITIES]
+
+# Comments are removed from the similarity computation
+ignore-comments=yes
+
+# Docstrings are removed from the similarity computation
+ignore-docstrings=yes
+
+# Imports are removed from the similarity computation
+ignore-imports=no
+
+# Signatures are removed from the similarity computation
+ignore-signatures=no
+
+# Minimum lines number of a similarity.
+min-similarity-lines=4
 
 
 [SPELLING]
@@ -212,8 +403,12 @@ check-str-concat-over-line-jumps=no
 max-spelling-suggestions=4
 
 # Spelling dictionary name. Available dictionaries: none. To make it work,
-# install the python-enchant package.
+# install the 'python-enchant' package.
 spelling-dict=
+
+# List of comma separated words that should be considered directives if they
+# appear and the beginning of a comment and should not be checked.
+spelling-ignore-comment-directives=fmt: on,fmt: off,noqa:,noqa,nosec,isort:skip,mypy:
 
 # List of comma separated words that should not be checked.
 spelling-ignore-words=
@@ -226,60 +421,15 @@ spelling-private-dict-file=
 spelling-store-unknown-words=no
 
 
-[LOGGING]
+[STRING]
 
-# Format style used to check logging format string. `old` means using %
-# formatting, `new` is for `{}` formatting,and `fstr` is for f-strings.
-logging-format-style=old
+# This flag controls whether inconsistent-quotes generates a warning when the
+# character used as a quote delimiter is used inconsistently within a module.
+check-quote-consistency=no
 
-# Logging modules to check that the string format arguments are in logging
-# function parameter format.
-logging-modules=logging
-
-
-[VARIABLES]
-
-# List of additional names supposed to be defined in builtins. Remember that
-# you should avoid defining new builtins when possible.
-additional-builtins=
-
-# Tells whether unused global variables should be treated as a violation.
-allow-global-unused-variables=yes
-
-# List of strings which can identify a callback function by name. A callback
-# name must start or end with one of those strings.
-callbacks=cb_,
-          _cb
-
-# A regular expression matching the name of dummy variables (i.e. expected to
-# not be used).
-dummy-variables-rgx=_+$|(_[a-zA-Z0-9_]*[a-zA-Z0-9]+?$)|dummy|^ignored_|^unused_
-
-# Argument names that match this expression will be ignored. Default to name
-# with leading underscore.
-ignored-argument-names=_.*|^ignored_|^unused_
-
-# Tells whether we should check for unused import in __init__ files.
-init-import=no
-
-# List of qualified module names which can have objects that can redefine
-# builtins.
-redefining-builtins-modules=six.moves,past.builtins,future.builtins,builtins,io
-
-
-[SIMILARITIES]
-
-# Ignore comments when computing similarities.
-ignore-comments=yes
-
-# Ignore docstrings when computing similarities.
-ignore-docstrings=yes
-
-# Ignore imports when computing similarities.
-ignore-imports=no
-
-# Minimum lines number of a similarity.
-min-similarity-lines=10
+# This flag controls whether the implicit-str-concat should generate a warning
+# on implicit string concatenation in sequences defined over several lines.
+check-str-concat-over-line-jumps=no
 
 
 [TYPECHECK]
@@ -337,161 +487,43 @@ missing-member-max-choices=1
 signature-mutators=
 
 
-[FORMAT]
+[VARIABLES]
 
-# Expected format of line ending, e.g. empty (any line ending), LF or CRLF.
-expected-line-ending-format=
+# List of additional names supposed to be defined in builtins. Remember that
+# you should avoid defining new builtins when possible.
+additional-builtins=
 
-# Regexp for a line that is allowed to be longer than the limit.
-ignore-long-lines=^\s*(# )?<?https?://\S+>?$
+# Tells whether unused global variables should be treated as a violation.
+allow-global-unused-variables=yes
 
-# Number of spaces of indent required inside a hanging or continued line.
-indent-after-paren=4
+# List of names allowed to shadow builtins
+allowed-redefined-builtins=
 
-# String used as indentation unit. This is usually "    " (4 spaces) or "\t" (1
-# tab).
-indent-string='    '
+# List of strings which can identify a callback function by name. A callback
+# name must start or end with one of those strings.
+callbacks=cb_,
+          _cb
 
-# Maximum number of characters on a single line.
-max-line-length=110
+# A regular expression matching the name of dummy variables (i.e. expected to
+# not be used).
+dummy-variables-rgx=_+$|(_[a-zA-Z0-9_]*[a-zA-Z0-9]+?$)|dummy|^ignored_|^unused_
 
-# Maximum number of lines in a module.
-max-module-lines=2000
+# Argument names that match this expression will be ignored. Default to name
+# with leading underscore.
+ignored-argument-names=_.*|^ignored_|^unused_
 
-# List of optional constructs for which whitespace checking is disabled. `dict-
-# separator` is used to allow tabulation in dicts, etc.: {1  : 1,\n222: 2}.
-# `trailing-comma` allows a space between comma and closing bracket: (a, ).
-# `empty-line` allows space-only lines.
-no-space-check=trailing-comma,
-               dict-separator
+# Tells whether we should check for unused import in __init__ files.
+init-import=no
 
-# Allow the body of a class to be on the same line as the declaration if body
-# contains single statement.
-single-line-class-stmt=no
-
-# Allow the body of an if to be on the same line as the test if there is no
-# else.
-single-line-if-stmt=no
-
-
-[MISCELLANEOUS]
-
-# List of note tags to take in consideration, separated by a comma.
-notes=FIXME,
-      XXX,
-      TODO
-
-
-[BASIC]
-
-# Naming style matching correct argument names.
-argument-naming-style=snake_case
-
-# Regular expression matching correct argument names. Overrides argument-
-# naming-style.
-#argument-rgx=
-
-# Naming style matching correct attribute names.
-attr-naming-style=snake_case
-
-# Regular expression matching correct attribute names. Overrides attr-naming-
-# style.
-#attr-rgx=
-
-# Bad variable names which should always be refused, separated by a comma.
-bad-names=foo,
-          bar,
-          baz,
-          toto,
-          tutu,
-          tata
-
-# Naming style matching correct class attribute names.
-class-attribute-naming-style=any
-
-# Regular expression matching correct class attribute names. Overrides class-
-# attribute-naming-style.
-#class-attribute-rgx=
-
-# Naming style matching correct class names.
-class-naming-style=PascalCase
-
-# Regular expression matching correct class names. Overrides class-naming-
-# style.
-#class-rgx=
-
-# Naming style matching correct constant names.
-const-naming-style=UPPER_CASE
-
-# Regular expression matching correct constant names. Overrides const-naming-
-# style.
-#const-rgx=
-
-# Minimum line length for functions/classes that require docstrings, shorter
-# ones are exempt.
-docstring-min-length=-1
-
-# Naming style matching correct function names.
-function-naming-style=snake_case
-
-# Regular expression matching correct function names. Overrides function-
-# naming-style.
-#function-rgx=
-
-# Good variable names which should always be accepted, separated by a comma.
-good-names=i,
-           j,
-           k,
-           ex,
-           Run,
-           _
-
-# Include a hint for the correct naming format with invalid-name.
-include-naming-hint=no
-
-# Naming style matching correct inline iteration names.
-inlinevar-naming-style=any
-
-# Regular expression matching correct inline iteration names. Overrides
-# inlinevar-naming-style.
-#inlinevar-rgx=
-
-# Naming style matching correct method names.
-method-naming-style=snake_case
-
-# Regular expression matching correct method names. Overrides method-naming-
-# style.
-#method-rgx=
-
-# Naming style matching correct module names.
-module-naming-style=snake_case
-
-# Regular expression matching correct module names. Overrides module-naming-
-# style.
-#module-rgx=
-
-# Colon-delimited sets of names that determine each other's naming style when
-# the name regexes allow several styles.
-name-group=
-
-# Regular expression which should only match function or class names that do
-# not require a docstring.
-no-docstring-rgx=^_
-
-# List of decorators that produce properties, such as abc.abstractproperty. Add
-# to this list to register other decorators that produce valid properties.
-# These decorators are taken in consideration only for invalid-name.
-property-classes=abc.abstractproperty
-
-# Naming style matching correct variable names.
-variable-naming-style=snake_case
-
-# Regular expression matching correct variable names. Overrides variable-
-# naming-style.
-#variable-rgx=
+# List of qualified module names which can have objects that can redefine
+# builtins.
+redefining-builtins-modules=six.moves,past.builtins,future.builtins,builtins,io
 
 
 [CLASSES]
+
+# Warn about protected attribute access inside special methods
+check-protected-access-in-special-methods=no
 
 # List of method names used to declare (i.e. assign) instance attributes.
 defining-attr-methods=__init__,
@@ -516,8 +548,12 @@ valid-metaclass-classmethod-first-arg=cls
 
 [DESIGN]
 
+# List of qualified class names to ignore when countint class parents (see
+# R0901)
+ignored-parents=
+
 # Maximum number of arguments for function / method.
-max-args=8
+max-args=7
 
 # Maximum number of attributes for a class (see R0902).
 max-attributes=7
@@ -544,7 +580,7 @@ max-returns=6
 max-statements=50
 
 # Minimum number of public methods for a class (see R0903).
-min-public-methods=2
+min-public-methods=1
 
 
 [IMPORTS]
@@ -562,18 +598,19 @@ allow-wildcard-with-all=no
 analyse-fallback-blocks=no
 
 # Deprecated modules which should not be used, separated by a comma.
-deprecated-modules=optparse,tkinter.tix
+deprecated-modules=
 
-# Create a graph of external dependencies in the given file (report RP0402 must
-# not be disabled).
+# Output a graph (.gv or any supported image format) of external dependencies
+# to the given file (report RP0402 must not be disabled).
 ext-import-graph=
 
-# Create a graph of every (i.e. internal and external) dependencies in the
-# given file (report RP0402 must not be disabled).
+# Output a graph (.gv or any supported image format) of all (i.e. internal and
+# external) dependencies to the given file (report RP0402 must not be
+# disabled).
 import-graph=
 
-# Create a graph of internal dependencies in the given file (report RP0402 must
-# not be disabled).
+# Output a graph (.gv or any supported image format) of internal dependencies
+# to the given file (report RP0402 must not be disabled).
 int-import-graph=
 
 # Force import order to recognize a module as part of the standard

@@ -1,17 +1,29 @@
+"""
+Command Line tool for the PeakRDL Python
+"""
+
 #!/usr/bin/env python3
 import argparse
 import os
 import subprocess
 import unittest.loader
+from typing import List, Union
 
 import coverage
 
 from systemrdl import RDLCompiler
+from systemrdl.node import Node, AddrmapNode
 
 from peakrdl.python.exporter import PythonExporter
 
-def build_command_line_parser():
-    '''Program specific argument parsing'''
+
+def build_command_line_parser() -> argparse.ArgumentParser:
+    """
+    generates the command line argument parser to be used by the module.
+
+    Returns:
+        command line args parser
+    """
     parser = argparse.ArgumentParser(
         description='Generate Python output from systemRDL')
     parser.add_argument('infile', metavar='file', type=str,
@@ -23,7 +35,8 @@ def build_command_line_parser():
     parser.add_argument('--outdir', type=str, default='.',
                         help='output director (default: %(default)s)')
     parser.add_argument('--top', type=str,
-                        help='specify top level addrmap (default operation will use last defined global addrmap)')
+                        help='specify top level addrmap (default operation will use last defined '
+                             'global addrmap)')
     parser.add_argument('--verbose', '-v', action='count', default=0,
                         help='set logging verbosity')
     parser.add_argument('--autoformat', action='store_true',
@@ -41,20 +54,41 @@ def build_command_line_parser():
 
     return parser
 
-def parse_args():
 
-    cli_parser = build_command_line_parser()
+def compile_rdl(infile:str,
+                incl_search_paths:Union[type(None), List[str]]=None,
+                top:Union[type(None), str]=None) -> AddrmapNode:
+    """
+    Compile the systemRDL
 
-    return cli_parser.parse_args()
+    Args:
+        infile: top level systemRDL file
+        incl_search_paths: list of additional paths where dependent systemRDL files can be
+            retrived from. Set to ```none``` if no additional paths are required.
+        top: name of the top level address map
 
-def compile_rdl(infile, incl_search_paths=None, top=None):
-    '''compile the rdl'''
+    Returns:
+
+    """
     rdlc = RDLCompiler()
     rdlc.compile_file(infile, incl_search_paths=incl_search_paths)
     return rdlc.elaborate(top_def_name=top).top
 
-def generate(root, outdir, autoformatoutputs=True):
-    '''generate the python'''
+
+def generate(root:Node, outdir:str, autoformatoutputs:bool=True) -> List[str]:
+    """
+    Generate a PeakRDL output package from compiled systemRDL
+
+    Args:
+        root: node in the systemRDL from which the code should be generated
+        outdir: directory to store the result in
+        autoformatoutputs: If set to True the code will be run through autopep8 to
+                clean it up. This can slow down large jobs or mask problems
+
+    Returns:
+        List of strings with the module names generated
+
+    """
     print('Info: Generating python for {} in {}'.format(root.inst_name, outdir))
     modules = PythonExporter().export(root, outdir,
                                       autoformatoutputs=autoformatoutputs)
@@ -62,13 +96,45 @@ def generate(root, outdir, autoformatoutputs=True):
     return modules
 
 def run_lint(root, outdir):
-    subprocess.run(['pylint', '--rcfile', os.path.join('tests','pylint.rc'), os.path.join(outdir, root)])
+    """
+    Run the lint checks using pylint on a directory
 
-if __name__ == '__main__':
-    args = parse_args()
-    spec = compile_rdl(args.infile, incl_search_paths=args.include_dir, top=args.top)
-    #overrides = {k.prop: k.new for k in args.O}
-    blocks = generate(spec, args.outdir, args.autoformat)
+    Args:
+        root: name of the generated package (directory)
+        outdir: location where the package has been written
+
+    Returns:
+
+    """
+    subprocess.run(['pylint', '--rcfile',
+                    os.path.join('tests','pylint.rc'),
+                    os.path.join(outdir, root)],
+                   check=False)
+
+def main_function():
+    """
+    Main function for the Command Line tool, this needs to be separated out so that it can be
+    referenced in setup.py
+
+    Returns:
+        None
+
+    """
+
+    cli_parser = build_command_line_parser()
+    args = cli_parser.parse_args()
+
+    print('***************************************************************')
+    print('* Compile the SystemRDL                                       *')
+    print('***************************************************************')
+    spec = compile_rdl(args.infile, incl_search_paths=args.include_dir,
+                       top=args.top)
+
+    print('***************************************************************')
+    print('* Generate the Python Package                                 *')
+    print('***************************************************************')
+    generate(spec, args.outdir, args.autoformat)
+
     if args.lint:
         print('***************************************************************')
         print('* Lint Checks                                                 *')
@@ -79,15 +145,22 @@ if __name__ == '__main__':
         print('* Unit Test Run                                               *')
         print('***************************************************************')
         if args.coverage:
-            cov = coverage.Coverage(include=[f'*\\{spec.inst_name}\\reg_model\\*.py',
-                                             f'*\\{spec.inst_name}\\tests\\*.py'])
+            cov = coverage.Coverage(
+                include=[f'*\\{spec.inst_name}\\reg_model\\*.py',
+                         f'*\\{spec.inst_name}\\tests\\*.py'])
             cov.start()
-        tests = unittest.TestLoader().discover(start_dir=os.path.join(args.outdir, spec.inst_name, 'tests'), top_level_dir=args.outdir)
+        tests = unittest.TestLoader().discover(
+            start_dir=os.path.join(args.outdir, spec.inst_name, 'tests'),
+            top_level_dir=args.outdir)
         runner = unittest.TextTestRunner()
-        result = runner.run(tests)
+        runner.run(tests)
 
         if args.coverage:
             cov.stop()
 
         if args.html_coverage_out is not None:
-            cov.html_report(directory=args.html_coverage_out )
+            cov.html_report(directory=args.html_coverage_out)
+
+
+if __name__ == '__main__':
+    main_function()

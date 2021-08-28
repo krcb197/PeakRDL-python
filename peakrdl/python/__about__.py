@@ -1,1 +1,4 @@
-__version__ = "0.0.6"
+"""
+Variables that describes the PeakRDL Package
+"""
+__version__ = "0.0.7"
