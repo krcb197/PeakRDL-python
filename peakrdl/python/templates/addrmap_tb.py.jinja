@@ -32,20 +32,20 @@ class {{top_node.type_name}}_TestCase(unittest.TestCase):
         self.dut = {{top_node.type_name}}_cls(read_callback=read_callback, write_callback=write_callback)
 
     @staticmethod
-    def _reverse_bits(x: int, n: int) -> int:
+    def _reverse_bits(value: int, number_bits: int) -> int:
         """
 
         Args:
-            x: value to reverse
-            n: number of bits used in the value
+            value: value to reverse
+            number_bits: number of bits used in the value
 
         Returns:
             reversed valued
         """
         result = 0
-        for i in range(n):
-            if (x >> i) & 1:
-                result |= 1 << (n - 1 - i)
+        for i in range(number_bits):
+            if (value >> i) & 1:
+                result |= 1 << (number_bits - 1 - i)
         return result
 
     def test_addresses_default_baseaddress(self):
@@ -202,7 +202,7 @@ class {{top_node.type_name}}_TestCase(unittest.TestCase):
                              random_field_value)
             {% else -%}
             self.assertEqual(self.dut.{{'.'.join(node.get_path_segments()[1:])}}.read(),
-                             self._reverse_bits(x=random_field_value, n={{node.width}}))
+                             self._reverse_bits(value=random_field_value, number_bits={{node.width}}))
             {% endif -%}
             read_callback_mock.assert_called_once()
 
@@ -239,7 +239,7 @@ class {{top_node.type_name}}_TestCase(unittest.TestCase):
                     {% else -%}
                     self.assertEqual(write_callback_mock.call_args[0][1],
                                      (reg_base_value & {{get_field_inv_bitmask_hex_string(node)}}) | \
-                                     ({{get_field_bitmask_hex_string(node)}} & (self._reverse_bits(x=field_value, n={{node.width}}) << {{node.low}})))
+                                     ({{get_field_bitmask_hex_string(node)}} & (self._reverse_bits(value=field_value, number_bits={{node.width}}) << {{node.low}})))
                     {% endif -%}
                     {% else -%}
                     # if the register is not readable, the value is simply written
@@ -248,7 +248,7 @@ class {{top_node.type_name}}_TestCase(unittest.TestCase):
                                      field_value << {{node.low}})
                     {% else -%}
                     self.assertEqual(write_callback_mock.call_args[0][1],
-                                     self._reverse_bits(x=field_value, n={{node.width}}) << {{node.low}})
+                                     self._reverse_bits(value=field_value, number_bits={{node.width}}) << {{node.low}})
                     {% endif -%}
                     {% endif %}
 
@@ -289,7 +289,7 @@ class {{top_node.type_name}}_TestCase(unittest.TestCase):
                                               ({{get_field_bitmask_hex_string(node)}} & ({{value_of_enum_needed.value}} << {{node.low}} ))
             {% else -%}
             read_callback_mock.return_value = (random_reg_value & {{get_field_inv_bitmask_hex_string(node)}}) | \
-                                              ({{get_field_bitmask_hex_string(node)}} & (self._reverse_bits(x={{value_of_enum_needed.value}}, n={{node.width}}) << {{node.low}} ))
+                                              ({{get_field_bitmask_hex_string(node)}} & (self._reverse_bits(value={{value_of_enum_needed.value}}, number_bits={{node.width}}) << {{node.low}} ))
             {% endif -%}
 
             self.assertEqual(self.dut.{{'.'.join(node.get_path_segments()[1:])}}.read(),
@@ -313,7 +313,7 @@ class {{top_node.type_name}}_TestCase(unittest.TestCase):
                                      ({{get_field_bitmask_hex_string(node)}} & (field_value << {{node.low}}))
                     {% else -%}
                     read_callback_mock.return_value = (random_reg_value & {{get_field_inv_bitmask_hex_string(node)}}) | \
-                                     ({{get_field_bitmask_hex_string(node)}} & (self._reverse_bits(x=field_value, n={{node.width}}) << {{node.low}}))
+                                     ({{get_field_bitmask_hex_string(node)}} & (self._reverse_bits(value=field_value, number_bits={{node.width}}) << {{node.low}}))
                     {% endif -%}
                     decode_field_value = self.dut.{{'.'.join(node.get_path_segments()[1:])}}.read()
             {% endif %}
@@ -347,7 +347,7 @@ class {{top_node.type_name}}_TestCase(unittest.TestCase):
             {% else -%}
             self.assertEqual(write_callback_mock.call_args[0][1],
                              (random_reg_value & {{get_field_inv_bitmask_hex_string(node)}}) | \
-                             ({{get_field_bitmask_hex_string(node)}} & (self._reverse_bits(x={{value_of_enum_needed.value}}, n={{node.width}}) << {{node.low}})))
+                             ({{get_field_bitmask_hex_string(node)}} & (self._reverse_bits(value={{value_of_enum_needed.value}}, number_bits={{node.width}}) << {{node.low}})))
             {% endif -%}
             {% else -%}
             # if the register is not readable, the value is simply written
@@ -356,7 +356,7 @@ class {{top_node.type_name}}_TestCase(unittest.TestCase):
                              {{value_of_enum_needed.value}} << {{node.low}})
             {% else -%}
             self.assertEqual(write_callback_mock.call_args[0][1],
-                             self._reverse_bits(x={{value_of_enum_needed.value}}, n={{node.width}}) << {{node.low}})
+                             self._reverse_bits(value={{value_of_enum_needed.value}}, number_bits={{node.width}}) << {{node.low}})
             {% endif -%}
             {% endif %}
 
@@ -390,7 +390,7 @@ class {{top_node.type_name}}_TestCase(unittest.TestCase):
         {% if field.msb == field.high -%}
         rand_reg_value = (rand_reg_value & {{get_field_inv_bitmask_hex_string(field)}}) | (rand_field_value << {{ field.low }})
         {% else -%}
-        rand_reg_value = (rand_reg_value & {{get_field_inv_bitmask_hex_string(field)}}) | (self._reverse_bits(x=rand_field_value, n={{field.width}}) << {{ field.low }})
+        rand_reg_value = (rand_reg_value & {{get_field_inv_bitmask_hex_string(field)}}) | (self._reverse_bits(value=rand_field_value, number_bits={{field.width}}) << {{ field.low }})
         {% endif -%}
         {%- endif %}
         {% endfor %}
@@ -436,7 +436,7 @@ class {{top_node.type_name}}_TestCase(unittest.TestCase):
                             if field.msb == field.high:
                                 expected_value = ( expected_value & field.inverse_bitmask ) | (rand_field_value << field.low)
                             elif field.msb == field.low:
-                                expected_value = ( expected_value & field.inverse_bitmask ) | (self._reverse_bits(x=rand_field_value, n=field.width) << field.low)
+                                expected_value = ( expected_value & field.inverse_bitmask ) | (self._reverse_bits(value=rand_field_value, number_bits=field.width) << field.low)
                             else:
                                 raise RuntimeError('invalid msb/lsb high/low combination')
 
