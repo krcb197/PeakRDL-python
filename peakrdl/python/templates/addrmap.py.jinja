@@ -77,7 +77,7 @@ from .peakrdl_python_types import ReadCallback, WriteCallback
                                                                                    inst_name='{{node.inst_name}}')
             {%- endif %}
         {%- endif %}
-    {%- elif isinstance(node, systemrdlRegfileNode) or isinstance(node, systemrdlAddrmapNode) %}
+    {%- elif isinstance(node, systemrdlRegfileNode) %}
         {%- if node.is_array %}
     self.__{{node.inst_name}} = ( {% for node_instance_index in range(get_array_dim(node))  %}
                                        {{get_fully_qualified_type_name(node)}}_cls(read_callback=read_callback,
@@ -95,6 +95,27 @@ from .peakrdl_python_types import ReadCallback, WriteCallback
                                                                                  address_space_properties=AddressSpaceProps(base_address=self.base_address+{{node.address_offset}},
                                                                                  address_width=self.address_width,
                                                                                  data_width=self.data_width),
+                                                                                 logger_handle=logger_handle+'.{{node.inst_name}}',
+                                                                                 inst_name='{{node.inst_name}}')
+        {%- endif %}
+    {%- elif isinstance(node, systemrdlAddrmapNode) %}
+        {%- if node.is_array %}
+    self.__{{node.inst_name}} = ( {% for node_instance_index in range(get_array_dim(node))  %}
+                                       {{get_fully_qualified_type_name(node)}}_cls(read_callback=read_callback,
+                                                                                   write_callback=write_callback,
+                                                                                   base_address=self.base_address+{{node.raw_address_offset}}+({{node_instance_index}} * {{node.array_stride}}),
+                                                                                   address_width=self.address_width,
+                                                                                   data_width=self.data_width,
+                                                                                   logger_handle=logger_handle+'.{{node.inst_name}}[{{node_instance_index}}]',
+                                                                                   inst_name='{{node.inst_name}}')
+                                       {%- if not loop.last -%} ,  {%- endif -%}
+                                       {% endfor %} )
+        {%- else -%}
+    self.__{{node.inst_name}} = {{get_fully_qualified_type_name(node)}}_cls(read_callback=read_callback,
+                                                                                 write_callback=write_callback,
+                                                                                 base_address=self.base_address+{{node.address_offset}},
+                                                                                 address_width=self.address_width,
+                                                                                 data_width=self.data_width,
                                                                                  logger_handle=logger_handle+'.{{node.inst_name}}',
                                                                                  inst_name='{{node.inst_name}}')
         {%- endif %}
