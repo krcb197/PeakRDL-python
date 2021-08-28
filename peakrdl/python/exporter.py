@@ -70,6 +70,9 @@ class PythonExporter:
         #   components, this is the original_def (which can be None in some cases)
         self.namespace_db = {}
 
+        # Dictionary used for determining the unique type names to use
+        self.node_type_name = {}
+
     def export(self, node: Node, path: str,
                autoformatoutputs: bool=True) -> List[str]:
         """
@@ -165,10 +168,30 @@ class PythonExporter:
         return [m.inst_name for m in modules]
 
     def lookup_type_name(self, node: Node) -> str:
+        """
+        Retreive the unique type name from the current lookup list
+
+        Args:
+            node: node to lookup
+
+        Returns:
+            type name
+
+        """
 
         return self.node_type_name[node.inst]
 
     def build_node_type_table(self, node: AddressableNode):
+        """
+        Populate the type name lookup dictionary
+
+        Args:
+            node: top node to work down from
+
+        Returns:
+            None
+
+        """
 
         self.node_type_name = {}
 
