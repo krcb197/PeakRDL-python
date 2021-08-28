@@ -97,6 +97,8 @@ class PythonExporter:
 
         for block in modules:
 
+            self.build_node_type_table(block)
+
             context = {
                 'print': print,
                 'type': type,
@@ -112,7 +114,7 @@ class PythonExporter:
                 'PropertyReference': PropertyReference,
                 'isinstance': isinstance,
                 'uses_enum' : uses_enum(block),
-                'get_fully_qualified_type_name': get_fully_qualified_type_name,
+                'get_fully_qualified_type_name': self.lookup_type_name,
                 'get_array_dim': get_array_dim,
                 'get_dependent_component': get_dependent_component,
                 'get_dependent_enum': get_dependent_enum,
@@ -161,6 +163,28 @@ class PythonExporter:
                                   'peakrdl_python_types.py'))
 
         return [m.inst_name for m in modules]
+
+    def lookup_type_name(self, node: Node) -> str:
+
+        return self.node_type_name[node.inst]
+
+    def build_node_type_table(self, node: AddressableNode):
+
+        self.node_type_name = {}
+
+        for child_node in get_dependent_component(node.parent):
+
+            child_inst = child_node.inst
+            if child_inst in self.node_type_name.keys():
+                # this should not happen as the get_dependent_component function is supposed to
+                # de-duplicate the values
+                raise RuntimeError("node is already in the lookup dictionary")
+
+            cand_type_name = get_fully_qualified_type_name(child_node)
+            if cand_type_name in self.node_type_name.values():
+                self.node_type_name[child_inst] = cand_type_name + '_0x' + hex(hash(child_inst))
+            else:
+                self.node_type_name[child_inst] = cand_type_name
 
     @staticmethod
     def create_empty_package(package_path:str):

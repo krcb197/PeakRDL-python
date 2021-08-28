@@ -19,29 +19,13 @@ def get_fully_qualified_type_name(node: Node) -> str:
     #      need to generate a unique instance, if it has not documentation
     #      properties
 
-    if node.inst.original_def is None:
-        # if the node has no orignal def, it likely cam from IPXACT, the
-        # best choice is to mane the type after the fuller qualified path
-        fqnode = node.get_path(hier_separator='___',
-                               array_suffix='_{index:d}_of_{dim:d}',
-                               empty_array_suffix='_of_{dim:d}')
-        return fqnode
 
-    # This code handles cases where a field has a reset value such that
-    # it end up with the reset value appended to the type name. For the
-    # register model we don't care about reset signal and these value
-    original_type_name = node.inst.original_def.type_name
     inst_type_name = node.inst.type_name
 
-    if original_type_name is None:
-        type_name = inst_type_name
-    else:
-        type_name = original_type_name
-
     if (scope_path == '') or (scope_path is None):
-        return type_name
+        return inst_type_name
 
-    return scope_path + '_' + type_name
+    return scope_path + '_' + inst_type_name
 
 
 def get_array_dim(node: AddressableNode):
@@ -64,16 +48,13 @@ def get_dependent_component(node: AddressableNode) -> Iterable[Node]:
     """
     components_needed = []
     for child_node in node.descendants(in_post_order=True):
-        child_orig_def = child_node.inst.original_def
+        child_inst = child_node.inst
 
-        if child_orig_def is None:
-            components_needed.append(child_node)
-        else:
-            if child_orig_def in components_needed:
-                # already covered the component
-                continue
+        if child_inst in components_needed:
+            # already covered the component
+            continue
 
-            components_needed.append(child_node.inst.original_def)
+        components_needed.append(child_inst)
 
         yield child_node
 
