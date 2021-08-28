@@ -56,7 +56,7 @@ def build_command_line_parser() -> argparse.ArgumentParser:
 
 
 def compile_rdl(infile:str,
-                incl_search_paths:Union[type(None), List[str]],
+                incl_search_paths:Union[type(None), List[str]]=None,
                 top:Union[type(None), str]=None) -> AddrmapNode:
     """
     Compile the systemRDL
