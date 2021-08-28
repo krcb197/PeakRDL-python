@@ -42,6 +42,7 @@ setuptools.setup(
     ],
     project_urls={
         "Source": "https://github.com/krcb197/PeakRDL-python",
-        "Tracker": "https://github.com/krcb197/PeakRDL-python/issues"
+        "Tracker": "https://github.com/krcb197/PeakRDL-python/issues",
+        "Documentation": "https://peakrdl-python.readthedocs.io/"
     },
 )
