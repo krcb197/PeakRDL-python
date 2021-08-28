@@ -21,6 +21,8 @@ def get_fully_qualified_type_name(node: Node) -> str:
 
 
     inst_type_name = node.inst.type_name
+    if inst_type_name is None:
+        inst_type_name = node.inst_name
 
     if (scope_path == '') or (scope_path is None):
         return inst_type_name
