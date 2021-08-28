@@ -12,56 +12,44 @@ class {{get_fully_qualified_type_name(node)}}_cls(RegWriteOnly):
     {{get_table_block(node) | indent}}
     """
 
-    __slots__ = [{%- for child_node in node.children(unroll=False) -%}'__{{get_inst_name(child_node)}}'{% if not loop.last %}, {% endif %}{%- endfor %}]
+    __slots__ = [{%- for child_node in node.children(unroll=False) -%}'__{{child_node.inst_name}}'{% if not loop.last %}, {% endif %}{%- endfor %}]
 
     {%- if node.has_sw_readable and node.has_sw_writable %}
 
     def __init__(self,
-                 read_callback: read_callback_type,
-                 write_callback: write_callback_type,
-                 logger_handle,
-                 base_address,
-                 address_width,
-                 data_width,
-                 inst_name):
+                 read_callback: ReadCallback,
+                 write_callback: WriteCallback,
+                 address_space_properties: AddressSpaceProps,
+                 logger_handle: str,
+                 inst_name: str):
 
         super().__init__(read_callback=read_callback,
                          write_callback=write_callback,
-                         base_address=base_address,
-                         address_width=address_width,
-                         data_width=data_width,
+                         address_space_properties=address_space_properties,
                          logger_handle=logger_handle,
                          inst_name=inst_name)
     {%- elif node.has_sw_readable and not node.has_sw_writable %}
 
     def __init__(self,
-                 read_callback: read_callback_type,
-                 logger_handle,
-                 base_address,
-                 address_width,
-                 data_width,
-                 inst_name):
+                 read_callback: ReadCallback,
+                 address_space_properties: AddressSpaceProps,
+                 logger_handle: str,
+                 inst_name: str):
 
         super().__init__(read_callback=read_callback,
-                         base_address=base_address,
-                         address_width=address_width,
-                         data_width=data_width,
+                         address_space_properties=address_space_properties,
                          logger_handle=logger_handle,
                          inst_name=inst_name)
     {%- elif not node.has_sw_readable and node.has_sw_writable %}
 
     def __init__(self,
-                 write_callback: write_callback_type,
-                 logger_handle,
-                 base_address,
-                 address_width,
-                 data_width,
-                 inst_name):
+                 write_callback: WriteCallback,
+                 address_space_properties: AddressSpaceProps,
+                 logger_handle: str,
+                 inst_name: str):
 
         super().__init__(write_callback=write_callback,
-                         base_address=base_address,
-                         address_width=address_width,
-                         data_width=data_width,
+                         address_space_properties=address_space_properties,
                          logger_handle=logger_handle,
                          inst_name=inst_name)
     {%- endif %}
@@ -69,14 +57,14 @@ class {{get_fully_qualified_type_name(node)}}_cls(RegWriteOnly):
         # build the field attributes
         {%- for child_node in node.fields() %}
             {%- if isinstance(child_node, systemrdlFieldNode) %}
-        self.__{{get_inst_name(child_node)}} = {{get_fully_qualified_type_name(child_node)}}_cls(parent_register=self,
+        self.__{{child_node.inst_name}} = {{get_fully_qualified_type_name(child_node)}}_cls(parent_register=self,
                                                                                  size_props=FieldSizeProps( width={{child_node.width}},
                                                                                                              lsb={{child_node.lsb}},
                                                                                                              msb={{child_node.msb}},
                                                                                                              low={{child_node.low}},
                                                                                                              high={{child_node.high}}),
-                                                                                 logger_handle=logger_handle+'.{{get_inst_name(child_node)}}',
-                                                                                 inst_name='{{get_inst_name(child_node)}}')
+                                                                                 logger_handle=logger_handle+'.{{child_node.inst_name}}',
+                                                                                 inst_name='{{child_node.inst_name}}')
             {%- endif -%}
         {%- endfor %}
 
@@ -89,7 +77,7 @@ class {{get_fully_qualified_type_name(node)}}_cls(RegWriteOnly):
 
         return_dict = {
                         {%- for child_node in get_reg_readable_fields(node) %}
-                        '{{get_inst_name(child_node)}}' : self.{{get_inst_name(child_node)}}.decode_read_value(reg_value)
+                        '{{child_node.inst_name}}' : self.{{child_node.inst_name}}.decode_read_value(reg_value)
                         {%- if not loop.last -%} ,  {%- endif -%}
                         {% endfor %}
                       }
@@ -102,7 +90,7 @@ class {{get_fully_qualified_type_name(node)}}_cls(RegWriteOnly):
         generator that produces has all the readable fields within the register
         """
         {% for child_node in get_reg_readable_fields(node) -%}
-        yield self.{{get_inst_name(child_node)}}
+        yield self.{{child_node.inst_name}}
         {% endfor %}
 
     {% endif %}
@@ -114,7 +102,7 @@ class {{get_fully_qualified_type_name(node)}}_cls(RegWriteOnly):
         generator that produces has all the writable fields within the register
         """
         {% for child_node in get_reg_writable_fields(node) -%}
-        yield self.{{get_inst_name(child_node)}}
+        yield self.{{child_node.inst_name}}
         {% endfor %}
 
     {% if node.has_sw_readable %}
@@ -130,10 +118,10 @@ class {{get_fully_qualified_type_name(node)}}_cls(RegWriteOnly):
         bit_mask = 0
         reg_value = 0
         {%- for child_node in get_reg_writable_fields(node) %}
-        if '{{get_inst_name(child_node)}}' in kwargs:
-            reg_value |= self.{{get_inst_name(child_node)}}.encode_write_value(kwargs['{{get_inst_name(child_node)}}'])
-            bit_mask |= self.{{get_inst_name(child_node)}}.bitmask
-            kwargs.pop('{{get_inst_name(child_node)}}')
+        if '{{child_node.inst_name}}' in kwargs:
+            reg_value |= self.{{child_node.inst_name}}.encode_write_value(kwargs['{{child_node.inst_name}}'])
+            bit_mask |= self.{{child_node.inst_name}}.bitmask
+            kwargs.pop('{{child_node.inst_name}}')
         {%- endfor %}
         if len(kwargs) != 0:
             # left over unhandled arguments
@@ -144,13 +132,13 @@ class {{get_fully_qualified_type_name(node)}}_cls(RegWriteOnly):
         self.write((self.read() & inverse_bit_mask) | reg_value)
 
     {% else %}
-    def write_fields(self, {%- for child_node in node.fields() -%} {{get_inst_name(child_node)}} : int{%- if not loop.last -%},{%- endif -%}{%- endfor -%}) -> NoReturn:
+    def write_fields(self, {%- for child_node in node.fields() -%} {{child_node.inst_name}} : int{%- if not loop.last -%},{%- endif -%}{%- endfor -%}) -> NoReturn:
         """
         Do a write to the register, updating all fields
         """
         reg_value = 0
         {%- for child_node in node.fields() %}
-        reg_value |= self.{{get_inst_name(child_node)}}.encode_write_value({{get_inst_name(child_node)}})
+        reg_value |= self.{{child_node.inst_name}}.encode_write_value({{child_node.inst_name}})
         {% endfor %}
 
         self.write(reg_value)
@@ -161,8 +149,8 @@ class {{get_fully_qualified_type_name(node)}}_cls(RegWriteOnly):
     {%- for child_node in node.children(unroll=False) -%}
         {%- if isinstance(child_node, systemrdlFieldNode) %}
     @property
-    def {{get_inst_name(child_node)}}(self) -> {{get_fully_qualified_type_name(child_node)}}_cls:
-        return self.__{{get_inst_name(child_node)}}
+    def {{child_node.inst_name}}(self) -> {{get_fully_qualified_type_name(child_node)}}_cls:
+        return self.__{{child_node.inst_name}}
         {% endif %}
     {%- endfor %}
 

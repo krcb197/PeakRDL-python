@@ -9,7 +9,7 @@ import random
 from itertools import combinations
 
 
-from ..reg_model.{{get_type_name(top_node)}} import {{get_type_name(top_node)}}_cls
+from ..reg_model.{{top_node.type_name}} import {{top_node.type_name}}_cls
 
 def read_addr_space(addr: int):
     assert isinstance(addr, int)
@@ -26,10 +26,10 @@ def write_callback(addr: int, data: int):
     write_addr_space(addr, data)
 
 
-class {{get_type_name(top_node)}}_TestCase(unittest.TestCase):
+class {{top_node.type_name}}_TestCase(unittest.TestCase):
 
     def setUp(self):
-        self.dut = {{get_type_name(top_node)}}_cls(read_callback=read_callback, write_callback=write_callback)
+        self.dut = {{top_node.type_name}}_cls(read_callback=read_callback, write_callback=write_callback)
 
     @staticmethod
     def _reverse_bits(x: int, n: int) -> int:
@@ -264,7 +264,7 @@ class {{get_type_name(top_node)}}_TestCase(unittest.TestCase):
         {%- endif %}
     {%- endfor %}
 
-    {% if top_node.uses_enum %}
+    {% if uses_enum %}
     def test_enum_field_read_and_write(self):
         """
         Check the ability to read and write to enum fields
