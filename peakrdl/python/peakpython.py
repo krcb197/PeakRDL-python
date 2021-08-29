@@ -83,7 +83,7 @@ def compile_rdl(infile:str,
             for ipxact_file in ipxact_files:
                 ipxact.import_file(ipxact_file)
         else:
-            raise (RuntimeError('not a list'))
+            raise ValueError('This ipxact_files should be a list got %s' % type(ipxact_files))
 
     rdlc.compile_file(infile, incl_search_paths=incl_search_paths)
     return rdlc.elaborate(top_def_name=top).top
