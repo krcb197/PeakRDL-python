@@ -146,7 +146,7 @@ a file called ``chip_with_a_GPIO.rdl``:
 
     peakpython chip_with_a_GPIO.rdl --outdir python_output --test
 
-.. note:: It is always good practice to use the ``--test`` command line argument to run the
+.. tip:: It is always good practice to use the ``--test`` command line argument to run the
           unittests on the generated code.
 
 Once the register abstraction layer has been generated and it can be used. The following example
