@@ -117,25 +117,30 @@ def get_table_block(node: Node) -> str:
     Returns:
         A string that represents a sphinx table
     """
-    row_break = '+-------------------+------------------------------------------------+'
+    row_break = '+--------------+-------------------------------------------------------------------------+'
     if ('name' in node.list_properties()) or ('desc' in node.list_properties()):
         table_strs = [row_break,
-                      '| System RDL Field  | Value                                          |',
-                      '+===================+================================================+']
+                      '| SystemRDL    | Value                                                                   |',
+                      '| Field        |                                                                         |',
+                      '+==============+=========================================================================+']
         if 'name' in node.list_properties():
-            name_rows = textwrap.wrap(node.get_property('name'), width=68,
-                                      initial_indent="| Name              | ",
-                                      subsequent_indent="|                   | ")
+            table_strs.append("| Name         | .. raw:: html".ljust(88, ' ') + ' |')
+            table_strs.append("|              | ".ljust(88, ' ') + ' |')
+            name_rows = textwrap.wrap(node.get_html_name(), width=88,
+                                      initial_indent="|              |      ",
+                                      subsequent_indent="|              |      ")
             for name_row in name_rows:
-                table_strs.append(name_row.ljust(68, ' ') + ' |')
+                table_strs.append(name_row.ljust(88, ' ') + ' |')
             table_strs.append(row_break)
 
         if 'desc' in node.list_properties():
-            desc_rows = textwrap.wrap(node.get_property('desc'), width=68,
-                                      initial_indent="| Description       | ",
-                                      subsequent_indent="|                   | ")
+            table_strs.append("| Description  | .. raw:: html".ljust(88, ' ') + ' |')
+            table_strs.append("|              | ".ljust(88, ' ') + ' |')
+            desc_rows = textwrap.wrap(node.get_html_desc(), width=88,
+                                      initial_indent="|              |      ",
+                                      subsequent_indent="|              |      ")
             for desc_row in desc_rows:
-                table_strs.append(desc_row.ljust(68, ' ') + ' |')
+                table_strs.append(desc_row.ljust(88, ' ') + ' |')
             table_strs.append(row_break)
 
         return_string = '\n'.join(table_strs)
