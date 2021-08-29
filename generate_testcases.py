@@ -27,7 +27,7 @@ for case in testcases:
     else:
         root = pp.compile_rdl(rdl_file)
     modules = pp.generate(root, os.path.join('testcase_output', 'raw'), autoformatoutputs=False)
-    #modules = pp.generate(root, os.path.join('testcase_output', 'autopep8'), autoformatoutputs=True)
+    modules = pp.generate(root, os.path.join('testcase_output', 'autopep8'), autoformatoutputs=True)
 
 
     print("\n-----------------------------------------------------------------\n")

@@ -41,5 +41,6 @@ jobs:
 
     - name: Generate testcases
       run: |
-        python generate_testcases.py # commented out as it took too long to run
-        pytest testcase_output/
+        python generate_testcases.py
+        pytest testcase_output/raw
+        pytest testcase_output/autopep8
