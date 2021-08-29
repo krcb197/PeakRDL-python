@@ -117,12 +117,16 @@ def get_table_block(node: Node) -> str:
     Returns:
         A string that represents a sphinx table
     """
-    row_break = '+--------------+-------------------------------------------------------------------------+'
+    row_break = '+--------------+' \
+                '-------------------------------------------------------------------------+'
     if ('name' in node.list_properties()) or ('desc' in node.list_properties()):
         table_strs = [row_break,
-                      '| SystemRDL    | Value                                                                   |',
-                      '| Field        |                                                                         |',
-                      '+==============+=========================================================================+']
+                      '| SystemRDL    |'
+                      ' Value                                                                   |',
+                      '| Field        |'
+                      '                                                                         |',
+                      '+==============+'
+                      '=========================================================================+']
         if 'name' in node.list_properties():
             table_strs.append("| Name         | .. raw:: html".ljust(88, ' ') + ' |')
             table_strs.append("|              | ".ljust(88, ' ') + ' |')
