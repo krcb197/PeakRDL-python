@@ -26,6 +26,7 @@ setuptools.setup(
         "pylint",
         "coverage",
         "jinja2",
+        "peakrdl-ipxact"
     ],
     classifiers=[
         "Development Status :: 3 - Alpha",

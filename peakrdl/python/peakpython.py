@@ -13,8 +13,9 @@ import coverage
 
 from systemrdl import RDLCompiler
 from systemrdl.node import Node, AddrmapNode
+from peakrdl.ipxact import IPXACTImporter
 
-from peakrdl.python.exporter import PythonExporter
+from peakrdl.python import PythonExporter
 
 
 def build_command_line_parser() -> argparse.ArgumentParser:
@@ -41,6 +42,8 @@ def build_command_line_parser() -> argparse.ArgumentParser:
                         help='set logging verbosity')
     parser.add_argument('--autoformat', action='store_true',
                         help='use autopep8 on generated code')
+    parser.add_argument('--ipxact', dest='ipxact', nargs='*',
+                        type=str)
 
     checker = parser.add_argument_group('post-generate checks')
     checker.add_argument('--lint', action='store_true',
@@ -57,7 +60,8 @@ def build_command_line_parser() -> argparse.ArgumentParser:
 
 def compile_rdl(infile:str,
                 incl_search_paths:Union[type(None), List[str]]=None,
-                top:Union[type(None), str]=None) -> AddrmapNode:
+                top:Union[type(None), str]=None,
+                ipxact_files:Union[type(None), List[str]]=None) -> AddrmapNode:
     """
     Compile the systemRDL
 
@@ -66,11 +70,21 @@ def compile_rdl(infile:str,
         incl_search_paths: list of additional paths where dependent systemRDL files can be
             retrived from. Set to ```none``` if no additional paths are required.
         top: name of the top level address map
+        ipxact_files: any IP-XACT files that must be precompiled before compiling the systemRDL
 
     Returns:
 
     """
     rdlc = RDLCompiler()
+    if ipxact_files is not None:
+
+        ipxact = IPXACTImporter(rdlc)
+        if isinstance(ipxact_files, list):
+            for ipxact_file in ipxact_files:
+                ipxact.import_file(ipxact_file)
+        else:
+            raise (RuntimeError('not a list'))
+
     rdlc.compile_file(infile, incl_search_paths=incl_search_paths)
     return rdlc.elaborate(top_def_name=top).top
 
@@ -128,7 +142,7 @@ def main_function():
     print('* Compile the SystemRDL                                       *')
     print('***************************************************************')
     spec = compile_rdl(args.infile, incl_search_paths=args.include_dir,
-                       top=args.top)
+                       top=args.top, ipxact_files=args.ipxact)
 
     print('***************************************************************')
     print('* Generate the Python Package                                 *')
