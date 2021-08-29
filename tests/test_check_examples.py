@@ -65,22 +65,26 @@ logging_config = {
 
 # dummy functions to support the test cases, note that these are not used as
 # they get patched
-def read_addr_space(addr: int):
+def read_addr_space(addr: int, width: int, accesswidth: int):
     assert isinstance(addr, int)
+    assert isinstance(width, int)
+    assert isinstance(accesswidth, int)
     return 0
 
 
-def write_addr_space(addr: int, data: int):
+def write_addr_space(addr: int, width: int, accesswidth: int,  data: int):
     assert isinstance(addr, int)
+    assert isinstance(width, int)
+    assert isinstance(accesswidth, int)
     assert isinstance(data, int)
 
 
-def read_callback(addr: int):
-    return read_addr_space(addr)
+def read_callback(addr: int, width: int, accesswidth: int):
+    return read_addr_space(addr=addr, width=width, accesswidth=accesswidth)
 
 
-def write_callback(addr: int, data: int):
-    write_addr_space(addr, data)
+def write_callback(addr: int, width: int, accesswidth: int,  data: int):
+    write_addr_space(addr=addr, width=width, accesswidth=accesswidth, data=data)
 
 
 class BaseTestContainer:
@@ -172,7 +176,7 @@ class BaseTestContainer:
 
                 if isinstance(node, RegNode):
                     logger.info('checking address - node : {fqnode_path}'.format(fqnode_path=node.get_path()))
-                    self.assertEqual(node.absolute_address, dut_obj.base_address)
+                    self.assertEqual(node.absolute_address, dut_obj.address)
 
         def test_field_bitmask(self):
             """
@@ -248,33 +252,55 @@ class BaseTestContainer:
                     with patch(__name__ + '.' + 'write_addr_space') as write_callback_mock,\
                             patch(__name__ + '.' + 'read_addr_space', return_value=1) as read_callback_mock:
 
-                        expected_address = dut_obj.base_address  # test_addresses checks that this
-                                                                 # has been set up correctly
+                        expected_address = dut_obj.address  # test_addresses checks that this
+                                                            # has been set up correctly
 
-                        max_value = (2**dut_obj.data_width)-1
+                        self.assertEqual(node.size * 8, dut_obj.width)
+                        if 'regwidth' in node.list_properties():
+                            self.assertEqual(node.get_property('regwidth'), dut_obj.width)
+                        if 'accesswidth' in node.list_properties():
+                            self.assertEqual(node.get_property('accesswidth'), dut_obj.accesswidth)
+                        else:
+                            # if there is no accesswidth specified then assume it is the same as
+                            # the width
+                            self.assertEqual(dut_obj.width, dut_obj.accesswidth)
+
+                        max_value = (2**dut_obj.width)-1
 
                         if node.has_sw_readable:
 
                             # test reading back 1 (the unpatched version returns 0 so this confirms the patch works)
                             self.assertEqual(dut_obj.read(), 1)
-                            self.assertEqual(read_callback_mock.call_args[0][0], expected_address)
+                            read_callback_mock.assert_called_once_with(
+                                addr=dut_obj.address,
+                                width=dut_obj.width,
+                                accesswidth=dut_obj.accesswidth)
 
                             # test the read check with high value, low value and a random value in between
                             read_callback_mock.reset_mock()
                             read_callback_mock.return_value = max_value
                             self.assertEqual(dut_obj.read(), max_value)
-                            read_callback_mock.assert_called_once()
+                            read_callback_mock.assert_called_once_with(
+                                addr=dut_obj.address,
+                                width=dut_obj.width,
+                                accesswidth=dut_obj.accesswidth)
 
                             read_callback_mock.reset_mock()
                             read_callback_mock.return_value = 0
                             self.assertEqual(dut_obj.read(), 0x0)
-                            read_callback_mock.assert_called_once()
+                            read_callback_mock.assert_called_once_with(
+                                addr=dut_obj.address,
+                                width=dut_obj.width,
+                                accesswidth=dut_obj.accesswidth)
 
                             random_value = random.randrange(0, max_value+1)
                             read_callback_mock.reset_mock()
                             read_callback_mock.return_value = random_value
                             self.assertEqual(dut_obj.read(), random_value)
-                            read_callback_mock.assert_called_once()
+                            read_callback_mock.assert_called_once_with(
+                                addr=dut_obj.address,
+                                width=dut_obj.width,
+                                accesswidth=dut_obj.accesswidth)
 
                             # at the end of the read tests the write should not have been called
                             read_callback_mock.reset_mock()
@@ -285,22 +311,29 @@ class BaseTestContainer:
 
                             # test the write with high value, low value and a random value in between
                             dut_obj.write(max_value)
-                            write_callback_mock.assert_called_once()
-                            self.assertEqual(write_callback_mock.call_args[0][0], expected_address)
-                            self.assertEqual(write_callback_mock.call_args[0][1], max_value)
+                            write_callback_mock.assert_called_once_with(
+                                addr=dut_obj.address,
+                                width=dut_obj.width,
+                                accesswidth=dut_obj.accesswidth,
+                                data=max_value)
                             write_callback_mock.reset_mock()
 
                             dut_obj.write(0)
                             write_callback_mock.assert_called_once()
-                            self.assertEqual(write_callback_mock.call_args[0][0], expected_address)
-                            self.assertEqual(write_callback_mock.call_args[0][1], 0)
+                            write_callback_mock.assert_called_once_with(
+                                addr=dut_obj.address,
+                                width=dut_obj.width,
+                                accesswidth=dut_obj.accesswidth,
+                                data=0)
                             write_callback_mock.reset_mock()
 
                             random_value = random.randrange(0, max_value+1)
                             dut_obj.write(random_value)
-                            write_callback_mock.assert_called_once()
-                            self.assertEqual(write_callback_mock.call_args[0][0], expected_address)
-                            self.assertEqual(write_callback_mock.call_args[0][1], random_value)
+                            write_callback_mock.assert_called_once_with(
+                                addr=dut_obj.address,
+                                width=dut_obj.width,
+                                accesswidth=dut_obj.accesswidth,
+                                data=random_value)
                             write_callback_mock.reset_mock()
 
                             with self.assertRaises(ValueError):
@@ -386,13 +419,19 @@ class BaseTestContainer:
                             read_callback_mock.reset_mock()
                             read_callback_mock.return_value = dut_obj.inverse_bitmask
                             self.assertEqual(dut_obj.read(), 0)
-                            read_callback_mock.assert_called_once()
+                            read_callback_mock.assert_called_once_with(
+                                addr=dut_obj.parent_register.address,
+                                width=dut_obj.parent_register.width,
+                                accesswidth=dut_obj.parent_register.accesswidth)
 
                             # read back - max_value, this is achieved by setting the register to bitmask
                             read_callback_mock.reset_mock()
                             read_callback_mock.return_value = dut_obj.bitmask
                             self.assertEqual(dut_obj.read(), dut_obj.max_value)
-                            read_callback_mock.assert_called_once()
+                            read_callback_mock.assert_called_once_with(
+                                addr=dut_obj.parent_register.address,
+                                width=dut_obj.parent_register.width,
+                                accesswidth=dut_obj.parent_register.accesswidth)
 
                             # read back - random value
                             read_callback_mock.reset_mock()
@@ -409,7 +448,10 @@ class BaseTestContainer:
                                                  msg=f'{read_back_value=:X}, {self._reverse_bits(random_field_value, node.width)=:X} , {random_value=:X}, {random_field_value=:X}')
                             else:
                                 raise RuntimeError('unhandled condition high does not equal msb or lsb')
-                            read_callback_mock.assert_called_once()
+                            read_callback_mock.assert_called_once_with(
+                                addr=dut_obj.parent_register.address,
+                                width=dut_obj.parent_register.width,
+                                accesswidth=dut_obj.parent_register.accesswidth)
 
                             # at the end of the read tests the write should not have been called
                             read_callback_mock.reset_mock()
@@ -428,13 +470,10 @@ class BaseTestContainer:
 
                                     dut_obj.write(field_value)
 
-                                    if (((dut_obj.high+1) - dut_obj.low) < dut_obj.parent_register.data_width) and (node.parent.has_sw_readable):
+                                    if (((dut_obj.high+1) - dut_obj.low) < dut_obj.parent_register.width) and (node.parent.has_sw_readable):
                                         read_callback_mock.assert_called_once()
                                     else:
                                         read_callback_mock.assert_not_called()
-                                    write_callback_mock.assert_called_once()
-                                    self.assertEqual(write_callback_mock.call_args[0][0],
-                                                     dut_obj.parent_register.base_address)
 
                                     if dut_obj.high == dut_obj.msb:
                                         original_field_value = field_value
@@ -446,16 +485,18 @@ class BaseTestContainer:
                                             'unhandled condition high does not equal msb or lsb')
 
                                     if node.parent.has_sw_readable:
-                                        writen_value = write_callback_mock.call_args[0][1]
                                         expected_value = (reg_base_value & dut_obj.inverse_bitmask) | \
                                                          (dut_obj.bitmask & (field_value << dut_obj.low))
-                                        self.assertEqual(writen_value,
-                                                         expected_value,
-                                                         msg=f'{writen_value=:X}, {expected_value=:X}, {original_field_value=:X}, {field_value=:X}, {node.inst_name}, {reg_base_value=:X}')
+
                                     else:
                                         # if the register is not readable, the value is simply written
-                                        self.assertEqual(write_callback_mock.call_args[0][1],
-                                                         field_value << dut_obj.low)
+                                        expected_value = field_value << dut_obj.low
+
+                                    write_callback_mock.assert_called_once_with(
+                                        addr=dut_obj.parent_register.address,
+                                        width=dut_obj.parent_register.width,
+                                        accesswidth=dut_obj.parent_register.accesswidth,
+                                        data=expected_value)
 
                             # check invalid write values bounce
                             with self.assertRaises(ValueError):
@@ -538,12 +579,10 @@ class BaseTestContainer:
                                 read_callback_mock.return_value = random_value
 
                                 dut_obj.write(possible_enum_value)
-                                if (((dut_obj.high + 1) - dut_obj.low) < dut_obj.parent_register.data_width) and (node.parent.has_sw_readable):
+                                if (((dut_obj.high + 1) - dut_obj.low) < dut_obj.parent_register.width) and (node.parent.has_sw_readable):
                                     read_callback_mock.assert_called_once()
                                 else:
                                     read_callback_mock.assert_not_called()
-                                write_callback_mock.assert_called_once()
-                                self.assertEqual(write_callback_mock.call_args[0][0], dut_obj.parent_register.base_address)
                                 if dut_obj.high == dut_obj.msb:
                                     field_content = possible_enum_value.value
                                 elif dut_obj.high == dut_obj.lsb:
@@ -552,13 +591,17 @@ class BaseTestContainer:
                                     raise RuntimeError('unhandled condition high does not equal msb or lsb')
 
                                 if node.parent.has_sw_readable:
-                                    self.assertEqual(write_callback_mock.call_args[0][1],
-                                                     (random_value & dut_obj.inverse_bitmask) | \
-                                                     (dut_obj.bitmask & (field_content << dut_obj.low)))
+                                    expected_value = (random_value & dut_obj.inverse_bitmask) | \
+                                                     (dut_obj.bitmask & (field_content << dut_obj.low))
                                 else:
                                     # if the register is not readable, the value is simply written
-                                    self.assertEqual(write_callback_mock.call_args[0][1],
-                                                     field_content  << dut_obj.low)
+                                    expected_value = field_content  << dut_obj.low
+
+                                write_callback_mock.assert_called_once_with(
+                                    addr=dut_obj.parent_register.address,
+                                    width=dut_obj.parent_register.width,
+                                    accesswidth=dut_obj.parent_register.accesswidth,
+                                    data=expected_value)
 
         def test_register_read_fields(self):
             """
@@ -665,10 +708,13 @@ class BaseTestContainer:
                             with patch(__name__ + '.' + 'write_addr_space') as write_callback_mock, \
                                     patch(__name__ + '.' + 'read_addr_space', return_value=0) as read_callback_mock:
                                 dut_obj.write_fields(**kwargs)
-                                write_callback_mock.assert_called_once()
-                                self.assertEqual(write_callback_mock.call_args[0][0],
-                                                 dut_obj.base_address)
-                                self.assertEqual(write_callback_mock.call_args[0][1],expected_value)
+                                write_callback_mock.assert_called_once_with(
+                                    addr=dut_obj.address,
+                                    width=dut_obj.width,
+                                    accesswidth=dut_obj.accesswidth,
+                                    data=expected_value)
+
+
 
         @classmethod
         def tearDownClass(cls) -> None:
@@ -714,6 +760,11 @@ class Test_msb0_and_lsb0(BaseTestContainer.BaseRDLTestCase):
 
     root_systemRDL_file = 'msb0_and_lsb0.rdl'
     root_node_name = 'msb0_and_lsb0'
+
+class sizes_registers(BaseTestContainer.BaseRDLTestCase):
+
+    root_systemRDL_file = 'sizes_registers.rdl'
+    root_node_name = 'sizes_registers'
 
 if __name__ == '__main__':
     unittest.main()

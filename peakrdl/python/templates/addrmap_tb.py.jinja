@@ -11,19 +11,28 @@ from itertools import combinations
 
 from ..reg_model.{{top_node.type_name}} import {{top_node.type_name}}_cls
 
-def read_addr_space(addr: int):
+# dummy functions to support the test cases, note that these are not used as
+# they get patched
+def read_addr_space(addr: int, width: int, accesswidth: int):
     assert isinstance(addr, int)
+    assert isinstance(width, int)
+    assert isinstance(accesswidth, int)
     return 0
 
-def write_addr_space(addr: int, data: int):
+
+def write_addr_space(addr: int, width: int, accesswidth: int,  data: int):
     assert isinstance(addr, int)
+    assert isinstance(width, int)
+    assert isinstance(accesswidth, int)
     assert isinstance(data, int)
 
-def read_callback(addr: int):
-    return read_addr_space(addr)
 
-def write_callback(addr: int, data: int):
-    write_addr_space(addr, data)
+def read_callback(addr: int, width: int, accesswidth: int):
+    return read_addr_space(addr=addr, width=width, accesswidth=accesswidth)
+
+
+def write_callback(addr: int, width: int, accesswidth: int,  data: int):
+    write_addr_space(addr=addr, width=width, accesswidth=accesswidth, data=data)
 
 
 class {{top_node.type_name}}_TestCase(unittest.TestCase):
@@ -48,13 +57,16 @@ class {{top_node.type_name}}_TestCase(unittest.TestCase):
                 result |= 1 << (number_bits - 1 - i)
         return result
 
-    def test_addresses_default_baseaddress(self):
+    def test_register_properties(self):
         """
-        Walk the address map and check the address of every register is correct
+        Walk the address map and check the address, size and accesswidth of every register is
+        correct
         """
         {%- for node in top_node.descendants(unroll=True) -%}
             {%- if isinstance(node, systemrdlRegNode) %}
-        self.assertEqual(self.dut.{{'.'.join(node.get_path_segments()[1:])}}.base_address, {{node.absolute_address}})
+        self.assertEqual(self.dut.{{'.'.join(node.get_path_segments()[1:])}}.address, {{node.absolute_address}})
+        self.assertEqual(self.dut.{{'.'.join(node.get_path_segments()[1:])}}.width, {{node.size * 8}})
+        {% if 'accesswidth' in node.list_properties() -%}self.assertEqual(self.dut.{{'.'.join(node.get_path_segments()[1:])}}.width, {{node.get_property('accesswidth')}}){%- else -%} self.assertEqual(self.dut.{{'.'.join(node.get_path_segments()[1:])}}.width, self.dut.{{'.'.join(node.get_path_segments()[1:])}}.accesswidth){%- endif %}
             {%- endif %}
         {%- endfor %}
 
@@ -97,26 +109,38 @@ class {{top_node.type_name}}_TestCase(unittest.TestCase):
             {% if node.has_sw_readable -%}
             # test reading back 1 (the unpatched version returns 0 so this confirms the patch works)
             self.assertEqual(self.dut.{{'.'.join(node.get_path_segments()[1:])}}.read(), 1)
-            self.assertEqual(read_callback_mock.call_args[0][0], {{node.absolute_address}})  # check address passed to read
+            read_callback_mock.assert_called_once_with(
+                                addr={{node.absolute_address}},
+                                width={{node.size * 8}},
+                                accesswidth=self.dut.{{'.'.join(node.get_path_segments()[1:])}}.accesswidth)
 
             # test the read check with high value
             read_callback_mock.reset_mock()
             read_callback_mock.return_value = {{get_reg_max_value_hex_string(node)}}
             self.assertEqual(self.dut.{{'.'.join(node.get_path_segments()[1:])}}.read(), {{get_reg_max_value_hex_string(node)}})
-            read_callback_mock.assert_called_once()
+            read_callback_mock.assert_called_once_with(
+                                addr={{node.absolute_address}},
+                                width={{node.size * 8}},
+                                accesswidth=self.dut.{{'.'.join(node.get_path_segments()[1:])}}.accesswidth)
 
             # test the read of the low value
             read_callback_mock.reset_mock()
             read_callback_mock.return_value = 0
             self.assertEqual(self.dut.{{'.'.join(node.get_path_segments()[1:])}}.read(), 0x0)
-            read_callback_mock.assert_called_once()
+            read_callback_mock.assert_called_once_with(
+                                addr={{node.absolute_address}},
+                                width={{node.size * 8}},
+                                accesswidth=self.dut.{{'.'.join(node.get_path_segments()[1:])}}.accesswidth)
 
             # test the read of a random value
             random_value = random.randrange(0, {{get_reg_max_value_hex_string(node)}}+1)
             read_callback_mock.reset_mock()
             read_callback_mock.return_value = random_value
             self.assertEqual(self.dut.{{'.'.join(node.get_path_segments()[1:])}}.read(), random_value)
-            read_callback_mock.assert_called_once()
+            read_callback_mock.assert_called_once_with(
+                                addr={{node.absolute_address}},
+                                width={{node.size * 8}},
+                                accesswidth=self.dut.{{'.'.join(node.get_path_segments()[1:])}}.accesswidth)
 
             # at the end of the read tests the write should not have been called
             read_callback_mock.reset_mock()
@@ -126,24 +150,30 @@ class {{top_node.type_name}}_TestCase(unittest.TestCase):
             {% if node.has_sw_writable -%}
             # test the write with high value
             self.dut.{{'.'.join(node.get_path_segments()[1:])}}.write({{get_reg_max_value_hex_string(node)}})
-            write_callback_mock.assert_called_once()
-            self.assertEqual(write_callback_mock.call_args[0][0], {{node.absolute_address}})  # check address passed to read
-            self.assertEqual(write_callback_mock.call_args[0][1], {{get_reg_max_value_hex_string(node)}})
+            write_callback_mock.assert_called_once_with(
+                                addr={{node.absolute_address}},
+                                width={{node.size * 8}},
+                                accesswidth=self.dut.{{'.'.join(node.get_path_segments()[1:])}}.accesswidth,
+                                data={{get_reg_max_value_hex_string(node)}})
             write_callback_mock.reset_mock()
 
             # test the write of a low value
             self.dut.{{'.'.join(node.get_path_segments()[1:])}}.write(0)
-            write_callback_mock.assert_called_once()
-            self.assertEqual(write_callback_mock.call_args[0][0], {{node.absolute_address}})  # check address passed to read
-            self.assertEqual(write_callback_mock.call_args[0][1], 0)
+            write_callback_mock.assert_called_once_with(
+                                addr={{node.absolute_address}},
+                                width={{node.size * 8}},
+                                accesswidth=self.dut.{{'.'.join(node.get_path_segments()[1:])}}.accesswidth,
+                                data=0)
             write_callback_mock.reset_mock()
 
             # test the write of a random
             random_value = random.randrange(0, {{get_reg_max_value_hex_string(node)}}+1)
             self.dut.{{'.'.join(node.get_path_segments()[1:])}}.write(random_value)
-            write_callback_mock.assert_called_once()
-            self.assertEqual(write_callback_mock.call_args[0][0], {{node.absolute_address}})  # check address passed to read
-            self.assertEqual(write_callback_mock.call_args[0][1], random_value)
+            write_callback_mock.assert_called_once_with(
+                                addr={{node.absolute_address}},
+                                width={{node.size * 8}},
+                                accesswidth=self.dut.{{'.'.join(node.get_path_segments()[1:])}}.accesswidth,
+                                data=random_value)
             write_callback_mock.reset_mock()
 
             # test writting a value beyond the register range is blocked with an exception being raised
@@ -183,14 +213,20 @@ class {{top_node.type_name}}_TestCase(unittest.TestCase):
             read_callback_mock.return_value = {{get_field_inv_bitmask_hex_string(node)}}
             self.assertEqual(self.dut.{{'.'.join(node.get_path_segments()[1:])}}.read(),
                              0)
-            read_callback_mock.assert_called_once()
+            read_callback_mock.assert_called_once_with(
+                                addr={{node.parent.absolute_address}},
+                                width={{node.parent.size * 8}},
+                                accesswidth=self.dut.{{'.'.join(node.get_path_segments()[1:])}}.parent_register.accesswidth)
 
             # read back - max_value, this is achieved by setting the register to bitmask
             read_callback_mock.reset_mock()
             read_callback_mock.return_value = {{get_field_bitmask_hex_string(node)}}
             self.assertEqual(self.dut.{{'.'.join(node.get_path_segments()[1:])}}.read(),
                              {{ get_field_max_value_hex_string(node) }})
-            read_callback_mock.assert_called_once()
+            read_callback_mock.assert_called_once_with(
+                                addr={{node.parent.absolute_address}},
+                                width={{node.parent.size * 8}},
+                                accesswidth=self.dut.{{'.'.join(node.get_path_segments()[1:])}}.parent_register.accesswidth)
 
             # read back - random value
             read_callback_mock.reset_mock()
@@ -204,7 +240,10 @@ class {{top_node.type_name}}_TestCase(unittest.TestCase):
             self.assertEqual(self.dut.{{'.'.join(node.get_path_segments()[1:])}}.read(),
                              self._reverse_bits(value=random_field_value, number_bits={{node.width}}))
             {% endif -%}
-            read_callback_mock.assert_called_once()
+            read_callback_mock.assert_called_once_with(
+                                addr={{node.parent.absolute_address}},
+                                width={{node.parent.size * 8}},
+                                accesswidth=self.dut.{{'.'.join(node.get_path_segments()[1:])}}.parent_register.accesswidth)
 
             # at the end of the read tests the write should not have been called
             read_callback_mock.reset_mock()
@@ -224,31 +263,43 @@ class {{top_node.type_name}}_TestCase(unittest.TestCase):
                     self.dut.{{'.'.join(node.get_path_segments()[1:])}}.write(field_value)
 
                     {% if (((node.high+1) - node.low) < (node.parent.size*8)) and (node.parent.has_sw_readable) %}
-                    read_callback_mock.assert_called_once()
+                    read_callback_mock.assert_called_once_with(
+                                addr={{node.parent.absolute_address}},
+                                width={{node.parent.size * 8}},
+                                accesswidth=self.dut.{{'.'.join(node.get_path_segments()[1:])}}.parent_register.accesswidth)
                     {% else %}
                     read_callback_mock.assert_not_called()
                     {%- endif %}
-                    write_callback_mock.assert_called_once()
-                    self.assertEqual(write_callback_mock.call_args[0][0],
-                                     {{node.parent.absolute_address}})
                     {% if node.parent.has_sw_readable -%}
                     {% if node.msb == node.high -%}
-                    self.assertEqual(write_callback_mock.call_args[0][1],
-                                     (reg_base_value & {{get_field_inv_bitmask_hex_string(node)}}) | \
+                    write_callback_mock.assert_called_once_with(
+                                addr={{node.parent.absolute_address}},
+                                width={{node.parent.size * 8}},
+                                accesswidth=self.dut.{{'.'.join(node.get_path_segments()[1:])}}.parent_register.accesswidth,
+                                data=(reg_base_value & {{get_field_inv_bitmask_hex_string(node)}}) | \
                                      ({{get_field_bitmask_hex_string(node)}} & (field_value << {{node.low}})))
                     {% else -%}
-                    self.assertEqual(write_callback_mock.call_args[0][1],
-                                     (reg_base_value & {{get_field_inv_bitmask_hex_string(node)}}) | \
+                    write_callback_mock.assert_called_once_with(
+                                addr={{node.parent.absolute_address}},
+                                width={{node.parent.size * 8}},
+                                accesswidth=self.dut.{{'.'.join(node.get_path_segments()[1:])}}.parent_register.accesswidth,
+                                data=(reg_base_value & {{get_field_inv_bitmask_hex_string(node)}}) | \
                                      ({{get_field_bitmask_hex_string(node)}} & (self._reverse_bits(value=field_value, number_bits={{node.width}}) << {{node.low}})))
                     {% endif -%}
                     {% else -%}
                     # if the register is not readable, the value is simply written
                     {% if node.msb == node.high -%}
-                    self.assertEqual(write_callback_mock.call_args[0][1],
-                                     field_value << {{node.low}})
+                    write_callback_mock.assert_called_once_with(
+                                addr={{node.parent.absolute_address}},
+                                width={{node.parent.size * 8}},
+                                accesswidth=self.dut.{{'.'.join(node.get_path_segments()[1:])}}.parent_register.accesswidth,
+                                data=field_value << {{node.low}})
                     {% else -%}
-                    self.assertEqual(write_callback_mock.call_args[0][1],
-                                     self._reverse_bits(value=field_value, number_bits={{node.width}}) << {{node.low}})
+                    write_callback_mock.assert_called_once_with(
+                                addr={{node.parent.absolute_address}},
+                                width={{node.parent.size * 8}},
+                                accesswidth=self.dut.{{'.'.join(node.get_path_segments()[1:])}}.parent_register.accesswidth,
+                                data=self._reverse_bits(value=field_value, number_bits={{node.width}}) << {{node.low}})
                     {% endif -%}
                     {% endif %}
 
@@ -294,7 +345,10 @@ class {{top_node.type_name}}_TestCase(unittest.TestCase):
 
             self.assertEqual(self.dut.{{'.'.join(node.get_path_segments()[1:])}}.read(),
                              self.dut.{{'.'.join(node.get_path_segments()[1:])}}.enum_cls.{{value_of_enum_needed.name}})
-            read_callback_mock.assert_called_once()
+            read_callback_mock.assert_called_once_with(
+                                addr={{node.parent.absolute_address}},
+                                width={{node.parent.size * 8}},
+                                accesswidth=self.dut.{{'.'.join(node.get_path_segments()[1:])}}.parent_register.accesswidth)
             {% endfor %}
 
             {% if node.get_property('encode').__len__() < (2**((node.high+1) - node.low)) %}
@@ -336,27 +390,36 @@ class {{top_node.type_name}}_TestCase(unittest.TestCase):
             read_callback_mock.assert_not_called()
             {%- endif %}
 
-            write_callback_mock.assert_called_once()
-            self.assertEqual(write_callback_mock.call_args[0][0],
-                             {{node.parent.absolute_address}})
             {% if node.parent.has_sw_readable -%}
             {% if node.msb == node.high -%}
-            self.assertEqual(write_callback_mock.call_args[0][1],
-                             (random_reg_value & {{get_field_inv_bitmask_hex_string(node)}}) | \
-                             ({{get_field_bitmask_hex_string(node)}} & ({{value_of_enum_needed.value}} << {{node.low}})))
+            write_callback_mock.assert_called_once_with(
+                                addr={{node.parent.absolute_address}},
+                                width={{node.parent.size * 8}},
+                                accesswidth=self.dut.{{'.'.join(node.get_path_segments()[1:])}}.parent_register.accesswidth,
+                                data=(random_reg_value & {{get_field_inv_bitmask_hex_string(node)}}) | \
+                                     ({{get_field_bitmask_hex_string(node)}} & ({{value_of_enum_needed.value}} << {{node.low}})))
             {% else -%}
-            self.assertEqual(write_callback_mock.call_args[0][1],
-                             (random_reg_value & {{get_field_inv_bitmask_hex_string(node)}}) | \
-                             ({{get_field_bitmask_hex_string(node)}} & (self._reverse_bits(value={{value_of_enum_needed.value}}, number_bits={{node.width}}) << {{node.low}})))
+            write_callback_mock.assert_called_once_with(
+                                addr={{node.parent.absolute_address}},
+                                width={{node.parent.size * 8}},
+                                accesswidth=self.dut.{{'.'.join(node.get_path_segments()[1:])}}.parent_register.accesswidth,
+                                data=(random_reg_value & {{get_field_inv_bitmask_hex_string(node)}}) | \
+                                     ({{get_field_bitmask_hex_string(node)}} & (self._reverse_bits(value={{value_of_enum_needed.value}}, number_bits={{node.width}}) << {{node.low}})))
             {% endif -%}
             {% else -%}
             # if the register is not readable, the value is simply written
             {% if node.msb == node.high -%}
-            self.assertEqual(write_callback_mock.call_args[0][1],
-                             {{value_of_enum_needed.value}} << {{node.low}})
+            write_callback_mock.assert_called_once_with(
+                                addr={{node.parent.absolute_address}},
+                                width={{node.parent.size * 8}},
+                                accesswidth=self.dut.{{'.'.join(node.get_path_segments()[1:])}}.parent_register.accesswidth,
+                                data={{value_of_enum_needed.value}} << {{node.low}})
             {% else -%}
-            self.assertEqual(write_callback_mock.call_args[0][1],
-                             self._reverse_bits(value={{value_of_enum_needed.value}}, number_bits={{node.width}}) << {{node.low}})
+            write_callback_mock.assert_called_once_with(
+                                addr={{node.parent.absolute_address}},
+                                width={{node.parent.size * 8}},
+                                accesswidth=self.dut.{{'.'.join(node.get_path_segments()[1:])}}.parent_register.accesswidth,
+                                data=self._reverse_bits(value={{value_of_enum_needed.value}}, number_bits={{node.width}}) << {{node.low}})
             {% endif -%}
             {% endif %}
 
@@ -441,10 +504,11 @@ class {{top_node.type_name}}_TestCase(unittest.TestCase):
                                 raise RuntimeError('invalid msb/lsb high/low combination')
 
                         reg.write_fields(**kwargs)
-                        write_callback_mock.assert_called_once()
-                        self.assertEqual(write_callback_mock.call_args[0][0],
-                                         reg.base_address)
-                        self.assertEqual(write_callback_mock.call_args[0][1],expected_value)
+                        write_callback_mock.assert_called_once_with(
+                                addr=reg.address,
+                                width=reg.width,
+                                accesswidth=reg.accesswidth,
+                                data=expected_value)
                         read_callback_mock.assert_called_once()
                         write_callback_mock.reset_mock()
                         read_callback_mock.reset_mock()
@@ -479,11 +543,12 @@ class {{top_node.type_name}}_TestCase(unittest.TestCase):
         with patch(__name__ + '.' + 'write_addr_space') as write_callback_mock, \
             patch(__name__ + '.' + 'read_addr_space', return_value=0) as read_callback_mock:
             self.dut.{{'.'.join(node.get_path_segments()[1:])}}.write_fields(**kwargs)
-            write_callback_mock.assert_called_once()
+            write_callback_mock.assert_called_once_with(
+                                addr={{node.absolute_address}},
+                                width={{node.size * 8}},
+                                accesswidth=self.dut.{{'.'.join(node.get_path_segments()[1:])}}.accesswidth,
+                                data=expected_value)
             read_callback_mock.assert_not_called
-            self.assertEqual(write_callback_mock.call_args[0][0],
-                             {{node.absolute_address}})
-            self.assertEqual(write_callback_mock.call_args[0][1],expected_value)
             write_callback_mock.reset_mock()
             read_callback_mock.reset_mock()
 
