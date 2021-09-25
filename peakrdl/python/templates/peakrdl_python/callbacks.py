@@ -12,28 +12,32 @@ class ReadCallback(Protocol):
     """
     Callback definition for a single register read operation
     """
-    def __call__(self, addr: int, width: int, accesswidth: int) -> int: ...
+    def __call__(self, addr: int, width: int, accesswidth: int) -> int:
+        pass
 
 
 class WriteCallback(Protocol):
     """
     Callback definition for a single register write operation
     """
-    def __call__(self, addr: int, width: int, accesswidth: int, data: int) -> NoReturn: ...
+    def __call__(self, addr: int, width: int, accesswidth: int, data: int) -> NoReturn:
+        pass
 
 
 class ReadBlockCallback(Protocol):
     """
     Callback definition for a block read operation
     """
-    def __call__(self, addr: int, width: int, accesswidth: int, length: int) -> Array: ...
+    def __call__(self, addr: int, width: int, accesswidth: int, length: int) -> Array:
+        pass
 
 
 class WriteBlockCallback(Protocol):
     """
     Callback definition for a block write operation
     """
-    def __call__(self, addr: int, width: int, accesswidth: int, data: Array) -> NoReturn: ...
+    def __call__(self, addr: int, width: int, accesswidth: int, data: Array) -> NoReturn:
+        pass
 
 
 class CallbackSet:
