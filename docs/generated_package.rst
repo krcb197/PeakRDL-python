@@ -33,10 +33,15 @@ The Register Abstraction Layer will typically interfaced to a driver that
 allows accesses the chip. However, it can also be interfaced to a simulation
 of the device.
 
-In order to operate the register abstraction layer requires the following:
+In order to operate the register abstraction layer typically requires the following:
 
-- A callback for a single register write
-- A callback for a single register read
+- A callback for a single register write, this not required if there is no writable register in
+  the register abstraction layer
+- A callback for a single register read, this not required if there is no writable register in
+  the register abstraction layer
+
+In addition the register abstraction layer can make use of block operations where a block of the
+address space is read in a single transaction. Not all drivers support these
 
 The examples of these two methods are included within the generated register
 access layer package so that it can be used from the console:
@@ -69,7 +74,7 @@ access layer package so that it can be used from the console:
         Args:
             addr: Address to write to
             width: Width of the register in bits
-            accesswidth: Minimium access width of the register in bits
+            accesswidth: Minimum access width of the register in bits
             data: value to be written to the register
 
         Returns:
@@ -82,6 +87,11 @@ access layer package so that it can be used from the console:
         print('write data:0x%X to address:0x%X' % (data, addr))
 
 In a real system these call backs will be connected to a driver.
+
+Callback Set
+------------
+
+The callbacks are passed into the register abstraction layer using a ``CallbackSet``.
 
 Using the Register Abstraction Layer
 ====================================
@@ -163,6 +173,7 @@ simulator.
     from typing import NoReturn
 
     from mychip.reg_model.mychip import mychip_cls
+    from mychip.peakrdl_python import CallbackSet
 
     class ChipSim:
 
@@ -288,8 +299,12 @@ simulator.
                                             accesswidth=accesswidth,
                                             data=data)
 
+        # create a callback set for the callbacks
+        callbacks = CallbackSet(read_callback=read_call_back,
+                            write_callback=write_call_back)
+
         # created an instance of the register model and connect the callbacks to the simulator
-        mychip = mychip_cls(read_callback=read_call_back, write_callback=write_call_back)
+        mychip = mychip_cls(callbacks=callbacks)
 
         # configure the GPIO.PIN_0 as an output
         mychip.GPIO.GPIO_dir.PIN_0.write(mychip.GPIO.GPIO_dir.PIN_0.enum_cls.dir_out)

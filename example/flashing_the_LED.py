@@ -3,6 +3,7 @@ import tkinter as tk
 from typing import NoReturn
 
 from mychip.reg_model.mychip import mychip_cls
+from mychip.peakrdl_python import CallbackSet
 
 class ChipSim:
 
@@ -128,8 +129,12 @@ if __name__ == '__main__':
                                         accesswidth=accesswidth,
                                         data=data)
 
+    # create a callback set for the callbacks
+    callbacks = CallbackSet(read_callback=read_call_back,
+                            write_callback=write_call_back)
+
     # created an instance of the register model and connect the callbacks to the simulator
-    mychip = mychip_cls(read_callback=read_call_back, write_callback=write_call_back)
+    mychip = mychip_cls(callbacks=callbacks)
 
     # configure the GPIO.PIN_0 as an output
     mychip.GPIO.GPIO_dir.PIN_0.write(mychip.GPIO.GPIO_dir.PIN_0.enum_cls.dir_out)

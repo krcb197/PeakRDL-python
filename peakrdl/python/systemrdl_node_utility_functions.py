@@ -8,6 +8,8 @@ import textwrap
 
 from systemrdl.node import Node, RegNode
 from systemrdl.node import FieldNode, AddressableNode
+from systemrdl.node import MemNode
+from systemrdl.rdltypes import AccessType
 
 def get_fully_qualified_type_name(node: Node) -> str:
     """
@@ -275,3 +277,39 @@ def get_reg_readable_fields(node: RegNode) -> Iterable[FieldNode]:
     for field in node.fields():
         if field.is_sw_readable is True:
             yield field
+
+def uses_memory(node: AddressableNode) -> bool:
+    """
+    analyses a node to determine if there are any memories used by descendants
+
+    Args:
+        node: node to analysed
+
+    Returns: True if there are memories used
+    """
+    for child_node in node.descendants():
+        if isinstance(child_node, MemNode):
+            return_value = True
+            break
+    else:
+        return_value = False
+
+    return return_value
+
+def memory_sw_writable(node: MemNode) -> bool:
+    """
+    Memory is writable by software
+    """
+    if not isinstance(node, MemNode):
+        raise TypeError('node is not a %s got %s'%(type(MemNode), type(node)))
+
+    return node.get_property('sw') in (AccessType.rw, AccessType.rw1, AccessType.w, AccessType.w1)
+
+def memory_sw_readable(node: MemNode) -> bool:
+    """
+    Memory is readable by software
+    """
+    if not isinstance(node, MemNode):
+        raise TypeError('node is not a %s got %s'%(type(MemNode), type(node)))
+
+    return node.get_property('sw') in (AccessType.rw, AccessType.rw1, AccessType.r)

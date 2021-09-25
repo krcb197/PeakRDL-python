@@ -5,6 +5,7 @@ import os
 from pathlib import Path
 from shutil import copyfile
 from typing import List
+from glob import glob
 
 import autopep8
 import jinja2 as jj
@@ -17,7 +18,7 @@ from .systemrdl_node_utility_functions import get_reg_readable_fields, get_reg_w
     get_array_dim, get_table_block, get_dependent_enum, get_dependent_component, \
     get_field_bitmask_hex_string, get_field_inv_bitmask_hex_string, \
     get_field_max_value_hex_string, get_reg_max_value_hex_string, get_fully_qualified_type_name, \
-    uses_enum, fully_qualified_enum_type
+    uses_enum, fully_qualified_enum_type, uses_memory, memory_sw_readable, memory_sw_writable
 
 file_path = os.path.dirname(__file__)
 
@@ -117,6 +118,7 @@ class PythonExporter:
                 'PropertyReference': PropertyReference,
                 'isinstance': isinstance,
                 'uses_enum' : uses_enum(block),
+                'uses_memory' : uses_memory(block),
                 'get_fully_qualified_type_name': self.lookup_type_name,
                 'get_array_dim': get_array_dim,
                 'get_dependent_component': get_dependent_component,
@@ -128,7 +130,10 @@ class PythonExporter:
                 'get_reg_max_value_hex_string': get_reg_max_value_hex_string,
                 'get_table_block': get_table_block,
                 'get_reg_writable_fields': get_reg_writable_fields,
-                'get_reg_readable_fields': get_reg_readable_fields
+                'get_reg_readable_fields': get_reg_readable_fields,
+                'is_mem_readable': memory_sw_readable,
+                'is_mem_writable': memory_sw_writable
+
 
             }
 
@@ -157,13 +162,6 @@ class PythonExporter:
             else:
                 stream = template.stream(context)
                 stream.dump(module_tb_fqfn, encoding='utf-8')
-
-        copyfile(src=os.path.join(os.path.dirname(__file__),
-                                  "templates",
-                                  "peakrdl_python_types.py"),
-                 dst=os.path.join(package_path,
-                                  'reg_model',
-                                  'peakrdl_python_types.py'))
 
         return [m.inst_name for m in modules]
 
@@ -225,6 +223,7 @@ class PythonExporter:
         Path(package_path).mkdir(parents=True, exist_ok=True)
         Path(os.path.join(package_path, 'reg_model')).mkdir(parents=True, exist_ok=True)
         Path(os.path.join(package_path, 'tests')).mkdir(parents=True, exist_ok=True)
+        Path(os.path.join(package_path, 'peakrdl_python')).mkdir(parents=True, exist_ok=True)
 
         module_fqfn = os.path.join(package_path, 'reg_model', '__init__.py')
         with open(module_fqfn, 'w', encoding='utf-8') as fid:
@@ -235,3 +234,16 @@ class PythonExporter:
         module_fqfn = os.path.join(package_path, '__init__.py')
         with open(module_fqfn, 'w', encoding='utf-8') as fid:
             fid.write('pass\n')
+
+        template_package = os.path.join(os.path.dirname(__file__),
+                                        'templates',
+                                        'peakrdl_python')
+        files_in_package = glob(os.path.join(template_package,'*.py'))
+
+        for file_in_package in files_in_package:
+            filename = os.path.basename(file_in_package)
+            copyfile(src=os.path.join(template_package,
+                                      filename),
+                     dst=os.path.join(package_path,
+                                      'peakrdl_python',
+                                      filename))

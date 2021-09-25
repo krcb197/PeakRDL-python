@@ -14,51 +14,18 @@ class {{get_fully_qualified_type_name(node)}}_cls(RegWriteOnly):
 
     __slots__ = [{%- for child_node in node.children(unroll=False) -%}'__{{child_node.inst_name}}'{% if not loop.last %}, {% endif %}{%- endfor %}]
 
-    {%- if node.has_sw_readable and node.has_sw_writable %}
-
     def __init__(self,
-                 read_callback: ReadCallback,
-                 write_callback: WriteCallback,
+                 callbacks: CallbackSet,
                  address: int,
                  logger_handle: str,
                  inst_name: str):
 
-        super().__init__(read_callback=read_callback,
-                         write_callback=write_callback,
+        super().__init__(callbacks=callbacks,
                          address=address,
                          {% if 'accesswidth' in node.list_properties() -%}accesswidth={{node.get_property('accesswidth')}}{%- else -%}accesswidth={{node.size*8}}{%- endif -%},
                          width={{node.size*8}},
                          logger_handle=logger_handle,
                          inst_name=inst_name)
-    {%- elif node.has_sw_readable and not node.has_sw_writable %}
-
-    def __init__(self,
-                 read_callback: ReadCallback,
-                 address: int,
-                 logger_handle: str,
-                 inst_name: str):
-
-        super().__init__(read_callback=read_callback,
-                         address=address,
-                         {% if 'accesswidth' in node.list_properties() -%}accesswidth={{node.get_property('accesswidth')}}{%- else -%}accesswidth={{node.size*8}}{%- endif -%},
-                         width={{node.size*8}},
-                         logger_handle=logger_handle,
-                         inst_name=inst_name)
-    {%- elif not node.has_sw_readable and node.has_sw_writable %}
-
-    def __init__(self,
-                 write_callback: WriteCallback,
-                 address: int,
-                 logger_handle: str,
-                 inst_name: str):
-
-        super().__init__(write_callback=write_callback,
-                         address=address,
-                         {% if 'accesswidth' in node.list_properties() -%}accesswidth={{node.get_property('accesswidth')}}{%- else -%}accesswidth={{node.size*8}}{%- endif -%},
-                         width={{node.size*8}},
-                         logger_handle=logger_handle,
-                         inst_name=inst_name)
-    {%- endif %}
 
         # build the field attributes
         {%- for child_node in node.fields() %}

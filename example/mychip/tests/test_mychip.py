@@ -8,6 +8,7 @@ from unittest.mock import patch
 import random
 from itertools import combinations
 
+from ..peakrdl_python import CallbackSet
 
 from ..reg_model.mychip import mychip_cls
 
@@ -38,7 +39,8 @@ def write_callback(addr: int, width: int, accesswidth: int,  data: int):
 class mychip_TestCase(unittest.TestCase):
 
     def setUp(self):
-        self.dut = mychip_cls(read_callback=read_callback, write_callback=write_callback)
+        self.dut = mychip_cls(CallbackSet(read_callback=read_callback,
+                                                          write_callback=write_callback))
 
     @staticmethod
     def _reverse_bits(value: int, number_bits: int) -> int:

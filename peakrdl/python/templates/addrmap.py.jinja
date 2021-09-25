@@ -7,14 +7,16 @@ This code was generated from the PeakRDL-python package
 from typing import Tuple, NoReturn
 from typing import Iterable
 
-from .peakrdl_python_types import AddressMap, Reg, RegFile
-from .peakrdl_python_types import RegReadOnly, RegWriteOnly, RegReadWrite
-from .peakrdl_python_types import Field, FieldReadOnly, FieldWriteOnly, FieldReadWrite
-from .peakrdl_python_types import FieldSizeProps
-from .peakrdl_python_types import ReadCallback, WriteCallback
+from ..peakrdl_python import AddressMap, RegFile
+from ..peakrdl_python import RegReadOnly, RegWriteOnly, RegReadWrite
+from ..peakrdl_python import FieldReadOnly, FieldWriteOnly, FieldReadWrite
+from ..peakrdl_python import FieldSizeProps, Field
+from ..peakrdl_python import CallbackSet
+{% if uses_memory %}from ..peakrdl_python import MemoryReadOnly, MemoryWriteOnly, MemoryReadWrite {% endif %}
 
 {% from 'addrmap_field.py.jinja' import field_class with context %}
 {% from 'addrmap_register.py.jinja' import register_class with context %}
+{% from 'addrmap_memory.py.jinja' import memory_class with context %}
 
 
 
@@ -23,8 +25,7 @@ from .peakrdl_python_types import ReadCallback, WriteCallback
         {%- if node.is_array %}
             {%- if node.has_sw_readable and node.has_sw_writable %}
     self.__{{node.inst_name}} = ( {% for node_instance_index in range(get_array_dim(node))  %}
-                                       {{get_fully_qualified_type_name(node)}}_cls(read_callback=read_callback,
-                                                                   write_callback=write_callback,
+                                       {{get_fully_qualified_type_name(node)}}_cls(callbacks=callbacks,
                                                                    address=self.address+{{node.raw_address_offset}}+({{node_instance_index}} * {{node.array_stride}}),
                                                                    logger_handle=logger_handle+'.{{node.inst_name}}[{{node_instance_index}}]',
                                                                                    inst_name='{{node.inst_name}}')
@@ -32,7 +33,7 @@ from .peakrdl_python_types import ReadCallback, WriteCallback
                                        {% endfor %} )
             {%- elif node.has_sw_readable and not node.has_sw_writable %}
     self.__{{node.inst_name}} = ( {% for node_instance_index in range(get_array_dim(node))  %}
-                                       {{get_fully_qualified_type_name(node)}}_cls(read_callback=read_callback,
+                                       {{get_fully_qualified_type_name(node)}}_cls(callbacks=callbacks,
                                                                    address=self.address+{{node.raw_address_offset}}+({{node_instance_index}} * {{node.array_stride}}),
                                                                    logger_handle=logger_handle+'.{{node.inst_name}}[{{node_instance_index}}]',
                                                                                    inst_name='{{node.inst_name}}')
@@ -40,7 +41,7 @@ from .peakrdl_python_types import ReadCallback, WriteCallback
                                        {% endfor %} )
             {%- elif not node.has_sw_readable and node.has_sw_writable %}
     self.__{{node.inst_name}} = ( {% for node_instance_index in range(get_array_dim(node))  %}
-                                       {{get_fully_qualified_type_name(node)}}_cls(write_callback=write_callback,
+                                       {{get_fully_qualified_type_name(node)}}_cls(callbacks=callbacks,
                                                                    address=self.address+{{node.raw_address_offset}}+({{node_instance_index}} * {{node.array_stride}}),
                                                                    logger_handle=logger_handle+'.{{node.inst_name}}[{{node_instance_index}}]',
                                                                                    inst_name='{{node.inst_name}}')
@@ -49,39 +50,81 @@ from .peakrdl_python_types import ReadCallback, WriteCallback
             {%- endif %}
         {%- else %}
             {%- if node.has_sw_readable and node.has_sw_writable %}
-    self.__{{node.inst_name}} = {{get_fully_qualified_type_name(node)}}_cls(read_callback=read_callback,
-                                                                 write_callback=write_callback,
+    self.__{{node.inst_name}} = {{get_fully_qualified_type_name(node)}}_cls(callbacks=callbacks,
                                                                  address=self.address+{{node.address_offset}},
                                                                  logger_handle=logger_handle+'.{{node.inst_name}}',
                                                                                    inst_name='{{node.inst_name}}')
             {%- elif node.has_sw_readable and not node.has_sw_writable %}
-    self.__{{node.inst_name}} = {{get_fully_qualified_type_name(node)}}_cls(read_callback=read_callback,
+    self.__{{node.inst_name}} = {{get_fully_qualified_type_name(node)}}_cls(callbacks=callbacks,
                                                                  address=self.address+{{node.address_offset}},
                                                                  logger_handle=logger_handle+'.{{node.inst_name}}',
                                                                                    inst_name='{{node.inst_name}}')
             {%- elif not node.has_sw_readable and node.has_sw_writable %}
-    self.__{{node.inst_name}} = {{get_fully_qualified_type_name(node)}}_cls(write_callback=write_callback,
+    self.__{{node.inst_name}} = {{get_fully_qualified_type_name(node)}}_cls(callbacks=callbacks,
                                                                                  address=self.address+{{node.address_offset}},
                                                                                  logger_handle=logger_handle+'.{{node.inst_name}}',
                                                                                  inst_name='{{node.inst_name}}')
             {%- endif %}
         {%- endif %}
+    {%- elif isinstance(node, systemrdlMemNode) %}
+        {%- if node.is_array %}
+            {%- if is_mem_readable(node) and is_mem_writable(node) %}
+    self.__{{node.inst_name}} = ( {% for node_instance_index in range(get_array_dim(node))  %}
+                                       {{get_fully_qualified_type_name(node)}}_cls(callbacks=callbacks,
+                                                                   address=self.address+{{node.raw_address_offset}}+({{node_instance_index}} * {{node.array_stride}}),
+                                                                   logger_handle=logger_handle+'.{{node.inst_name}}[{{node_instance_index}}]',
+                                                                                   inst_name='{{node.inst_name}}')
+                                       {%- if not loop.last -%} ,  {%- endif -%}
+                                       {% endfor %} )
+            {%- elif is_mem_readable(node) and not is_mem_writable(node) %}
+    self.__{{node.inst_name}} = ( {% for node_instance_index in range(get_array_dim(node))  %}
+                                       {{get_fully_qualified_type_name(node)}}_cls(callbacks=callbacks,
+                                                                   address=self.address+{{node.raw_address_offset}}+({{node_instance_index}} * {{node.array_stride}}),
+                                                                   logger_handle=logger_handle+'.{{node.inst_name}}[{{node_instance_index}}]',
+                                                                                   inst_name='{{node.inst_name}}')
+                                       {%- if not loop.last -%} ,  {%- endif -%}
+                                       {% endfor %} )
+            {%- elif not is_mem_readable(node) and is_mem_writable(node) %}
+    self.__{{node.inst_name}} = ( {% for node_instance_index in range(get_array_dim(node))  %}
+                                       {{get_fully_qualified_type_name(node)}}_cls(callbacks=callbacks,
+                                                                   address=self.address+{{node.raw_address_offset}}+({{node_instance_index}} * {{node.array_stride}}),
+                                                                   logger_handle=logger_handle+'.{{node.inst_name}}[{{node_instance_index}}]',
+                                                                                   inst_name='{{node.inst_name}}')
+                                       {%- if not loop.last -%} ,  {%- endif -%}
+                                       {% endfor %} )
+            {%- endif %}
+        {%- else %}
+            {%- if is_mem_readable(node) and is_mem_writable(node) %}
+    self.__{{node.inst_name}} = {{get_fully_qualified_type_name(node)}}_cls(callbacks=callbacks,
+                                                                 address=self.address+{{node.address_offset}},
+                                                                 logger_handle=logger_handle+'.{{node.inst_name}}',
+                                                                                   inst_name='{{node.inst_name}}')
+            {%- elif is_mem_readable(node) and not is_mem_writable(node) %}
+    self.__{{node.inst_name}} = {{get_fully_qualified_type_name(node)}}_cls(callbacks=callbacks,
+                                                                 address=self.address+{{node.address_offset}},
+                                                                 logger_handle=logger_handle+'.{{node.inst_name}}',
+                                                                                   inst_name='{{node.inst_name}}')
+            {%- elif not is_mem_readable(node) and is_mem_writable(node) %}
+    self.__{{node.inst_name}} = {{get_fully_qualified_type_name(node)}}_cls(callbacks=callbacks,
+                                                                             address=self.address+{{node.address_offset}},
+                                                                             logger_handle=logger_handle+'.{{node.inst_name}}',
+                                                                             inst_name='{{node.inst_name}}')
+            {%- endif %}
+        {%- endif %}
     {%- elif isinstance(node, systemrdlRegfileNode) or isinstance(node, systemrdlAddrmapNode) %}
         {%- if node.is_array %}
     self.__{{node.inst_name}} = ( {% for node_instance_index in range(get_array_dim(node))  %}
-                                       {{get_fully_qualified_type_name(node)}}_cls(read_callback=read_callback,
-                                                                                   write_callback=write_callback,
+                                       {{get_fully_qualified_type_name(node)}}_cls(callbacks=callbacks,
                                                                                    address=self.address+{{node.raw_address_offset}}+({{node_instance_index}} * {{node.array_stride}}),
                                                                                    logger_handle=logger_handle+'.{{node.inst_name}}[{{node_instance_index}}]',
                                                                                    inst_name='{{node.inst_name}}')
                                        {%- if not loop.last -%} ,  {%- endif -%}
                                        {% endfor %} )
         {%- else -%}
-    self.__{{node.inst_name}} = {{get_fully_qualified_type_name(node)}}_cls(read_callback=read_callback,
-                                                                                 write_callback=write_callback,
-                                                                                 address=self.address+{{node.address_offset}},
-                                                                                 logger_handle=logger_handle+'.{{node.inst_name}}',
-                                                                                 inst_name='{{node.inst_name}}')
+    self.__{{node.inst_name}} = {{get_fully_qualified_type_name(node)}}_cls(callbacks=callbacks,
+                                                                            address=self.address+{{node.address_offset}},
+                                                                            logger_handle=logger_handle+'.{{node.inst_name}}',
+                                                                            inst_name='{{node.inst_name}}')
         {%- endif %}
     {%- endif %}
 {%- endmacro %}
@@ -97,13 +140,13 @@ class {{get_fully_qualified_type_name(node)}}_cls(RegFile):
     __slots__ = [{%- for child_node in node.children(unroll=False) -%}'__{{child_node.inst_name}}'{% if not loop.last %}, {% endif %}{%- endfor %}]
 
     def __init__(self,
-                 read_callback: ReadCallback,
-                 write_callback: WriteCallback,
+                 callbacks: CallbackSet,
                  address: int,
                  logger_handle:str,
                  inst_name:str):
 
-        super().__init__(address=address,
+        super().__init__(callbacks=callbacks,
+                         address=address,
                          logger_handle=logger_handle,
                          inst_name=inst_name)
 
@@ -131,16 +174,16 @@ class {{get_fully_qualified_type_name(node)}}_cls(AddressMap):
     {{get_table_block(node) | indent}}
     """
 
-    __slots__ = [{%- for child_node in node.children(unroll=False) -%}{%- if isinstance(child_node, systemrdlRegNode) or isinstance(child_node, systemrdlRegfileNode) or isinstance(child_node, systemrdlAddrmapNode) -%}'__{{child_node.inst_name}}'{% if not loop.last %}, {% endif %}{% endif %}{%- endfor %}]
+    __slots__ = [{%- for child_node in node.children(unroll=False) -%}{%- if isinstance(child_node, systemrdlRegNode) or isinstance(child_node, systemrdlRegfileNode) or isinstance(child_node, systemrdlAddrmapNode) or isinstance(child_node, systemrdlMemNode) -%}'__{{child_node.inst_name}}'{% if not loop.last %}, {% endif %}{% endif %}{%- endfor %}]
 
     def __init__(self,
-                 read_callback: ReadCallback,
-                 write_callback: WriteCallback,
+                 callbacks: CallbackSet,
                  address:int {%- if node == top_node -%}={{top_node.absolute_address}}{%- endif -%},
                  logger_handle:str {%- if node == top_node -%}='reg_model.{{top_node.get_path()}}'{%- endif -%},
                  inst_name{%- if node == top_node -%}='{{node.inst_name}}'{%- endif -%}):
 
-        super().__init__(address=address,
+        super().__init__(callbacks=callbacks,
+                         address=address,
                          logger_handle=logger_handle,
                          inst_name=inst_name)
 
@@ -149,7 +192,7 @@ class {{get_fully_qualified_type_name(node)}}_cls(AddressMap):
         {% endfor %}
 
         {%- for child_node in node.children(unroll=False) -%}
-            {%- if isinstance(child_node, systemrdlRegNode) or isinstance(child_node, systemrdlRegfileNode) or isinstance(child_node, systemrdlAddrmapNode) %}
+            {%- if isinstance(child_node, systemrdlRegNode) or isinstance(child_node, systemrdlRegfileNode) or isinstance(child_node, systemrdlAddrmapNode) or isinstance(child_node, systemrdlMemNode) %}
     @property
     def {{child_node.inst_name}}(self) ->  {% if child_node.is_array -%}Tuple[{%- endif -%}{{get_fully_qualified_type_name(child_node)}}_cls{%- if child_node.is_array -%},...]{%- endif -%}:
         return self.__{{child_node.inst_name}}
@@ -180,6 +223,8 @@ class {{get_fully_qualified_enum_type(enum_needed, top_node.parent)}}_enumcls(In
         {{ addrmap_class(node) }}
     {% elif isinstance(node, systemrdlFieldNode) %}
         {{ field_class(node)  }}
+    {% elif isinstance(node, systemrdlMemNode) %}
+        {{ memory_class(node)  }}
     {% endif %}
 {% endfor %}
 

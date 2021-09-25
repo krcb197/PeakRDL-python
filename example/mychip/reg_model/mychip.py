@@ -7,11 +7,13 @@ from enum import IntEnum, unique
 from typing import Tuple, NoReturn
 from typing import Iterable
 
-from .peakrdl_python_types import AddressMap, Reg, RegFile
-from .peakrdl_python_types import RegReadOnly, RegWriteOnly, RegReadWrite
-from .peakrdl_python_types import Field, FieldReadOnly, FieldWriteOnly, FieldReadWrite
-from .peakrdl_python_types import FieldSizeProps
-from .peakrdl_python_types import ReadCallback, WriteCallback
+from ..peakrdl_python import AddressMap, RegFile
+from ..peakrdl_python import RegReadOnly, RegWriteOnly, RegReadWrite
+from ..peakrdl_python import FieldReadOnly, FieldWriteOnly, FieldReadWrite
+from ..peakrdl_python import FieldSizeProps, Field
+from ..peakrdl_python import CallbackSet
+
+
 
 
 
@@ -103,26 +105,29 @@ class mychip_GPIO_block_GPIO_dir_cls(RegReadWrite):
     """
     Class to represent a register in the register model
 
-    +-------------------+------------------------------------------------+
-    | System RDL Field  | Value                                          |
-    +===================+================================================+
-    | Name              | GPIO Direction                                 |
-    +-------------------+------------------------------------------------+
-    | Description       | Register to set the direction of each GPIO pin |
-    +-------------------+------------------------------------------------+
+    +--------------+-------------------------------------------------------------------------+
+    | SystemRDL    | Value                                                                   |
+    | Field        |                                                                         |
+    +==============+=========================================================================+
+    | Name         | .. raw:: html                                                           |
+    |              |                                                                         |
+    |              |      GPIO Direction                                                     |
+    +--------------+-------------------------------------------------------------------------+
+    | Description  | .. raw:: html                                                           |
+    |              |                                                                         |
+    |              |      <p>Register to set the direction of each GPIO pin</p>              |
+    +--------------+-------------------------------------------------------------------------+
     """
 
     __slots__ = ['__PIN_0']
 
     def __init__(self,
-                 read_callback: ReadCallback,
-                 write_callback: WriteCallback,
+                 callbacks: CallbackSet,
                  address: int,
                  logger_handle: str,
                  inst_name: str):
 
-        super().__init__(read_callback=read_callback,
-                         write_callback=write_callback,
+        super().__init__(callbacks=callbacks,
                          address=address,
                          accesswidth=32,
                          width=32,
@@ -223,26 +228,29 @@ class mychip_GPIO_block_GPIO_state_cls(RegReadWrite):
     """
     Class to represent a register in the register model
 
-    +-------------------+------------------------------------------------+
-    | System RDL Field  | Value                                          |
-    +===================+================================================+
-    | Name              | GPIO Set State                                 |
-    +-------------------+------------------------------------------------+
-    | Description       | Register to set the state of a GPIO Pin        |
-    +-------------------+------------------------------------------------+
+    +--------------+-------------------------------------------------------------------------+
+    | SystemRDL    | Value                                                                   |
+    | Field        |                                                                         |
+    +==============+=========================================================================+
+    | Name         | .. raw:: html                                                           |
+    |              |                                                                         |
+    |              |      GPIO Set State                                                     |
+    +--------------+-------------------------------------------------------------------------+
+    | Description  | .. raw:: html                                                           |
+    |              |                                                                         |
+    |              |      <p>Register to set the state of a GPIO Pin</p>                     |
+    +--------------+-------------------------------------------------------------------------+
     """
 
     __slots__ = ['__PIN_0']
 
     def __init__(self,
-                 read_callback: ReadCallback,
-                 write_callback: WriteCallback,
+                 callbacks: CallbackSet,
                  address: int,
                  logger_handle: str,
                  inst_name: str):
 
-        super().__init__(read_callback=read_callback,
-                         write_callback=write_callback,
+        super().__init__(callbacks=callbacks,
                          address=address,
                          accesswidth=32,
                          width=32,
@@ -330,37 +338,40 @@ class mychip_GPIO_block_cls(AddressMap):
     """
     Class to represent a address map in the register model
 
-    +-------------------+------------------------------------------------+
-    | System RDL Field  | Value                                          |
-    +===================+================================================+
-    | Name              | GPIO Block                                     |
-    +-------------------+------------------------------------------------+
-    | Description       | GPIO Block with configurable direction pins    |
-    +-------------------+------------------------------------------------+
+    +--------------+-------------------------------------------------------------------------+
+    | SystemRDL    | Value                                                                   |
+    | Field        |                                                                         |
+    +==============+=========================================================================+
+    | Name         | .. raw:: html                                                           |
+    |              |                                                                         |
+    |              |      GPIO Block                                                         |
+    +--------------+-------------------------------------------------------------------------+
+    | Description  | .. raw:: html                                                           |
+    |              |                                                                         |
+    |              |      <p>GPIO Block with configurable direction pins</p>                 |
+    +--------------+-------------------------------------------------------------------------+
     """
 
     __slots__ = ['__GPIO_dir', '__GPIO_state']
 
     def __init__(self,
-                 read_callback: ReadCallback,
-                 write_callback: WriteCallback,
+                 callbacks: CallbackSet,
                  address:int,
                  logger_handle:str,
                  inst_name):
 
-        super().__init__(address=address,
+        super().__init__(callbacks=callbacks,
+                         address=address,
                          logger_handle=logger_handle,
                          inst_name=inst_name)
 
         
-        self.__GPIO_dir = mychip_GPIO_block_GPIO_dir_cls(read_callback=read_callback,
-                                                                     write_callback=write_callback,
+        self.__GPIO_dir = mychip_GPIO_block_GPIO_dir_cls(callbacks=callbacks,
                                                                      address=self.address+4,
                                                                      logger_handle=logger_handle+'.GPIO_dir',
                                                                                        inst_name='GPIO_dir')
         
-        self.__GPIO_state = mychip_GPIO_block_GPIO_state_cls(read_callback=read_callback,
-                                                                     write_callback=write_callback,
+        self.__GPIO_state = mychip_GPIO_block_GPIO_state_cls(callbacks=callbacks,
                                                                      address=self.address+8,
                                                                      logger_handle=logger_handle+'.GPIO_state',
                                                                                        inst_name='GPIO_state')
@@ -380,31 +391,33 @@ class mychip_cls(AddressMap):
     """
     Class to represent a address map in the register model
 
-    +-------------------+------------------------------------------------+
-    | System RDL Field  | Value                                          |
-    +===================+================================================+
-    | Name              | My Chip                                        |
-    +-------------------+------------------------------------------------+
+    +--------------+-------------------------------------------------------------------------+
+    | SystemRDL    | Value                                                                   |
+    | Field        |                                                                         |
+    +==============+=========================================================================+
+    | Name         | .. raw:: html                                                           |
+    |              |                                                                         |
+    |              |      My Chip                                                            |
+    +--------------+-------------------------------------------------------------------------+
     """
 
     __slots__ = ['__GPIO']
 
     def __init__(self,
-                 read_callback: ReadCallback,
-                 write_callback: WriteCallback,
+                 callbacks: CallbackSet,
                  address:int=0,
                  logger_handle:str='reg_model.mychip',
                  inst_name='mychip'):
 
-        super().__init__(address=address,
+        super().__init__(callbacks=callbacks,
+                         address=address,
                          logger_handle=logger_handle,
                          inst_name=inst_name)
 
-        self.__GPIO = mychip_GPIO_block_cls(read_callback=read_callback,
-                                                                                     write_callback=write_callback,
-                                                                                     address=self.address+0,
-                                                                                     logger_handle=logger_handle+'.GPIO',
-                                                                                     inst_name='GPIO')
+        self.__GPIO = mychip_GPIO_block_cls(callbacks=callbacks,
+                                                                                address=self.address+0,
+                                                                                logger_handle=logger_handle+'.GPIO',
+                                                                                inst_name='GPIO')
         
     @property
     def GPIO(self) ->  mychip_GPIO_block_cls:

@@ -7,11 +7,13 @@ import re
 import logging.config
 import logging
 from itertools import combinations
+from array import array as Array
 
 import unittest
-from unittest.mock import patch
+from unittest.mock import patch, call
 
-from systemrdl import RDLCompiler, RegNode, FieldNode
+from systemrdl import RDLCompiler, RegNode, FieldNode, MemNode
+from systemrdl.rdltypes import AccessType
 from peakrdl.python.exporter import PythonExporter
 
 logging_config = {
@@ -65,11 +67,30 @@ logging_config = {
 
 # dummy functions to support the test cases, note that these are not used as
 # they get patched
-def read_addr_space(addr: int, width: int, accesswidth: int):
+def read_addr_space(addr: int, width: int, accesswidth: int) -> int:
     assert isinstance(addr, int)
     assert isinstance(width, int)
     assert isinstance(accesswidth, int)
     return 0
+
+def read_block_addr_space(addr: int, width: int, accesswidth: int, length:int) -> Array:
+    assert isinstance(addr, int)
+    assert isinstance(width, int)
+    assert isinstance(accesswidth, int)
+    assert isinstance(length, int)
+
+    if width == 32:
+        typecode = 'L'
+    elif width == 64:
+        typecode = 'Q'
+    elif width == 16:
+        typecode = 'I'
+    elif width == 8:
+        typecode = 'B'
+    else:
+        raise ValueError('unhandled memory width')
+
+    return Array(typecode, [0 for x in range(length)])
 
 
 def write_addr_space(addr: int, width: int, accesswidth: int,  data: int):
@@ -78,13 +99,23 @@ def write_addr_space(addr: int, width: int, accesswidth: int,  data: int):
     assert isinstance(accesswidth, int)
     assert isinstance(data, int)
 
+def write_block_addr_space(addr: int, width: int, accesswidth: int,  data: Array):
+    assert isinstance(addr, int)
+    assert isinstance(width, int)
+    assert isinstance(accesswidth, int)
+    assert isinstance(data, Array)
 
 def read_callback(addr: int, width: int, accesswidth: int):
     return read_addr_space(addr=addr, width=width, accesswidth=accesswidth)
 
-
 def write_callback(addr: int, width: int, accesswidth: int,  data: int):
     write_addr_space(addr=addr, width=width, accesswidth=accesswidth, data=data)
+
+def read_block_callback(addr: int, width: int, accesswidth: int, length: int):
+    return read_block_addr_space(addr=addr, width=width, accesswidth=accesswidth, length=length)
+
+def write_block_callback(addr: int, width: int, accesswidth: int,  data: Array):
+    write_block_addr_space(addr=addr, width=width, accesswidth=accesswidth, data=data)
 
 
 class BaseTestContainer:
@@ -114,10 +145,15 @@ class BaseTestContainer:
                                 [cls.root_node_name + '_cls'], 0)
             cls.dut_cls = getattr(module, cls.root_node_name + '_cls')
 
+            peakrdl_python_package = __import__(cls.root_node_name+'.peakrdl_python',
+                                                globals(), locals(), ['CallbackSet'], 0)
+
+            cls.callbackset_cls = getattr(peakrdl_python_package, 'CallbackSet')
+
 
         def setUp(self):
-            self.dut = self.dut_cls(read_callback=read_callback,
-                                    write_callback=write_callback)
+            self.dut = self.dut_cls(self.callbackset_cls(read_callback=read_callback,
+                                    write_callback=write_callback))
 
         def _get_dut_object(self, node):
 
@@ -174,7 +210,7 @@ class BaseTestContainer:
             for node in self.spec.descendants(unroll=True):
                 dut_obj = self._get_dut_object(node)
 
-                if isinstance(node, RegNode):
+                if isinstance(node, RegNode) or isinstance(node, MemNode):
                     logger.info('checking address - node : {fqnode_path}'.format(fqnode_path=node.get_path()))
                     self.assertEqual(node.absolute_address, dut_obj.address)
 
@@ -345,6 +381,145 @@ class BaseTestContainer:
                         else:
                             with self.assertRaises(AttributeError):
                                 dut_obj.write(0)
+
+                        # check the read has not been called in the write test
+                        read_callback_mock.assert_not_called()
+
+        def test_memory_read_and_write(self):
+            """
+            Check the ability to read and write to memories
+            """
+            logger = logging.getLogger(self.id())
+
+            for node in self.spec.descendants(unroll=True):
+                dut_obj = self._get_dut_object(node)
+
+                if isinstance(node, MemNode):
+                    logger.info('checking read/write - node : {fqnode_path}'.format(fqnode_path=node.get_path()))
+                    with patch(__name__ + '.' + 'write_addr_space') as write_callback_mock,\
+                            patch(__name__ + '.' + 'read_addr_space', return_value=1) as read_callback_mock:
+
+                        expected_address = dut_obj.address  # test_addresses checks that this
+                                                            # has been set up correctly
+
+                        self.assertEqual(node.get_property('memwidth'), dut_obj.width)
+                        self.assertEqual(node.get_property('mementries'), dut_obj.entries)
+
+                        if dut_obj.width==32:
+                            typecode='L'
+                        elif dut_obj.width==64:
+                            typecode = 'Q'
+                        elif dut_obj.width==16:
+                            typecode = 'I'
+                        elif dut_obj.width == 8:
+                            typecode='B'
+                        else:
+                            raise ValueError('unhandled memory width')
+
+                        max_value = (2**dut_obj.width)-1
+
+                        if (node.get_property('sw') is AccessType.rw) or \
+                           (node.get_property('sw') is AccessType.r):
+                            # test the read check with high value, low value and a random value in
+                            # between for entry 0, max and random in between, single entry access
+                            for entry in [0, random.randint(0,dut_obj.entries-1), dut_obj.entries-1]:
+                                for value in [0, random.randint(0,max_value+1), max_value]:
+                                    read_callback_mock.return_value = value
+                                    read_callback_mock.reset_mock()
+                                    self.assertEqual(dut_obj.read(start_entry=entry, number_entries=1),
+                                                     Array(typecode, [value]))
+                                    read_callback_mock.assert_called_once_with(
+                                        addr=dut_obj.address + (entry * (dut_obj.width >> 3)),
+                                        width=dut_obj.width,
+                                        accesswidth=dut_obj.width)
+
+                            # check a full length read
+                            random_data = Array(typecode,
+                                                [random.randint(0,max_value+1) for x in range(dut_obj.entries)])
+
+                            def random_data_read_function(addr, width, accesswidth):
+                                if accesswidth == 64:
+                                    shift = 3
+                                elif accesswidth == 32:
+                                    shift = 2
+                                elif accesswidth == 16:
+                                    shift = 1
+                                elif accesswidth == 8:
+                                    shift = 0
+                                else:
+                                    raise ValueError('Unhandled access width %d', accesswidth)
+
+                                mementry = (addr - dut_obj.address) >> shift
+                                return random_data[mementry]
+
+                            read_callback_mock.reset_mock()
+                            read_callback_mock.side_effect=random_data_read_function
+
+                            # at the end of the read tests the write should not have been called
+                            self.assertEqual(dut_obj.read(start_entry=0,
+                                                          number_entries=dut_obj.entries),
+                                             random_data)
+
+                            # from a random point in the middle to the end
+                            start_entry = random.randint(0,dut_obj.entries-1)
+                            self.assertEqual(dut_obj.read(start_entry=start_entry,
+                                                          number_entries=dut_obj.entries-start_entry),
+                                             random_data[start_entry:])
+
+                        write_callback_mock.assert_not_called()
+                        read_callback_mock.reset_mock()
+
+                        if (node.get_property('sw') is AccessType.rw) or \
+                           (node.get_property('sw') is AccessType.w):
+
+                            # test the write with high value, low value and a random value
+                            # at the start, end and random location
+                            for entry in [0, random.randint(0,dut_obj.entries-1), dut_obj.entries-1]:
+                                for value in [0, random.randint(0,max_value+1), max_value]:
+
+                                    dut_obj.write(start_entry=entry, data=Array(typecode,[value]))
+
+                                    read_callback_mock.assert_not_called()
+                                    write_callback_mock.assert_called_once_with(
+                                        addr=dut_obj.address + (entry * (dut_obj.width >> 3)),
+                                        width=dut_obj.width,
+                                        accesswidth=dut_obj.width,
+                                        data=value)
+                                    write_callback_mock.reset_mock()
+
+
+                            # tests full length write
+                            random_data = Array(typecode,
+                                                [random.randint(0, max_value + 1) for x in range(dut_obj.entries)])
+                            dut_obj.write(start_entry=0, data=random_data)
+                            # build_expected call list
+                            self.assertEqual(write_callback_mock.call_count, dut_obj.entries)
+                            for x in range(dut_obj.entries):
+                                self.assertEqual(write_callback_mock.call_args_list[x],
+                                                 call(addr=dut_obj.address + (x * (dut_obj.width >> 3)),
+                                                      width=dut_obj.width,
+                                                      accesswidth=dut_obj.width,
+                                                      data=random_data[x]))
+
+                            write_callback_mock.reset_mock()
+                            read_callback_mock.assert_not_called()
+
+
+
+
+                            with self.assertRaises(ValueError):
+                                dut_obj.write(-1, Array(typecode, [0]))
+
+                            with self.assertRaises(ValueError):
+                                dut_obj.write(max_value+1, Array(typecode, [0]))
+
+                            # check that an array which is too long causes an error
+                            with self.assertRaises(ValueError):
+                                dut_obj.write(0, Array(typecode, [0 for x in range(dut_obj.entries+1)]))
+
+                        else:
+                            with self.assertRaises(AttributeError):
+                                dut_obj.write(0, Array(typecode, [0]))
 
                         # check the read has not been called in the write test
                         read_callback_mock.assert_not_called()
@@ -721,6 +896,145 @@ class BaseTestContainer:
             if cls.dut_cls is not None:
                 cls.tempdir.cleanup()
 
+    class BaseRDLTestCaseWithBlockOps(BaseRDLTestCase):
+
+        def setUp(self):
+            self.dut = self.dut_cls(self.callbackset_cls(read_callback=read_callback,
+                                                         write_callback=write_callback,
+                                                         read_block_callback=read_block_callback,
+                                                         write_block_callback=write_block_callback))
+
+        def test_memory_read_and_write(self):
+            """
+            Check the ability to read and write to memories
+            """
+            logger = logging.getLogger(self.id())
+
+            for node in self.spec.descendants(unroll=True):
+                dut_obj = self._get_dut_object(node)
+                if isinstance(node, MemNode):
+
+                    self.assertEqual(node.get_property('memwidth'), dut_obj.width)
+                    self.assertEqual(node.get_property('mementries'), dut_obj.entries)
+
+                    if dut_obj.width == 32:
+                        typecode = 'L'
+                    elif dut_obj.width == 64:
+                        typecode = 'Q'
+                    elif dut_obj.width == 16:
+                        typecode = 'I'
+                    elif dut_obj.width == 8:
+                        typecode = 'B'
+                    else:
+                        raise ValueError('unhandled memory width')
+
+                    logger.info('checking read/write - node : {fqnode_path}'.format(fqnode_path=node.get_path()))
+                    with patch(__name__ + '.' + 'write_addr_space') as write_callback_mock,\
+                            patch(__name__ + '.' + 'read_addr_space', return_value=1) as read_callback_mock, \
+                            patch(__name__ + '.' + 'read_block_addr_space',
+                                  return_value=Array(typecode, [0])) as read_block_callback_mock , \
+                            patch(__name__ + '.' + 'write_block_addr_space') as write_block_callback_mock:
+
+                        expected_address = dut_obj.address  # test_addresses checks that this
+                                                            # has been set up correctly
+
+                        max_value = (2**dut_obj.width)-1
+
+                        if (node.get_property('sw') is AccessType.rw) or \
+                           (node.get_property('sw') is AccessType.r):
+                            # test the read check with high value, low value and a random value in
+                            # between for entry 0, max and random in between, single entry access
+                            for entry in [0, random.randint(0,dut_obj.entries-1), dut_obj.entries-1]:
+                                for value in [0, random.randint(0,max_value+1), max_value]:
+                                    read_block_callback_mock.reset_mock()
+                                    read_block_callback_mock.return_value = Array(typecode, [value])
+                                    self.assertEqual(dut_obj.read(start_entry=entry, number_entries=1),
+                                                     Array(typecode, [value]))
+                                    read_block_callback_mock.assert_called_once_with(
+                                        addr=dut_obj.address + (entry * (dut_obj.width >> 3)),
+                                        width=dut_obj.width,
+                                        accesswidth=dut_obj.width,
+                                        length=1)
+
+                            # check a full length read
+                            random_data = Array(typecode,
+                                                [random.randint(0,max_value+1) for x in range(dut_obj.entries)])
+
+                            read_block_callback_mock.reset_mock()
+                            read_block_callback_mock.return_value = random_data
+
+                            # at the end of the read tests the write should not have been called
+                            self.assertEqual(dut_obj.read(start_entry=0,
+                                                          number_entries=dut_obj.entries),
+                                             random_data)
+
+                            # from a random point in the middle to the end
+                            start_entry = random.randint(0,dut_obj.entries-1)
+                            read_block_callback_mock.return_value = random_data[start_entry:]
+                            self.assertEqual(dut_obj.read(start_entry=start_entry,
+                                                          number_entries=dut_obj.entries-start_entry),
+                                             random_data[start_entry:])
+
+                        write_block_callback_mock.assert_not_called()
+                        write_callback_mock.assert_not_called()
+                        read_callback_mock.assert_not_called()
+                        read_block_callback_mock.reset_mock()
+
+                        if (node.get_property('sw') is AccessType.rw) or \
+                           (node.get_property('sw') is AccessType.w):
+
+                            # test the write with high value, low value and a random value
+                            # at the start, end and random location
+                            for entry in [0, random.randint(0,dut_obj.entries-1), dut_obj.entries-1]:
+                                for value in [0, random.randint(0,max_value+1), max_value]:
+
+                                    dut_obj.write(start_entry=entry, data=Array(typecode,[value]))
+
+                                    write_block_callback_mock.assert_called_once_with(
+                                        addr=dut_obj.address + (entry * (dut_obj.width >> 3)),
+                                        width=dut_obj.width,
+                                        accesswidth=dut_obj.width,
+                                        data=Array(typecode,[value]))
+                                    write_block_callback_mock.reset_mock()
+
+
+                            # tests full length write
+                            random_data = Array(typecode,
+                                                [random.randint(0, max_value + 1) for x in range(dut_obj.entries)])
+                            dut_obj.write(start_entry=0, data=random_data)
+                            # build_expected call list
+                            write_block_callback_mock.assert_called_once_with(
+                                addr=dut_obj.address,
+                                width=dut_obj.width,
+                                accesswidth=dut_obj.width,
+                                data=random_data)
+
+                            write_block_callback_mock.reset_mock()
+                            write_callback_mock.assert_not_called()
+                            read_callback_mock.assert_not_called()
+                            read_block_callback_mock.assert_not_called()
+
+
+
+
+                            with self.assertRaises(ValueError):
+                                dut_obj.write(-1, Array(typecode, [0]))
+
+                            with self.assertRaises(ValueError):
+                                dut_obj.write(max_value+1, Array(typecode, [0]))
+
+                            # check that an array which is too long causes an error
+                            with self.assertRaises(ValueError):
+                                dut_obj.write(0, Array(typecode, [0 for x in range(dut_obj.entries+1)]))
+
+                        else:
+                            with self.assertRaises(AttributeError):
+                                dut_obj.write(0, Array(typecode, [0]))
+
+                        # check the read has not been called in the write test
+                        read_callback_mock.assert_not_called()
+
+
 
 class Test_regfiles_and_arrays(BaseTestContainer.BaseRDLTestCase):
 
@@ -761,10 +1075,20 @@ class Test_msb0_and_lsb0(BaseTestContainer.BaseRDLTestCase):
     root_systemRDL_file = 'msb0_and_lsb0.rdl'
     root_node_name = 'msb0_and_lsb0'
 
-class sizes_registers(BaseTestContainer.BaseRDLTestCase):
+class Test_sizes_registers(BaseTestContainer.BaseRDLTestCase):
 
     root_systemRDL_file = 'sizes_registers.rdl'
     root_node_name = 'sizes_registers'
+
+class Test_memories(BaseTestContainer.BaseRDLTestCase):
+
+    root_systemRDL_file = 'memories.rdl'
+    root_node_name = 'memories'
+
+class Test_memories_block_access(BaseTestContainer.BaseRDLTestCaseWithBlockOps):
+
+    root_systemRDL_file = 'memories.rdl'
+    root_node_name = 'memories'
 
 if __name__ == '__main__':
     unittest.main()
