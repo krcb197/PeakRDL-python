@@ -9,6 +9,11 @@ from array import array as Array
 from typing import NoReturn, Optional
 
 if sys.version_info >= (3, 8):
+    """
+    Python 3.8 introduced the Protocol class to the typing module which is more powerful than the
+    previous method because it also check the argument names
+    """
+
     from typing import Protocol
 
     class ReadCallback(Protocol):
