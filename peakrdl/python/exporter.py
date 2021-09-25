@@ -43,7 +43,7 @@ class PythonExporter:
 
         # Check for stray kwargs
         if kwargs:
-            raise TypeError("got an unexpected keyword argument '%s'" % list(kwargs.keys())[0])
+            raise ValueError("got an unexpected keyword argument")
 
         if user_template_dir:
             loader = jj.ChoiceLoader([
@@ -196,7 +196,7 @@ class PythonExporter:
         for child_node in get_dependent_component(node.parent):
 
             child_inst = child_node.inst
-            if child_inst in self.node_type_name.keys():
+            if child_inst in self.node_type_name:
                 # this should not happen as the get_dependent_component function is supposed to
                 # de-duplicate the values
                 raise RuntimeError("node is already in the lookup dictionary")

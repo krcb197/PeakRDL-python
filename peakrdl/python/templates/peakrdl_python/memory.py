@@ -124,7 +124,7 @@ class Memory(Node):
 
         """
         if not isinstance(entry, int):
-            raise TypeError('entry must be an int but got %s' % type(entry))
+            raise TypeError(f'entry must be an int but got {type(entry)}')
 
         if entry not in range(0, self.entries):
             raise ValueError(f'entry must be in range 0 to {self.entries-1:d} but got {entry:d}')

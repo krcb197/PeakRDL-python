@@ -122,21 +122,21 @@ class Field(Base):
                          inst_name=inst_name)
 
         if not isinstance(size_props, FieldSizeProps):
-            raise TypeError('size_props must be of type FieldSizeProps '
-                            'but got %s' % type(size_props))
+            raise TypeError(f'size_props must be of {type(FieldSizeProps)} '
+                            f'but got {type(size_props)}')
         self.__size_props = size_props
 
         if not isinstance(parent_register, Reg):
-            raise TypeError('parent register must be of type reg_cls '
-                            'but got %s' % type(parent_register))
+            raise TypeError(f'size_props must be of {type(Reg)} '
+                            f'but got {type(parent_register)}')
         self.__parent_register = parent_register
 
         if self.width > self.register_data_width:
             raise ValueError('width can not be greater than parent width')
 
         if self.high > self.register_data_width:
-            raise ValueError('field high bit position (%d) must be less than the '
-                             'parent register width (%d)' % (self.high, self.register_data_width))
+            raise ValueError(f'field high bit position {self.high:d} must be less than the '
+                             f'parent register width ({self.register_data_width:d})')
 
         if self.low > self.register_data_width:
             raise ValueError('field lsb must be less than the parent '
@@ -299,8 +299,8 @@ class FieldReadOnly(Field):
                  inst_name: str):
 
         if not isinstance(parent_register, (RegReadWrite, RegReadOnly)):
-            raise TypeError('parent register must be of type reg_cls but'
-                            ' got %s' % type(parent_register))
+            raise TypeError(f'size_props must be of {type(RegReadWrite)} or {type(RegReadOnly)} '
+                            f'but got {type(parent_register)}')
 
         super().__init__(logger_handle=logger_handle,
                          size_props=size_props,
@@ -319,7 +319,7 @@ class FieldReadOnly(Field):
             field value
         """
         if not isinstance(value, int):
-            raise TypeError('value must be an int but got %s' % type(value))
+            raise TypeError(f'value must be an int but got {type(value)}')
 
         if value < 0:
             raise ValueError('value to be decoded must be greater '
@@ -376,8 +376,8 @@ class FieldWriteOnly(Field):
                  inst_name: str):
 
         if not isinstance(parent_register, (RegReadWrite, RegWriteOnly)):
-            raise TypeError('parent register must be of type reg_cls but '
-                            'got %s' % type(parent_register))
+            raise TypeError(f'size_props must be of {type(RegReadWrite)} or {type(RegWriteOnly)} '
+                            f'but got {type(parent_register)}')
 
         super().__init__(logger_handle=logger_handle,
                          size_props=size_props,
@@ -398,15 +398,15 @@ class FieldWriteOnly(Field):
         """
 
         if not isinstance(value, int):
-            raise TypeError('value must be an int but got %s' % type(value))
+            raise TypeError(f'value must be an int but got {type(value)}')
 
         if value < 0:
             raise ValueError('value to be written to register must be greater '
                              'than or equal to 0')
 
         if value > self.max_value:
-            raise ValueError('value to be written to register must be less '
-                             'than or equal to %d' % self.max_value)
+            raise ValueError(f'value to be written to register must be less '
+                             f'than or equal to {self.max_value:d}')
 
         if self.msb0 is False:
             return_value = value << self.low
@@ -432,15 +432,15 @@ class FieldWriteOnly(Field):
         """
 
         if not isinstance(value, int):
-            raise TypeError('value must be an int but got %s' % type(value))
+            raise TypeError(f'value must be an int but got {type(value)}')
 
         if value < 0:
             raise ValueError('value to be written to register must be greater '
                              'than or equal to 0')
 
         if value > self.max_value:
-            raise ValueError('value to be written to register must be less '
-                             'than or equal to %d' % self.max_value)
+            raise ValueError(f'value to be written to register must be less '
+                             f'than or equal to {self.max_value:d}')
 
         if self.msb0:
             value = swap_msb_lsb_ordering(value=value, width=self.width)
@@ -489,8 +489,8 @@ class FieldReadWrite(FieldReadOnly, FieldWriteOnly):
                  inst_name: str):
 
         if not isinstance(parent_register, RegReadWrite):
-            raise TypeError('parent register must be of type reg_cls but'
-                            ' got %s' % type(parent_register))
+            raise TypeError(f'size_props must be of {type(RegReadWrite)} '
+                            f'but got {type(parent_register)}')
 
         super().__init__(logger_handle=logger_handle,
                          size_props=size_props,

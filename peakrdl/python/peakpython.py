@@ -83,7 +83,7 @@ def compile_rdl(infile:str,
             for ipxact_file in ipxact_files:
                 ipxact.import_file(ipxact_file)
         else:
-            raise ValueError('This ipxact_files should be a list got %s' % type(ipxact_files))
+            raise ValueError(f'This ipxact_files should be a list got {type(ipxact_files)}')
 
     rdlc.compile_file(infile, incl_search_paths=incl_search_paths)
     return rdlc.elaborate(top_def_name=top).top
@@ -103,7 +103,7 @@ def generate(root:Node, outdir:str, autoformatoutputs:bool=True) -> List[str]:
         List of strings with the module names generated
 
     """
-    print('Info: Generating python for {} in {}'.format(root.inst_name, outdir))
+    print(f'Info: Generating python for {root.inst_name} in {outdir}')
     modules = PythonExporter().export(root, outdir,
                                       autoformatoutputs=autoformatoutputs)
 

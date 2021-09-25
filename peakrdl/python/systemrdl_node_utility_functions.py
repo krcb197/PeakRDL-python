@@ -155,6 +155,22 @@ def get_table_block(node: Node) -> str:
 
     return return_string
 
+def get_field_bitmask_int(node: FieldNode) -> int:
+    """
+    Integer bitmask for a field
+
+    Args:
+        node: node to be analysed
+
+    Returns:
+        bitmask as a string prefixed by 0x
+
+    """
+
+    if not isinstance(node, FieldNode):
+        raise TypeError(f'node is not a {type(FieldNode)} got {type(node)}')
+
+    return sum(2 ** x for x in range(node.low, node.high + 1))
 
 def get_field_bitmask_hex_string(node: FieldNode) -> str:
     """
@@ -168,8 +184,9 @@ def get_field_bitmask_hex_string(node: FieldNode) -> str:
 
     """
     if not isinstance(node, FieldNode):
-        raise TypeError('node is not a %s got %s'%(type(FieldNode), type(node)))
-    return '0x%X' % sum(2 ** x for x in range(node.low, node.high + 1))
+        raise TypeError(f'node is not a {type(FieldNode)} got {type(node)}')
+    bitmask = get_field_bitmask_int(node)
+    return f'0x{bitmask:X}'
 
 
 def get_field_inv_bitmask_hex_string(node: FieldNode) -> str:
@@ -184,9 +201,10 @@ def get_field_inv_bitmask_hex_string(node: FieldNode) -> str:
 
     """
     if not isinstance(node, FieldNode):
-        raise TypeError('node is not a %s got %s'%(type(FieldNode), type(node)))
+        raise TypeError(f'node is not a {type(FieldNode)} got {type(node)}')
     reg_bitmask = (2 ** (node.parent.size * 8)) - 1
-    return '0x%X' % (reg_bitmask ^ sum(2 ** x for x in range(node.low, node.high + 1)))
+    inv_bitmask = reg_bitmask ^ get_field_bitmask_int(node)
+    return f'0x{inv_bitmask:X}'
 
 
 def get_field_max_value_hex_string(node: FieldNode) -> str:
@@ -201,8 +219,9 @@ def get_field_max_value_hex_string(node: FieldNode) -> str:
 
     """
     if not isinstance(node, FieldNode):
-        raise TypeError('node is not a %s got %s'%(type(FieldNode), type(node)))
-    return '0x%X' % ((2 ** (node.high - node.low + 1)) - 1)
+        raise TypeError(f'node is not a {type(FieldNode)} got {type(node)}')
+    max_value = ((2 ** (node.high - node.low + 1)) - 1)
+    return f'0x{max_value:X}'
 
 
 def uses_enum(node: AddressableNode) -> bool:
@@ -237,9 +256,10 @@ def get_reg_max_value_hex_string(node: RegNode) -> str:
 
     """
     if not isinstance(node, RegNode):
-        raise TypeError('node is not a %s got %s'%(type(RegNode), type(node)))
-    return '0x%X' % ((2 ** (node.size * 8)) - 1)
+        raise TypeError(f'node is not a {type(RegNode)} got {type(node)}')
 
+    max_value = ((2 ** (node.size * 8)) - 1)
+    return f'0x{max_value:X}'
 
 def get_reg_writable_fields(node: RegNode) -> Iterable[FieldNode]:
     """
@@ -253,7 +273,7 @@ def get_reg_writable_fields(node: RegNode) -> Iterable[FieldNode]:
 
     """
     if not isinstance(node, RegNode):
-        raise TypeError('node is not a %s got %s'%(type(RegNode), type(node)))
+        raise TypeError(f'node is not a {type(RegNode)} got {type(node)}')
 
     for field in node.fields():
         if field.is_sw_writable is True:
@@ -272,7 +292,7 @@ def get_reg_readable_fields(node: RegNode) -> Iterable[FieldNode]:
 
     """
     if not isinstance(node, RegNode):
-        raise TypeError('node is not a %s got %s'%(type(RegNode), type(node)))
+        raise TypeError(f'node is not a {type(RegNode)} got {type(node)}')
 
     for field in node.fields():
         if field.is_sw_readable is True:
@@ -301,7 +321,7 @@ def memory_sw_writable(node: MemNode) -> bool:
     Memory is writable by software
     """
     if not isinstance(node, MemNode):
-        raise TypeError('node is not a %s got %s'%(type(MemNode), type(node)))
+        raise TypeError(f'node is not a {type(MemNode)} got {type(node)}')
 
     return node.get_property('sw') in (AccessType.rw, AccessType.rw1, AccessType.w, AccessType.w1)
 
@@ -310,6 +330,6 @@ def memory_sw_readable(node: MemNode) -> bool:
     Memory is readable by software
     """
     if not isinstance(node, MemNode):
-        raise TypeError('node is not a %s got %s'%(type(MemNode), type(node)))
+        raise TypeError(f'node is not a {type(MemNode)} got {type(node)}')
 
     return node.get_property('sw') in (AccessType.rw, AccessType.rw1, AccessType.r)
