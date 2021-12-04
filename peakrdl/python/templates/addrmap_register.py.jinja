@@ -79,7 +79,7 @@ class {{get_fully_qualified_type_name(node)}}_cls(RegWriteOnly):
         {% endfor %}
 
     {% if node.has_sw_readable %}
-    def write_fields(self, **kwargs) -> NoReturn:
+    def write_fields(self, **kwargs) -> None:
         """
         Do a read-modify-write to the register, updating any field included in
         the arguments
@@ -105,7 +105,7 @@ class {{get_fully_qualified_type_name(node)}}_cls(RegWriteOnly):
         self.write((self.read() & inverse_bit_mask) | reg_value)
 
     {% else %}
-    def write_fields(self, {%- for child_node in node.fields() -%} {{child_node.inst_name}} : int{%- if not loop.last -%},{%- endif -%}{%- endfor -%}) -> NoReturn:
+    def write_fields(self, {%- for child_node in node.fields() -%} {{child_node.inst_name}} : int{%- if not loop.last -%},{%- endif -%}{%- endfor -%}) -> None:
         """
         Do a write to the register, updating all fields
         """
