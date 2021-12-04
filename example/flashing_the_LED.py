@@ -1,7 +1,5 @@
 import tkinter as tk
 
-from typing import NoReturn
-
 from mychip.reg_model.mychip import mychip_cls
 from mychip.peakrdl_python import CallbackSet
 
@@ -53,7 +51,7 @@ class ChipSim:
             else:
                 return 0x0
 
-    def write_addr_space(self, addr: int, width: int, accesswidth: int, data: int) -> NoReturn:
+    def write_addr_space(self, addr: int, width: int, accesswidth: int, data: int) -> None:
         """
         Callback to for the simulation of the chip
 

@@ -4,7 +4,7 @@ This code was generated from the PeakRDL-python package
 
 """
 from enum import IntEnum, unique
-from typing import Tuple, NoReturn
+from typing import Tuple, None
 from typing import Iterable
 
 from ..peakrdl_python import AddressMap, RegFile
@@ -90,7 +90,7 @@ class mychip_GPIO_block_GPIO_direction_field_type_cls(FieldReadWrite):
 
         return super().encode_write_value(value.value)
 
-    def write(self, value : mychip_GPIO_block_GPIO_direction_enumcls) -> NoReturn:
+    def write(self, value : mychip_GPIO_block_GPIO_direction_enumcls) -> None:
 
         if not isinstance(value, self.enum_cls):
             raise TypeError('value must be an mychip_GPIO_block_GPIO_direction_enumcls but got %s' % type(value))
@@ -177,7 +177,7 @@ class mychip_GPIO_block_GPIO_dir_cls(RegReadWrite):
         
 
     
-    def write_fields(self, **kwargs) -> NoReturn:
+    def write_fields(self, **kwargs) -> None:
         """
         Do a read-modify-write to the register, updating any field included in
         the arguments
@@ -300,7 +300,7 @@ class mychip_GPIO_block_GPIO_state_cls(RegReadWrite):
         
 
     
-    def write_fields(self, **kwargs) -> NoReturn:
+    def write_fields(self, **kwargs) -> None:
         """
         Do a read-modify-write to the register, updating any field included in
         the arguments

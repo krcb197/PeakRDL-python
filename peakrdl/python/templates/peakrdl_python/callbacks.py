@@ -6,7 +6,7 @@ import sys
 
 from array import array as Array
 
-from typing import NoReturn, Optional
+from typing import Optional
 
 if sys.version_info >= (3, 8):
     """
@@ -28,7 +28,7 @@ if sys.version_info >= (3, 8):
         """
         Callback definition for a single register write operation
         """
-        def __call__(self, addr: int, width: int, accesswidth: int, data: int) -> NoReturn:
+        def __call__(self, addr: int, width: int, accesswidth: int, data: int) -> None:
             pass
 
 
@@ -44,7 +44,7 @@ if sys.version_info >= (3, 8):
         """
         Callback definition for a block write operation
         """
-        def __call__(self, addr: int, width: int, accesswidth: int, data: Array) -> NoReturn:
+        def __call__(self, addr: int, width: int, accesswidth: int, data: Array) -> None:
             pass
 else:
     from typing import Callable
