@@ -619,7 +619,7 @@ class BaseTestContainer:
                             elif dut_obj.high == dut_obj.lsb:
                                 self.assertEqual(read_back_value,
                                                  self._reverse_bits(random_field_value, node.width),
-                                                 msg=f'{read_back_value=:X}, {self._reverse_bits(random_field_value, node.width)=:X} , {random_value=:X}, {random_field_value=:X}')
+                                                 msg=f'read_back_value={read_back_value:X}, reversed(random_field_value)={self._reverse_bits(random_field_value, node.width):X} , random_value={random_value:X}, random_field_value={random_field_value:X}')
                             else:
                                 raise RuntimeError('unhandled condition high does not equal msb or lsb')
                             read_callback_mock.assert_called_once_with(
