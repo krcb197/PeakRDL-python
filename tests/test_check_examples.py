@@ -8,13 +8,14 @@ import logging.config
 import logging
 from itertools import combinations
 from array import array as Array
+from typing import Optional
 
 import unittest
 from unittest.mock import patch, call
 
-from systemrdl import RDLCompiler, RegNode, FieldNode, MemNode
-from systemrdl.rdltypes import AccessType
-from peakrdl.python.exporter import PythonExporter
+from systemrdl import RDLCompiler, RegNode, FieldNode, MemNode # type: ignore
+from systemrdl.rdltypes import AccessType # type: ignore
+from peakrdl.python import PythonExporter
 
 logging_config = {
         'version': 1,
@@ -121,9 +122,10 @@ def write_block_callback(addr: int, width: int, accesswidth: int,  data: Array):
 class BaseTestContainer:
     class BaseRDLTestCase(unittest.TestCase):
 
-        root_systemRDL_file = None
-        root_node_name = None
-        dut_cls = None
+        root_systemRDL_file : Optional[str] = None
+        root_node_name : Optional[str] = None
+        dut_cls : Optional[str] = None
+        #tempfile : Optional[tempfile.TemporaryDirectory] = None
 
         @classmethod
         def setUpClass(cls):
@@ -503,9 +505,6 @@ class BaseTestContainer:
 
                             write_callback_mock.reset_mock()
                             read_callback_mock.assert_not_called()
-
-
-
 
                             with self.assertRaises(ValueError):
                                 dut_obj.write(-1, Array(typecode, [0]))
@@ -894,7 +893,7 @@ class BaseTestContainer:
         @classmethod
         def tearDownClass(cls) -> None:
             if cls.dut_cls is not None:
-                cls.tempdir.cleanup()
+                cls.tempdir.cleanup() #type: ignore
 
     class BaseRDLTestCaseWithBlockOps(BaseRDLTestCase):
 

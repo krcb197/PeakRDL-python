@@ -35,9 +35,13 @@ jobs:
         python -m pip install .
         python -m pip install pylint
         python -m pip install pytest
+        python -m pip install mypy
 
     - name: Lint with pylint
       run: pylint --rcfile tests/pylint.rc peakrdl
+
+    - name: Typing check with mypy
+      run: mypy peakrdl tests --config-file=tests/.mypy.ini
 
     - name: Generate testcases
       run: |

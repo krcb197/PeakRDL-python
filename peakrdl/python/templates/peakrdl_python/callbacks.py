@@ -76,7 +76,7 @@ class CallbackSet:
         self.__write_block_callback = write_block_callback
 
     @property
-    def read_callback(self) -> ReadCallback:
+    def read_callback(self) -> Optional[ReadCallback]:
         """
         single read callback function
 
@@ -86,7 +86,7 @@ class CallbackSet:
         return self.__read_callback
 
     @property
-    def write_callback(self) -> WriteCallback:
+    def write_callback(self) -> Optional[WriteCallback]:
         """
         single write callback function
 

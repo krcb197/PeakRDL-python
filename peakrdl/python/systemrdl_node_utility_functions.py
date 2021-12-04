@@ -6,10 +6,10 @@ from typing import Iterable
 
 import textwrap
 
-from systemrdl.node import Node, RegNode
-from systemrdl.node import FieldNode, AddressableNode
-from systemrdl.node import MemNode
-from systemrdl.rdltypes import AccessType
+from systemrdl.node import Node, RegNode  # type: ignore
+from systemrdl.node import FieldNode, AddressableNode  # type: ignore
+from systemrdl.node import MemNode  # type: ignore
+from systemrdl.rdltypes import AccessType  # type: ignore
 
 def get_fully_qualified_type_name(node: Node) -> str:
     """

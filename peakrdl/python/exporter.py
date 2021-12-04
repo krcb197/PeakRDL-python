@@ -7,12 +7,12 @@ from shutil import copyfile
 from typing import List
 from glob import glob
 
-import autopep8
+import autopep8 # type: ignore
 import jinja2 as jj
 
-from systemrdl.node import RootNode, Node, RegNode, AddrmapNode, RegfileNode
-from systemrdl.node import FieldNode, MemNode, AddressableNode
-from systemrdl.rdltypes import OnReadType, OnWriteType, PropertyReference
+from systemrdl.node import RootNode, Node, RegNode, AddrmapNode, RegfileNode # type: ignore
+from systemrdl.node import FieldNode, MemNode, AddressableNode # type: ignore
+from systemrdl.rdltypes import OnReadType, OnWriteType, PropertyReference # type: ignore
 
 from .systemrdl_node_utility_functions import get_reg_readable_fields, get_reg_writable_fields, \
     get_array_dim, get_table_block, get_dependent_enum, get_dependent_component, \
@@ -179,7 +179,7 @@ class PythonExporter:
 
         return self.node_type_name[node.inst]
 
-    def build_node_type_table(self, node: AddressableNode):
+    def build_node_type_table(self, node: AddressableNode) -> None:
         """
         Populate the type name lookup dictionary
 
@@ -208,7 +208,7 @@ class PythonExporter:
                 self.node_type_name[child_inst] = cand_type_name
 
     @staticmethod
-    def create_empty_package(package_path:str):
+    def create_empty_package(package_path:str) -> None:
         """
         create the directories and __init__.py files associated with the exported package
 

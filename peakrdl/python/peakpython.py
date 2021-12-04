@@ -7,13 +7,13 @@ import argparse
 import os
 import subprocess
 import unittest.loader
-from typing import List, Union
+from typing import List, Optional
 
-import coverage
+import coverage # type: ignore
 
-from systemrdl import RDLCompiler
-from systemrdl.node import Node, AddrmapNode
-from peakrdl.ipxact import IPXACTImporter
+from systemrdl import RDLCompiler # type: ignore
+from systemrdl.node import Node, AddrmapNode # type: ignore
+from peakrdl.ipxact import IPXACTImporter # type: ignore
 
 from peakrdl.python import PythonExporter
 
@@ -59,9 +59,9 @@ def build_command_line_parser() -> argparse.ArgumentParser:
 
 
 def compile_rdl(infile:str,
-                incl_search_paths:Union[type(None), List[str]]=None,
-                top:Union[type(None), str]=None,
-                ipxact_files:Union[type(None), List[str]]=None) -> AddrmapNode:
+                incl_search_paths:Optional[List[str]]=None,
+                top:Optional[str]=None,
+                ipxact_files:Optional[List[str]]=None) -> AddrmapNode:
     """
     Compile the systemRDL
 
