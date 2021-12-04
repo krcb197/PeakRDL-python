@@ -16,7 +16,7 @@ class {{get_fully_qualified_type_name(node)}}_cls(FieldWriteOnly):
     __enum_cls = {{get_fully_qualified_enum_type(node.get_property('encode'), top_node.parent)}}_enumcls
     {% endif %}
 
-    __slots__ = []
+    __slots__ : List[str] = []
 
     {%- if 'encode' in node.list_properties() %}
     @property
@@ -63,14 +63,14 @@ class {{get_fully_qualified_type_name(node)}}_cls(FieldWriteOnly):
         {% endif %}
 
         {%- if node.is_sw_writable %}
-    def encode_write_value(self, value: {{get_fully_qualified_enum_type(node.get_property('encode'), top_node.parent)}}_enumcls) -> int:
+    def encode_write_value(self, value: {{get_fully_qualified_enum_type(node.get_property('encode'), top_node.parent)}}_enumcls) -> int: # type: ignore[override]
 
         if not isinstance(value, self.enum_cls):
             raise TypeError('value must be an {{get_fully_qualified_enum_type(node.get_property('encode'), top_node.parent)}}_enumcls but got %s' % type(value))
 
         return super().encode_write_value(value.value)
 
-    def write(self, value : {{get_fully_qualified_enum_type(node.get_property('encode'), top_node.parent)}}_enumcls) -> None:
+    def write(self, value : {{get_fully_qualified_enum_type(node.get_property('encode'), top_node.parent)}}_enumcls) -> None: # type: ignore[override]
 
         if not isinstance(value, self.enum_cls):
             raise TypeError('value must be an {{get_fully_qualified_enum_type(node.get_property('encode'), top_node.parent)}}_enumcls but got %s' % type(value))

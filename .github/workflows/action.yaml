@@ -46,5 +46,7 @@ jobs:
     - name: Generate testcases
       run: |
         python generate_testcases.py
+        mypy testcase_output/raw --config-file=tests/.mypy.ini
+        # mypy testcase_output/autopep8 --config-file=tests/.mypy.ini
         pytest testcase_output/raw
         pytest testcase_output/autopep8

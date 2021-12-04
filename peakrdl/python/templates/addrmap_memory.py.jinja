@@ -12,7 +12,7 @@ class {{get_fully_qualified_type_name(node)}}_cls(MemoryWriteOnly):
     {{get_table_block(node) | indent}}
     """
 
-    __slots__ = []
+    __slots__ : List[str]  = []
 
     def __init__(self,
                  callbacks: CallbackSet,

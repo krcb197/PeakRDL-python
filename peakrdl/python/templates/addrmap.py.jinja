@@ -6,6 +6,7 @@ This code was generated from the PeakRDL-python package
 {% if uses_enum %}from enum import IntEnum, unique{% endif %}
 from typing import Tuple
 from typing import Iterable
+from typing import List
 
 from ..peakrdl_python import AddressMap, RegFile
 from ..peakrdl_python import RegReadOnly, RegWriteOnly, RegReadWrite
@@ -137,7 +138,7 @@ class {{get_fully_qualified_type_name(node)}}_cls(RegFile):
     {{get_table_block(node) | indent}}
     """
 
-    __slots__ = [{%- for child_node in node.children(unroll=False) -%}'__{{child_node.inst_name}}'{% if not loop.last %}, {% endif %}{%- endfor %}]
+    __slots__ : List[str] = [{%- for child_node in node.children(unroll=False) -%}'__{{child_node.inst_name}}'{% if not loop.last %}, {% endif %}{%- endfor %}]
 
     def __init__(self,
                  callbacks: CallbackSet,
@@ -174,7 +175,7 @@ class {{get_fully_qualified_type_name(node)}}_cls(AddressMap):
     {{get_table_block(node) | indent}}
     """
 
-    __slots__ = [{%- for child_node in node.children(unroll=False) -%}{%- if isinstance(child_node, systemrdlRegNode) or isinstance(child_node, systemrdlRegfileNode) or isinstance(child_node, systemrdlAddrmapNode) or isinstance(child_node, systemrdlMemNode) -%}'__{{child_node.inst_name}}'{% if not loop.last %}, {% endif %}{% endif %}{%- endfor %}]
+    __slots__ : List[str] = [{%- for child_node in node.children(unroll=False) -%}{%- if isinstance(child_node, systemrdlRegNode) or isinstance(child_node, systemrdlRegfileNode) or isinstance(child_node, systemrdlAddrmapNode) or isinstance(child_node, systemrdlMemNode) -%}'__{{child_node.inst_name}}'{% if not loop.last %}, {% endif %}{% endif %}{%- endfor %}]
 
     def __init__(self,
                  callbacks: CallbackSet,
@@ -247,7 +248,7 @@ if __name__ == '__main__':
         assert isinstance(addr, int)
         assert isinstance(width, int)
         assert isinstance(accesswidth, int)
-        return input('value to read from address:0x%X'%addr)
+        return int(input('value to read from address:0x%X'%addr))
 
     def write_addr_space(addr: int, width: int, accesswidth: int, data: int) -> None:
         """
@@ -270,4 +271,5 @@ if __name__ == '__main__':
         print('write data:0x%X to address:0x%X'%(data, addr))
 
     # create an instance of the class
-    {{top_node.inst_name}} = {{get_fully_qualified_type_name(top_node)}}_cls(read_callback=read_addr_space, write_callback=write_addr_space)
+    {{top_node.inst_name}} = {{get_fully_qualified_type_name(top_node)}}_cls(callbacks = CallbackSet(read_callback=read_addr_space,
+                                                                                                     write_callback=write_addr_space))
