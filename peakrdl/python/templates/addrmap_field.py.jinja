@@ -70,7 +70,7 @@ class {{get_fully_qualified_type_name(node)}}_cls(FieldWriteOnly):
 
         return super().encode_write_value(value.value)
 
-    def write(self, value : {{get_fully_qualified_enum_type(node.get_property('encode'), top_node.parent)}}_enumcls) -> NoReturn:
+    def write(self, value : {{get_fully_qualified_enum_type(node.get_property('encode'), top_node.parent)}}_enumcls) -> None:
 
         if not isinstance(value, self.enum_cls):
             raise TypeError('value must be an {{get_fully_qualified_enum_type(node.get_property('encode'), top_node.parent)}}_enumcls but got %s' % type(value))
