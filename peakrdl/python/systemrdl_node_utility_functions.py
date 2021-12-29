@@ -333,3 +333,58 @@ def memory_sw_readable(node: MemNode) -> bool:
         raise TypeError(f'node is not a {type(MemNode)} got {type(node)}')
 
     return node.get_property('sw') in (AccessType.rw, AccessType.rw1, AccessType.r)
+
+def get_memory_max_entry_value_hex_string(node: MemNode) -> str:
+    """
+    Hexadecimal for the maximum value that can be represented in a register
+
+    Args:
+        node: node to be analysed
+
+    Returns:
+        bitmask as a string prefixed by 0x
+
+    """
+    if not isinstance(node, MemNode):
+        raise TypeError(f'node is not a {type(MemNode)} got {type(node)}')
+
+    max_value = ((2 ** (node.get_property('memwidth'))) - 1)
+    return f'0x{max_value:X}'
+
+def get_array_typecode(width: int) -> str:
+    """
+        python array typecode
+
+        Args:
+            width: in tbits
+
+        Returns:
+            string to pass into the array generator
+
+        """
+    if width == 32:
+        return 'L'
+    elif width == 64:
+        return 'Q'
+    elif width == 16:
+        return 'I'
+    elif width == 8:
+        return 'B'
+    else:
+        raise ValueError(f'unhandled width {width:d}')
+
+def get_memory_width_bytes(node: MemNode) -> int:
+    """
+    width of the memory in bytes
+
+    Args:
+        node: node to be analysed
+
+    Returns:
+        width in bytes
+
+    """
+    if not isinstance(node, MemNode):
+        raise TypeError(f'node is not a {type(MemNode)} got {type(node)}')
+
+    return node.get_property('memwidth') >> 3

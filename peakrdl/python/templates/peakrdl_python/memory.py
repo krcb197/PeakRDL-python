@@ -19,12 +19,13 @@ class Memory(Node):
         circumstances however, it is useful for type checking
     """
 
-    __slots__ = ['__memwidth', '__entries']
+    __slots__ = ['__memwidth', '__entries', '__accesswidth']
 
     def __init__(self,
                  callbacks: CallbackSet,
                  address: int,
                  width: int,
+                 accesswidth: int,
                  entries: int,
                  logger_handle: str,
                  inst_name: str):
@@ -45,6 +46,7 @@ class Memory(Node):
 
         self.__memwidth = width
         self.__entries = entries
+        self.__accesswidth = accesswidth
 
     @property
     def width(self) -> int:
@@ -88,13 +90,13 @@ class Memory(Node):
         """
 
         if self.width_in_bytes == 1:
-            typecode =  'B'
+            typecode = 'B'
         elif self.width_in_bytes == 2:
-            typecode =  'I'
+            typecode = 'I'
         elif self.width_in_bytes == 4:
-            typecode =  'L'
+            typecode = 'L'
         elif self.width_in_bytes == 8:
-            typecode =  'Q'
+            typecode = 'Q'
         else:
             raise RuntimeError(f'unsupported width of {self.width_in_bytes:d} Bytes')
 
@@ -127,7 +129,16 @@ class Memory(Node):
         if entry not in range(0, self.entries):
             raise ValueError(f'entry must be in range 0 to {self.entries-1:d} but got {entry:d}')
 
-        return self.address + (entry *  self.width_in_bytes)
+        return self.address + (entry * self.width_in_bytes)
+
+    @property
+    def accesswidth(self) -> int:
+        """
+        The access width of the register in bits, this uses the `accesswidth` systemRDL property
+
+        Returns: register access width
+        """
+        return self.__accesswidth
 
 
 class MemoryReadOnly(Memory):
@@ -189,7 +200,12 @@ class MemoryReadOnly(Memory):
                 data_entry = read_callback(addr=entry_address,
                                            width=self.width,
                                            accesswidth=self.width)
-                data_read[entry] = data_entry
+
+                try:
+                    data_read[entry] = data_entry
+                except OverflowError as e:
+                    self.__logger.exception('data read %X causing exception'%data_entry)
+                    raise e
 
         return data_read
 
