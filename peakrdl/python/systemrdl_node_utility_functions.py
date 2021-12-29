@@ -316,24 +316,6 @@ def uses_memory(node: AddressableNode) -> bool:
 
     return return_value
 
-def memory_sw_writable(node: MemNode) -> bool:
-    """
-    Memory is writable by software
-    """
-    if not isinstance(node, MemNode):
-        raise TypeError(f'node is not a {type(MemNode)} got {type(node)}')
-
-    return node.get_property('sw') in (AccessType.rw, AccessType.rw1, AccessType.w, AccessType.w1)
-
-def memory_sw_readable(node: MemNode) -> bool:
-    """
-    Memory is readable by software
-    """
-    if not isinstance(node, MemNode):
-        raise TypeError(f'node is not a {type(MemNode)} got {type(node)}')
-
-    return node.get_property('sw') in (AccessType.rw, AccessType.rw1, AccessType.r)
-
 def get_memory_max_entry_value_hex_string(node: MemNode) -> str:
     """
     Hexadecimal for the maximum value that can be represented in a register

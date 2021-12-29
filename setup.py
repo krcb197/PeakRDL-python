@@ -21,7 +21,7 @@ setuptools.setup(
     include_package_data=True,
     entry_points= { 'console_scripts' : ['peakpython=peakrdl.python.peakpython:main_function'] },
     install_requires=[
-        "systemrdl-compiler>=1.12.0",
+        "systemrdl-compiler>=1.21.0",
         "autopep8",
         "pylint",
         "coverage",
@@ -35,6 +35,7 @@ setuptools.setup(
         "Programming Language :: Python :: 3.7",
         "Programming Language :: Python :: 3.8",
         "Programming Language :: Python :: 3.9",
+        "Programming Language :: Python :: 3.10",
         "Programming Language :: Python :: 3 :: Only",
         "Intended Audience :: Developers",
         "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",

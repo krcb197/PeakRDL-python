@@ -1,9 +1,9 @@
 {%- macro memory_class(node) %}
-    {%- if is_mem_readable(node) and is_mem_writable(node) %}
+    {%- if node.is_sw_readable and node.is_sw_writable %}
 class {{get_fully_qualified_type_name(node)}}_cls(MemoryReadWrite):
-    {%- elif is_mem_readable(node) and not is_mem_writable(node) %}
+    {%- elif node.is_sw_readable and not node.is_sw_writable %}
 class {{get_fully_qualified_type_name(node)}}_cls(MemoryReadOnly):
-    {%- elif not is_mem_readable(node) and is_mem_writable(node) %}
+    {%- elif not node.is_sw_readable and node.is_sw_writable %}
 class {{get_fully_qualified_type_name(node)}}_cls(MemoryWriteOnly):
     {%- endif %}
     """
