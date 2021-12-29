@@ -14,7 +14,6 @@ import unittest
 from unittest.mock import patch, call
 
 from systemrdl import RDLCompiler, RegNode, FieldNode, MemNode # type: ignore
-from systemrdl.rdltypes import AccessType # type: ignore
 from peakrdl.python import PythonExporter
 
 logging_config = {
@@ -420,8 +419,7 @@ class BaseTestContainer:
 
                         max_value = (2**dut_obj.width)-1
 
-                        if (node.get_property('sw') is AccessType.rw) or \
-                           (node.get_property('sw') is AccessType.r):
+                        if node.is_sw_readable:
                             # test the read check with high value, low value and a random value in
                             # between for entry 0, max and random in between, single entry access
                             for entry in [0, random.randint(0,dut_obj.entries-1), dut_obj.entries-1]:
@@ -471,8 +469,7 @@ class BaseTestContainer:
                         write_callback_mock.assert_not_called()
                         read_callback_mock.reset_mock()
 
-                        if (node.get_property('sw') is AccessType.rw) or \
-                           (node.get_property('sw') is AccessType.w):
+                        if node.is_sw_writable:
 
                             # test the write with high value, low value and a random value
                             # at the start, end and random location
@@ -939,8 +936,7 @@ class BaseTestContainer:
 
                         max_value = (2**dut_obj.width)-1
 
-                        if (node.get_property('sw') is AccessType.rw) or \
-                           (node.get_property('sw') is AccessType.r):
+                        if node.is_sw_readable:
                             # test the read check with high value, low value and a random value in
                             # between for entry 0, max and random in between, single entry access
                             for entry in [0, random.randint(0,dut_obj.entries-1), dut_obj.entries-1]:
@@ -979,8 +975,7 @@ class BaseTestContainer:
                         read_callback_mock.assert_not_called()
                         read_block_callback_mock.reset_mock()
 
-                        if (node.get_property('sw') is AccessType.rw) or \
-                           (node.get_property('sw') is AccessType.w):
+                        if node.is_sw_writable:
 
                             # test the write with high value, low value and a random value
                             # at the start, end and random location
