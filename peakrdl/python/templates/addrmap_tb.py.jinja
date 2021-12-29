@@ -5,9 +5,10 @@ This code was generated from the PeakRDL-python package
 """
 from array import array as Array
 import unittest
-from unittest.mock import patch
+from unittest.mock import patch, call
 import random
 from itertools import combinations
+import math
 
 from ..peakrdl_python import CallbackSet
 
@@ -602,6 +603,26 @@ class {{top_node.type_name}}_TestCase(unittest.TestCase):
                                         width={{node.get_property('memwidth')}},
                                         accesswidth={{node.get_property('memwidth')}})
 
+            # check a multi-entry read, if the memory is small do the entire memory, however, if
+            # it is large limit the number of entries to 10
+            entries_to_test = {% if node.get_property('mementries') > 10 %}10{% else %}{{node.get_property('mementries')}}{% endif %}
+            random_data = Array('{{get_array_typecode(node.get_property('memwidth'))}}',
+                                [random.randint(0,{{get_memory_max_entry_value_hex_string(node)}}) for x in range(entries_to_test)])
+
+            def read_data_mock(addr:int, width:int, accesswidth:int) -> int:
+                # the memory is entry width defined where as the address is byte address, so need
+                # to convert between them, the sift is determined by
+                shift = int(math.log2({% if 'accesswidth' in node.list_properties() -%}{{node.get_property('accesswidth')}}{%- else -%}{{node.get_property('memwidth')}}{%- endif -%}) - 3)
+                mem_entry = (addr - {{node.absolute_address}}) >> shift
+                return random_data[mem_entry]
+
+            read_callback_mock.reset_mock()
+            read_callback_mock.side_effect=read_data_mock
+
+            self.assertEqual(self.dut.{{'.'.join(node.get_path_segments()[1:])}}.read(start_entry=0,
+                                          number_entries=entries_to_test),
+                                          random_data)
+
             write_callback_mock.assert_not_called()
             read_callback_mock.reset_mock()
             {% endif %}
@@ -621,6 +642,24 @@ class {{top_node.type_name}}_TestCase(unittest.TestCase):
 
             read_callback_mock.assert_not_called()
             write_callback_mock.reset_mock()
+
+            # check a multi-entry read, if the memory is small do the entire memory, however, if
+            # it is large limit the number of entries to 10
+            entries_to_test = {% if node.get_property('mementries') > 10 %}10{% else %}{{node.get_property('mementries')}}{% endif %}
+            random_data = Array('{{get_array_typecode(node.get_property('memwidth'))}}',
+                                [random.randint(0,{{get_memory_max_entry_value_hex_string(node)}}) for x in range(entries_to_test)])
+            self.dut.{{'.'.join(node.get_path_segments()[1:])}}.write(start_entry=0, data=random_data)
+
+            for x in range(entries_to_test):
+                self.assertEqual(write_callback_mock.call_args_list[x],
+                                 call(addr={{node.absolute_address}} + (x * {{get_memory_width_bytes(node)}}),
+                                      width={{node.get_property('memwidth')}},
+                                      accesswidth={% if 'accesswidth' in node.list_properties() -%}{{node.get_property('accesswidth')}}{%- else -%}{{node.get_property('memwidth')}}{%- endif -%},
+                                      data=random_data[x]))
+
+            read_callback_mock.assert_not_called()
+            write_callback_mock.reset_mock()
+
             {%- endif %}
 
         {%- endif %}
