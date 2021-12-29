@@ -201,11 +201,7 @@ class MemoryReadOnly(Memory):
                                            width=self.width,
                                            accesswidth=self.width)
 
-                try:
-                    data_read[entry] = data_entry
-                except OverflowError as exp:
-                    self.__logger.exception(f'data read 0x{data_read:X} causing exception')
-                    raise exp
+                data_read[entry] = data_entry
 
         return data_read
 
