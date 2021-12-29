@@ -9,7 +9,6 @@ import textwrap
 from systemrdl.node import Node, RegNode  # type: ignore
 from systemrdl.node import FieldNode, AddressableNode  # type: ignore
 from systemrdl.node import MemNode  # type: ignore
-from systemrdl.rdltypes import AccessType  # type: ignore
 
 def get_fully_qualified_type_name(node: Node) -> str:
     """
@@ -346,14 +345,17 @@ def get_array_typecode(width: int) -> str:
         """
     if width == 32:
         return 'L'
-    elif width == 64:
+
+    if width == 64:
         return 'Q'
-    elif width == 16:
+
+    if width == 16:
         return 'I'
-    elif width == 8:
+
+    if width == 8:
         return 'B'
-    else:
-        raise ValueError(f'unhandled width {width:d}')
+
+    raise ValueError(f'unhandled width {width:d}')
 
 def get_memory_width_bytes(node: MemNode) -> int:
     """
