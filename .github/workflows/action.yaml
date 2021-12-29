@@ -19,7 +19,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: [3.7, 3.8, 3.9]
+        python-version: [3.7, 3.8, 3.9, "3.10"]
 
     steps:
     - uses: actions/checkout@v2
@@ -35,11 +35,18 @@ jobs:
         python -m pip install .
         python -m pip install pylint
         python -m pip install pytest
+        python -m pip install mypy
 
     - name: Lint with pylint
       run: pylint --rcfile tests/pylint.rc peakrdl
 
+    - name: Typing check with mypy
+      run: mypy peakrdl tests --config-file=tests/.mypy.ini
+
     - name: Generate testcases
       run: |
-        python generate_testcases.py # commented out as it took too long to run
-        pytest testcase_output/
+        python generate_testcases.py
+        mypy testcase_output/raw --config-file=tests/.mypy.ini
+        # mypy testcase_output/autopep8 --config-file=tests/.mypy.ini
+        pytest testcase_output/raw
+        pytest testcase_output/autopep8

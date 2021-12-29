@@ -2,7 +2,7 @@ field field_typeA { fieldwidth = 2; };
 field field_typeB { fieldwidth = 2; reset = 1; };
 
 signal { signalwidth = 2; } reset_value;
-signal { signalwidth = 1;} field_four_reset;
+signal { signalwidth = 1; activehigh = true; } field_four_reset;
 
 
 addrmap field_with_overridden_reset {

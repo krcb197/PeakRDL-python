@@ -18,7 +18,7 @@ Install from `PyPi`_ using pip
 
 .. _PyPi: https://pypi.org/project/peakrdl-python
 
-.. note:: PeakRDL Python using the systemrdl-compiler. If your source files use
+.. note:: PeakRDL Python uses the systemrdl-compiler. If your source files use
           the embedded Perl preprocess refer to the installation instruction for
           systemrdl-compiler
 

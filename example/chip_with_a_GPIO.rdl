@@ -1,0 +1,38 @@
+addrmap mychip {
+
+    name="My Chip";
+
+    addrmap GPIO_block {
+
+        name = "GPIO Block";
+        desc = "GPIO Block with configurable direction pins";
+
+        enum GPIO_direction {
+		    dir_in = 0 { name = "input"; desc="GPIO direction into chip"; };
+		    dir_out = 1 { name = "output"; desc="GPIO direction out of chip"; };
+    	};
+
+        field GPIO_direction_field_type {
+            encode=GPIO_direction;
+            fieldwidth = 1;
+            sw=rw;
+            hw=r;
+            reset={GPIO_direction::dir_in}; };
+        field GPIO_output_field_type {
+            fieldwidth = 1;
+            sw=rw;
+            hw=r; };
+
+        reg {
+            name="GPIO Direction";
+            desc="Register to set the direction of each GPIO pin";
+            GPIO_direction_field_type PIN_0;
+        } GPIO_dir @ 0x4;
+
+        reg {
+            name="GPIO Set State";
+            desc="Register to set the state of a GPIO Pin";
+            GPIO_output_field_type PIN_0;
+        } GPIO_state @ 0x8;
+    } GPIO;
+};

@@ -6,8 +6,9 @@ from typing import Iterable
 
 import textwrap
 
-from systemrdl.node import Node, RegNode
-from systemrdl.node import FieldNode, AddressableNode
+from systemrdl.node import Node, RegNode  # type: ignore
+from systemrdl.node import FieldNode, AddressableNode  # type: ignore
+from systemrdl.node import MemNode  # type: ignore
 
 def get_fully_qualified_type_name(node: Node) -> str:
     """
@@ -117,25 +118,34 @@ def get_table_block(node: Node) -> str:
     Returns:
         A string that represents a sphinx table
     """
-    row_break = '+-------------------+------------------------------------------------+'
+    row_break = '+--------------+' \
+                '-------------------------------------------------------------------------+'
     if ('name' in node.list_properties()) or ('desc' in node.list_properties()):
         table_strs = [row_break,
-                      '| System RDL Field  | Value                                          |',
-                      '+===================+================================================+']
+                      '| SystemRDL    |'
+                      ' Value                                                                   |',
+                      '| Field        |'
+                      '                                                                         |',
+                      '+==============+'
+                      '=========================================================================+']
         if 'name' in node.list_properties():
-            name_rows = textwrap.wrap(node.get_property('name'), width=68,
-                                      initial_indent="| Name              | ",
-                                      subsequent_indent="|                   | ")
+            table_strs.append("| Name         | .. raw:: html".ljust(88, ' ') + ' |')
+            table_strs.append("|              | ".ljust(88, ' ') + ' |')
+            name_rows = textwrap.wrap(node.get_html_name(), width=88,
+                                      initial_indent="|              |      ",
+                                      subsequent_indent="|              |      ")
             for name_row in name_rows:
-                table_strs.append(name_row.ljust(68, ' ') + ' |')
+                table_strs.append(name_row.ljust(88, ' ') + ' |')
             table_strs.append(row_break)
 
         if 'desc' in node.list_properties():
-            desc_rows = textwrap.wrap(node.get_property('desc'), width=68,
-                                      initial_indent="| Description       | ",
-                                      subsequent_indent="|                   | ")
+            table_strs.append("| Description  | .. raw:: html".ljust(88, ' ') + ' |')
+            table_strs.append("|              | ".ljust(88, ' ') + ' |')
+            desc_rows = textwrap.wrap(node.get_html_desc(), width=88,
+                                      initial_indent="|              |      ",
+                                      subsequent_indent="|              |      ")
             for desc_row in desc_rows:
-                table_strs.append(desc_row.ljust(68, ' ') + ' |')
+                table_strs.append(desc_row.ljust(88, ' ') + ' |')
             table_strs.append(row_break)
 
         return_string = '\n'.join(table_strs)
@@ -144,6 +154,22 @@ def get_table_block(node: Node) -> str:
 
     return return_string
 
+def get_field_bitmask_int(node: FieldNode) -> int:
+    """
+    Integer bitmask for a field
+
+    Args:
+        node: node to be analysed
+
+    Returns:
+        bitmask as a string prefixed by 0x
+
+    """
+
+    if not isinstance(node, FieldNode):
+        raise TypeError(f'node is not a {type(FieldNode)} got {type(node)}')
+
+    return sum(2 ** x for x in range(node.low, node.high + 1))
 
 def get_field_bitmask_hex_string(node: FieldNode) -> str:
     """
@@ -157,8 +183,9 @@ def get_field_bitmask_hex_string(node: FieldNode) -> str:
 
     """
     if not isinstance(node, FieldNode):
-        raise TypeError('node is not a %s got %s'%(type(FieldNode), type(node)))
-    return '0x%X' % sum(2 ** x for x in range(node.low, node.high + 1))
+        raise TypeError(f'node is not a {type(FieldNode)} got {type(node)}')
+    bitmask = get_field_bitmask_int(node)
+    return f'0x{bitmask:X}'
 
 
 def get_field_inv_bitmask_hex_string(node: FieldNode) -> str:
@@ -173,9 +200,10 @@ def get_field_inv_bitmask_hex_string(node: FieldNode) -> str:
 
     """
     if not isinstance(node, FieldNode):
-        raise TypeError('node is not a %s got %s'%(type(FieldNode), type(node)))
+        raise TypeError(f'node is not a {type(FieldNode)} got {type(node)}')
     reg_bitmask = (2 ** (node.parent.size * 8)) - 1
-    return '0x%X' % (reg_bitmask ^ sum(2 ** x for x in range(node.low, node.high + 1)))
+    inv_bitmask = reg_bitmask ^ get_field_bitmask_int(node)
+    return f'0x{inv_bitmask:X}'
 
 
 def get_field_max_value_hex_string(node: FieldNode) -> str:
@@ -190,8 +218,9 @@ def get_field_max_value_hex_string(node: FieldNode) -> str:
 
     """
     if not isinstance(node, FieldNode):
-        raise TypeError('node is not a %s got %s'%(type(FieldNode), type(node)))
-    return '0x%X' % ((2 ** (node.high - node.low + 1)) - 1)
+        raise TypeError(f'node is not a {type(FieldNode)} got {type(node)}')
+    max_value = ((2 ** (node.high - node.low + 1)) - 1)
+    return f'0x{max_value:X}'
 
 
 def uses_enum(node: AddressableNode) -> bool:
@@ -226,9 +255,10 @@ def get_reg_max_value_hex_string(node: RegNode) -> str:
 
     """
     if not isinstance(node, RegNode):
-        raise TypeError('node is not a %s got %s'%(type(RegNode), type(node)))
-    return '0x%X' % ((2 ** (node.size * 8)) - 1)
+        raise TypeError(f'node is not a {type(RegNode)} got {type(node)}')
 
+    max_value = ((2 ** (node.size * 8)) - 1)
+    return f'0x{max_value:X}'
 
 def get_reg_writable_fields(node: RegNode) -> Iterable[FieldNode]:
     """
@@ -242,7 +272,7 @@ def get_reg_writable_fields(node: RegNode) -> Iterable[FieldNode]:
 
     """
     if not isinstance(node, RegNode):
-        raise TypeError('node is not a %s got %s'%(type(RegNode), type(node)))
+        raise TypeError(f'node is not a {type(RegNode)} got {type(node)}')
 
     for field in node.fields():
         if field.is_sw_writable is True:
@@ -261,8 +291,84 @@ def get_reg_readable_fields(node: RegNode) -> Iterable[FieldNode]:
 
     """
     if not isinstance(node, RegNode):
-        raise TypeError('node is not a %s got %s'%(type(RegNode), type(node)))
+        raise TypeError(f'node is not a {type(RegNode)} got {type(node)}')
 
     for field in node.fields():
         if field.is_sw_readable is True:
             yield field
+
+def uses_memory(node: AddressableNode) -> bool:
+    """
+    analyses a node to determine if there are any memories used by descendants
+
+    Args:
+        node: node to analysed
+
+    Returns: True if there are memories used
+    """
+    for child_node in node.descendants():
+        if isinstance(child_node, MemNode):
+            return_value = True
+            break
+    else:
+        return_value = False
+
+    return return_value
+
+def get_memory_max_entry_value_hex_string(node: MemNode) -> str:
+    """
+    Hexadecimal for the maximum value that can be represented in a register
+
+    Args:
+        node: node to be analysed
+
+    Returns:
+        bitmask as a string prefixed by 0x
+
+    """
+    if not isinstance(node, MemNode):
+        raise TypeError(f'node is not a {type(MemNode)} got {type(node)}')
+
+    max_value = ((2 ** (node.get_property('memwidth'))) - 1)
+    return f'0x{max_value:X}'
+
+def get_array_typecode(width: int) -> str:
+    """
+        python array typecode
+
+        Args:
+            width: in tbits
+
+        Returns:
+            string to pass into the array generator
+
+        """
+    if width == 32:
+        return 'L'
+
+    if width == 64:
+        return 'Q'
+
+    if width == 16:
+        return 'I'
+
+    if width == 8:
+        return 'B'
+
+    raise ValueError(f'unhandled width {width:d}')
+
+def get_memory_width_bytes(node: MemNode) -> int:
+    """
+    width of the memory in bytes
+
+    Args:
+        node: node to be analysed
+
+    Returns:
+        width in bytes
+
+    """
+    if not isinstance(node, MemNode):
+        raise TypeError(f'node is not a {type(MemNode)} got {type(node)}')
+
+    return node.get_property('memwidth') >> 3

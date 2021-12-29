@@ -3,33 +3,73 @@ Unit Tests for the {{top_node.inst_name}} register model Python Wrapper
 
 This code was generated from the PeakRDL-python package
 """
+from array import array as Array
 import unittest
-from unittest.mock import patch
+from unittest.mock import patch, call
 import random
 from itertools import combinations
+import math
 
+from ..peakrdl_python import CallbackSet
 
 from ..reg_model.{{top_node.type_name}} import {{top_node.type_name}}_cls
 
-def read_addr_space(addr: int):
+# dummy functions to support the test cases, note that these are not used as
+# they get patched
+def read_addr_space(addr: int, width: int, accesswidth: int):
     assert isinstance(addr, int)
+    assert isinstance(width, int)
+    assert isinstance(accesswidth, int)
     return 0
 
-def write_addr_space(addr: int, data: int):
+def write_addr_space(addr: int, width: int, accesswidth: int,  data: int):
     assert isinstance(addr, int)
+    assert isinstance(width, int)
+    assert isinstance(accesswidth, int)
     assert isinstance(data, int)
 
-def read_callback(addr: int):
-    return read_addr_space(addr)
+def read_callback(addr: int, width: int, accesswidth: int):
+    return read_addr_space(addr=addr, width=width, accesswidth=accesswidth)
 
-def write_callback(addr: int, data: int):
-    write_addr_space(addr, data)
+def read_block_addr_space(addr: int, width: int, accesswidth: int, length:int) -> Array:
+    assert isinstance(addr, int)
+    assert isinstance(width, int)
+    assert isinstance(accesswidth, int)
+    assert isinstance(length, int)
 
+    if width == 32:
+        typecode = 'L'
+    elif width == 64:
+        typecode = 'Q'
+    elif width == 16:
+        typecode = 'I'
+    elif width == 8:
+        typecode = 'B'
+    else:
+        raise ValueError('unhandled memory width')
+
+    return Array(typecode, [0 for x in range(length)])
+
+def read_block_callback(addr: int, width: int, accesswidth: int, length: int):
+    return read_block_addr_space(addr=addr, width=width, accesswidth=accesswidth, length=length)
+
+def write_callback(addr: int, width: int, accesswidth: int,  data: int):
+    write_addr_space(addr=addr, width=width, accesswidth=accesswidth, data=data)
+
+def write_block_addr_space(addr: int, width: int, accesswidth: int,  data: Array):
+    assert isinstance(addr, int)
+    assert isinstance(width, int)
+    assert isinstance(accesswidth, int)
+    assert isinstance(data, Array)
+
+def write_block_callback(addr: int, width: int, accesswidth: int,  data: Array):
+    write_block_addr_space(addr=addr, width=width, accesswidth=accesswidth, data=data)
 
 class {{top_node.type_name}}_TestCase(unittest.TestCase):
 
     def setUp(self):
-        self.dut = {{top_node.type_name}}_cls(read_callback=read_callback, write_callback=write_callback)
+        self.dut = {{top_node.type_name}}_cls(CallbackSet(read_callback=read_callback,
+                                                          write_callback=write_callback))
 
     @staticmethod
     def _reverse_bits(value: int, number_bits: int) -> int:
@@ -48,13 +88,30 @@ class {{top_node.type_name}}_TestCase(unittest.TestCase):
                 result |= 1 << (number_bits - 1 - i)
         return result
 
-    def test_addresses_default_baseaddress(self):
+    def test_register_properties(self):
         """
-        Walk the address map and check the address of every register is correct
+        Walk the address map and check the address, size and accesswidth of every register is
+        correct
         """
         {%- for node in top_node.descendants(unroll=True) -%}
             {%- if isinstance(node, systemrdlRegNode) %}
-        self.assertEqual(self.dut.{{'.'.join(node.get_path_segments()[1:])}}.base_address, {{node.absolute_address}})
+        self.assertEqual(self.dut.{{'.'.join(node.get_path_segments()[1:])}}.address, {{node.absolute_address}})
+        self.assertEqual(self.dut.{{'.'.join(node.get_path_segments()[1:])}}.width, {{node.size * 8}})
+        {% if 'accesswidth' in node.list_properties() -%}self.assertEqual(self.dut.{{'.'.join(node.get_path_segments()[1:])}}.accesswidth, {{node.get_property('accesswidth')}}){%- else -%} self.assertEqual(self.dut.{{'.'.join(node.get_path_segments()[1:])}}.accesswidth, self.dut.{{'.'.join(node.get_path_segments()[1:])}}.accesswidth){%- endif %}
+            {%- endif %}
+        {%- endfor %}
+
+    def test_memory_properties(self):
+        """
+        Walk the address map and check the address, size and accesswidth of every memory is
+        correct
+        """
+        {%- for node in top_node.descendants(unroll=True) -%}
+            {%- if isinstance(node, systemrdlMemNode) %}
+        self.assertEqual(self.dut.{{'.'.join(node.get_path_segments()[1:])}}.address, {{node.absolute_address}})
+        self.assertEqual(self.dut.{{'.'.join(node.get_path_segments()[1:])}}.width, {{node.get_property('memwidth')}})
+        self.assertEqual(self.dut.{{'.'.join(node.get_path_segments()[1:])}}.entries, {{node.get_property('mementries')}})
+        {% if 'accesswidth' in node.list_properties() -%}self.assertEqual(self.dut.{{'.'.join(node.get_path_segments()[1:])}}.accesswidth, {{node.get_property('accesswidth')}}){%- else -%} self.assertEqual(self.dut.{{'.'.join(node.get_path_segments()[1:])}}.accesswidth, self.dut.{{'.'.join(node.get_path_segments()[1:])}}.accesswidth){%- endif %}
             {%- endif %}
         {%- endfor %}
 
@@ -97,26 +154,38 @@ class {{top_node.type_name}}_TestCase(unittest.TestCase):
             {% if node.has_sw_readable -%}
             # test reading back 1 (the unpatched version returns 0 so this confirms the patch works)
             self.assertEqual(self.dut.{{'.'.join(node.get_path_segments()[1:])}}.read(), 1)
-            self.assertEqual(read_callback_mock.call_args[0][0], {{node.absolute_address}})  # check address passed to read
+            read_callback_mock.assert_called_once_with(
+                                addr={{node.absolute_address}},
+                                width={{node.size * 8}},
+                                accesswidth=self.dut.{{'.'.join(node.get_path_segments()[1:])}}.accesswidth)
 
             # test the read check with high value
             read_callback_mock.reset_mock()
             read_callback_mock.return_value = {{get_reg_max_value_hex_string(node)}}
             self.assertEqual(self.dut.{{'.'.join(node.get_path_segments()[1:])}}.read(), {{get_reg_max_value_hex_string(node)}})
-            read_callback_mock.assert_called_once()
+            read_callback_mock.assert_called_once_with(
+                                addr={{node.absolute_address}},
+                                width={{node.size * 8}},
+                                accesswidth=self.dut.{{'.'.join(node.get_path_segments()[1:])}}.accesswidth)
 
             # test the read of the low value
             read_callback_mock.reset_mock()
             read_callback_mock.return_value = 0
             self.assertEqual(self.dut.{{'.'.join(node.get_path_segments()[1:])}}.read(), 0x0)
-            read_callback_mock.assert_called_once()
+            read_callback_mock.assert_called_once_with(
+                                addr={{node.absolute_address}},
+                                width={{node.size * 8}},
+                                accesswidth=self.dut.{{'.'.join(node.get_path_segments()[1:])}}.accesswidth)
 
             # test the read of a random value
             random_value = random.randrange(0, {{get_reg_max_value_hex_string(node)}}+1)
             read_callback_mock.reset_mock()
             read_callback_mock.return_value = random_value
             self.assertEqual(self.dut.{{'.'.join(node.get_path_segments()[1:])}}.read(), random_value)
-            read_callback_mock.assert_called_once()
+            read_callback_mock.assert_called_once_with(
+                                addr={{node.absolute_address}},
+                                width={{node.size * 8}},
+                                accesswidth=self.dut.{{'.'.join(node.get_path_segments()[1:])}}.accesswidth)
 
             # at the end of the read tests the write should not have been called
             read_callback_mock.reset_mock()
@@ -126,24 +195,30 @@ class {{top_node.type_name}}_TestCase(unittest.TestCase):
             {% if node.has_sw_writable -%}
             # test the write with high value
             self.dut.{{'.'.join(node.get_path_segments()[1:])}}.write({{get_reg_max_value_hex_string(node)}})
-            write_callback_mock.assert_called_once()
-            self.assertEqual(write_callback_mock.call_args[0][0], {{node.absolute_address}})  # check address passed to read
-            self.assertEqual(write_callback_mock.call_args[0][1], {{get_reg_max_value_hex_string(node)}})
+            write_callback_mock.assert_called_once_with(
+                                addr={{node.absolute_address}},
+                                width={{node.size * 8}},
+                                accesswidth=self.dut.{{'.'.join(node.get_path_segments()[1:])}}.accesswidth,
+                                data={{get_reg_max_value_hex_string(node)}})
             write_callback_mock.reset_mock()
 
             # test the write of a low value
             self.dut.{{'.'.join(node.get_path_segments()[1:])}}.write(0)
-            write_callback_mock.assert_called_once()
-            self.assertEqual(write_callback_mock.call_args[0][0], {{node.absolute_address}})  # check address passed to read
-            self.assertEqual(write_callback_mock.call_args[0][1], 0)
+            write_callback_mock.assert_called_once_with(
+                                addr={{node.absolute_address}},
+                                width={{node.size * 8}},
+                                accesswidth=self.dut.{{'.'.join(node.get_path_segments()[1:])}}.accesswidth,
+                                data=0)
             write_callback_mock.reset_mock()
 
             # test the write of a random
             random_value = random.randrange(0, {{get_reg_max_value_hex_string(node)}}+1)
             self.dut.{{'.'.join(node.get_path_segments()[1:])}}.write(random_value)
-            write_callback_mock.assert_called_once()
-            self.assertEqual(write_callback_mock.call_args[0][0], {{node.absolute_address}})  # check address passed to read
-            self.assertEqual(write_callback_mock.call_args[0][1], random_value)
+            write_callback_mock.assert_called_once_with(
+                                addr={{node.absolute_address}},
+                                width={{node.size * 8}},
+                                accesswidth=self.dut.{{'.'.join(node.get_path_segments()[1:])}}.accesswidth,
+                                data=random_value)
             write_callback_mock.reset_mock()
 
             # test writting a value beyond the register range is blocked with an exception being raised
@@ -183,14 +258,20 @@ class {{top_node.type_name}}_TestCase(unittest.TestCase):
             read_callback_mock.return_value = {{get_field_inv_bitmask_hex_string(node)}}
             self.assertEqual(self.dut.{{'.'.join(node.get_path_segments()[1:])}}.read(),
                              0)
-            read_callback_mock.assert_called_once()
+            read_callback_mock.assert_called_once_with(
+                                addr={{node.parent.absolute_address}},
+                                width={{node.parent.size * 8}},
+                                accesswidth=self.dut.{{'.'.join(node.get_path_segments()[1:])}}.parent_register.accesswidth)
 
             # read back - max_value, this is achieved by setting the register to bitmask
             read_callback_mock.reset_mock()
             read_callback_mock.return_value = {{get_field_bitmask_hex_string(node)}}
             self.assertEqual(self.dut.{{'.'.join(node.get_path_segments()[1:])}}.read(),
                              {{ get_field_max_value_hex_string(node) }})
-            read_callback_mock.assert_called_once()
+            read_callback_mock.assert_called_once_with(
+                                addr={{node.parent.absolute_address}},
+                                width={{node.parent.size * 8}},
+                                accesswidth=self.dut.{{'.'.join(node.get_path_segments()[1:])}}.parent_register.accesswidth)
 
             # read back - random value
             read_callback_mock.reset_mock()
@@ -204,7 +285,10 @@ class {{top_node.type_name}}_TestCase(unittest.TestCase):
             self.assertEqual(self.dut.{{'.'.join(node.get_path_segments()[1:])}}.read(),
                              self._reverse_bits(value=random_field_value, number_bits={{node.width}}))
             {% endif -%}
-            read_callback_mock.assert_called_once()
+            read_callback_mock.assert_called_once_with(
+                                addr={{node.parent.absolute_address}},
+                                width={{node.parent.size * 8}},
+                                accesswidth=self.dut.{{'.'.join(node.get_path_segments()[1:])}}.parent_register.accesswidth)
 
             # at the end of the read tests the write should not have been called
             read_callback_mock.reset_mock()
@@ -224,31 +308,43 @@ class {{top_node.type_name}}_TestCase(unittest.TestCase):
                     self.dut.{{'.'.join(node.get_path_segments()[1:])}}.write(field_value)
 
                     {% if (((node.high+1) - node.low) < (node.parent.size*8)) and (node.parent.has_sw_readable) %}
-                    read_callback_mock.assert_called_once()
+                    read_callback_mock.assert_called_once_with(
+                                addr={{node.parent.absolute_address}},
+                                width={{node.parent.size * 8}},
+                                accesswidth=self.dut.{{'.'.join(node.get_path_segments()[1:])}}.parent_register.accesswidth)
                     {% else %}
                     read_callback_mock.assert_not_called()
                     {%- endif %}
-                    write_callback_mock.assert_called_once()
-                    self.assertEqual(write_callback_mock.call_args[0][0],
-                                     {{node.parent.absolute_address}})
                     {% if node.parent.has_sw_readable -%}
                     {% if node.msb == node.high -%}
-                    self.assertEqual(write_callback_mock.call_args[0][1],
-                                     (reg_base_value & {{get_field_inv_bitmask_hex_string(node)}}) | \
+                    write_callback_mock.assert_called_once_with(
+                                addr={{node.parent.absolute_address}},
+                                width={{node.parent.size * 8}},
+                                accesswidth=self.dut.{{'.'.join(node.get_path_segments()[1:])}}.parent_register.accesswidth,
+                                data=(reg_base_value & {{get_field_inv_bitmask_hex_string(node)}}) | \
                                      ({{get_field_bitmask_hex_string(node)}} & (field_value << {{node.low}})))
                     {% else -%}
-                    self.assertEqual(write_callback_mock.call_args[0][1],
-                                     (reg_base_value & {{get_field_inv_bitmask_hex_string(node)}}) | \
+                    write_callback_mock.assert_called_once_with(
+                                addr={{node.parent.absolute_address}},
+                                width={{node.parent.size * 8}},
+                                accesswidth=self.dut.{{'.'.join(node.get_path_segments()[1:])}}.parent_register.accesswidth,
+                                data=(reg_base_value & {{get_field_inv_bitmask_hex_string(node)}}) | \
                                      ({{get_field_bitmask_hex_string(node)}} & (self._reverse_bits(value=field_value, number_bits={{node.width}}) << {{node.low}})))
                     {% endif -%}
                     {% else -%}
                     # if the register is not readable, the value is simply written
                     {% if node.msb == node.high -%}
-                    self.assertEqual(write_callback_mock.call_args[0][1],
-                                     field_value << {{node.low}})
+                    write_callback_mock.assert_called_once_with(
+                                addr={{node.parent.absolute_address}},
+                                width={{node.parent.size * 8}},
+                                accesswidth=self.dut.{{'.'.join(node.get_path_segments()[1:])}}.parent_register.accesswidth,
+                                data=field_value << {{node.low}})
                     {% else -%}
-                    self.assertEqual(write_callback_mock.call_args[0][1],
-                                     self._reverse_bits(value=field_value, number_bits={{node.width}}) << {{node.low}})
+                    write_callback_mock.assert_called_once_with(
+                                addr={{node.parent.absolute_address}},
+                                width={{node.parent.size * 8}},
+                                accesswidth=self.dut.{{'.'.join(node.get_path_segments()[1:])}}.parent_register.accesswidth,
+                                data=self._reverse_bits(value=field_value, number_bits={{node.width}}) << {{node.low}})
                     {% endif -%}
                     {% endif %}
 
@@ -294,7 +390,10 @@ class {{top_node.type_name}}_TestCase(unittest.TestCase):
 
             self.assertEqual(self.dut.{{'.'.join(node.get_path_segments()[1:])}}.read(),
                              self.dut.{{'.'.join(node.get_path_segments()[1:])}}.enum_cls.{{value_of_enum_needed.name}})
-            read_callback_mock.assert_called_once()
+            read_callback_mock.assert_called_once_with(
+                                addr={{node.parent.absolute_address}},
+                                width={{node.parent.size * 8}},
+                                accesswidth=self.dut.{{'.'.join(node.get_path_segments()[1:])}}.parent_register.accesswidth)
             {% endfor %}
 
             {% if node.get_property('encode').__len__() < (2**((node.high+1) - node.low)) %}
@@ -336,27 +435,36 @@ class {{top_node.type_name}}_TestCase(unittest.TestCase):
             read_callback_mock.assert_not_called()
             {%- endif %}
 
-            write_callback_mock.assert_called_once()
-            self.assertEqual(write_callback_mock.call_args[0][0],
-                             {{node.parent.absolute_address}})
             {% if node.parent.has_sw_readable -%}
             {% if node.msb == node.high -%}
-            self.assertEqual(write_callback_mock.call_args[0][1],
-                             (random_reg_value & {{get_field_inv_bitmask_hex_string(node)}}) | \
-                             ({{get_field_bitmask_hex_string(node)}} & ({{value_of_enum_needed.value}} << {{node.low}})))
+            write_callback_mock.assert_called_once_with(
+                                addr={{node.parent.absolute_address}},
+                                width={{node.parent.size * 8}},
+                                accesswidth=self.dut.{{'.'.join(node.get_path_segments()[1:])}}.parent_register.accesswidth,
+                                data=(random_reg_value & {{get_field_inv_bitmask_hex_string(node)}}) | \
+                                     ({{get_field_bitmask_hex_string(node)}} & ({{value_of_enum_needed.value}} << {{node.low}})))
             {% else -%}
-            self.assertEqual(write_callback_mock.call_args[0][1],
-                             (random_reg_value & {{get_field_inv_bitmask_hex_string(node)}}) | \
-                             ({{get_field_bitmask_hex_string(node)}} & (self._reverse_bits(value={{value_of_enum_needed.value}}, number_bits={{node.width}}) << {{node.low}})))
+            write_callback_mock.assert_called_once_with(
+                                addr={{node.parent.absolute_address}},
+                                width={{node.parent.size * 8}},
+                                accesswidth=self.dut.{{'.'.join(node.get_path_segments()[1:])}}.parent_register.accesswidth,
+                                data=(random_reg_value & {{get_field_inv_bitmask_hex_string(node)}}) | \
+                                     ({{get_field_bitmask_hex_string(node)}} & (self._reverse_bits(value={{value_of_enum_needed.value}}, number_bits={{node.width}}) << {{node.low}})))
             {% endif -%}
             {% else -%}
             # if the register is not readable, the value is simply written
             {% if node.msb == node.high -%}
-            self.assertEqual(write_callback_mock.call_args[0][1],
-                             {{value_of_enum_needed.value}} << {{node.low}})
+            write_callback_mock.assert_called_once_with(
+                                addr={{node.parent.absolute_address}},
+                                width={{node.parent.size * 8}},
+                                accesswidth=self.dut.{{'.'.join(node.get_path_segments()[1:])}}.parent_register.accesswidth,
+                                data={{value_of_enum_needed.value}} << {{node.low}})
             {% else -%}
-            self.assertEqual(write_callback_mock.call_args[0][1],
-                             self._reverse_bits(value={{value_of_enum_needed.value}}, number_bits={{node.width}}) << {{node.low}})
+            write_callback_mock.assert_called_once_with(
+                                addr={{node.parent.absolute_address}},
+                                width={{node.parent.size * 8}},
+                                accesswidth=self.dut.{{'.'.join(node.get_path_segments()[1:])}}.parent_register.accesswidth,
+                                data=self._reverse_bits(value={{value_of_enum_needed.value}}, number_bits={{node.width}}) << {{node.low}})
             {% endif -%}
             {% endif %}
 
@@ -441,10 +549,11 @@ class {{top_node.type_name}}_TestCase(unittest.TestCase):
                                 raise RuntimeError('invalid msb/lsb high/low combination')
 
                         reg.write_fields(**kwargs)
-                        write_callback_mock.assert_called_once()
-                        self.assertEqual(write_callback_mock.call_args[0][0],
-                                         reg.base_address)
-                        self.assertEqual(write_callback_mock.call_args[0][1],expected_value)
+                        write_callback_mock.assert_called_once_with(
+                                addr=reg.address,
+                                width=reg.width,
+                                accesswidth=reg.accesswidth,
+                                data=expected_value)
                         read_callback_mock.assert_called_once()
                         write_callback_mock.reset_mock()
                         read_callback_mock.reset_mock()
@@ -479,11 +588,12 @@ class {{top_node.type_name}}_TestCase(unittest.TestCase):
         with patch(__name__ + '.' + 'write_addr_space') as write_callback_mock, \
             patch(__name__ + '.' + 'read_addr_space', return_value=0) as read_callback_mock:
             self.dut.{{'.'.join(node.get_path_segments()[1:])}}.write_fields(**kwargs)
-            write_callback_mock.assert_called_once()
-            read_callback_mock.assert_not_called
-            self.assertEqual(write_callback_mock.call_args[0][0],
-                             {{node.absolute_address}})
-            self.assertEqual(write_callback_mock.call_args[0][1],expected_value)
+            write_callback_mock.assert_called_once_with(
+                                addr={{node.absolute_address}},
+                                width={{node.size * 8}},
+                                accesswidth=self.dut.{{'.'.join(node.get_path_segments()[1:])}}.accesswidth,
+                                data=expected_value)
+            read_callback_mock.assert_not_called()
             write_callback_mock.reset_mock()
             read_callback_mock.reset_mock()
 
@@ -494,7 +604,196 @@ class {{top_node.type_name}}_TestCase(unittest.TestCase):
         {%- endif %}
         {%- endfor %}
 
+    {% if uses_memory %}
+    def test_memory_read_and_write(self):
+        """
+        Walk the register map and check every register can be read and written to correctly
+        """
+        {%- for node in top_node.descendants(unroll=True) -%}
+            {%- if isinstance(node, systemrdlMemNode) %}
 
+        # test access operations (read and/or write) to register:
+        # {{'.'.join(node.get_path_segments())}}
+        with patch(__name__ + '.' + 'write_addr_space') as write_callback_mock, \
+            patch(__name__ + '.' + 'read_addr_space', return_value=1) as read_callback_mock:
+
+            {% if node.is_sw_readable -%}
+            # checks single unit accesses at the first entry, the last entry and a random entry in
+            # in each case check a 0, max value and random value being read
+            for entry in [0, random.randint(0,{{node.get_property('mementries')-1}}), {{node.get_property('mementries')-1}}]:
+                for value in [0, random.randint(0,{{get_memory_max_entry_value_hex_string(node)}}), {{get_memory_max_entry_value_hex_string(node)}}]:
+                    read_callback_mock.reset_mock()
+                    read_callback_mock.return_value = value
+                    self.assertEqual(self.dut.{{'.'.join(node.get_path_segments()[1:])}}.read(start_entry=entry, number_entries=1),
+                                                             Array('{{get_array_typecode(node.get_property('memwidth'))}}', [value]))
+                    read_callback_mock.assert_called_once_with(
+                                        addr={{node.absolute_address}}+(entry * {{get_memory_width_bytes(node)}}),
+                                        width={{node.get_property('memwidth')}},
+                                        accesswidth={{node.get_property('memwidth')}})
+
+            # check a multi-entry read, if the memory is small do the entire memory, however, if
+            # it is large limit the number of entries to 10
+            entries_to_test = {% if node.get_property('mementries') > 10 %}10{% else %}{{node.get_property('mementries')}}{% endif %}
+            random_data = Array('{{get_array_typecode(node.get_property('memwidth'))}}',
+                                [random.randint(0,{{get_memory_max_entry_value_hex_string(node)}}) for x in range(entries_to_test)])
+
+            def read_data_mock(addr:int, width:int, accesswidth:int) -> int:
+                # the memory is entry width defined where as the address is byte address, so need
+                # to convert between them, the sift is determined by
+                shift = int(math.log2({% if 'accesswidth' in node.list_properties() -%}{{node.get_property('accesswidth')}}{%- else -%}{{node.get_property('memwidth')}}{%- endif -%}) - 3)
+                mem_entry = (addr - {{node.absolute_address}}) >> shift
+                return random_data[mem_entry]
+
+            read_callback_mock.reset_mock()
+            read_callback_mock.side_effect=read_data_mock
+
+            self.assertEqual(self.dut.{{'.'.join(node.get_path_segments()[1:])}}.read(start_entry=0,
+                                          number_entries=entries_to_test),
+                                          random_data)
+
+            write_callback_mock.assert_not_called()
+            read_callback_mock.reset_mock()
+            {% endif %}
+
+            {% if node.is_sw_writable -%}
+            # checks single unit accesses at the first entry, the last entry and a random entry in
+            # in each case check a 0, max value and random value being read
+            for entry in [0, random.randint(0,{{node.get_property('mementries')-1}}), {{node.get_property('mementries')-1}}]:
+                for value in [0, random.randint(0,{{get_memory_max_entry_value_hex_string(node)}}), {{get_memory_max_entry_value_hex_string(node)}}]:
+                    write_callback_mock.reset_mock()
+                    self.dut.{{'.'.join(node.get_path_segments()[1:])}}.write(start_entry=entry, data=Array('{{get_array_typecode(node.get_property('memwidth'))}}', [value]))
+                    write_callback_mock.assert_called_once_with(
+                                        addr={{node.absolute_address}}+(entry * {{get_memory_width_bytes(node)}}),
+                                        width={{node.get_property('memwidth')}},
+                                        accesswidth={{node.get_property('memwidth')}},
+                                        data=value)
+
+            read_callback_mock.assert_not_called()
+            write_callback_mock.reset_mock()
+
+            # check a multi-entry read, if the memory is small do the entire memory, however, if
+            # it is large limit the number of entries to 10
+            entries_to_test = {% if node.get_property('mementries') > 10 %}10{% else %}{{node.get_property('mementries')}}{% endif %}
+            random_data = Array('{{get_array_typecode(node.get_property('memwidth'))}}',
+                                [random.randint(0,{{get_memory_max_entry_value_hex_string(node)}}) for x in range(entries_to_test)])
+            self.dut.{{'.'.join(node.get_path_segments()[1:])}}.write(start_entry=0, data=random_data)
+
+            for x in range(entries_to_test):
+                self.assertEqual(write_callback_mock.call_args_list[x],
+                                 call(addr={{node.absolute_address}} + (x * {{get_memory_width_bytes(node)}}),
+                                      width={{node.get_property('memwidth')}},
+                                      accesswidth={% if 'accesswidth' in node.list_properties() -%}{{node.get_property('accesswidth')}}{%- else -%}{{node.get_property('memwidth')}}{%- endif -%},
+                                      data=random_data[x]))
+
+            read_callback_mock.assert_not_called()
+            write_callback_mock.reset_mock()
+
+            {%- endif %}
+
+        {%- endif %}
+        {%- endfor %}
+    {%- endif %}
+
+class {{top_node.type_name}}_TestCase_BlockAccess(unittest.TestCase):
+
+    def setUp(self):
+        self.dut = {{top_node.type_name}}_cls(CallbackSet(read_callback=read_callback,
+                                                          write_callback=write_callback,
+                                                          read_block_callback=read_block_callback,
+                                                          write_block_callback=write_block_callback))
+
+    {% if uses_memory %}
+    def test_memory_read_and_write(self):
+        """
+        Walk the register map and check every register can be read and written to correctly
+        """
+        {%- for node in top_node.descendants(unroll=True) -%}
+            {%- if isinstance(node, systemrdlMemNode) %}
+
+        # test access operations (read and/or write) to register:
+        # {{'.'.join(node.get_path_segments())}}
+        with patch(__name__ + '.' + 'write_addr_space') as write_callback_mock,\
+                            patch(__name__ + '.' + 'read_addr_space', return_value=1) as read_callback_mock, \
+                            patch(__name__ + '.' + 'read_block_addr_space',
+                                  return_value=Array('{{get_array_typecode(node.get_property('memwidth'))}}', [0])) as read_block_callback_mock , \
+                            patch(__name__ + '.' + 'write_block_addr_space') as write_block_callback_mock:
+
+            {% if node.is_sw_readable -%}
+            # checks single unit accesses at the first entry, the last entry and a random entry in
+            # in each case check a 0, max value and random value being read
+            for entry in [0, random.randint(0,{{node.get_property('mementries')-1}}), {{node.get_property('mementries')-1}}]:
+                for value in [0, random.randint(0,{{get_memory_max_entry_value_hex_string(node)}}), {{get_memory_max_entry_value_hex_string(node)}}]:
+                    read_block_callback_mock.reset_mock()
+                    read_block_callback_mock.return_value = Array('{{get_array_typecode(node.get_property('memwidth'))}}',
+                                                                  [value])
+                    self.assertEqual(self.dut.{{'.'.join(node.get_path_segments()[1:])}}.read(start_entry=entry, number_entries=1),
+                                                             Array('{{get_array_typecode(node.get_property('memwidth'))}}', [value]))
+                    read_block_callback_mock.assert_called_once_with(
+                                        addr={{node.absolute_address}}+(entry * {{get_memory_width_bytes(node)}}),
+                                        width={{node.get_property('memwidth')}},
+                                        accesswidth={{node.get_property('memwidth')}},
+                                        length=1)
+
+            # check a multi-entry read, if the memory is small do the entire memory, however, if
+            # it is large limit the number of entries to 10
+            entries_to_test = {% if node.get_property('mementries') > 10 %}10{% else %}{{node.get_property('mementries')}}{% endif %}
+            random_data = Array('{{get_array_typecode(node.get_property('memwidth'))}}',
+                                [random.randint(0,{{get_memory_max_entry_value_hex_string(node)}}) for x in range(entries_to_test)])
+
+            read_block_callback_mock.reset_mock()
+            read_block_callback_mock.return_value = random_data
+
+            self.assertEqual(self.dut.{{'.'.join(node.get_path_segments()[1:])}}.read(start_entry=0,
+                                          number_entries=entries_to_test),
+                                          random_data)
+
+            write_callback_mock.assert_not_called()
+            read_callback_mock.assert_not_called()
+            write_block_callback_mock.assert_not_called()
+            read_block_callback_mock.reset_mock()
+            {% endif %}
+
+            {% if node.is_sw_writable -%}
+            # checks single unit accesses at the first entry, the last entry and a random entry in
+            # in each case check a 0, max value and random value being read
+            for entry in [0, random.randint(0,{{node.get_property('mementries')-1}}), {{node.get_property('mementries')-1}}]:
+                for value in [0, random.randint(0,{{get_memory_max_entry_value_hex_string(node)}}), {{get_memory_max_entry_value_hex_string(node)}}]:
+                    write_block_callback_mock.reset_mock()
+                    self.dut.{{'.'.join(node.get_path_segments()[1:])}}.write(start_entry=entry, data=Array('{{get_array_typecode(node.get_property('memwidth'))}}', [value]))
+                    write_block_callback_mock.assert_called_once_with(
+                                        addr={{node.absolute_address}}+(entry * {{get_memory_width_bytes(node)}}),
+                                        width={{node.get_property('memwidth')}},
+                                        accesswidth={{node.get_property('memwidth')}},
+                                        data=Array('{{get_array_typecode(node.get_property('memwidth'))}}', [value]))
+
+            read_callback_mock.assert_not_called()
+            write_callback_mock.assert_not_called()
+            read_block_callback_mock.assert_not_called()
+            write_block_callback_mock.reset_mock()
+
+            # check a multi-entry read, if the memory is small do the entire memory, however, if
+            # it is large limit the number of entries to 10
+            entries_to_test = {% if node.get_property('mementries') > 10 %}10{% else %}{{node.get_property('mementries')}}{% endif %}
+            random_data = Array('{{get_array_typecode(node.get_property('memwidth'))}}',
+                                [random.randint(0,{{get_memory_max_entry_value_hex_string(node)}}) for x in range(entries_to_test)])
+            self.dut.{{'.'.join(node.get_path_segments()[1:])}}.write(start_entry=0, data=random_data)
+
+            write_block_callback_mock.assert_called_once_with(
+                                        addr={{node.absolute_address}},
+                                        width={{node.get_property('memwidth')}},
+                                        accesswidth={{node.get_property('memwidth')}},
+                                        data=random_data)
+
+            read_callback_mock.assert_not_called()
+            write_callback_mock.assert_not_called()
+            read_block_callback_mock.assert_not_called()
+            write_block_callback_mock.reset_mock()
+
+            {%- endif %}
+
+        {%- endif %}
+        {%- endfor %}
+    {%- endif %}
 
 
 if __name__ == '__main__':

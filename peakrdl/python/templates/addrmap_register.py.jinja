@@ -12,47 +12,20 @@ class {{get_fully_qualified_type_name(node)}}_cls(RegWriteOnly):
     {{get_table_block(node) | indent}}
     """
 
-    __slots__ = [{%- for child_node in node.children(unroll=False) -%}'__{{child_node.inst_name}}'{% if not loop.last %}, {% endif %}{%- endfor %}]
-
-    {%- if node.has_sw_readable and node.has_sw_writable %}
+    __slots__ : List[str] = [{%- for child_node in node.children(unroll=False) -%}'__{{child_node.inst_name}}'{% if not loop.last %}, {% endif %}{%- endfor %}]
 
     def __init__(self,
-                 read_callback: ReadCallback,
-                 write_callback: WriteCallback,
-                 address_space_properties: AddressSpaceProps,
+                 callbacks: CallbackSet,
+                 address: int,
                  logger_handle: str,
                  inst_name: str):
 
-        super().__init__(read_callback=read_callback,
-                         write_callback=write_callback,
-                         address_space_properties=address_space_properties,
+        super().__init__(callbacks=callbacks,
+                         address=address,
+                         {% if 'accesswidth' in node.list_properties() -%}accesswidth={{node.get_property('accesswidth')}}{%- else -%}accesswidth={{node.size*8}}{%- endif -%},
+                         width={{node.size*8}},
                          logger_handle=logger_handle,
                          inst_name=inst_name)
-    {%- elif node.has_sw_readable and not node.has_sw_writable %}
-
-    def __init__(self,
-                 read_callback: ReadCallback,
-                 address_space_properties: AddressSpaceProps,
-                 logger_handle: str,
-                 inst_name: str):
-
-        super().__init__(read_callback=read_callback,
-                         address_space_properties=address_space_properties,
-                         logger_handle=logger_handle,
-                         inst_name=inst_name)
-    {%- elif not node.has_sw_readable and node.has_sw_writable %}
-
-    def __init__(self,
-                 write_callback: WriteCallback,
-                 address_space_properties: AddressSpaceProps,
-                 logger_handle: str,
-                 inst_name: str):
-
-        super().__init__(write_callback=write_callback,
-                         address_space_properties=address_space_properties,
-                         logger_handle=logger_handle,
-                         inst_name=inst_name)
-    {%- endif %}
 
         # build the field attributes
         {%- for child_node in node.fields() %}
@@ -106,7 +79,7 @@ class {{get_fully_qualified_type_name(node)}}_cls(RegWriteOnly):
         {% endfor %}
 
     {% if node.has_sw_readable %}
-    def write_fields(self, **kwargs) -> NoReturn:
+    def write_fields(self, **kwargs) -> None:
         """
         Do a read-modify-write to the register, updating any field included in
         the arguments
@@ -132,7 +105,7 @@ class {{get_fully_qualified_type_name(node)}}_cls(RegWriteOnly):
         self.write((self.read() & inverse_bit_mask) | reg_value)
 
     {% else %}
-    def write_fields(self, {%- for child_node in node.fields() -%} {{child_node.inst_name}} : int{%- if not loop.last -%},{%- endif -%}{%- endfor -%}) -> NoReturn:
+    def write_fields(self, {%- for child_node in node.fields() -%} {{child_node.inst_name}} : {%- if 'encode' in child_node.list_properties() %}{{get_fully_qualified_enum_type(child_node.get_property('encode'), top_node.parent)}}_enumcls{% else %}int{% endif %}{%- if not loop.last -%},{%- endif -%}{%- endfor -%}) -> None:
         """
         Do a write to the register, updating all fields
         """

@@ -5,19 +5,21 @@ import os
 from pathlib import Path
 from shutil import copyfile
 from typing import List
+from glob import glob
 
-import autopep8
+import autopep8 # type: ignore
 import jinja2 as jj
 
-from systemrdl.node import RootNode, Node, RegNode, AddrmapNode, RegfileNode
-from systemrdl.node import FieldNode, MemNode, AddressableNode
-from systemrdl.rdltypes import OnReadType, OnWriteType, PropertyReference
+from systemrdl.node import RootNode, Node, RegNode, AddrmapNode, RegfileNode # type: ignore
+from systemrdl.node import FieldNode, MemNode, AddressableNode # type: ignore
+from systemrdl.rdltypes import OnReadType, OnWriteType, PropertyReference # type: ignore
 
 from .systemrdl_node_utility_functions import get_reg_readable_fields, get_reg_writable_fields, \
     get_array_dim, get_table_block, get_dependent_enum, get_dependent_component, \
     get_field_bitmask_hex_string, get_field_inv_bitmask_hex_string, \
     get_field_max_value_hex_string, get_reg_max_value_hex_string, get_fully_qualified_type_name, \
-    uses_enum, fully_qualified_enum_type
+    uses_enum, fully_qualified_enum_type, uses_memory, \
+    get_memory_max_entry_value_hex_string, get_array_typecode, get_memory_width_bytes
 
 file_path = os.path.dirname(__file__)
 
@@ -42,7 +44,7 @@ class PythonExporter:
 
         # Check for stray kwargs
         if kwargs:
-            raise TypeError("got an unexpected keyword argument '%s'" % list(kwargs.keys())[0])
+            raise ValueError("got an unexpected keyword argument")
 
         if user_template_dir:
             loader = jj.ChoiceLoader([
@@ -117,6 +119,7 @@ class PythonExporter:
                 'PropertyReference': PropertyReference,
                 'isinstance': isinstance,
                 'uses_enum' : uses_enum(block),
+                'uses_memory' : uses_memory(block),
                 'get_fully_qualified_type_name': self.lookup_type_name,
                 'get_array_dim': get_array_dim,
                 'get_dependent_component': get_dependent_component,
@@ -128,8 +131,10 @@ class PythonExporter:
                 'get_reg_max_value_hex_string': get_reg_max_value_hex_string,
                 'get_table_block': get_table_block,
                 'get_reg_writable_fields': get_reg_writable_fields,
-                'get_reg_readable_fields': get_reg_readable_fields
-
+                'get_reg_readable_fields': get_reg_readable_fields,
+                'get_memory_max_entry_value_hex_string': get_memory_max_entry_value_hex_string,
+                'get_array_typecode': get_array_typecode,
+                'get_memory_width_bytes': get_memory_width_bytes
             }
 
             context.update(self.user_template_context)
@@ -158,13 +163,6 @@ class PythonExporter:
                 stream = template.stream(context)
                 stream.dump(module_tb_fqfn, encoding='utf-8')
 
-        copyfile(src=os.path.join(os.path.dirname(__file__),
-                                  "templates",
-                                  "peakrdl_python_types.py"),
-                 dst=os.path.join(package_path,
-                                  'reg_model',
-                                  'peakrdl_python_types.py'))
-
         return [m.inst_name for m in modules]
 
     def lookup_type_name(self, node: Node) -> str:
@@ -181,7 +179,7 @@ class PythonExporter:
 
         return self.node_type_name[node.inst]
 
-    def build_node_type_table(self, node: AddressableNode):
+    def build_node_type_table(self, node: AddressableNode) -> None:
         """
         Populate the type name lookup dictionary
 
@@ -198,7 +196,7 @@ class PythonExporter:
         for child_node in get_dependent_component(node.parent):
 
             child_inst = child_node.inst
-            if child_inst in self.node_type_name.keys():
+            if child_inst in self.node_type_name:
                 # this should not happen as the get_dependent_component function is supposed to
                 # de-duplicate the values
                 raise RuntimeError("node is already in the lookup dictionary")
@@ -210,7 +208,7 @@ class PythonExporter:
                 self.node_type_name[child_inst] = cand_type_name
 
     @staticmethod
-    def create_empty_package(package_path:str):
+    def create_empty_package(package_path:str) -> None:
         """
         create the directories and __init__.py files associated with the exported package
 
@@ -225,6 +223,7 @@ class PythonExporter:
         Path(package_path).mkdir(parents=True, exist_ok=True)
         Path(os.path.join(package_path, 'reg_model')).mkdir(parents=True, exist_ok=True)
         Path(os.path.join(package_path, 'tests')).mkdir(parents=True, exist_ok=True)
+        Path(os.path.join(package_path, 'peakrdl_python')).mkdir(parents=True, exist_ok=True)
 
         module_fqfn = os.path.join(package_path, 'reg_model', '__init__.py')
         with open(module_fqfn, 'w', encoding='utf-8') as fid:
@@ -235,3 +234,16 @@ class PythonExporter:
         module_fqfn = os.path.join(package_path, '__init__.py')
         with open(module_fqfn, 'w', encoding='utf-8') as fid:
             fid.write('pass\n')
+
+        template_package = os.path.join(os.path.dirname(__file__),
+                                        'templates',
+                                        'peakrdl_python')
+        files_in_package = glob(os.path.join(template_package,'*.py'))
+
+        for file_in_package in files_in_package:
+            filename = os.path.basename(file_in_package)
+            copyfile(src=os.path.join(template_package,
+                                      filename),
+                     dst=os.path.join(package_path,
+                                      'peakrdl_python',
+                                      filename))
