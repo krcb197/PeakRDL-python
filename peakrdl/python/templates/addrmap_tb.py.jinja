@@ -604,6 +604,7 @@ class {{top_node.type_name}}_TestCase(unittest.TestCase):
         {%- endif %}
         {%- endfor %}
 
+    {% if uses_memory %}
     def test_memory_read_and_write(self):
         """
         Walk the register map and check every register can be read and written to correctly
@@ -691,6 +692,7 @@ class {{top_node.type_name}}_TestCase(unittest.TestCase):
 
         {%- endif %}
         {%- endfor %}
+    {%- endif %}
 
 class {{top_node.type_name}}_TestCase_BlockAccess(unittest.TestCase):
 
@@ -700,8 +702,12 @@ class {{top_node.type_name}}_TestCase_BlockAccess(unittest.TestCase):
                                                           read_block_callback=read_block_callback,
                                                           write_block_callback=write_block_callback))
 
+    {% if uses_memory %}
     def test_memory_read_and_write(self):
-    {%- for node in top_node.descendants(unroll=True) -%}
+        """
+        Walk the register map and check every register can be read and written to correctly
+        """
+        {%- for node in top_node.descendants(unroll=True) -%}
             {%- if isinstance(node, systemrdlMemNode) %}
 
         # test access operations (read and/or write) to register:
@@ -787,6 +793,7 @@ class {{top_node.type_name}}_TestCase_BlockAccess(unittest.TestCase):
 
         {%- endif %}
         {%- endfor %}
+    {%- endif %}
 
 
 if __name__ == '__main__':
