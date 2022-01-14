@@ -108,7 +108,7 @@ registers:
 
 This can be described with the following systemRDL code:
 
-.. code-block:: systemRDL
+.. code-block:: systemrdl
 
     addrmap mychip {
 
