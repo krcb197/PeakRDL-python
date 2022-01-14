@@ -1,2 +1,8 @@
 sphinx-argparse
 pygments-systemrdl
+systemrdl-compiler>=1.21.0
+autopep8
+pylint
+coverage
+jinja2
+peakrdl-ipxact
