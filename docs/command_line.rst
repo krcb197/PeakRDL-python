@@ -13,6 +13,6 @@ Detailed Arguments
 ==================
 
 .. argparse::
-   :module: peakrdl.python.peakpython
+   :module: peakrdl_python.peakpython
    :func: build_command_line_parser
    :prog: peakpython

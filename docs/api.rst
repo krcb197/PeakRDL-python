@@ -21,7 +21,7 @@ the python register abstraction layer using PeakRDL Python.
 .. code-block:: python
 
     from systemrdl import RDLCompiler
-    from peakrdl.python.exporter import PythonExporter
+    from peakrdl_python.exporter import PythonExporter
 
     # compile the systemRDL
     rdlc = RDLCompiler()
@@ -36,6 +36,6 @@ the python register abstraction layer using PeakRDL Python.
 PythonExporter
 ==============
 
-.. autoclass:: peakrdl.python.exporter.PythonExporter
+.. autoclass:: peakrdl_python.exporter.PythonExporter
     :members:
     :special-members: __init__
