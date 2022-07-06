@@ -18,6 +18,7 @@ if sys.version_info >= (3, 8):
         """
         Callback definition for a single register read operation
         """
+        # pylint: disable=too-few-public-methods
         def __call__(self, addr: int, width: int, accesswidth: int) -> int:
             pass
 
@@ -26,6 +27,7 @@ if sys.version_info >= (3, 8):
         """
         Callback definition for a single register write operation
         """
+        # pylint: disable=too-few-public-methods
         def __call__(self, addr: int, width: int, accesswidth: int, data: int) -> None:
             pass
 
@@ -34,6 +36,7 @@ if sys.version_info >= (3, 8):
         """
         Callback definition for a block read operation
         """
+        # pylint: disable=too-few-public-methods
         def __call__(self, addr: int, width: int, accesswidth: int, length: int) -> Array:
             pass
 
@@ -42,6 +45,7 @@ if sys.version_info >= (3, 8):
         """
         Callback definition for a block write operation
         """
+        # pylint: disable=too-few-public-methods
         def __call__(self, addr: int, width: int, accesswidth: int, data: Array) -> None:
             pass
 else:
