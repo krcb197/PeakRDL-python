@@ -1,1 +1,1 @@
-recursive-include peakrdl/python/templates *
+recursive-include peakrdl_python/templates *
