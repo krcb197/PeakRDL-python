@@ -58,7 +58,8 @@ class PythonExporter:
         else:
             loader = jj.ChoiceLoader([
                 jj.FileSystemLoader(os.path.join(file_path, "templates")),
-                jj.PrefixLoader({'base': jj.FileSystemLoader(os.path.join(file_path, "templates"))},
+                jj.PrefixLoader({'base': jj.FileSystemLoader(os.path.join(file_path,
+                                                                          "templates"))},
                                 delimiter=":")])
 
         self.jj_env = jj.Environment(

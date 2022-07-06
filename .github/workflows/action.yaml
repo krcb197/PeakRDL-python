@@ -38,10 +38,10 @@ jobs:
         python -m pip install mypy
 
     - name: Lint with pylint
-      run: pylint --rcfile tests/pylint.rc peakrdl
+      run: pylint --rcfile tests/pylint.rc src
 
     - name: Typing check with mypy
-      run: mypy peakrdl tests --config-file=tests/.mypy.ini
+      run: mypy src tests --config-file=tests/.mypy.ini
 
     - name: Generate testcases
       run: |

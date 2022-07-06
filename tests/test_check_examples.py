@@ -14,7 +14,7 @@ import unittest
 from unittest.mock import patch, call
 
 from systemrdl import RDLCompiler, RegNode, FieldNode, MemNode # type: ignore
-from peakrdl.python import PythonExporter
+from src import PythonExporter
 
 logging_config = {
         'version': 1,

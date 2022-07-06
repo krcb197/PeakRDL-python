@@ -3,7 +3,7 @@
 import sys
 import os
 
-import peakrdl.python.peakpython as pp
+import src as pp
 
 from glob import glob
 
