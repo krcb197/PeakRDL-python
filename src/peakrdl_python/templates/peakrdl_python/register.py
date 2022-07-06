@@ -19,6 +19,7 @@ class Reg(Node):
 
     __slots__ : List[str] = ['__width', '__accesswidth']
 
+    # pylint: disable=too-many-arguments, duplicate-code
     def __init__(self,
                  callbacks: CallbackSet,
                  address: int,
@@ -34,6 +35,7 @@ class Reg(Node):
 
         self.__width = width
         self.__accesswidth = accesswidth
+    # pylint: enable=too-many-arguments, duplicate-code
 
     @property
     def max_value(self) -> int:

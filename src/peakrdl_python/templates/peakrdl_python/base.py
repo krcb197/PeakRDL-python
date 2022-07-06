@@ -16,6 +16,7 @@ class Base:
         It is not expected that this class will be instantiated under normal
         circumstances however, it is useful for type checking
     """
+    #pylint: disable=too-few-public-methods
     __slots__ : List[str] = ['__logger', '__inst_name']
 
     def __init__(self, logger_handle: str, inst_name: str):

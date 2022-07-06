@@ -8,12 +8,12 @@ from typing import Tuple
 from typing import Iterable
 from typing import List
 
-from ..peakrdl_python import AddressMap, RegFile
-from ..peakrdl_python import RegReadOnly, RegWriteOnly, RegReadWrite
-from ..peakrdl_python import FieldReadOnly, FieldWriteOnly, FieldReadWrite
-from ..peakrdl_python import FieldSizeProps, Field
-from ..peakrdl_python import CallbackSet
-{% if uses_memory %}from ..peakrdl_python import MemoryReadOnly, MemoryWriteOnly, MemoryReadWrite {% endif %}
+from ..lib import AddressMap, RegFile
+from ..lib import RegReadOnly, RegWriteOnly, RegReadWrite
+from ..lib import FieldReadOnly, FieldWriteOnly, FieldReadWrite
+from ..lib import FieldSizeProps, Field
+from ..lib import CallbackSet
+{% if uses_memory %}from ..lib import MemoryReadOnly, MemoryWriteOnly, MemoryReadWrite {% endif %}
 
 {% from 'addrmap_field.py.jinja' import field_class with context %}
 {% from 'addrmap_register.py.jinja' import register_class with context %}

@@ -1,4 +1,4 @@
-!Build/
+wwwwwwwwww!Build/
 .last_cover_stats
 /META.yml
 /META.json
@@ -33,3 +33,14 @@ inc/
 /MANIFEST.bak
 /pm_to_blib
 /*.zip
+/venv/
+/example_docs/
+/peakpython_output/
+/simple_html_coverage/
+/tetscript_output/
+/testcases.log
+/tetscript.log
+/tetscript.py
+/things_to_do.txt
+/peakrdl_python.egg-info/
+/.pypirc

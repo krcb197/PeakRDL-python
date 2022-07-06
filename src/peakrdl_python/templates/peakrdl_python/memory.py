@@ -21,6 +21,7 @@ class Memory(Node):
 
     __slots__ = ['__memwidth', '__entries', '__accesswidth']
 
+    # pylint: disable=too-many-arguments
     def __init__(self,
                  callbacks: CallbackSet,
                  address: int,
@@ -47,6 +48,7 @@ class Memory(Node):
         self.__memwidth = width
         self.__entries = entries
         self.__accesswidth = accesswidth
+    # pylint: enable=too-many-arguments
 
     @property
     def width(self) -> int:

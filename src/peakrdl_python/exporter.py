@@ -58,7 +58,8 @@ class PythonExporter:
         else:
             loader = jj.ChoiceLoader([
                 jj.FileSystemLoader(os.path.join(file_path, "templates")),
-                jj.PrefixLoader({'base': jj.FileSystemLoader(os.path.join(file_path, "templates"))},
+                jj.PrefixLoader({'base': jj.FileSystemLoader(os.path.join(file_path,
+                                                                          "templates"))},
                                 delimiter=":")])
 
         self.jj_env = jj.Environment(
@@ -223,7 +224,7 @@ class PythonExporter:
         Path(package_path).mkdir(parents=True, exist_ok=True)
         Path(os.path.join(package_path, 'reg_model')).mkdir(parents=True, exist_ok=True)
         Path(os.path.join(package_path, 'tests')).mkdir(parents=True, exist_ok=True)
-        Path(os.path.join(package_path, 'peakrdl_python')).mkdir(parents=True, exist_ok=True)
+        Path(os.path.join(package_path, 'lib')).mkdir(parents=True, exist_ok=True)
 
         module_fqfn = os.path.join(package_path, 'reg_model', '__init__.py')
         with open(module_fqfn, 'w', encoding='utf-8') as fid:
@@ -245,5 +246,5 @@ class PythonExporter:
             copyfile(src=os.path.join(template_package,
                                       filename),
                      dst=os.path.join(package_path,
-                                      'peakrdl_python',
+                                      'lib',
                                       filename))
