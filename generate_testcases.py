@@ -3,7 +3,7 @@
 import sys
 import os
 
-import peakrdl_python as pp
+import peakrdl_python.peakpython as pp
 
 from glob import glob
 
