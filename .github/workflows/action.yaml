@@ -38,7 +38,7 @@ jobs:
         python -m pip install mypy
 
     - name: Lint with pylint
-      run: pylint --rcfile tests/pylint.rc src
+      run: pylint --rcfile tests/pylint.rc peakrdl_python
 
     - name: Typing check with mypy
       run: mypy src tests --config-file=tests/.mypy.ini
