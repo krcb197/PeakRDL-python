@@ -41,7 +41,7 @@ jobs:
       run: pylint --rcfile tests/pylint.rc peakrdl_python
 
     - name: Typing check with mypy
-      run: mypy src tests --config-file=tests/.mypy.ini
+      run: mypy src/peakrdl_python --config-file=tests/.mypy.ini
 
     - name: Generate testcases
       run: |
