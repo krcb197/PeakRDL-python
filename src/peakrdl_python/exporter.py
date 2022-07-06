@@ -224,15 +224,15 @@ class PythonExporter:
         Path(package_path).mkdir(parents=True, exist_ok=True)
         Path(os.path.join(package_path, 'reg_model')).mkdir(parents=True, exist_ok=True)
         Path(os.path.join(package_path, 'tests')).mkdir(parents=True, exist_ok=True)
-        Path(os.path.join(package_path, 'peakrdl_python')).mkdir(parents=True, exist_ok=True)
+        Path(os.path.join(package_path, '')).mkdir(parents=True, exist_ok=True)
 
-        module_fqfn = os.path.join(package_path, 'reg_model', '__init__.py')
+        module_fqfn = os.path.join(package_path, 'reg_model', '../__init__.py')
         with open(module_fqfn, 'w', encoding='utf-8') as fid:
             fid.write('pass\n')
-        module_fqfn = os.path.join(package_path, 'tests', '__init__.py')
+        module_fqfn = os.path.join(package_path, 'tests', '../__init__.py')
         with open(module_fqfn, 'w', encoding='utf-8') as fid:
             fid.write('pass\n')
-        module_fqfn = os.path.join(package_path, '__init__.py')
+        module_fqfn = os.path.join(package_path, '../__init__.py')
         with open(module_fqfn, 'w', encoding='utf-8') as fid:
             fid.write('pass\n')
 
@@ -246,5 +246,5 @@ class PythonExporter:
             copyfile(src=os.path.join(template_package,
                                       filename),
                      dst=os.path.join(package_path,
-                                      'peakrdl_python',
+                                      '',
                                       filename))

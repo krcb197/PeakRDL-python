@@ -1,0 +1,1 @@
+from peakrdl_python.__about__ import __version__
