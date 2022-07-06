@@ -17,9 +17,9 @@ setuptools.setup(
     long_description=long_description,
     long_description_content_type="text/markdown",
     url="https://github.com/krcb197/PeakRDL-python",
-    packages=[ 'peakrdl_python'
-               'peakrdl.python']  # backwards compatibility shim,
-    include_package_data=True,
+    packages=[ 'peakrdl_python',
+               'peakrdl.python'],   # backwards compatibility shim
+    include_package_data = True,
     entry_points= { 'console_scripts' : ['peakpython=peak_python:main_function'] },
     install_requires=[
         "systemrdl-compiler>=1.21.0",
