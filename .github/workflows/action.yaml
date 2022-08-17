@@ -70,6 +70,8 @@ jobs:
         python -m pip install .
 
         python -m pip install pytest
+        python -m pip install mypy
+
 
     - name: Generate testcases
       run: |
