@@ -8,7 +8,7 @@ from .exporter import PythonExporter
 
 if TYPE_CHECKING:
     import argparse
-    from systemrdl.node import AddrmapNode
+    from systemrdl.node import AddrmapNode  # type: ignore
 
 
 class Exporter:
