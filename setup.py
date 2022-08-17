@@ -22,7 +22,11 @@ setup(
                'peakrdl.python'],   # backwards compatibility shim
     package_data={"peakrdl_python.templates": ["*.py.jinga"]},
     include_package_data = True,
-    entry_points= { 'console_scripts' : ['peakrdl_python=peakrdl_python.peakpython:main_function'] },
+    entry_points= { 'console_scripts' : ['peakrdl_python=peakrdl_python.peakpython:main_function'],
+                    "peakrdl.exporters": [
+                        'python = peakrdl_python.__peakrdl__:Exporter'
+                    ]
+                    },
     install_requires=[
         "systemrdl-compiler>=1.21.0",
         "autopep8",
