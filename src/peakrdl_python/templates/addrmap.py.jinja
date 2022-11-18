@@ -8,8 +8,8 @@ from typing import Tuple
 from typing import Iterable
 from typing import List
 
-from ..lib import AddressMap, RegFile
-from ..lib import RegReadOnly, RegWriteOnly, RegReadWrite
+from ..lib import AddressMap, RegFile, Memory
+from ..lib import RegReadOnly, RegWriteOnly, RegReadWrite, Reg
 from ..lib import FieldReadOnly, FieldWriteOnly, FieldReadWrite
 from ..lib import FieldSizeProps, Field
 from ..lib import CallbackSet
@@ -165,6 +165,7 @@ class {{get_fully_qualified_type_name(node)}}_cls(RegFile):
         {%- endif %}
     {% endfor %}
 
+    {{ child_getter(node, "get_registers", "Reg", systemrdlRegNode) }}
 {%- endmacro %}
 
 {%- macro addrmap_class(node) %}
@@ -199,6 +200,33 @@ class {{get_fully_qualified_type_name(node)}}_cls(AddressMap):
         return self.__{{child_node.inst_name}}
             {%- endif %}
         {% endfor %}
+
+    {{ child_getter(node, "get_registers",   "Reg",        systemrdlRegNode) }}
+    {{ child_getter(node, "get_memories",    "Memory",     systemrdlMemNode) }}
+    {{ child_getter(node, "get_addressmaps", "AddressMap", systemrdlAddrmapNode) }}
+{%- endmacro %}
+
+{%- macro child_getter(node, getter_name, child_type, child_rdltype) %}
+    def {{getter_name}}(self, unroll=False) -> Iterable[{{child_type}}]:
+        """
+        generator that produces all the {{child_type}} children of this node
+        """
+        {% for child_node in node.children(unroll=False) -%}
+            {%- if isinstance(child_node, child_rdltype) %}
+        {% if child_node.is_array -%}
+        if unroll:
+            for child in self.{{child_node.inst_name}}:
+                yield child
+        else:
+            yield self.{{child_node.inst_name}}
+        {% else -%}
+        yield self.{{child_node.inst_name}}
+        {%- endif %}
+            {%- endif -%}
+        {% endfor %}
+
+        # Empty generator in case there are no children of this type
+        if False: yield
 {%- endmacro %}
 
 {% if uses_enum %}
