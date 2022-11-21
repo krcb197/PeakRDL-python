@@ -7,6 +7,7 @@ This code was generated from the PeakRDL-python package
 from typing import Tuple
 from typing import Iterable
 from typing import List
+from typing import Union
 
 from ..lib import AddressMap, RegFile, Memory
 from ..lib import RegReadOnly, RegWriteOnly, RegReadWrite, Reg
@@ -165,7 +166,8 @@ class {{get_fully_qualified_type_name(node)}}_cls(RegFile):
         {%- endif %}
     {% endfor %}
 
-    {{ child_getter(node, "get_registers", "Reg", systemrdlRegNode) }}
+    {{ child_getter(node, "get_registers", "Reg",     systemrdlRegNode) }}
+    {{ child_getter(node, "get_regfiles",  "RegFile", systemrdlRegfileNode) }}
 {%- endmacro %}
 
 {%- macro addrmap_class(node) %}
@@ -204,10 +206,11 @@ class {{get_fully_qualified_type_name(node)}}_cls(AddressMap):
     {{ child_getter(node, "get_registers",   "Reg",        systemrdlRegNode) }}
     {{ child_getter(node, "get_memories",    "Memory",     systemrdlMemNode) }}
     {{ child_getter(node, "get_addressmaps", "AddressMap", systemrdlAddrmapNode) }}
+    {{ child_getter(node, "get_regfiles",    "RegFile",    systemrdlRegfileNode) }}
 {%- endmacro %}
 
 {%- macro child_getter(node, getter_name, child_type, child_rdltype) %}
-    def {{getter_name}}(self, unroll=False) -> Iterable[{{child_type}}]:
+    def {{getter_name}}(self, unroll=False) -> Iterable[Union[{{child_type}},Tuple[{{child_type}},...]]]:
         """
         generator that produces all the {{child_type}} children of this node
         """
@@ -215,7 +218,7 @@ class {{get_fully_qualified_type_name(node)}}_cls(AddressMap):
             {%- if isinstance(child_node, child_rdltype) %}
         {% if child_node.is_array -%}
         if unroll:
-            for child in self.{{child_node.inst_name}}:
+            for child in self.{{child_node.inst_name}}: # type: ignore
                 yield child
         else:
             yield self.{{child_node.inst_name}}
