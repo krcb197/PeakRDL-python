@@ -112,14 +112,14 @@ class Field(Base):
         circumstances however, it is useful for type checking
     """
 
-    __slots__ = ['__parent_register', '__size_props',
+    __slots__ = ['__size_props',
                  '__bitmask', '__msb0', '__lsb0']
 
     def __init__(self, parent_register: Reg, size_props: FieldSizeProps,
                  logger_handle: str, inst_name: str):
 
         super().__init__(logger_handle=logger_handle,
-                         inst_name=inst_name)
+                         inst_name=inst_name, parent=parent_register)
 
         if not isinstance(size_props, FieldSizeProps):
             raise TypeError(f'size_props must be of {type(FieldSizeProps)} '
@@ -127,9 +127,8 @@ class Field(Base):
         self.__size_props = size_props
 
         if not isinstance(parent_register, Reg):
-            raise TypeError(f'size_props must be of {type(Reg)} '
+            raise TypeError(f'parent_register must be of {type(Reg)} '
                             f'but got {type(parent_register)}')
-        self.__parent_register = parent_register
 
         if self.width > self.register_data_width:
             raise ValueError('width can not be greater than parent width')
@@ -238,7 +237,7 @@ class Field(Base):
         """
         The width of the register within which the field resides in bits
         """
-        return self.__parent_register.width
+        return self._parent_register.width
 
     @property
     def inverse_bitmask(self) -> int:
@@ -249,7 +248,7 @@ class Field(Base):
         For example a register field occupying bits 7 to 4 in a 16-bit register
         will have a inverse bit mask of 0xFF0F
         """
-        return self.__parent_register.max_value ^ self.bitmask
+        return self._parent_register.max_value ^ self.bitmask
 
     @property
     def msb0(self) -> bool:
@@ -276,7 +275,8 @@ class Field(Base):
         """
         parent register the field is placed in
         """
-        return self.__parent_register
+        # this cast is OK because an explict typing check was done in the __init__
+        return cast(Reg, self.parent)
 
 
 class FieldReadOnly(Field):
@@ -355,7 +355,7 @@ class FieldReadOnly(Field):
         """
 
         # this cast is OK because an explict typing check was done in the __init__
-        return cast(ReadableRegister, self._parent_register)
+        return cast(ReadableRegister, self.parent)
 
 
 class FieldWriteOnly(Field):
@@ -471,7 +471,7 @@ class FieldWriteOnly(Field):
         """
 
         # this cast is OK because an explict typing check was done in the __init__
-        return cast(WriteableRegister, self._parent_register)
+        return cast(WriteableRegister, self.parent)
 
 
 class FieldReadWrite(FieldReadOnly, FieldWriteOnly):
@@ -508,4 +508,4 @@ class FieldReadWrite(FieldReadOnly, FieldWriteOnly):
         """
 
         # this cast is OK because an explict typing check was done in the __init__
-        return cast(RegReadWrite, self._parent_register)
+        return cast(RegReadWrite, self.parent)

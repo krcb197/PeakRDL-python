@@ -18,14 +18,16 @@ class {{get_fully_qualified_type_name(node)}}_cls(RegWriteOnly):
                  callbacks: CallbackSet,
                  address: int,
                  logger_handle: str,
-                 inst_name: str):
+                 inst_name: str,
+                 parent: Union[AddressMap,RegFile,Memory]):
 
         super().__init__(callbacks=callbacks,
                          address=address,
                          {% if 'accesswidth' in node.list_properties() -%}accesswidth={{node.get_property('accesswidth')}}{%- else -%}accesswidth={{node.size*8}}{%- endif -%},
                          width={{node.size*8}},
                          logger_handle=logger_handle,
-                         inst_name=inst_name)
+                         inst_name=inst_name,
+                         parent=parent)
 
         # build the field attributes
         {%- for child_node in node.fields() %}

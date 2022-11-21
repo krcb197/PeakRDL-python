@@ -7,8 +7,9 @@ This code was generated from the PeakRDL-python package
 from typing import Tuple
 from typing import Iterable
 from typing import List
+from typing import Optional, Union
 
-from ..lib import AddressMap, RegFile
+from ..lib import AddressMap, RegFile, Memory
 from ..lib import RegReadOnly, RegWriteOnly, RegReadWrite
 from ..lib import FieldReadOnly, FieldWriteOnly, FieldReadWrite
 from ..lib import FieldSizeProps, Field
@@ -29,7 +30,8 @@ from ..lib import CallbackSet
                                        {{get_fully_qualified_type_name(node)}}_cls(callbacks=callbacks,
                                                                    address=self.address+{{node.raw_address_offset}}+({{node_instance_index}} * {{node.array_stride}}),
                                                                    logger_handle=logger_handle+'.{{node.inst_name}}[{{node_instance_index}}]',
-                                                                                   inst_name='{{node.inst_name}}')
+                                                                   inst_name='{{node.inst_name}}',
+                                                                   parent=self)
                                        {%- if not loop.last -%} ,  {%- endif -%}
                                        {% endfor %} )
             {%- elif node.has_sw_readable and not node.has_sw_writable %}
@@ -37,7 +39,8 @@ from ..lib import CallbackSet
                                        {{get_fully_qualified_type_name(node)}}_cls(callbacks=callbacks,
                                                                    address=self.address+{{node.raw_address_offset}}+({{node_instance_index}} * {{node.array_stride}}),
                                                                    logger_handle=logger_handle+'.{{node.inst_name}}[{{node_instance_index}}]',
-                                                                                   inst_name='{{node.inst_name}}')
+                                                                   inst_name='{{node.inst_name}}',
+                                                                   parent=self)
                                        {%- if not loop.last -%} ,  {%- endif -%}
                                        {% endfor %} )
             {%- elif not node.has_sw_readable and node.has_sw_writable %}
@@ -45,7 +48,8 @@ from ..lib import CallbackSet
                                        {{get_fully_qualified_type_name(node)}}_cls(callbacks=callbacks,
                                                                    address=self.address+{{node.raw_address_offset}}+({{node_instance_index}} * {{node.array_stride}}),
                                                                    logger_handle=logger_handle+'.{{node.inst_name}}[{{node_instance_index}}]',
-                                                                                   inst_name='{{node.inst_name}}')
+                                                                   inst_name='{{node.inst_name}}',
+                                                                   parent=self)
                                        {%- if not loop.last -%} ,  {%- endif -%}
                                        {% endfor %} )
             {%- endif %}
@@ -54,17 +58,20 @@ from ..lib import CallbackSet
     self.__{{node.inst_name}} = {{get_fully_qualified_type_name(node)}}_cls(callbacks=callbacks,
                                                                  address=self.address+{{node.address_offset}},
                                                                  logger_handle=logger_handle+'.{{node.inst_name}}',
-                                                                                   inst_name='{{node.inst_name}}')
+                                                                 inst_name='{{node.inst_name}}',
+                                                                 parent=self)
             {%- elif node.has_sw_readable and not node.has_sw_writable %}
     self.__{{node.inst_name}} = {{get_fully_qualified_type_name(node)}}_cls(callbacks=callbacks,
                                                                  address=self.address+{{node.address_offset}},
                                                                  logger_handle=logger_handle+'.{{node.inst_name}}',
-                                                                                   inst_name='{{node.inst_name}}')
+                                                                 inst_name='{{node.inst_name}}',
+                                                                 parent=self)
             {%- elif not node.has_sw_readable and node.has_sw_writable %}
     self.__{{node.inst_name}} = {{get_fully_qualified_type_name(node)}}_cls(callbacks=callbacks,
                                                                                  address=self.address+{{node.address_offset}},
                                                                                  logger_handle=logger_handle+'.{{node.inst_name}}',
-                                                                                 inst_name='{{node.inst_name}}')
+                                                                                 inst_name='{{node.inst_name}}',
+                                                                                 parent=self)
             {%- endif %}
         {%- endif %}
     {%- elif isinstance(node, systemrdlMemNode) %}
@@ -74,7 +81,8 @@ from ..lib import CallbackSet
                                        {{get_fully_qualified_type_name(node)}}_cls(callbacks=callbacks,
                                                                    address=self.address+{{node.raw_address_offset}}+({{node_instance_index}} * {{node.array_stride}}),
                                                                    logger_handle=logger_handle+'.{{node.inst_name}}[{{node_instance_index}}]',
-                                                                                   inst_name='{{node.inst_name}}')
+                                                                   inst_name='{{node.inst_name}}',
+                                                                   parent=self)
                                        {%- if not loop.last -%} ,  {%- endif -%}
                                        {% endfor %} )
             {%- elif node.is_sw_readable and not node.is_sw_writable %}
@@ -82,7 +90,8 @@ from ..lib import CallbackSet
                                        {{get_fully_qualified_type_name(node)}}_cls(callbacks=callbacks,
                                                                    address=self.address+{{node.raw_address_offset}}+({{node_instance_index}} * {{node.array_stride}}),
                                                                    logger_handle=logger_handle+'.{{node.inst_name}}[{{node_instance_index}}]',
-                                                                                   inst_name='{{node.inst_name}}')
+                                                                   inst_name='{{node.inst_name}}',
+                                                                   parent=self)
                                        {%- if not loop.last -%} ,  {%- endif -%}
                                        {% endfor %} )
             {%- elif not node.is_sw_readable and node.is_sw_writable %}
@@ -90,7 +99,8 @@ from ..lib import CallbackSet
                                        {{get_fully_qualified_type_name(node)}}_cls(callbacks=callbacks,
                                                                    address=self.address+{{node.raw_address_offset}}+({{node_instance_index}} * {{node.array_stride}}),
                                                                    logger_handle=logger_handle+'.{{node.inst_name}}[{{node_instance_index}}]',
-                                                                                   inst_name='{{node.inst_name}}')
+                                                                   inst_name='{{node.inst_name}}',
+                                                                   parent=self)
                                        {%- if not loop.last -%} ,  {%- endif -%}
                                        {% endfor %} )
             {%- endif %}
@@ -99,17 +109,20 @@ from ..lib import CallbackSet
     self.__{{node.inst_name}} = {{get_fully_qualified_type_name(node)}}_cls(callbacks=callbacks,
                                                                  address=self.address+{{node.address_offset}},
                                                                  logger_handle=logger_handle+'.{{node.inst_name}}',
-                                                                                   inst_name='{{node.inst_name}}')
+                                                                 inst_name='{{node.inst_name}}',
+                                                                 parent=self)
             {%- elif node.is_sw_readable and not node.is_sw_writable %}
     self.__{{node.inst_name}} = {{get_fully_qualified_type_name(node)}}_cls(callbacks=callbacks,
                                                                  address=self.address+{{node.address_offset}},
                                                                  logger_handle=logger_handle+'.{{node.inst_name}}',
-                                                                                   inst_name='{{node.inst_name}}')
+                                                                 inst_name='{{node.inst_name}}',
+                                                                 parent=self)
             {%- elif not node.is_sw_readable and node.is_sw_writable %}
     self.__{{node.inst_name}} = {{get_fully_qualified_type_name(node)}}_cls(callbacks=callbacks,
                                                                              address=self.address+{{node.address_offset}},
                                                                              logger_handle=logger_handle+'.{{node.inst_name}}',
-                                                                             inst_name='{{node.inst_name}}')
+                                                                             inst_name='{{node.inst_name}}',
+                                                                             parent=self)
             {%- endif %}
         {%- endif %}
     {%- elif isinstance(node, systemrdlRegfileNode) or isinstance(node, systemrdlAddrmapNode) %}
@@ -118,14 +131,16 @@ from ..lib import CallbackSet
                                        {{get_fully_qualified_type_name(node)}}_cls(callbacks=callbacks,
                                                                                    address=self.address+{{node.raw_address_offset}}+({{node_instance_index}} * {{node.array_stride}}),
                                                                                    logger_handle=logger_handle+'.{{node.inst_name}}[{{node_instance_index}}]',
-                                                                                   inst_name='{{node.inst_name}}')
+                                                                                   inst_name='{{node.inst_name}}',
+                                                                                   parent=self)
                                        {%- if not loop.last -%} ,  {%- endif -%}
                                        {% endfor %} )
         {%- else -%}
     self.__{{node.inst_name}} = {{get_fully_qualified_type_name(node)}}_cls(callbacks=callbacks,
                                                                             address=self.address+{{node.address_offset}},
                                                                             logger_handle=logger_handle+'.{{node.inst_name}}',
-                                                                            inst_name='{{node.inst_name}}')
+                                                                            inst_name='{{node.inst_name}}',
+                                                                            parent=self)
         {%- endif %}
     {%- endif %}
 {%- endmacro %}
@@ -144,12 +159,14 @@ class {{get_fully_qualified_type_name(node)}}_cls(RegFile):
                  callbacks: CallbackSet,
                  address: int,
                  logger_handle:str,
-                 inst_name:str):
+                 inst_name:str,
+                 parent:Union[AddressMap,RegFile]):
 
         super().__init__(callbacks=callbacks,
                          address=address,
                          logger_handle=logger_handle,
-                         inst_name=inst_name)
+                         inst_name=inst_name,
+                         parent=parent)
 
         # instance of objects within the class
         {% for child_node in node.children(unroll=False) -%}
@@ -181,12 +198,14 @@ class {{get_fully_qualified_type_name(node)}}_cls(AddressMap):
                  callbacks: CallbackSet,
                  address:int {%- if node == top_node -%}={{top_node.absolute_address}}{%- endif -%},
                  logger_handle:str {%- if node == top_node -%}='reg_model.{{top_node.get_path()}}'{%- endif -%},
-                 inst_name{%- if node == top_node -%}='{{node.inst_name}}'{%- endif -%}):
+                 inst_name{%- if node == top_node -%}='{{node.inst_name}}'{%- endif -%},
+                 parent:Optional[AddressMap]=None):
 
         super().__init__(callbacks=callbacks,
                          address=address,
                          logger_handle=logger_handle,
-                         inst_name=inst_name)
+                         inst_name=inst_name,
+                         parent=parent)
 
         {% for child_node in node.children(unroll=False) -%}
             {{ regfile_or_addr_instance(child_node) | indent }}
