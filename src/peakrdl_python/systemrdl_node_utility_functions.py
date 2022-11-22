@@ -2,7 +2,7 @@
 A set of utility functions that perform supplementary processing on a node in a compiled
 system RDL dataset.
 """
-from typing import Iterable
+from typing import Iterable, Optional
 
 import textwrap
 
@@ -372,3 +372,18 @@ def get_memory_width_bytes(node: MemNode) -> int:
         raise TypeError(f'node is not a {type(MemNode)} got {type(node)}')
 
     return node.get_property('memwidth') >> 3
+
+
+def get_field_default_value(node: FieldNode) -> Optional[int]:
+    """
+    Default (reset) value of the field.
+    None if the field is not reset.
+    """
+
+    #TODO: What should we do if the property from the compiler is a reference? Return None for now.
+
+    value = node.get_property('reset')
+    if isinstance(value, int):
+        return value
+
+    return None
