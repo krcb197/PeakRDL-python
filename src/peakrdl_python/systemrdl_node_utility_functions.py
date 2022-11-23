@@ -390,7 +390,7 @@ def get_field_default_value(node: FieldNode) -> Optional[int]:
     if isinstance(value, int):
         return value
 
-    if isinstance(value, SignalNode) or isinstance(value, FieldNode) :
+    if isinstance(value, (FieldNode, SignalNode)):
         # if the node resets to an external external signal or value of another field, there is no
         # knowledge the code can have of this state and it gets treated as None
         return None
