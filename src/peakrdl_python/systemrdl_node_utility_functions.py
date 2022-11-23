@@ -395,4 +395,4 @@ def get_field_default_value(node: FieldNode) -> Optional[int]:
         # knowledge the code can have of this state and it gets treated as None
         return None
 
-    raise TypeError(f'unhandled type for field default {type(value)=}')
+    raise TypeError(f'unhandled type for field default type={type(value)}')
