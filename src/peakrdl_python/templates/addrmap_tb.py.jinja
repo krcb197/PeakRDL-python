@@ -117,7 +117,9 @@ class {{top_node.type_name}}_TestCase(unittest.TestCase):
 
     def test_field_properties(self):
         """
-        walk the address map and check that the lsb and msb of every field is correct
+        walk the address map and check:
+        - that the lsb and msb of every field is correct
+        - that where default values are provided they are applied correctly
         """
         {%- for node in top_node.descendants(unroll=True) -%}
             {%- if isinstance(node, systemrdlFieldNode) %}
@@ -136,6 +138,10 @@ class {{top_node.type_name}}_TestCase(unittest.TestCase):
                          {{get_field_inv_bitmask_hex_string(node)}})
         self.assertEqual(self.dut.{{'.'.join(node.get_path_segments()[1:])}}.max_value,
                          {{get_field_max_value_hex_string(node)}})
+        self.assertEqual(self.dut.{{'.'.join(node.get_path_segments()[1:])}}.default,
+                         {{get_field_default_value(node)}})
+        self.assertEqual(self.dut.{{'.'.join(node.get_path_segments()[1:])}}.is_volatile,
+                         {{node.is_hw_writable}})
             {%- endif -%}
         {%- endfor %}
 

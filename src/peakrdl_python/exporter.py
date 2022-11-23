@@ -19,7 +19,8 @@ from .systemrdl_node_utility_functions import get_reg_readable_fields, get_reg_w
     get_field_bitmask_hex_string, get_field_inv_bitmask_hex_string, \
     get_field_max_value_hex_string, get_reg_max_value_hex_string, get_fully_qualified_type_name, \
     uses_enum, fully_qualified_enum_type, uses_memory, \
-    get_memory_max_entry_value_hex_string, get_array_typecode, get_memory_width_bytes
+    get_memory_max_entry_value_hex_string, get_array_typecode, get_memory_width_bytes, \
+    get_field_default_value
 
 file_path = os.path.dirname(__file__)
 
@@ -135,7 +136,8 @@ class PythonExporter:
                 'get_reg_readable_fields': get_reg_readable_fields,
                 'get_memory_max_entry_value_hex_string': get_memory_max_entry_value_hex_string,
                 'get_array_typecode': get_array_typecode,
-                'get_memory_width_bytes': get_memory_width_bytes
+                'get_memory_width_bytes': get_memory_width_bytes,
+                'get_field_default_value': get_field_default_value,
             }
 
             context.update(self.user_template_context)
