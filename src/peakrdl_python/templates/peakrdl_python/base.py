@@ -51,13 +51,10 @@ class Base(ABC):
         """
         The full hierarchical name of the instance
         """
-        return_name = self.inst_name
-        p = self.parent
-        while p is not None :
-            return_name = p.full_name + "." + return_name
-            p = p.parent
+        if self.parent is not None:
+            return self.parent.full_inst_name + "." + self.inst_name
 
-        return return_name
+        return self.inst_name
 
 
 class Node(Base, ABC):
