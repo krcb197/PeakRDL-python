@@ -1,0 +1,11 @@
+addrmap fields_with_HW_write {
+
+    reg {
+        default sw = r;
+        default hw = rw;
+        field { hw = w; } field_a;
+        field { hw = r; } field_b;
+        field { hw = rw; } field_c;
+    } reg_with_all_local_fields;
+
+};

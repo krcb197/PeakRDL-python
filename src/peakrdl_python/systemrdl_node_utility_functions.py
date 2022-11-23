@@ -2,13 +2,14 @@
 A set of utility functions that perform supplementary processing on a node in a compiled
 system RDL dataset.
 """
-from typing import Iterable
+from typing import Iterable, Optional
 
 import textwrap
 
 from systemrdl.node import Node, RegNode  # type: ignore
 from systemrdl.node import FieldNode, AddressableNode  # type: ignore
 from systemrdl.node import MemNode  # type: ignore
+from systemrdl.node import SignalNode  # type: ignore
 
 def get_fully_qualified_type_name(node: Node) -> str:
     """
@@ -372,3 +373,26 @@ def get_memory_width_bytes(node: MemNode) -> int:
         raise TypeError(f'node is not a {type(MemNode)} got {type(node)}')
 
     return node.get_property('memwidth') >> 3
+
+
+def get_field_default_value(node: FieldNode) -> Optional[int]:
+    """
+    Default (reset) value of the field.
+    None if the field is not reset or if the reset value is a signal that can be in an unknown
+    state
+    """
+
+    value = node.get_property('reset')
+
+    if value is None:
+        return None
+
+    if isinstance(value, int):
+        return value
+
+    if isinstance(value, (FieldNode, SignalNode)):
+        # if the node resets to an external external signal or value of another field, there is no
+        # knowledge the code can have of this state and it gets treated as None
+        return None
+
+    raise TypeError(f'unhandled type for field default type={type(value)}')
