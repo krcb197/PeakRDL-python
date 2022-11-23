@@ -5,7 +5,7 @@
                                        {{get_fully_qualified_type_name(node)}}_cls(callbacks=callbacks,
                                                                    address=self.address+{{node.raw_address_offset}}+({{node_instance_index}} * {{node.array_stride}}),
                                                                    logger_handle=logger_handle+'.{{node.inst_name}}[{{node_instance_index}}]',
-                                                                                   inst_name='{{node.inst_name}}', parent=self)
+                                                                                   inst_name='{{node.inst_name}}[{{node_instance_index}}]', parent=self)
                                        {%- if not loop.last -%} ,  {%- endif -%}
                                        {% endfor %} )
             {%- elif node.has_sw_readable and not node.has_sw_writable %}
@@ -13,7 +13,7 @@
                                        {{get_fully_qualified_type_name(node)}}_cls(callbacks=callbacks,
                                                                    address=self.address+{{node.raw_address_offset}}+({{node_instance_index}} * {{node.array_stride}}),
                                                                    logger_handle=logger_handle+'.{{node.inst_name}}[{{node_instance_index}}]',
-                                                                                   inst_name='{{node.inst_name}}', parent=self)
+                                                                                   inst_name='{{node.inst_name}}[{{node_instance_index}}]', parent=self)
                                        {%- if not loop.last -%} ,  {%- endif -%}
                                        {% endfor %} )
             {%- elif not node.has_sw_readable and node.has_sw_writable %}
@@ -21,7 +21,7 @@
                                        {{get_fully_qualified_type_name(node)}}_cls(callbacks=callbacks,
                                                                    address=self.address+{{node.raw_address_offset}}+({{node_instance_index}} * {{node.array_stride}}),
                                                                    logger_handle=logger_handle+'.{{node.inst_name}}[{{node_instance_index}}]',
-                                                                                   inst_name='{{node.inst_name}}', parent=self)
+                                                                                   inst_name='{{node.inst_name}}[{{node_instance_index}}]', parent=self)
                                        {%- if not loop.last -%} ,  {%- endif -%}
                                        {% endfor %} )
             {%- endif %}
