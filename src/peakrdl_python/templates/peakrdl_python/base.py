@@ -47,14 +47,14 @@ class Base(ABC):
         return self.__parent
 
     @property
-    def full_name(self) -> str:
+    def full_inst_name(self) -> str:
         """
         The full hierarchical name of the instance
         """
         return_name = self.inst_name
         p = self.parent
         while p is not None :
-            return_name = p.inst_name + "." + return_name
+            return_name = p.full_name + "." + return_name
             p = p.parent
 
         return return_name
