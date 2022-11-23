@@ -1,3 +1,6 @@
+
+{% from 'reg_definitions.py.jinja' import register_class_attributes with context %}
+
 {%- macro memory_class(node) %}
     {%- if node.is_sw_readable and node.is_sw_writable %}
 class {{get_fully_qualified_type_name(node)}}_cls(MemoryReadWrite):
@@ -12,7 +15,7 @@ class {{get_fully_qualified_type_name(node)}}_cls(MemoryWriteOnly):
     {{get_table_block(node) | indent}}
     """
 
-    __slots__ : List[str]  = []
+    __slots__ : List[str] = [{%- for child_node in node.children(unroll=False) -%}{%- if isinstance(child_node, systemrdlRegNode) -%}'__{{child_node.inst_name}}'{% if not loop.last %}, {% endif %}{% endif %}{%- endfor %}]
 
     def __init__(self,
                  callbacks: CallbackSet,
@@ -27,5 +30,17 @@ class {{get_fully_qualified_type_name(node)}}_cls(MemoryWriteOnly):
                          width={{node.get_property('memwidth')}},
                          logger_handle=logger_handle,
                          inst_name=inst_name)
+
+        {% for child_node in node.children(unroll=False) -%}
+            {{ register_class_attributes(child_node) | indent }}
+        {% endfor %}
+
+        {%- for child_node in node.children(unroll=False) -%}
+            {%- if isinstance(child_node, systemrdlRegNode)  %}
+    @property
+    def {{child_node.inst_name}}(self) ->  {% if child_node.is_array -%}Tuple[{%- endif -%}{{get_fully_qualified_type_name(child_node)}}_cls{%- if child_node.is_array -%},...]{%- endif -%}:
+        return self.__{{child_node.inst_name}}
+            {%- endif %}
+        {% endfor %}
 
 {%- endmacro %}
