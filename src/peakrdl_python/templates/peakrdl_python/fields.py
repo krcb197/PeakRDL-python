@@ -272,7 +272,7 @@ class Field(Base):
         """
         The width of the register within which the field resides in bits
         """
-        return self._parent_register.width
+        return self.__parent_register.width
 
     @property
     def inverse_bitmask(self) -> int:
@@ -283,7 +283,7 @@ class Field(Base):
         For example a register field occupying bits 7 to 4 in a 16-bit register
         will have a inverse bit mask of 0xFF0F
         """
-        return self._parent_register.max_value ^ self.bitmask
+        return self.__parent_register.max_value ^ self.bitmask
 
     @property
     def msb0(self) -> bool:
@@ -324,7 +324,7 @@ class Field(Base):
         return self.__misc_props.is_volatile
 
     @property
-    def _parent_register(self) -> Reg:
+    def __parent_register(self) -> Reg:
         """
         parent register the field is placed in
         """
