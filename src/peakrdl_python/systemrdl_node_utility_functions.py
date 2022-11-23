@@ -9,6 +9,7 @@ import textwrap
 from systemrdl.node import Node, RegNode  # type: ignore
 from systemrdl.node import FieldNode, AddressableNode  # type: ignore
 from systemrdl.node import MemNode  # type: ignore
+from systemrdl.node import SignalNode  # type: ignore
 
 def get_fully_qualified_type_name(node: Node) -> str:
     """
@@ -381,10 +382,17 @@ def get_field_default_value(node: FieldNode) -> Optional[int]:
     state
     """
 
-    #TODO: What should we do if the property from the compiler is a reference? Return None for now.
-
     value = node.get_property('reset')
+
+    if value is None:
+        return None
+
     if isinstance(value, int):
         return value
 
-    return None
+    if isinstance(value, SignalNode) or isinstance(value, FieldNode) :
+        # if the node resets to an external external signal or value of another field, there is no
+        # knowledge the code can have of this state and it gets treated as None
+        return None
+
+    raise TypeError(f'unhandled type for field default {type(value)=}')
