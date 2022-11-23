@@ -142,7 +142,7 @@ class Field(Base):
         circumstances however, it is useful for type checking
     """
 
-    __slots__ = ['__size_props',
+    __slots__ = ['__size_props', '__misc_props',
                  '__bitmask', '__msb0', '__lsb0']
 
     def __init__(self, parent_register: Reg, size_props: FieldSizeProps, misc_props: FieldMiscProps,
