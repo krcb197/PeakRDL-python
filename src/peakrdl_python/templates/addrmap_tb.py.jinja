@@ -88,6 +88,14 @@ class {{top_node.type_name}}_TestCase(unittest.TestCase):
                 result |= 1 << (number_bits - 1 - i)
         return result
 
+    def test_inst_name(self):
+        """
+        Walk the address map and check the inst name has been correctly populated
+        """
+        {% for node in top_node.descendants(unroll=True) -%}
+        self.assertEqual(self.dut.{{'.'.join(node.get_path_segments()[1:])}}.inst_name, '{{node.get_path_segments()[-1]}}')
+        {% endfor %}
+
     def test_register_properties(self):
         """
         Walk the address map and check the address, size and accesswidth of every register is
