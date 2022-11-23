@@ -18,55 +18,11 @@ from ..lib import CallbackSet
 {% from 'addrmap_field.py.jinja' import field_class with context %}
 {% from 'addrmap_register.py.jinja' import register_class with context %}
 {% from 'addrmap_memory.py.jinja' import memory_class with context %}
-
-
+{% from 'reg_definitions.py.jinja' import register_class_attributes with context %}
 
 {%- macro regfile_or_addr_instance(node) %}
     {%- if isinstance(node, systemrdlRegNode) %}
-        {%- if node.is_array %}
-            {%- if node.has_sw_readable and node.has_sw_writable %}
-    self.__{{node.inst_name}} = ( {% for node_instance_index in range(get_array_dim(node))  %}
-                                       {{get_fully_qualified_type_name(node)}}_cls(callbacks=callbacks,
-                                                                   address=self.address+{{node.raw_address_offset}}+({{node_instance_index}} * {{node.array_stride}}),
-                                                                   logger_handle=logger_handle+'.{{node.inst_name}}[{{node_instance_index}}]',
-                                                                                   inst_name='{{node.inst_name}}')
-                                       {%- if not loop.last -%} ,  {%- endif -%}
-                                       {% endfor %} )
-            {%- elif node.has_sw_readable and not node.has_sw_writable %}
-    self.__{{node.inst_name}} = ( {% for node_instance_index in range(get_array_dim(node))  %}
-                                       {{get_fully_qualified_type_name(node)}}_cls(callbacks=callbacks,
-                                                                   address=self.address+{{node.raw_address_offset}}+({{node_instance_index}} * {{node.array_stride}}),
-                                                                   logger_handle=logger_handle+'.{{node.inst_name}}[{{node_instance_index}}]',
-                                                                                   inst_name='{{node.inst_name}}')
-                                       {%- if not loop.last -%} ,  {%- endif -%}
-                                       {% endfor %} )
-            {%- elif not node.has_sw_readable and node.has_sw_writable %}
-    self.__{{node.inst_name}} = ( {% for node_instance_index in range(get_array_dim(node))  %}
-                                       {{get_fully_qualified_type_name(node)}}_cls(callbacks=callbacks,
-                                                                   address=self.address+{{node.raw_address_offset}}+({{node_instance_index}} * {{node.array_stride}}),
-                                                                   logger_handle=logger_handle+'.{{node.inst_name}}[{{node_instance_index}}]',
-                                                                                   inst_name='{{node.inst_name}}')
-                                       {%- if not loop.last -%} ,  {%- endif -%}
-                                       {% endfor %} )
-            {%- endif %}
-        {%- else %}
-            {%- if node.has_sw_readable and node.has_sw_writable %}
-    self.__{{node.inst_name}} = {{get_fully_qualified_type_name(node)}}_cls(callbacks=callbacks,
-                                                                 address=self.address+{{node.address_offset}},
-                                                                 logger_handle=logger_handle+'.{{node.inst_name}}',
-                                                                                   inst_name='{{node.inst_name}}')
-            {%- elif node.has_sw_readable and not node.has_sw_writable %}
-    self.__{{node.inst_name}} = {{get_fully_qualified_type_name(node)}}_cls(callbacks=callbacks,
-                                                                 address=self.address+{{node.address_offset}},
-                                                                 logger_handle=logger_handle+'.{{node.inst_name}}',
-                                                                                   inst_name='{{node.inst_name}}')
-            {%- elif not node.has_sw_readable and node.has_sw_writable %}
-    self.__{{node.inst_name}} = {{get_fully_qualified_type_name(node)}}_cls(callbacks=callbacks,
-                                                                                 address=self.address+{{node.address_offset}},
-                                                                                 logger_handle=logger_handle+'.{{node.inst_name}}',
-                                                                                 inst_name='{{node.inst_name}}')
-            {%- endif %}
-        {%- endif %}
+        {{ register_class_attributes(node) }}
     {%- elif isinstance(node, systemrdlMemNode) %}
         {%- if node.is_array %}
             {%- if node.is_sw_readable and node.is_sw_writable %}

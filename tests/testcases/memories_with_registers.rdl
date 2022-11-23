@@ -1,0 +1,16 @@
+addrmap memories_with_registers {
+
+    external mem {
+        mementries = 16;
+        memwidth = 32;
+        sw=rw;
+
+        reg mem_entry_definition {
+            field {} lower_entry[15:0];
+        };
+
+        mem_entry_definition mem_entry_set1;
+        mem_entry_definition mem_entry_set2[4];
+
+    } mem_with_internal_registers;
+};
