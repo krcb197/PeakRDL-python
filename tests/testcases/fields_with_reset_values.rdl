@@ -1,0 +1,22 @@
+addrmap fields_with_reset_values {
+
+    reg {
+        default sw = rw;
+        default hw = r;
+        field { fieldwidth = 4; } field_a;
+        field { fieldwidth = 4; } field_b = 1;
+        field { fieldwidth = 4; } field_c = 2;
+        field { fieldwidth = 4; } field_d = 3;
+    } reg_with_all_local_fields;
+
+    reg {
+        default sw = rw;
+        default hw = r;
+        field predefined_field { fieldwidth = 4; reset=5; };
+        predefined_field field_a;
+        predefined_field field_b = 1;
+        predefined_field field_c = 2;
+        predefined_field field_d = 3;
+    } reg_with_predefined_field;
+
+};

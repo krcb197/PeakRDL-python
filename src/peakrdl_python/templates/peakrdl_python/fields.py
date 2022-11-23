@@ -117,7 +117,11 @@ class FieldMiscProps:
     @property
     def default(self) -> Optional[int]:
         """
-        The default (reset) value of the field, or None if the field is not reset.
+        The default (reset) value of the field
+
+        None
+        - if the field is not reset.
+        - if the register resets to a signal value tht can not be determined
         """
         return self.__default
 
@@ -306,13 +310,17 @@ class Field(Base):
     def default(self) -> Optional[int]:
         """
         The default value of the field
+
+        This returns None:
+        - if the field is not reset.
+        - if the register resets to a signal value tht can not be determined
         """
         return self.__misc_props.default
 
     @property
     def is_volatile(self) -> bool:
         """
-        The volatility of the field
+        The HW volatility of the field
         """
         return self.__misc_props.is_volatile
 

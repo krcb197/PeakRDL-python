@@ -377,7 +377,8 @@ def get_memory_width_bytes(node: MemNode) -> int:
 def get_field_default_value(node: FieldNode) -> Optional[int]:
     """
     Default (reset) value of the field.
-    None if the field is not reset.
+    None if the field is not reset or if the reset value is a signal that can be in an unknown
+    state
     """
 
     #TODO: What should we do if the property from the compiler is a reference? Return None for now.
