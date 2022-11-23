@@ -21,7 +21,8 @@ class {{get_fully_qualified_type_name(node)}}_cls(MemoryWriteOnly):
                  callbacks: CallbackSet,
                  address: int,
                  logger_handle: str,
-                 inst_name: str):
+                 inst_name: str,
+                 parent:AddressMap):
 
         super().__init__(callbacks=callbacks,
                          address=address,
@@ -29,7 +30,8 @@ class {{get_fully_qualified_type_name(node)}}_cls(MemoryWriteOnly):
                          {% if 'accesswidth' in node.list_properties() -%}accesswidth={{node.get_property('accesswidth')}}{%- else -%}accesswidth={{node.get_property('memwidth')}}{%- endif -%},
                          width={{node.get_property('memwidth')}},
                          logger_handle=logger_handle,
-                         inst_name=inst_name)
+                         inst_name=inst_name,
+                         parent=parent)
 
         {% for child_node in node.children(unroll=False) -%}
             {{ register_class_attributes(child_node) | indent }}
