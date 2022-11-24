@@ -126,7 +126,7 @@ class {{get_fully_qualified_type_name(node)}}_cls(RegFile):
     {% endfor %}
 
     {{ child_getter(node, "get_registers", "Reg",     systemrdlRegNode) }}
-    {{ child_getter(node, "get_regfiles",  "RegFile", systemrdlRegfileNode) }}
+    {{ child_getter(node, "get_sections",  "RegFile", systemrdlRegfileNode) }}
 {%- endmacro %}
 
 {%- macro addrmap_class(node) %}
@@ -166,8 +166,7 @@ class {{get_fully_qualified_type_name(node)}}_cls(AddressMap):
 
     {{ child_getter(node, "get_registers",   "Reg",        systemrdlRegNode) }}
     {{ child_getter(node, "get_memories",    "Memory",     systemrdlMemNode) }}
-    {{ child_getter(node, "get_addressmaps", "AddressMap", systemrdlAddrmapNode) }}
-    {{ child_getter(node, "get_regfiles",    "RegFile",    systemrdlRegfileNode) }}
+    {{ child_getter(node, "get_sections", "Union[AddressMap, RegFile]", (systemrdlAddrmapNode, systemrdlRegfileNode)) }}
 {%- endmacro %}
 
 {%- macro child_getter(node, getter_name, child_type, child_rdltype) %}
