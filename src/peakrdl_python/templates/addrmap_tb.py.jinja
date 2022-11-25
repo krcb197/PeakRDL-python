@@ -94,6 +94,7 @@ class {{top_node.type_name}}_TestCase(unittest.TestCase):
         """
         {% for node in top_node.descendants(unroll=True) -%}
         self.assertEqual(self.dut.{{'.'.join(node.get_path_segments()[1:])}}.inst_name, '{{node.get_path_segments()[-1]}}')
+        self.assertEqual(self.dut.{{'.'.join(node.get_path_segments()[1:])}}.full_inst_name, '{{'.'.join(node.get_path_segments())}}')
         {% endfor %}
 
     def test_register_properties(self):
