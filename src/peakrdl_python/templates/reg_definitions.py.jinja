@@ -46,7 +46,7 @@
 
 {%- endmacro %}
 
-{%- macro child_reabable_register_getter(node) %}
+{%- macro child_readable_register_getter(node) %}
     def get_readable_registers(self, unroll=False) -> Iterator[Union[Union[ReadableRegister], Tuple[Union[ReadableRegister],...]]]:
         """
         generator that produces all the readable_registers of this node
@@ -72,7 +72,7 @@
 {%- endmacro %}
 
 {%- macro child_writable_register_getter(node) %}
-    def get_writable_registers(self, unroll=False) -> Iterator[Union[Union[WriteableRegister], Tuple[Union[WriteableRegister],...]]]:
+    def get_writable_registers(self, unroll=False) -> Iterator[Union[Union[WritableRegister], Tuple[Union[WritableRegister],...]]]:
         """
         generator that produces all the readable_registers of this node
         """
@@ -97,6 +97,6 @@
 {%- endmacro %}
 
 {%- macro child_register_getter(node) %}
-{{ child_reabable_register_getter(node) }}
+{{ child_readable_register_getter(node) }}
 {{ child_writable_register_getter(node) }}
 {%- endmacro %}

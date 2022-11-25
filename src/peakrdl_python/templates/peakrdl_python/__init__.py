@@ -16,6 +16,8 @@ from .register import RegReadOnly
 from .register import RegWriteOnly
 from .register import RegReadWrite
 from .register import Reg
+from .register import ReadableRegister
+from .register import WritableRegister
 
 from .fields import FieldSizeProps
 from .fields import FieldMiscProps

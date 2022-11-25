@@ -11,7 +11,7 @@ from .base import Node, AddressMap
 from .callbacks import CallbackSet
 
 if TYPE_CHECKING:
-    from .register import ReadableRegister, WriteableRegister
+    from .register import ReadableRegister, WritableRegister
 
 
 
@@ -215,7 +215,7 @@ class MemoryReadOnly(Memory, ABC):
         return data_read
 
     @abstractmethod
-    def get_readable_registers(self, unroll=False) -> Iterator[Union[ReadableRegister, Tuple[ReadableRegister,...]]]:
+    def get_readable_registers(self, unroll=False) -> Iterator[Union['ReadableRegister', Tuple['ReadableRegister',...]]]:
         """
         generator that produces all the readable_registers of this node
         """
@@ -277,7 +277,7 @@ class MemoryWriteOnly(Memory, ABC):
                                data=entry_data)
 
     @abstractmethod
-    def get_writable_registers(self, unroll=False) -> Iterator[Union[WriteableRegister, Tuple[WriteableRegister,...]]]:
+    def get_writable_registers(self, unroll=False) -> Iterator[Union['WritableRegister', Tuple['WritableRegister',...]]]:
         """
         generator that produces all the readable_registers of this node
         """

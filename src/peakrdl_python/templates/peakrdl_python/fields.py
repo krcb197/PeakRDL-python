@@ -13,7 +13,7 @@ from .register import RegReadOnly
 from .register import RegReadWrite
 from .register import RegWriteOnly
 from .register import ReadableRegister
-from .register import WriteableRegister
+from .register import WritableRegister
 
 
 class FieldSizeProps:
@@ -428,7 +428,7 @@ class FieldWriteOnly(Field, ABC):
     __slots__ : List[str] = []
 
     def __init__(self,
-                 parent_register: WriteableRegister,
+                 parent_register: WritableRegister,
                  size_props: FieldSizeProps,
                  misc_props: FieldMiscProps,
                  logger_handle: str,
@@ -523,13 +523,13 @@ class FieldWriteOnly(Field, ABC):
         self.parent_register.write(new_reg_value)
 
     @property
-    def parent_register(self) -> WriteableRegister:
+    def parent_register(self) -> WritableRegister:
         """
         parent register the field is placed in
         """
 
         # this cast is OK because an explict typing check was done in the __init__
-        return cast(WriteableRegister, self.parent)
+        return cast(WritableRegister, self.parent)
 
 
 class FieldReadWrite(FieldReadOnly, FieldWriteOnly, ABC):

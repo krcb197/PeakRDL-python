@@ -105,7 +105,7 @@ class RegReadOnly(Reg, ABC):
 
     @property
     @abstractmethod
-    def readable_fields(self) -> Iterator[Union[FieldReadOnly, FieldReadWrite]]:
+    def readable_fields(self) -> Iterator[Union['FieldReadOnly', 'FieldReadWrite']]:
         """
         generator that produces has all the readable fields within the register
         """
@@ -147,7 +147,7 @@ class RegWriteOnly(Reg, ABC):
 
     @property
     @abstractmethod
-    def writable_fields(self) -> Iterator[Union[FieldWriteOnly, FieldReadWrite]]:
+    def writable_fields(self) -> Iterator[Union['FieldWriteOnly', 'FieldReadWrite']]:
         """
         generator that produces has all the readable fields within the register
         """
@@ -161,4 +161,4 @@ class RegReadWrite(RegReadOnly, RegWriteOnly, ABC):
     __slots__ : List[str] = []
 
 ReadableRegister = Union[RegReadOnly, RegReadWrite]
-WriteableRegister = Union[RegWriteOnly, RegReadWrite]
+WritableRegister = Union[RegWriteOnly, RegReadWrite]
