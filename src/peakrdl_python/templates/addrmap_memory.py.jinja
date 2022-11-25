@@ -43,6 +43,11 @@ class {{get_fully_qualified_type_name(node)}}_cls(MemoryWriteOnly):
             {%- if isinstance(child_node, systemrdlRegNode)  %}
     @property
     def {{child_node.inst_name}}(self) ->  {% if child_node.is_array -%}Tuple[{%- endif -%}{{get_fully_qualified_type_name(child_node)}}_cls{%- if child_node.is_array -%},...]{%- endif -%}:
+        """
+        Property to access {{child_node.inst_name}} register
+
+        {{get_table_block(child_node) | indent(8)}}
+        """
         return self.__{{child_node.inst_name}}
             {%- endif %}
         {% endfor %}
