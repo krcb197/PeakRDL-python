@@ -130,6 +130,11 @@ class {{get_fully_qualified_type_name(node)}}_cls(RegWriteOnly):
         {%- if isinstance(child_node, systemrdlFieldNode) %}
     @property
     def {{child_node.inst_name}}(self) -> {{get_fully_qualified_type_name(child_node)}}_cls:
+        """
+        Property to access {{child_node.inst_name}} field of the register
+
+        {{get_table_block(child_node) | indent(8)}}
+        """
         return self.__{{child_node.inst_name}}
         {% endif %}
     {%- endfor %}
