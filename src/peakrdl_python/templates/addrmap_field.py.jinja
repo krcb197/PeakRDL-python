@@ -59,7 +59,7 @@ class {{get_fully_qualified_type_name(node)}}_cls(FieldWriteOnly):
             field value
         """
         reg_value = self.parent_register.read()
-        return self.decode_read_value(reg_value=reg_value)
+        return self.decode_read_value(reg_value)
         {% endif %}
 
         {%- if node.is_sw_writable %}
