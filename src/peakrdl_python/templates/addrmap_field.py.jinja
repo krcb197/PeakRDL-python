@@ -27,7 +27,7 @@ class {{get_fully_qualified_type_name(node)}}_cls(FieldWriteOnly):
         return self.__enum_cls
 
         {%- if node.is_sw_readable %}
-    def decode_read_value(self, reg_value: int) -> {{get_fully_qualified_enum_type(node.get_property('encode'), top_node.parent)}}_enumcls:
+    def decode_read_value(self, value: int) -> {{get_fully_qualified_enum_type(node.get_property('encode'), top_node.parent)}}_enumcls:
         """
         extracts the field value from a register value, by applying the bit
         mask and shift needed and conversion to the enum associated with the
@@ -42,7 +42,7 @@ class {{get_fully_qualified_type_name(node)}}_cls(FieldWriteOnly):
         Raises:
             ValueError - if the value read back for the field can not be matched to the enum
         """
-        field_value = super().decode_read_value(reg_value)
+        field_value = super().decode_read_value(value)
 
         return self.enum_cls(field_value)
 

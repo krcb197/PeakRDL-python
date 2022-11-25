@@ -363,7 +363,7 @@ class FieldReadOnly(Field, ABC):
                          parent_register=parent_register,
                          inst_name=inst_name)
 
-    def decode_read_value(self, value) -> int:
+    def decode_read_value(self, value: int) -> int:
         """
         extracts the field value from a register value, by applying the bit
         mask and shift needed
