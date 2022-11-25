@@ -1,0 +1,15 @@
+addrmap name_clash {
+
+	enum direction {
+		in = 0 { name = "In"; };
+		out = 1 { name = "Out"; };
+	};
+
+    reg {
+        default sw = rw;
+        default hw = r;
+        <%for( $i = 0; $i < 8; $i += 1 ) {%>
+        field { encode = direction; fieldwidth=1; } gpio_<%=$i%>_direction = {direction::in};
+        <% } %>
+    } gpio_direction;
+};
