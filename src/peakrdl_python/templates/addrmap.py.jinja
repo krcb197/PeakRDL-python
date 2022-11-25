@@ -5,13 +5,13 @@ This code was generated from the PeakRDL-python package
 """
 {% if uses_enum %}from enum import IntEnum, unique{% endif %}
 from typing import Tuple
-from typing import Iterable
+from typing import Iterator
 from typing import List
 from typing import Optional
 from typing import Union
 
 from ..lib import AddressMap, RegFile, Memory
-from ..lib import RegReadOnly, RegWriteOnly, RegReadWrite, Reg
+from ..lib import RegReadOnly, RegWriteOnly, RegReadWrite
 from ..lib import FieldReadOnly, FieldWriteOnly, FieldReadWrite
 from ..lib import FieldSizeProps, FieldMiscProps, Field
 from ..lib import CallbackSet
@@ -21,6 +21,7 @@ from ..lib import CallbackSet
 {% from 'addrmap_register.py.jinja' import register_class with context %}
 {% from 'addrmap_memory.py.jinja' import memory_class with context %}
 {% from 'reg_definitions.py.jinja' import register_class_attributes with context %}
+{% from 'reg_definitions.py.jinja' import child_register_getter with context %}
 
 {%- macro regfile_or_addr_instance(node) %}
     {%- if isinstance(node, systemrdlRegNode) %}
@@ -125,7 +126,7 @@ class {{get_fully_qualified_type_name(node)}}_cls(RegFile):
         {%- endif %}
     {% endfor %}
 
-    {{ child_getter(node, "get_registers", "Reg",     systemrdlRegNode) }}
+    {{ child_register_getter(node) }}
     {{ child_getter(node, "get_sections",  "RegFile", systemrdlRegfileNode) }}
 {%- endmacro %}
 
@@ -164,13 +165,13 @@ class {{get_fully_qualified_type_name(node)}}_cls(AddressMap):
             {%- endif %}
         {% endfor %}
 
-    {{ child_getter(node, "get_registers",   "Reg",        systemrdlRegNode) }}
+    {{ child_register_getter(node) }}
     {{ child_getter(node, "get_memories",    "Memory",     systemrdlMemNode) }}
     {{ child_getter(node, "get_sections", "Union[AddressMap, RegFile]", (systemrdlAddrmapNode, systemrdlRegfileNode)) }}
 {%- endmacro %}
 
 {%- macro child_getter(node, getter_name, child_type, child_rdltype) %}
-    def {{getter_name}}(self, unroll=False) -> Iterable[Union[{{child_type}},Tuple[{{child_type}},...]]]:
+    def {{getter_name}}(self, unroll=False) -> Iterator[Union[{{child_type}},Tuple[{{child_type}},...]]]:
         """
         generator that produces all the {{child_type}} children of this node
         """
@@ -191,6 +192,9 @@ class {{get_fully_qualified_type_name(node)}}_cls(AddressMap):
         # Empty generator in case there are no children of this type
         if False: yield
 {%- endmacro %}
+
+
+
 
 {% if uses_enum %}
 # root level enum definitions

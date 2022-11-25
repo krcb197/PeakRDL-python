@@ -1,5 +1,6 @@
 
 {% from 'reg_definitions.py.jinja' import register_class_attributes with context %}
+{% from 'reg_definitions.py.jinja' import child_register_getter with context %}
 
 {%- macro memory_class(node) %}
     {%- if node.is_sw_readable and node.is_sw_writable %}
@@ -44,5 +45,7 @@ class {{get_fully_qualified_type_name(node)}}_cls(MemoryWriteOnly):
         return self.__{{child_node.inst_name}}
             {%- endif %}
         {% endfor %}
+
+    {{ child_register_getter(node) }}
 
 {%- endmacro %}

@@ -45,3 +45,51 @@
         {%- endif %}
 
 {%- endmacro %}
+
+{%- macro child_register_getter(node) %}
+    def readable_registers(self, unroll=False) -> Iterator[Union[RegReadOnly, RegReadWrite]]:
+        """
+        generator that produces all the readable_registers of this node
+        """
+        {% for child_node in node.children(unroll=False) -%}
+            {%- if isinstance(child_node, systemrdlRegNode) %}
+                {% if child_node.has_sw_readable %}
+                    {% if child_node.is_array %}
+        if unroll:
+            for child in self.{{child_node.inst_name}}: # type: ignore
+                yield child
+        else:
+            yield self.{{child_node.inst_name}}
+                    {% else %}
+        yield self.{{child_node.inst_name}}
+                    {%- endif %}
+                {%- endif -%}
+            {%- endif -%}
+        {% endfor %}
+
+        # Empty generator in case there are no children of this type
+        if False: yield
+
+    def writable_registers(self, unroll=False) -> Iterator[Union[RegWriteOnly, RegReadWrite]]:
+        """
+        generator that produces all the readable_registers of this node
+        """
+        {% for child_node in node.children(unroll=False) -%}
+            {%- if isinstance(child_node, systemrdlRegNode) %}
+                {% if child_node.has_sw_writable %}
+                    {% if child_node.is_array %}
+        if unroll:
+            for child in self.{{child_node.inst_name}}: # type: ignore
+                yield child
+        else:
+            yield self.{{child_node.inst_name}}
+                    {% else %}
+        yield self.{{child_node.inst_name}}
+                    {%- endif %}
+                {%- endif -%}
+            {%- endif -%}
+        {% endfor %}
+
+        # Empty generator in case there are no children of this type
+        if False: yield
+{%- endmacro %}
