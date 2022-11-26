@@ -11,6 +11,8 @@ from .callbacks import CallbackSet
 
 from .base import AddressMap
 from .base import RegFile
+from .base import AddressMapArray
+from .base import RegFileArray
 
 from .register import RegReadOnly
 from .register import RegWriteOnly
@@ -18,6 +20,11 @@ from .register import RegReadWrite
 from .register import Reg
 from .register import ReadableRegister
 from .register import WritableRegister
+from .register import RegReadOnlyArray
+from .register import RegWriteOnlyArray
+from .register import RegReadWriteArray
+from .register import ReadableRegisterArray
+from .register import WritableRegisterArray
 
 from .fields import FieldSizeProps
 from .fields import FieldMiscProps
@@ -30,3 +37,6 @@ from .memory import Memory
 from .memory import MemoryReadOnly
 from .memory import MemoryWriteOnly
 from .memory import MemoryReadWrite
+from .memory import MemoryReadOnlyArray
+from .memory import MemoryWriteOnlyArray
+from .memory import MemoryReadWriteArray
