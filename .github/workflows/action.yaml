@@ -99,7 +99,7 @@ jobs:
         # build the libraries for the two cases
         cd example/tranversing_address_map/
         peakrdl python chip_with_registers.rdl -o .
-        python -m reseting_registers.py
+        python -m reseting_registers
         python -m dumping_register_state_to_json_file
 
         cd ../..
