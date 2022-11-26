@@ -35,6 +35,8 @@ class PythonExporter:
             into the template namespace.
     """
 
+    # pylint: disable=too-few-public-methods
+
     def __init__(self, **kwargs):
 
         user_template_dir = kwargs.pop("user_template_dir", None)
