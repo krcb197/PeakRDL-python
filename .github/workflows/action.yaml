@@ -93,21 +93,21 @@ jobs:
         pytest peakrdl_out/autopep8
 
     - name: Check Examples
-        run: |
-          python -m pip install peakrdl
+      run: |
+        python -m pip install peakrdl
 
-          # build the libraries for the two cases
-          cd example/tranversing_address_map/
-          peakrdl python chip_with_registers.rdl -o .
-          python -m reseting_registers.py
-          python -m dumping_register_state_to_json_file
+        # build the libraries for the two cases
+        cd example/tranversing_address_map/
+        peakrdl python chip_with_registers.rdl -o .
+        python -m reseting_registers.py
+        python -m dumping_register_state_to_json_file
 
-          cd ../..
+        cd ../..
 
-          cd example/simulating_callbacks
+        cd example/simulating_callbacks
 
-          peakrdl python chip_with_a_GPIO.rdl -o .
-          python -m flashing_the_LED
+        peakrdl python chip_with_a_GPIO.rdl -o .
+        python -m flashing_the_LED
 
-          cd ../..
+        cd ../..
 
