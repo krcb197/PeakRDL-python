@@ -77,6 +77,22 @@ class {{get_fully_qualified_type_name(node)}}_cls(FieldWriteOnly):
 
         super().write(value.value)
         {% endif %}
+
+    @property
+    def default(self) -> Optional[{{get_fully_qualified_enum_type(node.get_property('encode'), top_node.parent)}}_enumcls]:
+        """
+        The default value of the field
+
+        This returns None:
+        - if the field is not reset.
+        - if the register resets to a signal value tht can not be determined
+        """
+        int_default = super().default
+
+        if int_default is not None:
+            return {{get_fully_qualified_enum_type(node.get_property('encode'), top_node.parent)}}_enumcls(int_default)
+
+        return None
     {% endif %}
 
 {%- endmacro -%}
