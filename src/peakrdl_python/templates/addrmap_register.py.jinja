@@ -86,7 +86,7 @@ class {{get_fully_qualified_type_name(node)}}_cls(RegWriteOnly):
         {% endfor %}
 
     {% if node.has_sw_readable %}
-    def write_fields(self, **kwargs) -> None:
+    def write_fields(self, **kwargs) -> None:  # type
         """
         Do a read-modify-write to the register, updating any field included in
         the arguments
@@ -112,7 +112,7 @@ class {{get_fully_qualified_type_name(node)}}_cls(RegWriteOnly):
         self.write((self.read() & inverse_bit_mask) | reg_value)
 
     {% else %}
-    def write_fields(self, {%- for child_node in node.fields() -%} {{child_node.inst_name}} : {%- if 'encode' in child_node.list_properties() %}{{get_fully_qualified_enum_type(child_node.get_property('encode'), top_node.parent)}}_enumcls{% else %}int{% endif %}{%- if not loop.last -%},{%- endif -%}{%- endfor -%}) -> None:
+    def write_fields(self, {%- for child_node in node.fields() -%} {{child_node.inst_name}} : {%- if 'encode' in child_node.list_properties() %}{{get_fully_qualified_enum_type(child_node.get_property('encode'), top_node.parent)}}_enumcls{% else %}int{% endif %}{%- if not loop.last -%},{%- endif -%}{%- endfor -%}) -> None: # type: ignore[override]
         """
         Do a write to the register, updating all fields
         """
