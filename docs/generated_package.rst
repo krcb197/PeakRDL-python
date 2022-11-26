@@ -108,46 +108,8 @@ registers:
 
 This can be described with the following systemRDL code:
 
-.. code-block:: systemrdl
-
-    addrmap mychip {
-
-        name="My Chip";
-
-        addrmap GPIO_block {
-
-            name = "GPIO Block";
-            desc = "GPIO Block with configurable direction pins";
-
-            enum GPIO_direction {
-                dir_in = 0 { name = "input"; desc="GPIO direction into chip"; };
-                dir_out = 1 { name = "output"; desc="GPIO direction out of chip"; };
-            };
-
-            field GPIO_direction_field_type {
-                encode=GPIO_direction;
-                fieldwidth = 1;
-                sw=rw;
-                hw=r;
-                reset={GPIO_direction::dir_in}; };
-            field GPIO_output_field_type {
-                fieldwidth = 1;
-                sw=rw;
-                hw=r; };
-
-            reg {
-                name="GPIO Direction";
-                desc="Register to set the direction of each GPIO pin";
-                GPIO_direction_field_type PIN_0;
-            } GPIO_dir @ 0x4;
-
-            reg {
-                name="GPIO Set State";
-                desc="Register to set the state of a GPIO Pin";
-                GPIO_output_field_type PIN_0;
-            } GPIO_state @ 0x8;
-        } GPIO;
-    };
+.. literalinclude :: ../example/simulating_callbacks/chip_with_a_GPIO.rdl
+   :language: systemrdl
 
 This systemRDL code can be built using the command line tool as follows (assuming it is stored in
 a file called ``chip_with_a_GPIO.rdl``:
@@ -166,149 +128,126 @@ equivalent to those offered by a device driver), these look at the address of th
 the internal state of the simulator accordingly, the LED is then updated based on the state of the
 simulator.
 
-.. code-block:: python
+.. literalinclude :: ../example/simulating_callbacks/flashing_the_LED.py
+   :language: python
 
-    import tkinter as tk
+Walking the Structure
+=====================
 
-    from mychip.reg_model.mychip import mychip_cls
-    from mychip.peakrdl_python import CallbackSet
+The following two example show how to use the generators within the register abstraction layer
+package to traverse the structure.
 
-    class ChipSim:
+Both examples use the following register set which has a number of features to demonstrate the
+structures
 
-        def __init__(self):
+.. literalinclude :: ../example/tranversing_address_map/chip_with_registers.rdl
+   :language: systemrdl
 
-            # simulator state variables
-            self.PIN_output = False
-            self.PIN_state = False
+This systemRDL code can be built using the command line tool as follows (assuming it is stored in
+a file called ``chip_with_registers.rdl``:
 
-            # basic GUI components
-            self.root = tk.Tk()
-            self.root.title("My Chip Simulator")
-            self.LED_label = tk.Label(master=self.root,
-                                      text="LED_0",
-                                      foreground="black")  # Set the background color to black
-            self.LED_label.pack(fill=tk.X, side=tk.TOP)
-            window_frame = tk.Frame(master=self.root, width=400, height=400,bg="black")
-            window_frame.pack(fill=tk.BOTH, side=tk.TOP)
-            self.LED = tk.Canvas(master=window_frame, width=300, height=300, bg='black')
-            self.LED.pack()
-            self.LED_inner = self.LED.create_oval(25, 25, 275, 275, fill='black')
+.. code-block:: bash
 
-        def read_addr_space(self, addr: int, width: int, accesswidth: int) -> int:
-            """
-            Callback to for the simulation of the chip
+    peakpython chip_with_registers.rdl --outdir chip_with_registers --test
 
-            Args:
-                addr: Address to write to
-                width: Width of the register in bits
-                accesswidth: Minimum access width of the register in bits
+Traversing without Unrolling Loops
+----------------------------------
 
-            Returns:
-                simulated register value
-            """
-            assert isinstance(addr, int)
-            assert isinstance(width, int)
-            assert isinstance(accesswidth, int)
+The first example is reading all the readable registers from the register map and writing them
+into a JSON file. To exploit the capabilities of a JSON file the arrays of registers and
+register files must be converted to python lists, therefore the loops must not be unrolled, the
+array objects are accessed directly.
 
-            if addr == 0x4:
-                if self.PIN_output is True:
-                    return 0x1
-                else:
-                    return 0x0
-            elif addr == 0x8:
-                if self.PIN_state is True:
-                    return 0x1
-                else:
-                    return 0x0
+.. literalinclude :: ../example/tranversing_address_map/dumping_register_state_to_json_file.py
+   :language: python
 
-        def write_addr_space(self, addr: int, width: int, accesswidth: int, data: int) -> None:
-            """
-            Callback to for the simulation of the chip
+This will create a JSON file as follows:
 
-            Args:
-                addr: Address to write to
-                width: Width of the register in bits
-                accesswidth: Minimum access width of the register in bits
-                data: value to be written to the register
+.. code-block:: json
 
-            Returns:
-                None
-            """
-            assert isinstance(addr, int)
-            assert isinstance(width, int)
-            assert isinstance(accesswidth, int)
-            assert isinstance(data, int)
+    {
+        "regfile_array": [
+            {
+                "single_reg": {
+                    "first_field": 0,
+                    "second_field": 0
+                },
+                "reg_array": [
+                    {
+                        "first_field": 0,
+                        "second_field": 0
+                    },
+                    {
+                        "first_field": 0,
+                        "second_field": 0
+                    },
+                    {
+                        "first_field": 0,
+                        "second_field": 0
+                    },
+                    {
+                        "first_field": 0,
+                        "second_field": 0
+                    }
+                ]
+            },
+            {
+                "single_reg": {
+                    "first_field": 0,
+                    "second_field": 0
+                },
+                "reg_array": [
+                    {
+                        "first_field": 0,
+                        "second_field": 0
+                    },
+                    {
+                        "first_field": 0,
+                        "second_field": 0
+                    },
+                    {
+                        "first_field": 0,
+                        "second_field": 0
+                    },
+                    {
+                        "first_field": 0,
+                        "second_field": 0
+                    }
+                ]
+            }
+        ],
+        "single_regfile": {
+            "single_reg": {
+                "first_field": 0,
+                "second_field": 0
+            },
+            "reg_array": [
+                {
+                    "first_field": 0,
+                    "second_field": 0
+                },
+                {
+                    "first_field": 0,
+                    "second_field": 0
+                },
+                {
+                    "first_field": 0,
+                    "second_field": 0
+                },
+                {
+                    "first_field": 0,
+                    "second_field": 0
+                }
+            ]
+        }
+    }
 
-            if addr == 0x4:
-                if (data & 0x1) == 0x1:
-                    self.PIN_output = True
-                else:
-                    self.PIN_output = False
-            elif addr == 0x8:
-                if (data & 0x1) == 0x1:
-                    self.PIN_state = True
-                else:
-                    self.PIN_state = False
+Traversing without Unrolling Loops
+----------------------------------
 
-            self.update_LED()
+The second example is setting every register in the address map back to its default values. In
+this case the loops are unrolled to conveniently access all the register without needing to
+worry if they are in an array or not.
 
-        def update_LED(self):
-
-            if self.PIN_output is True:
-                # LED is enabled
-                if self.PIN_state is True:
-                    self.LED.itemconfig(self.LED_inner, fill='red')
-                else:
-                    self.LED.itemconfig(self.LED_inner, fill='black')
-            else:
-                self.LED.itemconfig(self.LED_inner, fill='black')
-
-    # these two methods can be put in the simulator Tkinter event queue to perform register writes on
-    # the register abstraction layer (in turn causing the state of the simulator to change)
-
-    def turn_LED_on(chip: mychip_cls, sim_kt_root):
-
-        # write a '1' to the LED state field
-        chip.GPIO.GPIO_state.PIN_0.write(1)
-        # set up another event to happen
-        sim_kt_root.after(2000, turn_LED_off, chip, sim_kt_root)
-
-    def turn_LED_off(chip: mychip_cls, sim_kt_root):
-
-        # write a '0' to the LED state field
-        chip.GPIO.GPIO_state.PIN_0.write(0)
-        # set up another event to happen
-        sim_kt_root.after(2000, turn_LED_on, chip, sim_kt_root)
-
-
-    if __name__ == '__main__':
-
-        # make an instance of the chip simulator and then locally defined the callbacks that will be
-        # used to by the register abstraction model
-        chip_simulator = ChipSim()
-
-        def read_call_back(addr: int, width: int, accesswidth: int):
-            return chip_simulator.read_addr_space(addr=addr,
-                                                  width=width,
-                                                  accesswidth=accesswidth)
-        def write_call_back(addr: int, width: int, accesswidth: int, data: int):
-            chip_simulator.write_addr_space(addr=addr,
-                                            width=width,
-                                            accesswidth=accesswidth,
-                                            data=data)
-
-        # create a callback set for the callbacks
-        callbacks = CallbackSet(read_callback=read_call_back,
-                                write_callback=write_call_back)
-
-        # created an instance of the register model and connect the callbacks to the simulator
-        mychip = mychip_cls(callbacks=callbacks)
-
-        # configure the GPIO.PIN_0 as an output
-        mychip.GPIO.GPIO_dir.PIN_0.write(mychip.GPIO.GPIO_dir.PIN_0.enum_cls.dir_out)
-
-        # set up the first event to turn the LED on after 2s (this event will then set-up a follow up
-        # event to turn it off. This sequencer repeats forever.
-        chip_simulator.root.after(2000, turn_LED_on, mychip, chip_simulator.root)
-        # start the GUI (simulator)
-        chip_simulator.root.mainloop()
+.. literalinclude :: ../example/tranversing_address_map/reseting_registers.py
+   :language: python
