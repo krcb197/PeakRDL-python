@@ -74,6 +74,9 @@ class BaseArray(Base, ABC):
     def __len__(self):
         return len(self.__elements)
 
+    def __iter__(self):
+        return self.__elements.__iter__()
+
 
 class Node(Base, ABC):
     """

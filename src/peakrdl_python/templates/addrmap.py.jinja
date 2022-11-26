@@ -251,12 +251,12 @@ class {{get_fully_qualified_type_name(node)}}_array_cls(AddressMapArray):
             {%- if isinstance(child_node, child_rdltype) %}
         {% if child_node.is_array -%}
         if unroll:
-            for child in self.{{child_node.inst_name}}: # type: ignore
-                yield child
+            for child in self.{{child_node.inst_name}}:
+                yield cast({{child_type}}, child)
         else:
-            yield self.{{child_node.inst_name}}
+            yield cast(Tuple[{{child_type}},...], self.{{child_node.inst_name}})
         {% else -%}
-        yield self.{{child_node.inst_name}}
+        yield cast({{child_type}}, self.{{child_node.inst_name}})
         {%- endif %}
             {%- endif -%}
         {% endfor %}

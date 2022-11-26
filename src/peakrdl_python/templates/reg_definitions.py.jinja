@@ -59,12 +59,12 @@
                 {% if child_node.has_sw_readable %}
                     {% if child_node.is_array %}
         if unroll:
-            for child in self.{{child_node.inst_name}}: # type: ignore
-                yield child
+            for child in self.{{child_node.inst_name}}:
+                yield cast(ReadableRegister, child)
         else:
-            yield self.{{child_node.inst_name}}
+            yield cast(Tuple[ReadableRegister, ...], self.{{child_node.inst_name}})
                     {% else %}
-        yield self.{{child_node.inst_name}}
+        yield cast(ReadableRegister, self.{{child_node.inst_name}})
                     {%- endif %}
                 {%- endif -%}
             {%- endif -%}
@@ -84,12 +84,12 @@
                 {% if child_node.has_sw_writable %}
                     {% if child_node.is_array %}
         if unroll:
-            for child in self.{{child_node.inst_name}}: # type: ignore
-                yield child
+            for child in self.{{child_node.inst_name}}:
+                yield cast(WritableRegister, child)
         else:
-            yield self.{{child_node.inst_name}}
+            yield cast(Tuple[WritableRegister, ...], self.{{child_node.inst_name}})
                     {% else %}
-        yield self.{{child_node.inst_name}}
+        yield cast(WritableRegister, self.{{child_node.inst_name}})
                     {%- endif %}
                 {%- endif -%}
             {%- endif -%}
