@@ -111,6 +111,12 @@ class RegReadOnly(Reg, ABC):
         generator that produces has all the readable fields within the register
         """
 
+    @abstractmethod
+    def read_fields(self):
+        """
+        read the register and return a dictionary of the field values
+        """
+
 
 class RegWriteOnly(Reg, ABC):
     """
@@ -153,6 +159,13 @@ class RegWriteOnly(Reg, ABC):
         generator that produces has all the readable fields within the register
         """
 
+    @abstractmethod
+    def write_fields(self, **kwargs) -> None:
+        """
+        Do a write to the register, updating any field included in
+        the arguments
+        """
+
 
 class RegReadWrite(RegReadOnly, RegWriteOnly, ABC):
     """
@@ -160,6 +173,13 @@ class RegReadWrite(RegReadOnly, RegWriteOnly, ABC):
 
     """
     __slots__: List[str] = []
+
+    @abstractmethod
+    def write_fields(self, **kwargs) -> None:
+        """
+        Do a read-modify-write to the register, updating any field included in
+        the arguments
+        """
 
 
 ReadableRegister = Union[RegReadOnly, RegReadWrite]
