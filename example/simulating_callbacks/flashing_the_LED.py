@@ -1,7 +1,7 @@
 import tkinter as tk
 
 from mychip.reg_model.mychip import mychip_cls
-from mychip.peakrdl_python import CallbackSet
+from mychip.lib import CallbackSet
 
 class ChipSim:
 

@@ -107,7 +107,9 @@ jobs:
         cd example/simulating_callbacks
 
         peakrdl python chip_with_a_GPIO.rdl -o .
-        python -m flashing_the_LED
+        # this example creates a gui that stays up for ever so needs changing before it can be
+        # in the test suite
+        # python -m flashing_the_LED
 
         cd ../..
 
