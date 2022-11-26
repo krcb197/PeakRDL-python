@@ -9,6 +9,8 @@ on:
     branches: [ main ]
   pull_request:
     branches: [ main ]
+  schedule:
+    - cron: '00 6 1 * *'
 
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
@@ -78,6 +80,7 @@ jobs:
         python generate_testcases.py
         mypy testcase_output/raw --config-file=tests/.mypy.ini
         # mypy testcase_output/autopep8 --config-file=tests/.mypy.ini
+        # pylint --rcfile tests/pylint.rc testcase_output/autopep8 --disable=duplicate-code,line-too-long,too-many-statements,invalid-name,unused-import,too-many-instance-attributes,too-many-arguments,too-many-lines
         pytest testcase_output/raw
         pytest testcase_output/autopep8
 
