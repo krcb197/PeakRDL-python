@@ -3,7 +3,6 @@ from typing import Union
 
 from chip_with_registers.reg_model.chip_with_registers import chip_with_registers_cls
 
-from tetscript_output.regfile_and_arrays.reg_model.regfile_and_arrays import regfile_and_arrays_cls
 from chip_with_registers.lib import CallbackSet, RegReadOnly, RegReadWrite, \
     MemoryReadOnly, MemoryReadWrite, RegFile, AddressMap, RegReadOnlyArray, RegReadWriteArray, \
     AddressMapArray, RegFileArray, MemoryReadOnlyArray, MemoryReadWriteArray
