@@ -153,7 +153,7 @@ class AddressMap(Node, ABC):
         """
 
     @abstractmethod
-    def get_memories(self, unroll=False) -> Iterator['Memory', Tuple['Memory', ...]]:
+    def get_memories(self, unroll=False) -> Iterator[Union['Memory', Tuple['Memory', ...]]]:
         """
         generator that produces all the Memory children of this node
 
