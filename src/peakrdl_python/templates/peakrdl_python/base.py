@@ -71,6 +71,9 @@ class BaseArray(Base, ABC):
     def __getitem__(self, item) -> Union[Base, Tuple[Base, ...]]:
         return self.__elements[item]
 
+    def __len__(self):
+        return len(self.__elements)
+
 
 class Node(Base, ABC):
     """
