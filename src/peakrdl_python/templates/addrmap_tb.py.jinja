@@ -709,6 +709,19 @@ class {{top_node.type_name}}_TestCase(unittest.TestCase):
         {%- endfor %}
     {%- endif %}
 
+    def test_adding_attributes(self):
+        """
+        Walk the address map and attempt to set a new value on each node
+
+        The attribute name: cppkbrgmgeloagvfgjjeiiushygirh was randomly generated to be unlikely to
+        every be a attribute name
+
+        """
+        {%- for node in top_node.descendants(unroll=True) %}
+        with self.assertRaises(AttributeError):
+            self.dut.{{'.'.join(node.get_path_segments()[1:])}}.cppkbrgmgeloagvfgjjeiiushygirh = 1
+        {%- endfor %}
+
 class {{top_node.type_name}}_TestCase_BlockAccess(unittest.TestCase):
 
     def setUp(self):
