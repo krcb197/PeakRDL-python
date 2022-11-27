@@ -810,15 +810,15 @@ class {{top_node.type_name}}_TestCase(unittest.TestCase):
         self.assertFalse(hasattr(self.dut.{{'.'.join(node.get_path_segments()[1:])}}, 'readable_fields'))
                 {% endif %}
             {%- elif isinstance(node, systemrdlMemNode) %}
-                {% if node.has_sw_writable %}
-                    {{ check_readable_register_iterators(node) }}
-                {% else %}
-        self.assertFalse(hasattr(self.dut.{{'.'.join(node.get_path_segments()[1:])}}, 'get_readable_registers'))
-                {% endif %}
-                {% if node.has_sw_readable %}
+                {% if node.is_sw_writable %}
                     {{ check_writable_register_iterators(node) }}
                 {% else %}
         self.assertFalse(hasattr(self.dut.{{'.'.join(node.get_path_segments()[1:])}}, 'get_writeable_registers'))
+                {% endif %}
+                {% if node.is_sw_readable %}
+                    {{ check_readable_register_iterators(node) }}
+                {% else %}
+        self.assertFalse(hasattr(self.dut.{{'.'.join(node.get_path_segments()[1:])}}, 'get_readable_registers'))
                 {% endif %}
             {%- elif isinstance(node, systemrdlAddrmapNode) %}
             {{ check_readable_register_iterators(node) }}
