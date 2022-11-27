@@ -16,8 +16,9 @@ from ..lib  import AddressMapArray, RegFileArray
 from ..lib import MemoryReadOnlyArray, MemoryWriteOnlyArray, MemoryReadWriteArray
 from ..lib import RegReadOnly, RegWriteOnly, RegReadWrite
 from ..lib import RegReadOnlyArray, RegWriteOnlyArray, RegReadWriteArray
-from ..lib import FieldReadOnly, FieldWriteOnly, FieldReadWrite
-from ..lib import FieldSizeProps, FieldMiscProps, Field
+from ..lib import FieldReadOnly, FieldWriteOnly, FieldReadWrite, Field
+{% if uses_enum %}from ..lib import FieldEnumReadOnly, FieldEnumWriteOnly, FieldEnumReadWrite, FieldEnum{% endif %}
+from ..lib import FieldSizeProps, FieldMiscProps
 from ..lib import ReadableRegister, WritableRegister
 from ..lib import ReadableRegisterArray, WritableRegisterArray
 from ..lib import CallbackSet

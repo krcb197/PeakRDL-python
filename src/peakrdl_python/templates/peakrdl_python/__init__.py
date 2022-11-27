@@ -32,6 +32,11 @@ from .fields import FieldReadOnly
 from .fields import FieldWriteOnly
 from .fields import FieldReadWrite
 from .fields import Field
+from .fields import FieldEnumReadOnly
+from .fields import FieldEnumWriteOnly
+from .fields import FieldEnumReadWrite
+from .fields import FieldEnum
+
 
 from .memory import Memory
 from .memory import MemoryReadOnly
