@@ -391,7 +391,7 @@ class {{top_node.type_name}}_TestCase(unittest.TestCase):
             {% if node.is_sw_readable %}
             # read back test
             {%- for value_of_enum_needed in node.get_property('encode') -%}
-            # set the simulated read_back value to {{value_of_enum_needed.name}}
+            # set the simulated read_back value to {{value_of_enum_needed.name.upper()}}
             random_reg_value = random.randrange(0, {{get_reg_max_value_hex_string(node.parent)}} + 1)
             read_callback_mock.reset_mock()
             {% if node.msb == node.high -%}
@@ -403,7 +403,7 @@ class {{top_node.type_name}}_TestCase(unittest.TestCase):
             {% endif -%}
 
             self.assertEqual(self.dut.{{'.'.join(node.get_path_segments()[1:])}}.read(),
-                             self.dut.{{'.'.join(node.get_path_segments()[1:])}}.enum_cls.{{value_of_enum_needed.name}})
+                             self.dut.{{'.'.join(node.get_path_segments()[1:])}}.enum_cls.{{value_of_enum_needed.name.upper()}})
             read_callback_mock.assert_called_once_with(
                                 addr={{node.parent.absolute_address}},
                                 width={{node.parent.size * 8}},
@@ -441,7 +441,7 @@ class {{top_node.type_name}}_TestCase(unittest.TestCase):
             write_callback_mock.reset_mock()
             read_callback_mock.return_value = random_reg_value
 
-            self.dut.{{'.'.join(node.get_path_segments()[1:])}}.write(enum_cls.{{value_of_enum_needed.name}})
+            self.dut.{{'.'.join(node.get_path_segments()[1:])}}.write(enum_cls.{{value_of_enum_needed.name.upper()}})
 
             {% if ( node.width < (node.parent.size*8)) and (node.parent.has_sw_readable) %}
             read_callback_mock.assert_called_once()
