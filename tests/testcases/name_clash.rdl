@@ -12,4 +12,14 @@ addrmap name_clash {
         field { encode = direction; fieldwidth=1; } gpio_<%=$i%>_direction = {direction::in};
         <% } %>
     } gpio_direction;
+
+    reg {
+        field { fieldwidth=1; } pass = 1;
+        field { fieldwidth=2; } _pain = 3;
+    } gpio_status;
+
+    reg {
+        field { fieldwidth=16; } legal_field_name
+
+    } address;
 };
