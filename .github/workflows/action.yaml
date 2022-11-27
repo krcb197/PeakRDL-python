@@ -77,6 +77,8 @@ jobs:
 
     - name: Generate testcases
       run: |
+        # retrieve the example code from the systemRDL compiler
+        wget -L https://raw.githubusercontent.com/SystemRDL/systemrdl-compiler/main/examples/accelera-generic_example.rdl -O tests/testcases/accelera-generic_example.rdl
         python generate_testcases.py
         mypy testcase_output/raw --config-file=tests/.mypy.ini
         # mypy testcase_output/autopep8 --config-file=tests/.mypy.ini
