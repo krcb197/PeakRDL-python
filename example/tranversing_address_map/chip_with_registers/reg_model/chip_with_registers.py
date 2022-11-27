@@ -16,8 +16,9 @@ from ..lib  import AddressMapArray, RegFileArray
 from ..lib import MemoryReadOnlyArray, MemoryWriteOnlyArray, MemoryReadWriteArray
 from ..lib import RegReadOnly, RegWriteOnly, RegReadWrite
 from ..lib import RegReadOnlyArray, RegWriteOnlyArray, RegReadWriteArray
-from ..lib import FieldReadOnly, FieldWriteOnly, FieldReadWrite
-from ..lib import FieldSizeProps, FieldMiscProps, Field
+from ..lib import FieldReadOnly, FieldWriteOnly, FieldReadWrite, Field
+from ..lib import FieldEnumReadOnly, FieldEnumWriteOnly, FieldEnumReadWrite, FieldEnum
+from ..lib import FieldSizeProps, FieldMiscProps
 from ..lib import ReadableRegister, WritableRegister
 from ..lib import ReadableRegisterArray, WritableRegisterArray
 from ..lib import CallbackSet
@@ -59,7 +60,7 @@ class chip_with_registers_reg_Type_first_field_cls(FieldReadWrite):
 
         
     
-class chip_with_registers_reg_Type_second_field_cls(FieldReadWrite):
+class chip_with_registers_reg_Type_second_field_cls(FieldEnumReadWrite):
     
     """
     Class to represent a register field in the register model
@@ -76,6 +77,8 @@ class chip_with_registers_reg_Type_second_field_cls(FieldReadWrite):
         The enumeration class for this field
         """
         return self.__enum_cls
+
+        
     def decode_read_value(self, value: int) -> chip_with_registers_twoBitFieldType_enumcls:
         """
         extracts the field value from a register value, by applying the bit
@@ -109,6 +112,8 @@ class chip_with_registers_reg_Type_second_field_cls(FieldReadWrite):
         """
         reg_value = self.parent_register.read()
         return self.decode_read_value(reg_value)
+        
+
         
     def encode_write_value(self, value: chip_with_registers_twoBitFieldType_enumcls) -> int: # type: ignore[override]
 
@@ -285,7 +290,7 @@ class chip_with_registers_reg_Type_cls(RegReadWrite):
 
         
     
-class chip_with_registers_reg_Type_first_field_0x0x175238b504_cls(FieldReadWrite):
+class chip_with_registers_reg_Type_first_field_0x0x29b7758404_cls(FieldReadWrite):
     
     """
     Class to represent a register field in the register model
@@ -298,7 +303,7 @@ class chip_with_registers_reg_Type_first_field_0x0x175238b504_cls(FieldReadWrite
 
         
     
-class chip_with_registers_reg_Type_second_field_0x0x175238b537_cls(FieldReadWrite):
+class chip_with_registers_reg_Type_second_field_0x0x29b7758437_cls(FieldEnumReadWrite):
     
     """
     Class to represent a register field in the register model
@@ -315,6 +320,8 @@ class chip_with_registers_reg_Type_second_field_0x0x175238b537_cls(FieldReadWrit
         The enumeration class for this field
         """
         return self.__enum_cls
+
+        
     def decode_read_value(self, value: int) -> chip_with_registers_twoBitFieldType_enumcls:
         """
         extracts the field value from a register value, by applying the bit
@@ -348,6 +355,8 @@ class chip_with_registers_reg_Type_second_field_0x0x175238b537_cls(FieldReadWrit
         """
         reg_value = self.parent_register.read()
         return self.decode_read_value(reg_value)
+        
+
         
     def encode_write_value(self, value: chip_with_registers_twoBitFieldType_enumcls) -> int: # type: ignore[override]
 
@@ -383,7 +392,7 @@ class chip_with_registers_reg_Type_second_field_0x0x175238b537_cls(FieldReadWrit
     
 
         
-class chip_with_registers_reg_Type_0x0x175238b385_cls(RegReadWrite):
+class chip_with_registers_reg_Type_0x0x29b7758285_cls(RegReadWrite):
     """
     Class to represent a register in the register model
 
@@ -408,7 +417,7 @@ class chip_with_registers_reg_Type_0x0x175238b385_cls(RegReadWrite):
                          parent=parent)
 
         # build the field attributes
-        self.__first_field = chip_with_registers_reg_Type_first_field_0x0x175238b504_cls(
+        self.__first_field = chip_with_registers_reg_Type_first_field_0x0x29b7758404_cls(
             parent_register=self,
             size_props=FieldSizeProps(
                 width=16,
@@ -421,7 +430,7 @@ class chip_with_registers_reg_Type_0x0x175238b385_cls(RegReadWrite):
                 is_volatile=False),
             logger_handle=logger_handle+'.first_field',
             inst_name='first_field')
-        self.__second_field = chip_with_registers_reg_Type_second_field_0x0x175238b537_cls(
+        self.__second_field = chip_with_registers_reg_Type_second_field_0x0x29b7758437_cls(
             parent_register=self,
             size_props=FieldSizeProps(
                 width=2,
@@ -503,7 +512,7 @@ class chip_with_registers_reg_Type_0x0x175238b385_cls(RegReadWrite):
 
     # build the properties for the fields
     @property
-    def first_field(self) -> chip_with_registers_reg_Type_first_field_0x0x175238b504_cls:
+    def first_field(self) -> chip_with_registers_reg_Type_first_field_0x0x29b7758404_cls:
         """
         Property to access first_field field of the register
 
@@ -512,7 +521,7 @@ class chip_with_registers_reg_Type_0x0x175238b385_cls(RegReadWrite):
         return self.__first_field
         
     @property
-    def second_field(self) -> chip_with_registers_reg_Type_second_field_0x0x175238b537_cls:
+    def second_field(self) -> chip_with_registers_reg_Type_second_field_0x0x29b7758437_cls:
         """
         Property to access second_field field of the register
 
@@ -520,7 +529,7 @@ class chip_with_registers_reg_Type_0x0x175238b385_cls(RegReadWrite):
         """
         return self.__second_field
         
-class chip_with_registers_reg_Type_0x0x175238b385_array_cls(RegReadWriteArray):
+class chip_with_registers_reg_Type_0x0x29b7758285_array_cls(RegReadWriteArray):
     """
     Class to represent a register array in the register model
     """
@@ -528,19 +537,19 @@ class chip_with_registers_reg_Type_0x0x175238b385_array_cls(RegReadWriteArray):
 
     def __init__(self, logger_handle: str, inst_name: str,
                  parent: Union[RegFile, AddressMap, Memory],
-                 elements: Tuple[chip_with_registers_reg_Type_0x0x175238b385_cls, ...]):
+                 elements: Tuple[chip_with_registers_reg_Type_0x0x29b7758285_cls, ...]):
 
         for element in elements:
-            if not isinstance(element, chip_with_registers_reg_Type_0x0x175238b385_cls):
-                raise TypeError(f'All Elements should be of type chip_with_registers_reg_Type_0x0x175238b385_cls, '
+            if not isinstance(element, chip_with_registers_reg_Type_0x0x29b7758285_cls):
+                raise TypeError(f'All Elements should be of type chip_with_registers_reg_Type_0x0x29b7758285_cls, '
                                 f'found {type(element)}')
 
         super().__init__(logger_handle=logger_handle, inst_name=inst_name,
                          parent=parent, elements=elements)
 
-    def __getitem__(self, item) -> Union[chip_with_registers_reg_Type_0x0x175238b385_cls, Tuple[chip_with_registers_reg_Type_0x0x175238b385_cls, ...]]:
+    def __getitem__(self, item) -> Union[chip_with_registers_reg_Type_0x0x29b7758285_cls, Tuple[chip_with_registers_reg_Type_0x0x29b7758285_cls, ...]]:
         # this cast is OK because an explict typing check was done in the __init__
-        return cast(Union[chip_with_registers_reg_Type_0x0x175238b385_cls, Tuple[chip_with_registers_reg_Type_0x0x175238b385_cls, ...]], super().__getitem__(item))
+        return cast(Union[chip_with_registers_reg_Type_0x0x29b7758285_cls, Tuple[chip_with_registers_reg_Type_0x0x29b7758285_cls, ...]], super().__getitem__(item))
     
 
         
@@ -575,20 +584,20 @@ class chip_with_registers_regfile_Type_cls(RegFile):
                                                                                        inst_name='single_reg', parent=self)
         
             
-        self.__reg_array = chip_with_registers_reg_Type_0x0x175238b385_array_cls(elements=( 
-                                                                                                 chip_with_registers_reg_Type_0x0x175238b385_cls(callbacks=callbacks,
+        self.__reg_array = chip_with_registers_reg_Type_0x0x29b7758285_array_cls(elements=( 
+                                                                                                 chip_with_registers_reg_Type_0x0x29b7758285_cls(callbacks=callbacks,
                                                                                                  address=self.address+4+(0 * 4),
                                                                                                  logger_handle=logger_handle+'.reg_array[0]',
                                                                                                  inst_name='reg_array[0]', parent=self),
-                                                                                                 chip_with_registers_reg_Type_0x0x175238b385_cls(callbacks=callbacks,
+                                                                                                 chip_with_registers_reg_Type_0x0x29b7758285_cls(callbacks=callbacks,
                                                                                                  address=self.address+4+(1 * 4),
                                                                                                  logger_handle=logger_handle+'.reg_array[1]',
                                                                                                  inst_name='reg_array[1]', parent=self),
-                                                                                                 chip_with_registers_reg_Type_0x0x175238b385_cls(callbacks=callbacks,
+                                                                                                 chip_with_registers_reg_Type_0x0x29b7758285_cls(callbacks=callbacks,
                                                                                                  address=self.address+4+(2 * 4),
                                                                                                  logger_handle=logger_handle+'.reg_array[2]',
                                                                                                  inst_name='reg_array[2]', parent=self),
-                                                                                                 chip_with_registers_reg_Type_0x0x175238b385_cls(callbacks=callbacks,
+                                                                                                 chip_with_registers_reg_Type_0x0x29b7758285_cls(callbacks=callbacks,
                                                                                                  address=self.address+4+(3 * 4),
                                                                                                  logger_handle=logger_handle+'.reg_array[3]',
                                                                                                  inst_name='reg_array[3]', parent=self) ),
@@ -607,7 +616,7 @@ class chip_with_registers_regfile_Type_cls(RegFile):
         return self.__single_reg
     
     @property
-    def reg_array(self) -> chip_with_registers_reg_Type_0x0x175238b385_array_cls:
+    def reg_array(self) -> chip_with_registers_reg_Type_0x0x29b7758285_array_cls:
         """
         Property to access reg_array array
 
@@ -691,7 +700,7 @@ class chip_with_registers_regfile_Type_array_cls(RegFileArray):
 
         
     
-class chip_with_registers_reg_Type_first_field_0x0x175238b58e_cls(FieldReadWrite):
+class chip_with_registers_reg_Type_first_field_0x0x29b775848e_cls(FieldReadWrite):
     
     """
     Class to represent a register field in the register model
@@ -704,7 +713,7 @@ class chip_with_registers_reg_Type_first_field_0x0x175238b58e_cls(FieldReadWrite
 
         
     
-class chip_with_registers_reg_Type_second_field_0x0x175238b5c1_cls(FieldReadWrite):
+class chip_with_registers_reg_Type_second_field_0x0x29b77584c1_cls(FieldEnumReadWrite):
     
     """
     Class to represent a register field in the register model
@@ -721,6 +730,8 @@ class chip_with_registers_reg_Type_second_field_0x0x175238b5c1_cls(FieldReadWrit
         The enumeration class for this field
         """
         return self.__enum_cls
+
+        
     def decode_read_value(self, value: int) -> chip_with_registers_twoBitFieldType_enumcls:
         """
         extracts the field value from a register value, by applying the bit
@@ -754,6 +765,8 @@ class chip_with_registers_reg_Type_second_field_0x0x175238b5c1_cls(FieldReadWrit
         """
         reg_value = self.parent_register.read()
         return self.decode_read_value(reg_value)
+        
+
         
     def encode_write_value(self, value: chip_with_registers_twoBitFieldType_enumcls) -> int: # type: ignore[override]
 
@@ -789,7 +802,7 @@ class chip_with_registers_reg_Type_second_field_0x0x175238b5c1_cls(FieldReadWrit
     
 
         
-class chip_with_registers_reg_Type_0x0x175238b585_cls(RegReadWrite):
+class chip_with_registers_reg_Type_0x0x29b7758485_cls(RegReadWrite):
     """
     Class to represent a register in the register model
 
@@ -814,7 +827,7 @@ class chip_with_registers_reg_Type_0x0x175238b585_cls(RegReadWrite):
                          parent=parent)
 
         # build the field attributes
-        self.__first_field = chip_with_registers_reg_Type_first_field_0x0x175238b58e_cls(
+        self.__first_field = chip_with_registers_reg_Type_first_field_0x0x29b775848e_cls(
             parent_register=self,
             size_props=FieldSizeProps(
                 width=16,
@@ -827,7 +840,7 @@ class chip_with_registers_reg_Type_0x0x175238b585_cls(RegReadWrite):
                 is_volatile=False),
             logger_handle=logger_handle+'.first_field',
             inst_name='first_field')
-        self.__second_field = chip_with_registers_reg_Type_second_field_0x0x175238b5c1_cls(
+        self.__second_field = chip_with_registers_reg_Type_second_field_0x0x29b77584c1_cls(
             parent_register=self,
             size_props=FieldSizeProps(
                 width=2,
@@ -909,7 +922,7 @@ class chip_with_registers_reg_Type_0x0x175238b585_cls(RegReadWrite):
 
     # build the properties for the fields
     @property
-    def first_field(self) -> chip_with_registers_reg_Type_first_field_0x0x175238b58e_cls:
+    def first_field(self) -> chip_with_registers_reg_Type_first_field_0x0x29b775848e_cls:
         """
         Property to access first_field field of the register
 
@@ -918,7 +931,7 @@ class chip_with_registers_reg_Type_0x0x175238b585_cls(RegReadWrite):
         return self.__first_field
         
     @property
-    def second_field(self) -> chip_with_registers_reg_Type_second_field_0x0x175238b5c1_cls:
+    def second_field(self) -> chip_with_registers_reg_Type_second_field_0x0x29b77584c1_cls:
         """
         Property to access second_field field of the register
 
@@ -930,7 +943,7 @@ class chip_with_registers_reg_Type_0x0x175238b585_cls(RegReadWrite):
 
         
     
-class chip_with_registers_reg_Type_first_field_0x0x175238b5fd_cls(FieldReadWrite):
+class chip_with_registers_reg_Type_first_field_0x0x29b77584fd_cls(FieldReadWrite):
     
     """
     Class to represent a register field in the register model
@@ -943,7 +956,7 @@ class chip_with_registers_reg_Type_first_field_0x0x175238b5fd_cls(FieldReadWrite
 
         
     
-class chip_with_registers_reg_Type_second_field_0x0x175238b934_cls(FieldReadWrite):
+class chip_with_registers_reg_Type_second_field_0x0x29b7758834_cls(FieldEnumReadWrite):
     
     """
     Class to represent a register field in the register model
@@ -960,6 +973,8 @@ class chip_with_registers_reg_Type_second_field_0x0x175238b934_cls(FieldReadWrit
         The enumeration class for this field
         """
         return self.__enum_cls
+
+        
     def decode_read_value(self, value: int) -> chip_with_registers_twoBitFieldType_enumcls:
         """
         extracts the field value from a register value, by applying the bit
@@ -993,6 +1008,8 @@ class chip_with_registers_reg_Type_second_field_0x0x175238b934_cls(FieldReadWrit
         """
         reg_value = self.parent_register.read()
         return self.decode_read_value(reg_value)
+        
+
         
     def encode_write_value(self, value: chip_with_registers_twoBitFieldType_enumcls) -> int: # type: ignore[override]
 
@@ -1028,7 +1045,7 @@ class chip_with_registers_reg_Type_second_field_0x0x175238b934_cls(FieldReadWrit
     
 
         
-class chip_with_registers_reg_Type_0x0x175238b588_cls(RegReadWrite):
+class chip_with_registers_reg_Type_0x0x29b7758488_cls(RegReadWrite):
     """
     Class to represent a register in the register model
 
@@ -1053,7 +1070,7 @@ class chip_with_registers_reg_Type_0x0x175238b588_cls(RegReadWrite):
                          parent=parent)
 
         # build the field attributes
-        self.__first_field = chip_with_registers_reg_Type_first_field_0x0x175238b5fd_cls(
+        self.__first_field = chip_with_registers_reg_Type_first_field_0x0x29b77584fd_cls(
             parent_register=self,
             size_props=FieldSizeProps(
                 width=16,
@@ -1066,7 +1083,7 @@ class chip_with_registers_reg_Type_0x0x175238b588_cls(RegReadWrite):
                 is_volatile=False),
             logger_handle=logger_handle+'.first_field',
             inst_name='first_field')
-        self.__second_field = chip_with_registers_reg_Type_second_field_0x0x175238b934_cls(
+        self.__second_field = chip_with_registers_reg_Type_second_field_0x0x29b7758834_cls(
             parent_register=self,
             size_props=FieldSizeProps(
                 width=2,
@@ -1148,7 +1165,7 @@ class chip_with_registers_reg_Type_0x0x175238b588_cls(RegReadWrite):
 
     # build the properties for the fields
     @property
-    def first_field(self) -> chip_with_registers_reg_Type_first_field_0x0x175238b5fd_cls:
+    def first_field(self) -> chip_with_registers_reg_Type_first_field_0x0x29b77584fd_cls:
         """
         Property to access first_field field of the register
 
@@ -1157,7 +1174,7 @@ class chip_with_registers_reg_Type_0x0x175238b588_cls(RegReadWrite):
         return self.__first_field
         
     @property
-    def second_field(self) -> chip_with_registers_reg_Type_second_field_0x0x175238b934_cls:
+    def second_field(self) -> chip_with_registers_reg_Type_second_field_0x0x29b7758834_cls:
         """
         Property to access second_field field of the register
 
@@ -1165,7 +1182,7 @@ class chip_with_registers_reg_Type_0x0x175238b588_cls(RegReadWrite):
         """
         return self.__second_field
         
-class chip_with_registers_reg_Type_0x0x175238b588_array_cls(RegReadWriteArray):
+class chip_with_registers_reg_Type_0x0x29b7758488_array_cls(RegReadWriteArray):
     """
     Class to represent a register array in the register model
     """
@@ -1173,23 +1190,23 @@ class chip_with_registers_reg_Type_0x0x175238b588_array_cls(RegReadWriteArray):
 
     def __init__(self, logger_handle: str, inst_name: str,
                  parent: Union[RegFile, AddressMap, Memory],
-                 elements: Tuple[chip_with_registers_reg_Type_0x0x175238b588_cls, ...]):
+                 elements: Tuple[chip_with_registers_reg_Type_0x0x29b7758488_cls, ...]):
 
         for element in elements:
-            if not isinstance(element, chip_with_registers_reg_Type_0x0x175238b588_cls):
-                raise TypeError(f'All Elements should be of type chip_with_registers_reg_Type_0x0x175238b588_cls, '
+            if not isinstance(element, chip_with_registers_reg_Type_0x0x29b7758488_cls):
+                raise TypeError(f'All Elements should be of type chip_with_registers_reg_Type_0x0x29b7758488_cls, '
                                 f'found {type(element)}')
 
         super().__init__(logger_handle=logger_handle, inst_name=inst_name,
                          parent=parent, elements=elements)
 
-    def __getitem__(self, item) -> Union[chip_with_registers_reg_Type_0x0x175238b588_cls, Tuple[chip_with_registers_reg_Type_0x0x175238b588_cls, ...]]:
+    def __getitem__(self, item) -> Union[chip_with_registers_reg_Type_0x0x29b7758488_cls, Tuple[chip_with_registers_reg_Type_0x0x29b7758488_cls, ...]]:
         # this cast is OK because an explict typing check was done in the __init__
-        return cast(Union[chip_with_registers_reg_Type_0x0x175238b588_cls, Tuple[chip_with_registers_reg_Type_0x0x175238b588_cls, ...]], super().__getitem__(item))
+        return cast(Union[chip_with_registers_reg_Type_0x0x29b7758488_cls, Tuple[chip_with_registers_reg_Type_0x0x29b7758488_cls, ...]], super().__getitem__(item))
     
 
         
-class chip_with_registers_regfile_Type_0x0x175238b08e_cls(RegFile):
+class chip_with_registers_regfile_Type_0x0x29b7757f8e_cls(RegFile):
     """
     Class to represent a register file in the register model
 
@@ -1214,26 +1231,26 @@ class chip_with_registers_regfile_Type_0x0x175238b08e_cls(RegFile):
         # instance of objects within the class
         
             
-        self.__single_reg = chip_with_registers_reg_Type_0x0x175238b585_cls(callbacks=callbacks,
+        self.__single_reg = chip_with_registers_reg_Type_0x0x29b7758485_cls(callbacks=callbacks,
                                                                      address=self.address+0,
                                                                      logger_handle=logger_handle+'.single_reg',
                                                                                        inst_name='single_reg', parent=self)
         
             
-        self.__reg_array = chip_with_registers_reg_Type_0x0x175238b588_array_cls(elements=( 
-                                                                                                 chip_with_registers_reg_Type_0x0x175238b588_cls(callbacks=callbacks,
+        self.__reg_array = chip_with_registers_reg_Type_0x0x29b7758488_array_cls(elements=( 
+                                                                                                 chip_with_registers_reg_Type_0x0x29b7758488_cls(callbacks=callbacks,
                                                                                                  address=self.address+4+(0 * 4),
                                                                                                  logger_handle=logger_handle+'.reg_array[0]',
                                                                                                  inst_name='reg_array[0]', parent=self),
-                                                                                                 chip_with_registers_reg_Type_0x0x175238b588_cls(callbacks=callbacks,
+                                                                                                 chip_with_registers_reg_Type_0x0x29b7758488_cls(callbacks=callbacks,
                                                                                                  address=self.address+4+(1 * 4),
                                                                                                  logger_handle=logger_handle+'.reg_array[1]',
                                                                                                  inst_name='reg_array[1]', parent=self),
-                                                                                                 chip_with_registers_reg_Type_0x0x175238b588_cls(callbacks=callbacks,
+                                                                                                 chip_with_registers_reg_Type_0x0x29b7758488_cls(callbacks=callbacks,
                                                                                                  address=self.address+4+(2 * 4),
                                                                                                  logger_handle=logger_handle+'.reg_array[2]',
                                                                                                  inst_name='reg_array[2]', parent=self),
-                                                                                                 chip_with_registers_reg_Type_0x0x175238b588_cls(callbacks=callbacks,
+                                                                                                 chip_with_registers_reg_Type_0x0x29b7758488_cls(callbacks=callbacks,
                                                                                                  address=self.address+4+(3 * 4),
                                                                                                  logger_handle=logger_handle+'.reg_array[3]',
                                                                                                  inst_name='reg_array[3]', parent=self) ),
@@ -1243,7 +1260,7 @@ class chip_with_registers_regfile_Type_0x0x175238b08e_cls(RegFile):
 
     # properties for Register and RegisterFiles
     @property
-    def single_reg(self) -> chip_with_registers_reg_Type_0x0x175238b585_cls:
+    def single_reg(self) -> chip_with_registers_reg_Type_0x0x29b7758485_cls:
         """
         Property to access single_reg 
 
@@ -1252,7 +1269,7 @@ class chip_with_registers_regfile_Type_0x0x175238b08e_cls(RegFile):
         return self.__single_reg
     
     @property
-    def reg_array(self) -> chip_with_registers_reg_Type_0x0x175238b588_array_cls:
+    def reg_array(self) -> chip_with_registers_reg_Type_0x0x29b7758488_array_cls:
         """
         Property to access reg_array array
 
@@ -1348,7 +1365,7 @@ class chip_with_registers_cls(AddressMap):
                                                                                                                                                 inst_name='regfile_array[1]', parent=self) ),
                                                                                         logger_handle=logger_handle+'.regfile_array',
                                                                                         inst_name='regfile_array', parent=self)
-        self.__single_regfile = chip_with_registers_regfile_Type_0x0x175238b08e_cls(callbacks=callbacks,
+        self.__single_regfile = chip_with_registers_regfile_Type_0x0x29b7757f8e_cls(callbacks=callbacks,
                                                                                 address=self.address+64,
                                                                                 logger_handle=logger_handle+'.single_regfile',
                                                                                 inst_name='single_regfile', parent=self)
@@ -1363,7 +1380,7 @@ class chip_with_registers_cls(AddressMap):
         return self.__regfile_array
         
     @property
-    def single_regfile(self) -> chip_with_registers_regfile_Type_0x0x175238b08e_cls:
+    def single_regfile(self) -> chip_with_registers_regfile_Type_0x0x29b7757f8e_cls:
         """
         Property to access single_regfile 
 

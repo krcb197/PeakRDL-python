@@ -5160,6 +5160,481 @@ class chip_with_registers_TestCase(unittest.TestCase):
 
     
 
+    def test_adding_attributes(self):
+        """
+        Walk the address map and attempt to set a new value on each node
+
+        The attribute name: cppkbrgmgeloagvfgjjeiiushygirh was randomly generated to be unlikely to
+        every be a attribute name
+
+        """
+        with self.assertRaises(AttributeError):
+            self.dut.regfile_array[0].cppkbrgmgeloagvfgjjeiiushygirh = 1
+        with self.assertRaises(AttributeError):
+            self.dut.regfile_array[0].single_reg.cppkbrgmgeloagvfgjjeiiushygirh = 1
+        with self.assertRaises(AttributeError):
+            self.dut.regfile_array[0].single_reg.first_field.cppkbrgmgeloagvfgjjeiiushygirh = 1
+        with self.assertRaises(AttributeError):
+            self.dut.regfile_array[0].single_reg.second_field.cppkbrgmgeloagvfgjjeiiushygirh = 1
+        with self.assertRaises(AttributeError):
+            self.dut.regfile_array[0].reg_array[0].cppkbrgmgeloagvfgjjeiiushygirh = 1
+        with self.assertRaises(AttributeError):
+            self.dut.regfile_array[0].reg_array[0].first_field.cppkbrgmgeloagvfgjjeiiushygirh = 1
+        with self.assertRaises(AttributeError):
+            self.dut.regfile_array[0].reg_array[0].second_field.cppkbrgmgeloagvfgjjeiiushygirh = 1
+        with self.assertRaises(AttributeError):
+            self.dut.regfile_array[0].reg_array[1].cppkbrgmgeloagvfgjjeiiushygirh = 1
+        with self.assertRaises(AttributeError):
+            self.dut.regfile_array[0].reg_array[1].first_field.cppkbrgmgeloagvfgjjeiiushygirh = 1
+        with self.assertRaises(AttributeError):
+            self.dut.regfile_array[0].reg_array[1].second_field.cppkbrgmgeloagvfgjjeiiushygirh = 1
+        with self.assertRaises(AttributeError):
+            self.dut.regfile_array[0].reg_array[2].cppkbrgmgeloagvfgjjeiiushygirh = 1
+        with self.assertRaises(AttributeError):
+            self.dut.regfile_array[0].reg_array[2].first_field.cppkbrgmgeloagvfgjjeiiushygirh = 1
+        with self.assertRaises(AttributeError):
+            self.dut.regfile_array[0].reg_array[2].second_field.cppkbrgmgeloagvfgjjeiiushygirh = 1
+        with self.assertRaises(AttributeError):
+            self.dut.regfile_array[0].reg_array[3].cppkbrgmgeloagvfgjjeiiushygirh = 1
+        with self.assertRaises(AttributeError):
+            self.dut.regfile_array[0].reg_array[3].first_field.cppkbrgmgeloagvfgjjeiiushygirh = 1
+        with self.assertRaises(AttributeError):
+            self.dut.regfile_array[0].reg_array[3].second_field.cppkbrgmgeloagvfgjjeiiushygirh = 1
+        with self.assertRaises(AttributeError):
+            self.dut.regfile_array[1].cppkbrgmgeloagvfgjjeiiushygirh = 1
+        with self.assertRaises(AttributeError):
+            self.dut.regfile_array[1].single_reg.cppkbrgmgeloagvfgjjeiiushygirh = 1
+        with self.assertRaises(AttributeError):
+            self.dut.regfile_array[1].single_reg.first_field.cppkbrgmgeloagvfgjjeiiushygirh = 1
+        with self.assertRaises(AttributeError):
+            self.dut.regfile_array[1].single_reg.second_field.cppkbrgmgeloagvfgjjeiiushygirh = 1
+        with self.assertRaises(AttributeError):
+            self.dut.regfile_array[1].reg_array[0].cppkbrgmgeloagvfgjjeiiushygirh = 1
+        with self.assertRaises(AttributeError):
+            self.dut.regfile_array[1].reg_array[0].first_field.cppkbrgmgeloagvfgjjeiiushygirh = 1
+        with self.assertRaises(AttributeError):
+            self.dut.regfile_array[1].reg_array[0].second_field.cppkbrgmgeloagvfgjjeiiushygirh = 1
+        with self.assertRaises(AttributeError):
+            self.dut.regfile_array[1].reg_array[1].cppkbrgmgeloagvfgjjeiiushygirh = 1
+        with self.assertRaises(AttributeError):
+            self.dut.regfile_array[1].reg_array[1].first_field.cppkbrgmgeloagvfgjjeiiushygirh = 1
+        with self.assertRaises(AttributeError):
+            self.dut.regfile_array[1].reg_array[1].second_field.cppkbrgmgeloagvfgjjeiiushygirh = 1
+        with self.assertRaises(AttributeError):
+            self.dut.regfile_array[1].reg_array[2].cppkbrgmgeloagvfgjjeiiushygirh = 1
+        with self.assertRaises(AttributeError):
+            self.dut.regfile_array[1].reg_array[2].first_field.cppkbrgmgeloagvfgjjeiiushygirh = 1
+        with self.assertRaises(AttributeError):
+            self.dut.regfile_array[1].reg_array[2].second_field.cppkbrgmgeloagvfgjjeiiushygirh = 1
+        with self.assertRaises(AttributeError):
+            self.dut.regfile_array[1].reg_array[3].cppkbrgmgeloagvfgjjeiiushygirh = 1
+        with self.assertRaises(AttributeError):
+            self.dut.regfile_array[1].reg_array[3].first_field.cppkbrgmgeloagvfgjjeiiushygirh = 1
+        with self.assertRaises(AttributeError):
+            self.dut.regfile_array[1].reg_array[3].second_field.cppkbrgmgeloagvfgjjeiiushygirh = 1
+        with self.assertRaises(AttributeError):
+            self.dut.single_regfile.cppkbrgmgeloagvfgjjeiiushygirh = 1
+        with self.assertRaises(AttributeError):
+            self.dut.single_regfile.single_reg.cppkbrgmgeloagvfgjjeiiushygirh = 1
+        with self.assertRaises(AttributeError):
+            self.dut.single_regfile.single_reg.first_field.cppkbrgmgeloagvfgjjeiiushygirh = 1
+        with self.assertRaises(AttributeError):
+            self.dut.single_regfile.single_reg.second_field.cppkbrgmgeloagvfgjjeiiushygirh = 1
+        with self.assertRaises(AttributeError):
+            self.dut.single_regfile.reg_array[0].cppkbrgmgeloagvfgjjeiiushygirh = 1
+        with self.assertRaises(AttributeError):
+            self.dut.single_regfile.reg_array[0].first_field.cppkbrgmgeloagvfgjjeiiushygirh = 1
+        with self.assertRaises(AttributeError):
+            self.dut.single_regfile.reg_array[0].second_field.cppkbrgmgeloagvfgjjeiiushygirh = 1
+        with self.assertRaises(AttributeError):
+            self.dut.single_regfile.reg_array[1].cppkbrgmgeloagvfgjjeiiushygirh = 1
+        with self.assertRaises(AttributeError):
+            self.dut.single_regfile.reg_array[1].first_field.cppkbrgmgeloagvfgjjeiiushygirh = 1
+        with self.assertRaises(AttributeError):
+            self.dut.single_regfile.reg_array[1].second_field.cppkbrgmgeloagvfgjjeiiushygirh = 1
+        with self.assertRaises(AttributeError):
+            self.dut.single_regfile.reg_array[2].cppkbrgmgeloagvfgjjeiiushygirh = 1
+        with self.assertRaises(AttributeError):
+            self.dut.single_regfile.reg_array[2].first_field.cppkbrgmgeloagvfgjjeiiushygirh = 1
+        with self.assertRaises(AttributeError):
+            self.dut.single_regfile.reg_array[2].second_field.cppkbrgmgeloagvfgjjeiiushygirh = 1
+        with self.assertRaises(AttributeError):
+            self.dut.single_regfile.reg_array[3].cppkbrgmgeloagvfgjjeiiushygirh = 1
+        with self.assertRaises(AttributeError):
+            self.dut.single_regfile.reg_array[3].first_field.cppkbrgmgeloagvfgjjeiiushygirh = 1
+        with self.assertRaises(AttributeError):
+            self.dut.single_regfile.reg_array[3].second_field.cppkbrgmgeloagvfgjjeiiushygirh = 1
+
+    
+
+    
+
+    
+
+    
+
+    def test_traversal_iterators(self):
+        """
+        Walk the address map and check that the iterators for each node as as expected
+        """
+            
+        
+        expected_readable_regs = [self.dut.regfile_array[0].single_reg, self.dut.regfile_array[0].reg_array[0], self.dut.regfile_array[0].reg_array[1], self.dut.regfile_array[0].reg_array[2], self.dut.regfile_array[0].reg_array[3],  ]
+        readable_regs = []
+        for readable_reg in self.dut.regfile_array[0].get_readable_registers(unroll=True):
+            readable_regs.append(readable_reg)
+        self.assertCountEqual(expected_readable_regs, readable_regs)
+        
+        expected_readable_regs = [self.dut.regfile_array[0].single_reg, self.dut.regfile_array[0].reg_array,  ]
+        readable_regs = []
+        for readable_reg in self.dut.regfile_array[0].get_readable_registers(unroll=False):
+            readable_regs.append(readable_reg)
+        self.assertCountEqual(expected_readable_regs, readable_regs)
+    
+            
+        
+        expected_writable_regs = [self.dut.regfile_array[0].single_reg, self.dut.regfile_array[0].reg_array[0], self.dut.regfile_array[0].reg_array[1], self.dut.regfile_array[0].reg_array[2], self.dut.regfile_array[0].reg_array[3],  ]
+        writable_regs = []
+        for writable_reg in self.dut.regfile_array[0].get_writable_registers(unroll=True):
+            writable_regs.append(writable_reg)
+        self.assertCountEqual(expected_writable_regs, writable_regs)
+        
+        expected_writable_regs = [self.dut.regfile_array[0].single_reg, self.dut.regfile_array[0].reg_array,  ]
+        writable_regs = []
+        for writable_reg in self.dut.regfile_array[0].get_writable_registers(unroll=False):
+            writable_regs.append(writable_reg)
+        self.assertCountEqual(expected_writable_regs, writable_regs)
+    
+            
+        
+        expected_sections = [ ]
+        sections = []
+        for section in self.dut.regfile_array[0].get_sections(unroll=True):
+            sections.append(section)
+        self.assertCountEqual(expected_sections, sections)
+        
+        expected_sections = [ ]
+        sections = []
+        for section in self.dut.regfile_array[0].get_sections(unroll=False):
+            sections.append(section)
+        self.assertCountEqual(expected_sections, sections)
+    
+        self.assertFalse(hasattr(self.dut.regfile_array[0], 'get_memories'))
+            
+                
+                
+        expected_writable_fields = [self.dut.regfile_array[0].single_reg.first_field, self.dut.regfile_array[0].single_reg.second_field,  ]
+        writable_fields = []
+        for writable_field in self.dut.regfile_array[0].single_reg.writable_fields:
+            writable_fields.append(writable_field)
+        self.assertCountEqual(expected_writable_fields, writable_fields)
+                
+                
+        expected_readable_fields = [self.dut.regfile_array[0].single_reg.first_field, self.dut.regfile_array[0].single_reg.second_field,  ]
+        readable_fields = []
+        for readable_field in self.dut.regfile_array[0].single_reg.readable_fields:
+            readable_fields.append(readable_field)
+        self.assertCountEqual(expected_readable_fields, readable_fields)
+                
+                
+                
+        expected_writable_fields = [self.dut.regfile_array[0].reg_array[0].first_field, self.dut.regfile_array[0].reg_array[0].second_field,  ]
+        writable_fields = []
+        for writable_field in self.dut.regfile_array[0].reg_array[0].writable_fields:
+            writable_fields.append(writable_field)
+        self.assertCountEqual(expected_writable_fields, writable_fields)
+                
+                
+        expected_readable_fields = [self.dut.regfile_array[0].reg_array[0].first_field, self.dut.regfile_array[0].reg_array[0].second_field,  ]
+        readable_fields = []
+        for readable_field in self.dut.regfile_array[0].reg_array[0].readable_fields:
+            readable_fields.append(readable_field)
+        self.assertCountEqual(expected_readable_fields, readable_fields)
+                
+                
+                
+        expected_writable_fields = [self.dut.regfile_array[0].reg_array[1].first_field, self.dut.regfile_array[0].reg_array[1].second_field,  ]
+        writable_fields = []
+        for writable_field in self.dut.regfile_array[0].reg_array[1].writable_fields:
+            writable_fields.append(writable_field)
+        self.assertCountEqual(expected_writable_fields, writable_fields)
+                
+                
+        expected_readable_fields = [self.dut.regfile_array[0].reg_array[1].first_field, self.dut.regfile_array[0].reg_array[1].second_field,  ]
+        readable_fields = []
+        for readable_field in self.dut.regfile_array[0].reg_array[1].readable_fields:
+            readable_fields.append(readable_field)
+        self.assertCountEqual(expected_readable_fields, readable_fields)
+                
+                
+                
+        expected_writable_fields = [self.dut.regfile_array[0].reg_array[2].first_field, self.dut.regfile_array[0].reg_array[2].second_field,  ]
+        writable_fields = []
+        for writable_field in self.dut.regfile_array[0].reg_array[2].writable_fields:
+            writable_fields.append(writable_field)
+        self.assertCountEqual(expected_writable_fields, writable_fields)
+                
+                
+        expected_readable_fields = [self.dut.regfile_array[0].reg_array[2].first_field, self.dut.regfile_array[0].reg_array[2].second_field,  ]
+        readable_fields = []
+        for readable_field in self.dut.regfile_array[0].reg_array[2].readable_fields:
+            readable_fields.append(readable_field)
+        self.assertCountEqual(expected_readable_fields, readable_fields)
+                
+                
+                
+        expected_writable_fields = [self.dut.regfile_array[0].reg_array[3].first_field, self.dut.regfile_array[0].reg_array[3].second_field,  ]
+        writable_fields = []
+        for writable_field in self.dut.regfile_array[0].reg_array[3].writable_fields:
+            writable_fields.append(writable_field)
+        self.assertCountEqual(expected_writable_fields, writable_fields)
+                
+                
+        expected_readable_fields = [self.dut.regfile_array[0].reg_array[3].first_field, self.dut.regfile_array[0].reg_array[3].second_field,  ]
+        readable_fields = []
+        for readable_field in self.dut.regfile_array[0].reg_array[3].readable_fields:
+            readable_fields.append(readable_field)
+        self.assertCountEqual(expected_readable_fields, readable_fields)
+                
+            
+        
+        expected_readable_regs = [self.dut.regfile_array[1].single_reg, self.dut.regfile_array[1].reg_array[0], self.dut.regfile_array[1].reg_array[1], self.dut.regfile_array[1].reg_array[2], self.dut.regfile_array[1].reg_array[3],  ]
+        readable_regs = []
+        for readable_reg in self.dut.regfile_array[1].get_readable_registers(unroll=True):
+            readable_regs.append(readable_reg)
+        self.assertCountEqual(expected_readable_regs, readable_regs)
+        
+        expected_readable_regs = [self.dut.regfile_array[1].single_reg, self.dut.regfile_array[1].reg_array,  ]
+        readable_regs = []
+        for readable_reg in self.dut.regfile_array[1].get_readable_registers(unroll=False):
+            readable_regs.append(readable_reg)
+        self.assertCountEqual(expected_readable_regs, readable_regs)
+    
+            
+        
+        expected_writable_regs = [self.dut.regfile_array[1].single_reg, self.dut.regfile_array[1].reg_array[0], self.dut.regfile_array[1].reg_array[1], self.dut.regfile_array[1].reg_array[2], self.dut.regfile_array[1].reg_array[3],  ]
+        writable_regs = []
+        for writable_reg in self.dut.regfile_array[1].get_writable_registers(unroll=True):
+            writable_regs.append(writable_reg)
+        self.assertCountEqual(expected_writable_regs, writable_regs)
+        
+        expected_writable_regs = [self.dut.regfile_array[1].single_reg, self.dut.regfile_array[1].reg_array,  ]
+        writable_regs = []
+        for writable_reg in self.dut.regfile_array[1].get_writable_registers(unroll=False):
+            writable_regs.append(writable_reg)
+        self.assertCountEqual(expected_writable_regs, writable_regs)
+    
+            
+        
+        expected_sections = [ ]
+        sections = []
+        for section in self.dut.regfile_array[1].get_sections(unroll=True):
+            sections.append(section)
+        self.assertCountEqual(expected_sections, sections)
+        
+        expected_sections = [ ]
+        sections = []
+        for section in self.dut.regfile_array[1].get_sections(unroll=False):
+            sections.append(section)
+        self.assertCountEqual(expected_sections, sections)
+    
+        self.assertFalse(hasattr(self.dut.regfile_array[1], 'get_memories'))
+            
+                
+                
+        expected_writable_fields = [self.dut.regfile_array[1].single_reg.first_field, self.dut.regfile_array[1].single_reg.second_field,  ]
+        writable_fields = []
+        for writable_field in self.dut.regfile_array[1].single_reg.writable_fields:
+            writable_fields.append(writable_field)
+        self.assertCountEqual(expected_writable_fields, writable_fields)
+                
+                
+        expected_readable_fields = [self.dut.regfile_array[1].single_reg.first_field, self.dut.regfile_array[1].single_reg.second_field,  ]
+        readable_fields = []
+        for readable_field in self.dut.regfile_array[1].single_reg.readable_fields:
+            readable_fields.append(readable_field)
+        self.assertCountEqual(expected_readable_fields, readable_fields)
+                
+                
+                
+        expected_writable_fields = [self.dut.regfile_array[1].reg_array[0].first_field, self.dut.regfile_array[1].reg_array[0].second_field,  ]
+        writable_fields = []
+        for writable_field in self.dut.regfile_array[1].reg_array[0].writable_fields:
+            writable_fields.append(writable_field)
+        self.assertCountEqual(expected_writable_fields, writable_fields)
+                
+                
+        expected_readable_fields = [self.dut.regfile_array[1].reg_array[0].first_field, self.dut.regfile_array[1].reg_array[0].second_field,  ]
+        readable_fields = []
+        for readable_field in self.dut.regfile_array[1].reg_array[0].readable_fields:
+            readable_fields.append(readable_field)
+        self.assertCountEqual(expected_readable_fields, readable_fields)
+                
+                
+                
+        expected_writable_fields = [self.dut.regfile_array[1].reg_array[1].first_field, self.dut.regfile_array[1].reg_array[1].second_field,  ]
+        writable_fields = []
+        for writable_field in self.dut.regfile_array[1].reg_array[1].writable_fields:
+            writable_fields.append(writable_field)
+        self.assertCountEqual(expected_writable_fields, writable_fields)
+                
+                
+        expected_readable_fields = [self.dut.regfile_array[1].reg_array[1].first_field, self.dut.regfile_array[1].reg_array[1].second_field,  ]
+        readable_fields = []
+        for readable_field in self.dut.regfile_array[1].reg_array[1].readable_fields:
+            readable_fields.append(readable_field)
+        self.assertCountEqual(expected_readable_fields, readable_fields)
+                
+                
+                
+        expected_writable_fields = [self.dut.regfile_array[1].reg_array[2].first_field, self.dut.regfile_array[1].reg_array[2].second_field,  ]
+        writable_fields = []
+        for writable_field in self.dut.regfile_array[1].reg_array[2].writable_fields:
+            writable_fields.append(writable_field)
+        self.assertCountEqual(expected_writable_fields, writable_fields)
+                
+                
+        expected_readable_fields = [self.dut.regfile_array[1].reg_array[2].first_field, self.dut.regfile_array[1].reg_array[2].second_field,  ]
+        readable_fields = []
+        for readable_field in self.dut.regfile_array[1].reg_array[2].readable_fields:
+            readable_fields.append(readable_field)
+        self.assertCountEqual(expected_readable_fields, readable_fields)
+                
+                
+                
+        expected_writable_fields = [self.dut.regfile_array[1].reg_array[3].first_field, self.dut.regfile_array[1].reg_array[3].second_field,  ]
+        writable_fields = []
+        for writable_field in self.dut.regfile_array[1].reg_array[3].writable_fields:
+            writable_fields.append(writable_field)
+        self.assertCountEqual(expected_writable_fields, writable_fields)
+                
+                
+        expected_readable_fields = [self.dut.regfile_array[1].reg_array[3].first_field, self.dut.regfile_array[1].reg_array[3].second_field,  ]
+        readable_fields = []
+        for readable_field in self.dut.regfile_array[1].reg_array[3].readable_fields:
+            readable_fields.append(readable_field)
+        self.assertCountEqual(expected_readable_fields, readable_fields)
+                
+            
+        
+        expected_readable_regs = [self.dut.single_regfile.single_reg, self.dut.single_regfile.reg_array[0], self.dut.single_regfile.reg_array[1], self.dut.single_regfile.reg_array[2], self.dut.single_regfile.reg_array[3],  ]
+        readable_regs = []
+        for readable_reg in self.dut.single_regfile.get_readable_registers(unroll=True):
+            readable_regs.append(readable_reg)
+        self.assertCountEqual(expected_readable_regs, readable_regs)
+        
+        expected_readable_regs = [self.dut.single_regfile.single_reg, self.dut.single_regfile.reg_array,  ]
+        readable_regs = []
+        for readable_reg in self.dut.single_regfile.get_readable_registers(unroll=False):
+            readable_regs.append(readable_reg)
+        self.assertCountEqual(expected_readable_regs, readable_regs)
+    
+            
+        
+        expected_writable_regs = [self.dut.single_regfile.single_reg, self.dut.single_regfile.reg_array[0], self.dut.single_regfile.reg_array[1], self.dut.single_regfile.reg_array[2], self.dut.single_regfile.reg_array[3],  ]
+        writable_regs = []
+        for writable_reg in self.dut.single_regfile.get_writable_registers(unroll=True):
+            writable_regs.append(writable_reg)
+        self.assertCountEqual(expected_writable_regs, writable_regs)
+        
+        expected_writable_regs = [self.dut.single_regfile.single_reg, self.dut.single_regfile.reg_array,  ]
+        writable_regs = []
+        for writable_reg in self.dut.single_regfile.get_writable_registers(unroll=False):
+            writable_regs.append(writable_reg)
+        self.assertCountEqual(expected_writable_regs, writable_regs)
+    
+            
+        
+        expected_sections = [ ]
+        sections = []
+        for section in self.dut.single_regfile.get_sections(unroll=True):
+            sections.append(section)
+        self.assertCountEqual(expected_sections, sections)
+        
+        expected_sections = [ ]
+        sections = []
+        for section in self.dut.single_regfile.get_sections(unroll=False):
+            sections.append(section)
+        self.assertCountEqual(expected_sections, sections)
+    
+        self.assertFalse(hasattr(self.dut.single_regfile, 'get_memories'))
+            
+                
+                
+        expected_writable_fields = [self.dut.single_regfile.single_reg.first_field, self.dut.single_regfile.single_reg.second_field,  ]
+        writable_fields = []
+        for writable_field in self.dut.single_regfile.single_reg.writable_fields:
+            writable_fields.append(writable_field)
+        self.assertCountEqual(expected_writable_fields, writable_fields)
+                
+                
+        expected_readable_fields = [self.dut.single_regfile.single_reg.first_field, self.dut.single_regfile.single_reg.second_field,  ]
+        readable_fields = []
+        for readable_field in self.dut.single_regfile.single_reg.readable_fields:
+            readable_fields.append(readable_field)
+        self.assertCountEqual(expected_readable_fields, readable_fields)
+                
+                
+                
+        expected_writable_fields = [self.dut.single_regfile.reg_array[0].first_field, self.dut.single_regfile.reg_array[0].second_field,  ]
+        writable_fields = []
+        for writable_field in self.dut.single_regfile.reg_array[0].writable_fields:
+            writable_fields.append(writable_field)
+        self.assertCountEqual(expected_writable_fields, writable_fields)
+                
+                
+        expected_readable_fields = [self.dut.single_regfile.reg_array[0].first_field, self.dut.single_regfile.reg_array[0].second_field,  ]
+        readable_fields = []
+        for readable_field in self.dut.single_regfile.reg_array[0].readable_fields:
+            readable_fields.append(readable_field)
+        self.assertCountEqual(expected_readable_fields, readable_fields)
+                
+                
+                
+        expected_writable_fields = [self.dut.single_regfile.reg_array[1].first_field, self.dut.single_regfile.reg_array[1].second_field,  ]
+        writable_fields = []
+        for writable_field in self.dut.single_regfile.reg_array[1].writable_fields:
+            writable_fields.append(writable_field)
+        self.assertCountEqual(expected_writable_fields, writable_fields)
+                
+                
+        expected_readable_fields = [self.dut.single_regfile.reg_array[1].first_field, self.dut.single_regfile.reg_array[1].second_field,  ]
+        readable_fields = []
+        for readable_field in self.dut.single_regfile.reg_array[1].readable_fields:
+            readable_fields.append(readable_field)
+        self.assertCountEqual(expected_readable_fields, readable_fields)
+                
+                
+                
+        expected_writable_fields = [self.dut.single_regfile.reg_array[2].first_field, self.dut.single_regfile.reg_array[2].second_field,  ]
+        writable_fields = []
+        for writable_field in self.dut.single_regfile.reg_array[2].writable_fields:
+            writable_fields.append(writable_field)
+        self.assertCountEqual(expected_writable_fields, writable_fields)
+                
+                
+        expected_readable_fields = [self.dut.single_regfile.reg_array[2].first_field, self.dut.single_regfile.reg_array[2].second_field,  ]
+        readable_fields = []
+        for readable_field in self.dut.single_regfile.reg_array[2].readable_fields:
+            readable_fields.append(readable_field)
+        self.assertCountEqual(expected_readable_fields, readable_fields)
+                
+                
+                
+        expected_writable_fields = [self.dut.single_regfile.reg_array[3].first_field, self.dut.single_regfile.reg_array[3].second_field,  ]
+        writable_fields = []
+        for writable_field in self.dut.single_regfile.reg_array[3].writable_fields:
+            writable_fields.append(writable_field)
+        self.assertCountEqual(expected_writable_fields, writable_fields)
+                
+                
+        expected_readable_fields = [self.dut.single_regfile.reg_array[3].first_field, self.dut.single_regfile.reg_array[3].second_field,  ]
+        readable_fields = []
+        for readable_field in self.dut.single_regfile.reg_array[3].readable_fields:
+            readable_fields.append(readable_field)
+        self.assertCountEqual(expected_readable_fields, readable_fields)
+                
+
 class chip_with_registers_TestCase_BlockAccess(unittest.TestCase):
 
     def setUp(self):

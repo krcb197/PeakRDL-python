@@ -101,6 +101,7 @@ jobs:
         peakrdl python chip_with_registers.rdl -o .
         python -m reseting_registers
         python -m dumping_register_state_to_json_file
+        python -m writing_register_state_from_json_file
 
         cd ../..
 
