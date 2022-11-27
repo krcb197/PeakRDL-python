@@ -592,13 +592,13 @@ class FieldEnumReadWrite(FieldReadWrite, FieldEnum, ABC):
 
 class FieldEnumReadOnly(FieldReadOnly, FieldEnum, ABC):
     """
-    class for a read/write register field with an enumerated value
+    class for a read only register field with an enumerated value
     """
     __slots__: List[str] = []
 
 class FieldEnumWriteOnly(FieldWriteOnly, FieldEnum, ABC):
     """
-    class for a read/write register field with an enumerated value
+    class for a write only register field with an enumerated value
     """
     __slots__: List[str] = []
 
