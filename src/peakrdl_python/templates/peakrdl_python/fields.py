@@ -590,6 +590,15 @@ class FieldEnumReadWrite(FieldReadWrite, FieldEnum, ABC):
     """
     __slots__: List[str] = []
 
+    @property
+    def parent_register(self) -> RegReadWrite:
+        """
+        parent register the field is placed in
+        """
+
+        # this cast is OK because an explict typing check was done in the __init__
+        return cast(RegReadWrite, self.parent)
+
 class FieldEnumReadOnly(FieldReadOnly, FieldEnum, ABC):
     """
     class for a read only register field with an enumerated value
