@@ -1,0 +1,76 @@
+{
+    "regfile_array": [
+        {
+            "single_reg": {
+                "first_field": 0,
+                "second_field": 0
+            },
+            "reg_array": [
+                {
+                    "first_field": 0,
+                    "second_field": 0
+                },
+                {
+                    "first_field": 0,
+                    "second_field": 0
+                },
+                {
+                    "first_field": 0,
+                    "second_field": 0
+                },
+                {
+                    "first_field": 0,
+                    "second_field": 0
+                }
+            ]
+        },
+        {
+            "single_reg": {
+                "first_field": 0,
+                "second_field": 0
+            },
+            "reg_array": [
+                {
+                    "first_field": 0,
+                    "second_field": 0
+                },
+                {
+                    "first_field": 0,
+                    "second_field": 0
+                },
+                {
+                    "first_field": 0,
+                    "second_field": 0
+                },
+                {
+                    "first_field": 0,
+                    "second_field": 0
+                }
+            ]
+        }
+    ],
+    "single_regfile": {
+        "single_reg": {
+            "first_field": 0,
+            "second_field": 0
+        },
+        "reg_array": [
+            {
+                "first_field": 0,
+                "second_field": 0
+            },
+            {
+                "first_field": 0,
+                "second_field": 0
+            },
+            {
+                "first_field": 0,
+                "second_field": 0
+            },
+            {
+                "first_field": 0,
+                "second_field": 0
+            }
+        ]
+    }
+}
