@@ -278,36 +278,29 @@ def get_python_path_segments(node: Union[RegNode,
         if 'python_inst_name' in node_to_name.list_properties():
             node_name = node_to_name.get_property('python_inst_name')
         else:
+            node_processing = [{'type': RegNode,
+                                'safefunc': is_safe_register_name,
+                                'prefix' : 'register'},
+                                {'type': FieldNode,
+                                 'safefunc': is_safe_field_name,
+                                 'prefix' : 'field'},
+                               {'type': RegfileNode,
+                                'safefunc': is_safe_regfile_name,
+                                'prefix': 'regfile'},
+                               {'type': AddrmapNode,
+                                'safefunc': is_safe_addrmap_name,
+                                'prefix': 'addrmap'},
+                               {'type': MemNode,
+                                'safefunc': is_safe_memory_name,
+                                'prefix': 'memory'}
+            ]
 
-            if isinstance(node_to_name, RegNode):
-                if not is_safe_register_name(node_to_name):
-                    node_name = 'register_' + node_to_name.inst_name
-                else:
+            for node_process in node_processing:
+                if isinstance(node_to_name, node_process['type']):
                     node_name = node_to_name.inst_name
-
-            elif isinstance(node_to_name, FieldNode):
-                if not is_safe_field_name(node_to_name):
-                    node_name = 'field_' + node_to_name.inst_name
-                else:
-                    node_name = node_to_name.inst_name
-
-            elif isinstance(node_to_name, RegfileNode):
-                if not is_safe_regfile_name(node_to_name):
-                    node_name = 'regfile_' + node_to_name.inst_name
-                else:
-                    node_name = node_to_name.inst_name
-
-            elif isinstance(node_to_name, AddrmapNode):
-                if not is_safe_addrmap_name(node_to_name):
-                    node_name = 'addrmap_' + node_to_name.inst_name
-                else:
-                    node_name = node_to_name.inst_name
-
-            elif isinstance(node_to_name, MemNode):
-                if not is_safe_memory_name(node_to_name):
-                    node_name = 'memory_' + node_to_name.inst_name
-                else:
-                    node_name = node_to_name.inst_name
+                    if not node_process['safefunc'](node_to_name):
+                        node_name =  node_process['prefix'] + '_' + node_name
+                    break
             else:
                 raise TypeError(f'unhandled type {type(node_to_name)}')
 
@@ -332,8 +325,3 @@ def get_python_path_segments(node: Union[RegNode,
         return node_segment(child_node.parent, child_list=child_list)
 
     return node_segment(node, [])
-
-
-
-
-

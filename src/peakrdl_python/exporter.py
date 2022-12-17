@@ -4,9 +4,8 @@ Main Classes for the PeakRDL Python
 import os
 from pathlib import Path
 from shutil import copyfile
-from typing import List
+from typing import List, NoReturn
 from glob import glob
-from typing import NoReturn
 
 import autopep8 # type: ignore
 import jinja2 as jj
