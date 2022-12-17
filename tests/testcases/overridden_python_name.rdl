@@ -1,0 +1,31 @@
+property python_inst_name { type = string; component = addrmap | regfile | reg | field; };
+
+addrmap regfile_and_arrays {
+
+    reg basic_reg_Type {
+        default sw = rw;
+        default hw = r;
+        field { python_inst_name='overridden_basicfield_a'; } basicfield_a[31:0];
+    };
+
+    regfile {
+        python_inst_name='overridden_layer1_regfile_a';
+        basic_reg_Type basic_reg_a;
+    } layer1_regfile_a[2];
+
+    basic_reg_Type layer0_reg_a;
+    regfile {
+        regfile {
+			desc = "some description of the regfile";
+            reg basic_reg_Type2 {
+                default sw = r;
+                default hw = r;
+                python_inst_name='overridden_basicfield_a';
+                field { python_inst_name='overridden_basicfield_a';  } basicfield_a[31:0];
+            };
+            basic_reg_Type basic_reg_a[2];
+            basic_reg_Type2 basic_reg_b;
+        } layer2_regfile_a[2];
+    } layer1_regfile_b;
+
+};

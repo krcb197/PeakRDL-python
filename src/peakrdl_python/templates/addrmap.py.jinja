@@ -10,6 +10,7 @@ from typing import List
 from typing import Optional
 from typing import Union
 from typing import cast
+from typing import Dict
 
 from ..lib import AddressMap, RegFile, Memory
 from ..lib  import AddressMapArray, RegFileArray
@@ -29,6 +30,23 @@ from ..lib import CallbackSet
 {% from 'addrmap_memory.py.jinja' import memory_class with context %}
 {% from 'reg_definitions.py.jinja' import register_class_attributes with context %}
 {% from 'reg_definitions.py.jinja' import child_register_getter with context %}
+{% from 'reg_definitions.py.jinja' import python_register_name with context %}
+
+{%- macro python_register_file_name(node) -%}
+{# provides the register name to use in the python visible parts of the API #}
+{%- if 'python_inst_name' in node.list_properties() -%}{{ node.get_property('python_inst_name') }}
+{%- elif is_safe_regfile_name(node) -%}{{node.inst_name}}
+{%- else -%}regfile_{{node.inst_name}}
+{%- endif -%}
+{%- endmacro -%}
+
+{%- macro python_addrmap_name(node) -%}
+{# provides the register name to use in the python visible parts of the API #}
+{%- if 'python_inst_name' in node.list_properties() -%}{{ node.get_property('python_inst_name') }}
+{%- elif is_safe_addrmap_name(node) -%}{{node.inst_name}}
+{%- else -%}addrmap_{{node.inst_name}}
+{%- endif -%}
+{%- endmacro -%}
 
 {%- macro regfile_or_addr_instance(node) %}
     {%- if isinstance(node, systemrdlRegNode) %}
@@ -136,7 +154,14 @@ class {{get_fully_qualified_type_name(node)}}_cls(RegFile):
     {%- for child_node in node.children(unroll=False) %}
         {%- if isinstance(child_node, systemrdlRegNode) or isinstance(child_node, systemrdlRegfileNode) %}
     @property
-    def {{child_node.inst_name}}(self) -> {% if child_node.is_array -%}{{get_fully_qualified_type_name(child_node)}}_array_cls{% else %}{{get_fully_qualified_type_name(child_node)}}_cls{%- endif -%}:
+    {%- if isinstance(child_node, systemrdlRegNode) -%}
+    {%- set property_name = python_register_name(child_node) -%}
+    {%- elif isinstance(child_node, systemrdlRegfileNode) -%}
+    {%- set property_name = python_register_file_name(child_node) -%}
+    {% else %}
+    {{ raise_template_error('unexpected type') }}
+    {%- endif %}
+    def {{property_name}}(self) -> {% if child_node.is_array -%}{{get_fully_qualified_type_name(child_node)}}_array_cls{% else %}{{get_fully_qualified_type_name(child_node)}}_cls{%- endif -%}:
         """
         Property to access {{child_node.inst_name}} {% if child_node.is_array -%}array{% endif %}
 
@@ -145,6 +170,27 @@ class {{get_fully_qualified_type_name(node)}}_cls(RegFile):
         return self.__{{child_node.inst_name}}
         {%- endif %}
     {% endfor %}
+
+    @property
+    def systemrdl_python_child_name_map(self) -> Dict[str, str]:
+        """
+        In some cases systemRDL names need to be converted make them python safe, this dictionary
+        is used to map the original systemRDL names to the names of the python attributes of this
+        class
+
+        Returns: dictionary whose key is the systemRDL names and value it the property name
+        """
+        return {
+            {%- for child_node in node.children(unroll=False) -%}
+            {%- if isinstance(child_node, systemrdlRegNode) -%}
+            '{{child_node.inst_name}}':'{{python_register_name(child_node)}}',
+            {%- elif isinstance(child_node, systemrdlRegfileNode) -%}
+            '{{child_node.inst_name}}':'{{python_register_file_name(child_node)}}',
+            {% else %}
+            {{ raise_template_error('unexpected type') }}
+            {%- endif %}
+            {%- endfor %}
+            }
 
     {{ child_register_getter(node) }}
     {{ child_getter(node, "get_sections",  "RegFile", systemrdlRegfileNode) }}
@@ -204,7 +250,18 @@ class {{get_fully_qualified_type_name(node)}}_cls(AddressMap):
         {%- for child_node in node.children(unroll=False) -%}
             {%- if isinstance(child_node, systemrdlRegNode) or isinstance(child_node, systemrdlRegfileNode) or isinstance(child_node, systemrdlAddrmapNode) or isinstance(child_node, systemrdlMemNode) %}
     @property
-    def {{child_node.inst_name}}(self) -> {% if child_node.is_array -%}{{get_fully_qualified_type_name(child_node)}}_array_cls{% else %}{{get_fully_qualified_type_name(child_node)}}_cls{%- endif -%}:
+    {%- if isinstance(child_node, systemrdlRegNode) -%}
+    {%- set property_name = python_register_name(child_node) -%}
+    {%- elif isinstance(child_node, systemrdlRegfileNode) -%}
+    {%- set property_name = python_register_file_name(child_node) -%}
+    {%- elif isinstance(child_node, systemrdlAddrmapNode) -%}
+    {%- set property_name = python_addrmap_name(child_node) -%}
+    {%- elif isinstance(child_node, systemrdlMemNode) %}
+    {%- set property_name = python_memory_name(child_node) -%}
+    {% else %}
+    {{ raise_template_error('unexpected type') }}
+    {%- endif %}
+    def {{property_name}}(self) -> {% if child_node.is_array -%}{{get_fully_qualified_type_name(child_node)}}_array_cls{% else %}{{get_fully_qualified_type_name(child_node)}}_cls{%- endif -%}:
         """
         Property to access {{child_node.inst_name}} {% if child_node.is_array -%}array{% endif %}
 
@@ -213,6 +270,31 @@ class {{get_fully_qualified_type_name(node)}}_cls(AddressMap):
         return self.__{{child_node.inst_name}}
             {%- endif %}
         {% endfor %}
+
+    @property
+    def systemrdl_python_child_name_map(self) -> Dict[str, str]:
+        """
+        In some cases systemRDL names need to be converted make them python safe, this dictionary
+        is used to map the original systemRDL names to the names of the python attributes of this
+        class
+
+        Returns: dictionary whose key is the systemRDL names and value it the property name
+        """
+        return {
+            {%- for child_node in node.children(unroll=False) -%}
+            {%- if isinstance(child_node, systemrdlRegNode) -%}
+            '{{child_node.inst_name}}':'{{python_register_name(child_node)}}',
+            {%- elif isinstance(child_node, systemrdlRegfileNode) -%}
+            '{{child_node.inst_name}}':'{{python_register_file_name(child_node)}}',
+            {%- elif isinstance(child_node, systemrdlAddrmapNode) -%}
+            '{{child_node.inst_name}}':'{{python_addrmap_name(child_node)}}',
+            {%- elif isinstance(child_node, systemrdlMemNode) %}
+            '{{child_node.inst_name}}':'{{python_memory_name(child_node)}}',
+            {% else %}
+            {{ raise_template_error('unexpected type') }}
+            {%- endif %}
+            {%- endfor %}
+            }
 
     {{ child_register_getter(node) }}
     {{ child_getter(node, "get_memories",    "Memory",     systemrdlMemNode) }}
@@ -250,15 +332,29 @@ class {{get_fully_qualified_type_name(node)}}_array_cls(AddressMapArray):
         """
         {% for child_node in node.children(unroll=False) -%}
             {%- if isinstance(child_node, child_rdltype) %}
-        {% if child_node.is_array -%}
+
+                {%- if isinstance(child_node, systemrdlRegNode) -%}
+                {%- set property_name = python_register_name(child_node) -%}
+                {%- elif isinstance(child_node, systemrdlRegfileNode) -%}
+                {%- set property_name = python_register_file_name(child_node) -%}
+                {%- elif isinstance(child_node, systemrdlAddrmapNode) -%}
+                {%- set property_name = python_addrmap_name(child_node) -%}
+                {%- elif isinstance(child_node, systemrdlMemNode) %}
+                {%- set property_name = python_memory_name(child_node) -%}
+                {% else %}
+                {{ raise_template_error('unexpected type') }}
+                {%- endif %}
+
+
+                {% if child_node.is_array %}
         if unroll:
-            for child in self.{{child_node.inst_name}}:
+            for child in self.{{property_name}}:
                 yield cast({{child_type}}, child)
         else:
-            yield cast(Tuple[{{child_type}},...], self.{{child_node.inst_name}})
-        {% else -%}
-        yield cast({{child_type}}, self.{{child_node.inst_name}})
-        {%- endif %}
+            yield cast(Tuple[{{child_type}},...], self.{{property_name}})
+                 {% else %}
+        yield cast({{child_type}}, self.{{property_name}})
+                {%- endif %}
             {%- endif -%}
         {% endfor %}
 

@@ -1,3 +1,6 @@
+
+property python_inst_name { type = string; component = addrmap | regfile | reg | field; };
+
 addrmap name_clash {
 
 	enum direction {
@@ -16,10 +19,33 @@ addrmap name_clash {
     reg {
         field { fieldwidth=1; } pass = 1;
         field { fieldwidth=2; } _pain = 3;
+        field { fieldwidth=1; } ord = 1;
+        field { fieldwidth=1; } filter = 1;
+        field { fieldwidth=1; } map = 1;
     } gpio_status;
 
     reg {
-        field { fieldwidth=16; } legal_field_name
+        field { fieldwidth=1; } msb = 1;
+        field { fieldwidth=1; python_inst_name="pass_field"; } pass = 1;
+    } msb;
 
-    } address;
+    addrmap {
+        addrmap {
+            regfile {
+                reg {
+                    field { fieldwidth=16; } address;
+                } address;
+            } address;
+        } address;
+    } single_entry;
+
+    addrmap {
+        addrmap {
+            regfile {
+                reg {
+                    field { fieldwidth=16; } address;
+                } address[2];
+            } address[2];
+        } address[2];
+    } array_entry;
 };
