@@ -123,6 +123,18 @@ class Node(Base, ABC):
         Returns: dictionary whose key is the systemRDL names and value it the property name
         """
 
+    def get_child_by_system_rdl_name(self, name: str) -> Base:
+        """
+        returns a child node by its systemRDL name
+
+        Args:
+            name: name of the node in the systemRDL
+
+        Returns: Node
+
+        """
+        return getattr(self, self.systemrdl_python_child_name_map[name])
+
 
 class AddressMap(Node, ABC):
     """

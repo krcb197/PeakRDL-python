@@ -1,5 +1,5 @@
 
-property python_inst_name { type = string; component = addrmap | regfile | reg | field; };
+property python_inst_name { type = string; component = addrmap | regfile | reg | field | mem; };
 
 addrmap name_clash {
 
@@ -19,9 +19,8 @@ addrmap name_clash {
     reg {
         field { fieldwidth=1; } pass = 1;
         field { fieldwidth=2; } _pain = 3;
-        field { fieldwidth=1; } ord = 1;
-        field { fieldwidth=1; } filter = 1;
-        field { fieldwidth=1; } map = 1;
+        field { fieldwidth=1; } finally = 1;
+        field { fieldwidth=1; } yield = 1;
     } gpio_status;
 
     reg {
@@ -48,4 +47,9 @@ addrmap name_clash {
             } address[2];
         } address[2];
     } array_entry;
+
+    external mem {
+        mementries = 4;
+        memwidth = 32;
+    } yield;
 };
