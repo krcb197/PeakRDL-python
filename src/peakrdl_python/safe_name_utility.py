@@ -2,7 +2,7 @@
 utility functions for turning potentially unsafe names from the system RDL and making them safe
 """
 import keyword
-from typing import List, Union
+from typing import List, Union, Type
 
 from systemrdl.node import RegNode  # type: ignore
 from systemrdl.node import FieldNode # type: ignore
@@ -22,6 +22,7 @@ from .templates.peakrdl_python.memory import MemoryReadWrite
 
 from .templates.peakrdl_python.base import RegFile
 from .templates.peakrdl_python.base import AddressMap
+from .templates.peakrdl_python.base import Base
 
 
 def _python_name_checks(instance_name:str) -> bool:
@@ -73,11 +74,11 @@ def is_safe_field_name(node: FieldNode) -> bool:
     # next determine the base class that will get used, the criteria:
     # 1) is ReadOnly, WriteOnly, ReadWrite
     if parent_node.has_sw_readable and parent_node.has_sw_writable:
-        base_class = RegReadWrite
+        base_class:Type[Base] = RegReadWrite
     elif not parent_node.has_sw_readable and parent_node.has_sw_writable:
         base_class = RegWriteOnly
     elif parent_node.has_sw_readable and not parent_node.has_sw_writable:
-        base_class = RegReadOnly
+        base_class= RegReadOnly
     else:
         raise RuntimeError
 
@@ -111,7 +112,7 @@ def is_safe_register_name(node: RegNode) -> bool:
     parent_node = node.parent
 
     if isinstance(parent_node, AddrmapNode):
-        base_class = AddressMap
+        base_class:Type[Base] = AddressMap
     elif isinstance(parent_node, RegfileNode):
         base_class = RegFile
     elif isinstance(parent_node, MemNode):
@@ -156,7 +157,7 @@ def is_safe_memory_name(node: MemNode) -> bool:
     parent_node = node.parent
 
     if isinstance(parent_node, AddrmapNode):
-        base_class = AddressMap
+        base_class:Type[Base] = AddressMap
     elif isinstance(parent_node, RegfileNode):
         base_class = RegFile
     else:
@@ -192,7 +193,7 @@ def is_safe_regfile_name(node: RegfileNode) -> bool:
     parent_node = node.parent
 
     if isinstance(parent_node, AddrmapNode):
-        base_class = AddressMap
+        base_class:Type[Base] = AddressMap
     elif isinstance(parent_node, RegfileNode):
         base_class = RegFile
     else:
