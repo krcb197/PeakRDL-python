@@ -53,6 +53,9 @@ jobs:
         run: mypy src/peakrdl_python --config-file=tests/.mypy.ini
 
   tests:
+    needs:
+      - mypy
+      - lint
     runs-on: ubuntu-latest
     strategy:
       matrix:
