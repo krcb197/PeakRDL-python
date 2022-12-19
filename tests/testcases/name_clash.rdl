@@ -21,6 +21,8 @@ addrmap name_clash {
         field { fieldwidth=2; } _pain = 3;
         field { fieldwidth=1; } finally = 1;
         field { fieldwidth=1; } yield = 1;
+        field { fieldwidth=1; } in = 1;
+        field { fieldwidth=1; } field_in = 1;
     } gpio_status;
 
     reg {
