@@ -1,47 +1,105 @@
 {%- macro register_class_attributes(node) %}
         {%- if node.is_array %}
             {%- if node.has_sw_readable and node.has_sw_writable %}
-    self.__{{node.inst_name}} = ( {% for node_instance_index in range(get_array_dim(node))  %}
-                                       {{get_fully_qualified_type_name(node)}}_cls(callbacks=callbacks,
-                                                                   address=self.address+{{node.raw_address_offset}}+({{node_instance_index}} * {{node.array_stride}}),
-                                                                   logger_handle=logger_handle+'.{{node.inst_name}}[{{node_instance_index}}]',
-                                                                                   inst_name='{{node.inst_name}}[{{node_instance_index}}]')
-                                       {%- if not loop.last -%} ,  {%- endif -%}
-                                       {% endfor %} )
+    self.__{{node.inst_name}} = {{get_fully_qualified_type_name(node)}}_array_cls(elements=( {% for node_instance_index in range(get_array_dim(node))  %}
+                                                                                             {{get_fully_qualified_type_name(node)}}_cls(callbacks=callbacks,
+                                                                                             address=self.address+{{node.raw_address_offset}}+({{node_instance_index}} * {{node.array_stride}}),
+                                                                                             logger_handle=logger_handle+'.{{node.inst_name}}[{{node_instance_index}}]',
+                                                                                             inst_name='{{node.inst_name}}[{{node_instance_index}}]', parent=self)
+                                                                                             {%- if not loop.last -%} ,  {%- endif -%} {% endfor %} ),
+                                                                                  logger_handle=logger_handle+'.{{node.inst_name}}',
+                                                                                  inst_name='{{node.inst_name}}', parent=self)
             {%- elif node.has_sw_readable and not node.has_sw_writable %}
-    self.__{{node.inst_name}} = ( {% for node_instance_index in range(get_array_dim(node))  %}
-                                       {{get_fully_qualified_type_name(node)}}_cls(callbacks=callbacks,
-                                                                   address=self.address+{{node.raw_address_offset}}+({{node_instance_index}} * {{node.array_stride}}),
-                                                                   logger_handle=logger_handle+'.{{node.inst_name}}[{{node_instance_index}}]',
-                                                                                   inst_name='{{node.inst_name}}[{{node_instance_index}}]')
-                                       {%- if not loop.last -%} ,  {%- endif -%}
-                                       {% endfor %} )
+    self.__{{node.inst_name}} = {{get_fully_qualified_type_name(node)}}_array_cls(elements=( {% for node_instance_index in range(get_array_dim(node))  %}
+                                                                                             {{get_fully_qualified_type_name(node)}}_cls(callbacks=callbacks,
+                                                                                             address=self.address+{{node.raw_address_offset}}+({{node_instance_index}} * {{node.array_stride}}),
+                                                                                             logger_handle=logger_handle+'.{{node.inst_name}}[{{node_instance_index}}]',
+                                                                                             inst_name='{{node.inst_name}}[{{node_instance_index}}]', parent=self)
+                                                                                             {%- if not loop.last -%} ,  {%- endif -%} {% endfor %} ),
+                                                                                  logger_handle=logger_handle+'.{{node.inst_name}}',
+                                                                                  inst_name='{{node.inst_name}}', parent=self)
             {%- elif not node.has_sw_readable and node.has_sw_writable %}
-    self.__{{node.inst_name}} = ( {% for node_instance_index in range(get_array_dim(node))  %}
-                                       {{get_fully_qualified_type_name(node)}}_cls(callbacks=callbacks,
-                                                                   address=self.address+{{node.raw_address_offset}}+({{node_instance_index}} * {{node.array_stride}}),
-                                                                   logger_handle=logger_handle+'.{{node.inst_name}}[{{node_instance_index}}]',
-                                                                                   inst_name='{{node.inst_name}}[{{node_instance_index}}]')
-                                       {%- if not loop.last -%} ,  {%- endif -%}
-                                       {% endfor %} )
+    self.__{{node.inst_name}} = {{get_fully_qualified_type_name(node)}}_array_cls(elements=( {% for node_instance_index in range(get_array_dim(node))  %}
+                                                                                             {{get_fully_qualified_type_name(node)}}_cls(callbacks=callbacks,
+                                                                                             address=self.address+{{node.raw_address_offset}}+({{node_instance_index}} * {{node.array_stride}}),
+                                                                                             logger_handle=logger_handle+'.{{node.inst_name}}[{{node_instance_index}}]',
+                                                                                             inst_name='{{node.inst_name}}[{{node_instance_index}}]', parent=self)
+                                                                                             {%- if not loop.last -%} ,  {%- endif -%} {% endfor %} ),
+                                                                                  logger_handle=logger_handle+'.{{node.inst_name}}',
+                                                                                  inst_name='{{node.inst_name}}', parent=self)
             {%- endif %}
         {%- else %}
             {%- if node.has_sw_readable and node.has_sw_writable %}
     self.__{{node.inst_name}} = {{get_fully_qualified_type_name(node)}}_cls(callbacks=callbacks,
                                                                  address=self.address+{{node.address_offset}},
                                                                  logger_handle=logger_handle+'.{{node.inst_name}}',
-                                                                                   inst_name='{{node.inst_name}}')
+                                                                                   inst_name='{{node.inst_name}}', parent=self)
             {%- elif node.has_sw_readable and not node.has_sw_writable %}
     self.__{{node.inst_name}} = {{get_fully_qualified_type_name(node)}}_cls(callbacks=callbacks,
                                                                  address=self.address+{{node.address_offset}},
                                                                  logger_handle=logger_handle+'.{{node.inst_name}}',
-                                                                                   inst_name='{{node.inst_name}}')
+                                                                                   inst_name='{{node.inst_name}}', parent=self)
             {%- elif not node.has_sw_readable and node.has_sw_writable %}
     self.__{{node.inst_name}} = {{get_fully_qualified_type_name(node)}}_cls(callbacks=callbacks,
                                                                                  address=self.address+{{node.address_offset}},
                                                                                  logger_handle=logger_handle+'.{{node.inst_name}}',
-                                                                                 inst_name='{{node.inst_name}}')
+                                                                                 inst_name='{{node.inst_name}}', parent=self)
             {%- endif %}
         {%- endif %}
 
+{%- endmacro %}
+
+{%- macro child_readable_register_getter(node) %}
+    def get_readable_registers(self, unroll=False) -> Iterator[Union[ReadableRegister, Tuple[ReadableRegister, ...]]]:
+        """
+        generator that produces all the readable_registers of this node
+        """
+        {% for child_node in node.children(unroll=False) -%}
+            {%- if isinstance(child_node, systemrdlRegNode) %}
+                {% if child_node.has_sw_readable %}
+                    {% if child_node.is_array %}
+        if unroll:
+            for child in self.{{child_node.inst_name}}:
+                yield cast(ReadableRegister, child)
+        else:
+            yield cast(Tuple[ReadableRegister, ...], self.{{child_node.inst_name}})
+                    {% else %}
+        yield cast(ReadableRegister, self.{{child_node.inst_name}})
+                    {%- endif %}
+                {%- endif -%}
+            {%- endif -%}
+        {% endfor %}
+
+        # Empty generator in case there are no children of this type
+        if False: yield
+{%- endmacro %}
+
+{%- macro child_writable_register_getter(node) %}
+    def get_writable_registers(self, unroll=False) -> Iterator[Union[WritableRegister, Tuple[WritableRegister, ...]]]:
+        """
+        generator that produces all the readable_registers of this node
+        """
+        {% for child_node in node.children(unroll=False) -%}
+            {%- if isinstance(child_node, systemrdlRegNode) %}
+                {% if child_node.has_sw_writable %}
+                    {% if child_node.is_array %}
+        if unroll:
+            for child in self.{{child_node.inst_name}}:
+                yield cast(WritableRegister, child)
+        else:
+            yield cast(Tuple[WritableRegister, ...], self.{{child_node.inst_name}})
+                    {% else %}
+        yield cast(WritableRegister, self.{{child_node.inst_name}})
+                    {%- endif %}
+                {%- endif -%}
+            {%- endif -%}
+        {% endfor %}
+
+        # Empty generator in case there are no children of this type
+        if False: yield
+{%- endmacro %}
+
+{%- macro child_register_getter(node) %}
+{{ child_readable_register_getter(node) }}
+{{ child_writable_register_getter(node) }}
 {%- endmacro %}

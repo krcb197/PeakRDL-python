@@ -87,6 +87,7 @@ jobs:
         wget -L https://raw.githubusercontent.com/SystemRDL/systemrdl-compiler/main/examples/accelera-generic_example.rdl -O tests/testcases/accelera-generic_example.rdl
         python generate_testcases.py
         mypy testcase_output/raw --config-file=tests/.mypy.ini
+        # autopep8 is moving some of the #ignore statements around so it no longer passes mypy
         # mypy testcase_output/autopep8 --config-file=tests/.mypy.ini
         # pylint --rcfile tests/pylint.rc testcase_output/autopep8 --disable=duplicate-code,line-too-long,too-many-statements,invalid-name,unused-import,too-many-instance-attributes,too-many-arguments,too-many-lines
         pytest testcase_output/raw
@@ -102,6 +103,27 @@ jobs:
         peakrdl python tests/testcases/basic.rdl -o peakrdl_out/autopep8/ --autoformat
         pytest peakrdl_out/autopep8
 
+    - name: Check Examples
+        run: |
+          python -m pip install peakrdl
+
+          # build the libraries for the two cases
+          cd example/tranversing_address_map/
+          peakrdl python chip_with_registers.rdl -o .
+          python -m reseting_registers
+          python -m dumping_register_state_to_json_file
+          python -m writing_register_state_from_json_file
+
+          cd ../..
+
+          cd example/simulating_callbacks
+
+          peakrdl python chip_with_a_GPIO.rdl -o .
+          # this example creates a gui that stays up for ever so needs changing before it can be
+          # in the test suite
+          # python -m flashing_the_LED
+
+          cd ../..
     #-------------------------------------------------------------------------------
     build_sdist:
       needs:

@@ -29,6 +29,14 @@ for case in testcases:
     modules = pp.generate(root, os.path.join('testcase_output', 'raw'), autoformatoutputs=False)
     modules = pp.generate(root, os.path.join('testcase_output', 'autopep8'), autoformatoutputs=True)
 
+    module_fqfn = os.path.join('testcase_output', 'raw', '__init__.py')
+    with open(module_fqfn, 'w', encoding='utf-8') as fid:
+        fid.write('pass\n')
+
+    module_fqfn = os.path.join('testcase_output', 'autopep8', '__init__.py')
+    with open(module_fqfn, 'w', encoding='utf-8') as fid:
+        fid.write('pass\n')
+
 
     print("\n-----------------------------------------------------------------\n")
 

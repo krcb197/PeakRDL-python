@@ -44,3 +44,13 @@ inc/
 /things_to_do.txt
 /peakrdl_python.egg-info/
 /.pypirc
+
+# Test output
+/testcase_output/
+/tests/testcases.log
+
+# Python
+__pycache__/
+
+# Vim swapfiles
+.*.sw[a-p]

@@ -18,14 +18,16 @@ class {{get_fully_qualified_type_name(node)}}_cls(RegWriteOnly):
                  callbacks: CallbackSet,
                  address: int,
                  logger_handle: str,
-                 inst_name: str):
+                 inst_name: str,
+                 parent: Union[AddressMap,RegFile,Memory]):
 
         super().__init__(callbacks=callbacks,
                          address=address,
                          {% if 'accesswidth' in node.list_properties() -%}accesswidth={{node.get_property('accesswidth')}}{%- else -%}accesswidth={{node.size*8}}{%- endif -%},
                          width={{node.size*8}},
                          logger_handle=logger_handle,
-                         inst_name=inst_name)
+                         inst_name=inst_name,
+                         parent=parent)
 
         # build the field attributes
         {%- for child_node in node.fields() %}
@@ -63,7 +65,7 @@ class {{get_fully_qualified_type_name(node)}}_cls(RegWriteOnly):
         return return_dict
 
     @property
-    def readable_fields(self) -> Iterable[Field]:
+    def readable_fields(self) -> Iterator[Union[FieldReadOnly, FieldReadWrite]]:
         """
         generator that produces has all the readable fields within the register
         """
@@ -75,7 +77,7 @@ class {{get_fully_qualified_type_name(node)}}_cls(RegWriteOnly):
 
     {% if node.has_sw_writable %}
     @property
-    def writable_fields(self) -> Iterable[Field]:
+    def writable_fields(self) -> Iterator[Union[FieldWriteOnly, FieldReadWrite]]:
         """
         generator that produces has all the writable fields within the register
         """
@@ -84,7 +86,7 @@ class {{get_fully_qualified_type_name(node)}}_cls(RegWriteOnly):
         {% endfor %}
 
     {% if node.has_sw_readable %}
-    def write_fields(self, **kwargs) -> None:
+    def write_fields(self, **kwargs) -> None:  # type
         """
         Do a read-modify-write to the register, updating any field included in
         the arguments
@@ -110,7 +112,7 @@ class {{get_fully_qualified_type_name(node)}}_cls(RegWriteOnly):
         self.write((self.read() & inverse_bit_mask) | reg_value)
 
     {% else %}
-    def write_fields(self, {%- for child_node in node.fields() -%} {{child_node.inst_name}} : {%- if 'encode' in child_node.list_properties() %}{{get_fully_qualified_enum_type(child_node.get_property('encode'), top_node.parent)}}_enumcls{% else %}int{% endif %}{%- if not loop.last -%},{%- endif -%}{%- endfor -%}) -> None:
+    def write_fields(self, {%- for child_node in node.fields() -%} {{child_node.inst_name}} : {%- if 'encode' in child_node.list_properties() %}{{get_fully_qualified_enum_type(child_node.get_property('encode'), top_node.parent)}}_enumcls{% else %}int{% endif %}{%- if not loop.last -%},{%- endif -%}{%- endfor -%}) -> None: # type: ignore[override]
         """
         Do a write to the register, updating all fields
         """
@@ -128,8 +130,42 @@ class {{get_fully_qualified_type_name(node)}}_cls(RegWriteOnly):
         {%- if isinstance(child_node, systemrdlFieldNode) %}
     @property
     def {{child_node.inst_name}}(self) -> {{get_fully_qualified_type_name(child_node)}}_cls:
+        """
+        Property to access {{child_node.inst_name}} field of the register
+
+        {{get_table_block(child_node) | indent(8)}}
+        """
         return self.__{{child_node.inst_name}}
         {% endif %}
     {%- endfor %}
 
+    {%- if node.is_array %}
+        {%- if node.has_sw_readable and node.has_sw_writable %}
+class {{get_fully_qualified_type_name(node)}}_array_cls(RegReadWriteArray):
+        {%- elif node.has_sw_readable and not node.has_sw_writable %}
+class {{get_fully_qualified_type_name(node)}}_array_cls(RegReadWriteArray):
+        {%- elif not node.has_sw_readable and node.has_sw_writable %}
+class {{get_fully_qualified_type_name(node)}}_array_cls(RegReadWriteArray):
+        {%- endif %}
+    """
+    Class to represent a register array in the register model
+    """
+    __slots__: List[str] = []
+
+    def __init__(self, logger_handle: str, inst_name: str,
+                 parent: Union[RegFile, AddressMap, Memory],
+                 elements: Tuple[{{get_fully_qualified_type_name(node)}}_cls, ...]):
+
+        for element in elements:
+            if not isinstance(element, {{get_fully_qualified_type_name(node)}}_cls):
+                raise TypeError(f'All Elements should be of type {{get_fully_qualified_type_name(node)}}_cls, '
+                                f'found {type(element)}')
+
+        super().__init__(logger_handle=logger_handle, inst_name=inst_name,
+                         parent=parent, elements=elements)
+
+    def __getitem__(self, item) -> Union[{{get_fully_qualified_type_name(node)}}_cls, Tuple[{{get_fully_qualified_type_name(node)}}_cls, ...]]:
+        # this cast is OK because an explict typing check was done in the __init__
+        return cast(Union[{{get_fully_qualified_type_name(node)}}_cls, Tuple[{{get_fully_qualified_type_name(node)}}_cls, ...]], super().__getitem__(item))
+    {%- endif %}
 {%- endmacro %}

@@ -5,13 +5,22 @@ This code was generated from the PeakRDL-python package
 """
 {% if uses_enum %}from enum import IntEnum, unique{% endif %}
 from typing import Tuple
-from typing import Iterable
+from typing import Iterator
 from typing import List
+from typing import Optional
+from typing import Union
+from typing import cast
 
-from ..lib import AddressMap, RegFile
+from ..lib import AddressMap, RegFile, Memory
+from ..lib  import AddressMapArray, RegFileArray
+from ..lib import MemoryReadOnlyArray, MemoryWriteOnlyArray, MemoryReadWriteArray
 from ..lib import RegReadOnly, RegWriteOnly, RegReadWrite
-from ..lib import FieldReadOnly, FieldWriteOnly, FieldReadWrite
-from ..lib import FieldSizeProps, FieldMiscProps, Field
+from ..lib import RegReadOnlyArray, RegWriteOnlyArray, RegReadWriteArray
+from ..lib import FieldReadOnly, FieldWriteOnly, FieldReadWrite, Field
+{% if uses_enum %}from ..lib import FieldEnumReadOnly, FieldEnumWriteOnly, FieldEnumReadWrite, FieldEnum{% endif %}
+from ..lib import FieldSizeProps, FieldMiscProps
+from ..lib import ReadableRegister, WritableRegister
+from ..lib import ReadableRegisterArray, WritableRegisterArray
 from ..lib import CallbackSet
 {% if uses_memory %}from ..lib import MemoryReadOnly, MemoryWriteOnly, MemoryReadWrite {% endif %}
 
@@ -19,6 +28,7 @@ from ..lib import CallbackSet
 {% from 'addrmap_register.py.jinja' import register_class with context %}
 {% from 'addrmap_memory.py.jinja' import memory_class with context %}
 {% from 'reg_definitions.py.jinja' import register_class_attributes with context %}
+{% from 'reg_definitions.py.jinja' import child_register_getter with context %}
 
 {%- macro regfile_or_addr_instance(node) %}
     {%- if isinstance(node, systemrdlRegNode) %}
@@ -26,62 +36,70 @@ from ..lib import CallbackSet
     {%- elif isinstance(node, systemrdlMemNode) %}
         {%- if node.is_array %}
             {%- if node.is_sw_readable and node.is_sw_writable %}
-    self.__{{node.inst_name}} = ( {% for node_instance_index in range(get_array_dim(node))  %}
-                                       {{get_fully_qualified_type_name(node)}}_cls(callbacks=callbacks,
-                                                                   address=self.address+{{node.raw_address_offset}}+({{node_instance_index}} * {{node.array_stride}}),
-                                                                   logger_handle=logger_handle+'.{{node.inst_name}}[{{node_instance_index}}]',
-                                                                                   inst_name='{{node.inst_name}}[{{node_instance_index}}]')
-                                       {%- if not loop.last -%} ,  {%- endif -%}
-                                       {% endfor %} )
+    self.__{{node.inst_name}} = {{get_fully_qualified_type_name(node)}}_array_cls ( elements = ( {% for node_instance_index in range(get_array_dim(node))  %}
+                                                                                                  {{get_fully_qualified_type_name(node)}}_cls(callbacks=callbacks,
+                                                                                                  address=self.address+{{node.raw_address_offset}}+({{node_instance_index}} * {{node.array_stride}}),
+                                                                                                  logger_handle=logger_handle+'.{{node.inst_name}}[{{node_instance_index}}]',
+                                                                                                  inst_name='{{node.inst_name}}[{{node_instance_index}}]', parent=self)
+                                                                                                  {%- if not loop.last -%} ,  {%- endif -%}
+                                                                                                  {% endfor %} ),
+                                                                                     logger_handle=logger_handle+'.{{node.inst_name}}',
+                                                                                     inst_name='{{node.inst_name}}', parent=self)
             {%- elif node.is_sw_readable and not node.is_sw_writable %}
-    self.__{{node.inst_name}} = ( {% for node_instance_index in range(get_array_dim(node))  %}
-                                       {{get_fully_qualified_type_name(node)}}_cls(callbacks=callbacks,
-                                                                   address=self.address+{{node.raw_address_offset}}+({{node_instance_index}} * {{node.array_stride}}),
-                                                                   logger_handle=logger_handle+'.{{node.inst_name}}[{{node_instance_index}}]',
-                                                                                   inst_name='{{node.inst_name}}[{{node_instance_index}}]')
-                                       {%- if not loop.last -%} ,  {%- endif -%}
-                                       {% endfor %} )
+    self.__{{node.inst_name}} = {{get_fully_qualified_type_name(node)}}_array_cls ( elements = ( {% for node_instance_index in range(get_array_dim(node))  %}
+                                                                                                  {{get_fully_qualified_type_name(node)}}_cls(callbacks=callbacks,
+                                                                                                  address=self.address+{{node.raw_address_offset}}+({{node_instance_index}} * {{node.array_stride}}),
+                                                                                                  logger_handle=logger_handle+'.{{node.inst_name}}[{{node_instance_index}}]',
+                                                                                                  inst_name='{{node.inst_name}}[{{node_instance_index}}]', parent=self)
+                                                                                                  {%- if not loop.last -%} ,  {%- endif -%}
+                                                                                                  {% endfor %} ),
+                                                                                     logger_handle=logger_handle+'.{{node.inst_name}}',
+                                                                                     inst_name='{{node.inst_name}}', parent=self)
             {%- elif not node.is_sw_readable and node.is_sw_writable %}
-    self.__{{node.inst_name}} = ( {% for node_instance_index in range(get_array_dim(node))  %}
-                                       {{get_fully_qualified_type_name(node)}}_cls(callbacks=callbacks,
-                                                                   address=self.address+{{node.raw_address_offset}}+({{node_instance_index}} * {{node.array_stride}}),
-                                                                   logger_handle=logger_handle+'.{{node.inst_name}}[{{node_instance_index}}]',
-                                                                                   inst_name='{{node.inst_name}}[{{node_instance_index}}]')
-                                       {%- if not loop.last -%} ,  {%- endif -%}
-                                       {% endfor %} )
-            {%- endif %}
+    self.__{{node.inst_name}} = {{get_fully_qualified_type_name(node)}}_array_cls ( elements = ( {% for node_instance_index in range(get_array_dim(node))  %}
+                                                                                                  {{get_fully_qualified_type_name(node)}}_cls(callbacks=callbacks,
+                                                                                                  address=self.address+{{node.raw_address_offset}}+({{node_instance_index}} * {{node.array_stride}}),
+                                                                                                  logger_handle=logger_handle+'.{{node.inst_name}}[{{node_instance_index}}]',
+                                                                                                  inst_name='{{node.inst_name}}[{{node_instance_index}}]', parent=self)
+                                                                                                  {%- if not loop.last -%} ,  {%- endif -%}
+                                                                                                  {% endfor %} ),
+                                                                                     logger_handle=logger_handle+'.{{node.inst_name}}',
+                                                                                     inst_name='{{node.inst_name}}', parent=self)
+             {%- endif %}
         {%- else %}
             {%- if node.is_sw_readable and node.is_sw_writable %}
     self.__{{node.inst_name}} = {{get_fully_qualified_type_name(node)}}_cls(callbacks=callbacks,
                                                                  address=self.address+{{node.address_offset}},
                                                                  logger_handle=logger_handle+'.{{node.inst_name}}',
-                                                                                   inst_name='{{node.inst_name}}')
+                                                                                   inst_name='{{node.inst_name}}', parent=self)
             {%- elif node.is_sw_readable and not node.is_sw_writable %}
     self.__{{node.inst_name}} = {{get_fully_qualified_type_name(node)}}_cls(callbacks=callbacks,
                                                                  address=self.address+{{node.address_offset}},
                                                                  logger_handle=logger_handle+'.{{node.inst_name}}',
-                                                                                   inst_name='{{node.inst_name}}')
+                                                                                   inst_name='{{node.inst_name}}', parent=self)
             {%- elif not node.is_sw_readable and node.is_sw_writable %}
     self.__{{node.inst_name}} = {{get_fully_qualified_type_name(node)}}_cls(callbacks=callbacks,
                                                                              address=self.address+{{node.address_offset}},
                                                                              logger_handle=logger_handle+'.{{node.inst_name}}',
-                                                                             inst_name='{{node.inst_name}}')
+                                                                             inst_name='{{node.inst_name}}', parent=self)
             {%- endif %}
         {%- endif %}
     {%- elif isinstance(node, systemrdlRegfileNode) or isinstance(node, systemrdlAddrmapNode) %}
         {%- if node.is_array %}
-    self.__{{node.inst_name}} = ( {% for node_instance_index in range(get_array_dim(node))  %}
-                                       {{get_fully_qualified_type_name(node)}}_cls(callbacks=callbacks,
-                                                                                   address=self.address+{{node.raw_address_offset}}+({{node_instance_index}} * {{node.array_stride}}),
-                                                                                   logger_handle=logger_handle+'.{{node.inst_name}}[{{node_instance_index}}]',
-                                                                                   inst_name='{{node.inst_name}}[{{node_instance_index}}]')
-                                       {%- if not loop.last -%} ,  {%- endif -%}
-                                       {% endfor %} )
+    self.__{{node.inst_name}} = {{get_fully_qualified_type_name(node)}}_array_cls( elements=( {% for node_instance_index in range(get_array_dim(node))  %}
+                                                                                                {{get_fully_qualified_type_name(node)}}_cls(callbacks=callbacks,
+                                                                                                                                            address=self.address+{{node.raw_address_offset}}+({{node_instance_index}} * {{node.array_stride}}),
+                                                                                                                                            logger_handle=logger_handle+'.{{node.inst_name}}[{{node_instance_index}}]',
+                                                                                                                                            inst_name='{{node.inst_name}}[{{node_instance_index}}]', parent=self)
+                                                                                                {%- if not loop.last -%} ,  {%- endif -%}
+                                                                                                {% endfor %} ),
+                                                                                    logger_handle=logger_handle+'.{{node.inst_name}}',
+                                                                                    inst_name='{{node.inst_name}}', parent=self)
         {%- else -%}
     self.__{{node.inst_name}} = {{get_fully_qualified_type_name(node)}}_cls(callbacks=callbacks,
                                                                             address=self.address+{{node.address_offset}},
                                                                             logger_handle=logger_handle+'.{{node.inst_name}}',
-                                                                            inst_name='{{node.inst_name}}')
+                                                                            inst_name='{{node.inst_name}}', parent=self)
         {%- endif %}
     {%- endif %}
 {%- endmacro %}
@@ -100,12 +118,14 @@ class {{get_fully_qualified_type_name(node)}}_cls(RegFile):
                  callbacks: CallbackSet,
                  address: int,
                  logger_handle:str,
-                 inst_name:str):
+                 inst_name:str,
+                 parent:Union[AddressMap,RegFile]):
 
         super().__init__(callbacks=callbacks,
                          address=address,
                          logger_handle=logger_handle,
-                         inst_name=inst_name)
+                         inst_name=inst_name,
+                         parent=parent)
 
         # instance of objects within the class
         {% for child_node in node.children(unroll=False) -%}
@@ -116,11 +136,42 @@ class {{get_fully_qualified_type_name(node)}}_cls(RegFile):
     {%- for child_node in node.children(unroll=False) %}
         {%- if isinstance(child_node, systemrdlRegNode) or isinstance(child_node, systemrdlRegfileNode) %}
     @property
-    def {{child_node.inst_name}}(self) -> {% if child_node.is_array -%}Tuple[{%- endif -%}{{get_fully_qualified_type_name(child_node)}}_cls{%- if child_node.is_array -%}, ...]{%- endif -%}:
+    def {{child_node.inst_name}}(self) -> {% if child_node.is_array -%}{{get_fully_qualified_type_name(child_node)}}_array_cls{% else %}{{get_fully_qualified_type_name(child_node)}}_cls{%- endif -%}:
+        """
+        Property to access {{child_node.inst_name}} {% if child_node.is_array -%}array{% endif %}
+
+        {{get_table_block(child_node) | indent(8)}}
+        """
         return self.__{{child_node.inst_name}}
         {%- endif %}
     {% endfor %}
 
+    {{ child_register_getter(node) }}
+    {{ child_getter(node, "get_sections",  "RegFile", systemrdlRegfileNode) }}
+
+     {%- if node.is_array %}
+class {{get_fully_qualified_type_name(node)}}_array_cls(RegFileArray):
+    """
+    Class to represent a regfile array in the register model
+    """
+    __slots__: List[str] = []
+
+    def __init__(self, logger_handle: str, inst_name: str,
+                 parent: Union[AddressMap, RegFile],
+                 elements: Tuple[{{get_fully_qualified_type_name(node)}}_cls, ...]):
+
+        for element in elements:
+            if not isinstance(element, {{get_fully_qualified_type_name(node)}}_cls):
+                raise TypeError(f'All Elements should be of type {{get_fully_qualified_type_name(node)}}_cls, '
+                                f'found {type(element)}')
+
+        super().__init__(logger_handle=logger_handle, inst_name=inst_name,
+                         parent=parent, elements=elements)
+
+    def __getitem__(self, item) -> Union[{{get_fully_qualified_type_name(node)}}_cls, Tuple[{{get_fully_qualified_type_name(node)}}_cls, ...]]:
+        # this cast is OK because an explict typing check was done in the __init__
+        return cast(Union[{{get_fully_qualified_type_name(node)}}_cls, Tuple[{{get_fully_qualified_type_name(node)}}_cls, ...]], super().__getitem__(item))
+    {%- endif %}
 {%- endmacro %}
 
 {%- macro addrmap_class(node) %}
@@ -137,12 +188,14 @@ class {{get_fully_qualified_type_name(node)}}_cls(AddressMap):
                  callbacks: CallbackSet,
                  address:int {%- if node == top_node -%}={{top_node.absolute_address}}{%- endif -%},
                  logger_handle:str {%- if node == top_node -%}='reg_model.{{top_node.get_path()}}'{%- endif -%},
-                 inst_name{%- if node == top_node -%}='{{node.inst_name}}'{%- endif -%}):
+                 inst_name{%- if node == top_node -%}='{{node.inst_name}}'{%- endif -%},
+                 parent:Optional[AddressMap]=None):
 
         super().__init__(callbacks=callbacks,
                          address=address,
                          logger_handle=logger_handle,
-                         inst_name=inst_name)
+                         inst_name=inst_name,
+                         parent=parent)
 
         {% for child_node in node.children(unroll=False) -%}
             {{ regfile_or_addr_instance(child_node) | indent }}
@@ -151,11 +204,70 @@ class {{get_fully_qualified_type_name(node)}}_cls(AddressMap):
         {%- for child_node in node.children(unroll=False) -%}
             {%- if isinstance(child_node, systemrdlRegNode) or isinstance(child_node, systemrdlRegfileNode) or isinstance(child_node, systemrdlAddrmapNode) or isinstance(child_node, systemrdlMemNode) %}
     @property
-    def {{child_node.inst_name}}(self) ->  {% if child_node.is_array -%}Tuple[{%- endif -%}{{get_fully_qualified_type_name(child_node)}}_cls{%- if child_node.is_array -%},...]{%- endif -%}:
+    def {{child_node.inst_name}}(self) -> {% if child_node.is_array -%}{{get_fully_qualified_type_name(child_node)}}_array_cls{% else %}{{get_fully_qualified_type_name(child_node)}}_cls{%- endif -%}:
+        """
+        Property to access {{child_node.inst_name}} {% if child_node.is_array -%}array{% endif %}
+
+        {{get_table_block(child_node) | indent(8)}}
+        """
         return self.__{{child_node.inst_name}}
             {%- endif %}
         {% endfor %}
+
+    {{ child_register_getter(node) }}
+    {{ child_getter(node, "get_memories",    "Memory",     systemrdlMemNode) }}
+    {{ child_getter(node, "get_sections", "Union[AddressMap, RegFile]", (systemrdlAddrmapNode, systemrdlRegfileNode)) }}
+
+    {%- if node.is_array %}
+class {{get_fully_qualified_type_name(node)}}_array_cls(AddressMapArray):
+    """
+    Class to represent a addrmap array in the register model
+    """
+    __slots__: List[str] = []
+
+    def __init__(self, logger_handle: str, inst_name: str,
+                 parent: AddressMap,
+                 elements: Tuple[{{get_fully_qualified_type_name(node)}}_cls, ...]):
+
+        for element in elements:
+            if not isinstance(element, {{get_fully_qualified_type_name(node)}}_cls):
+                raise TypeError(f'All Elements should be of type {{get_fully_qualified_type_name(node)}}_cls, '
+                                f'found {type(element)}')
+
+        super().__init__(logger_handle=logger_handle, inst_name=inst_name,
+                         parent=parent, elements=elements)
+
+    def __getitem__(self, item) -> Union[{{get_fully_qualified_type_name(node)}}_cls, Tuple[{{get_fully_qualified_type_name(node)}}_cls, ...]]:
+        # this cast is OK because an explict typing check was done in the __init__
+        return cast(Union[{{get_fully_qualified_type_name(node)}}_cls, Tuple[{{get_fully_qualified_type_name(node)}}_cls, ...]], super().__getitem__(item))
+    {%- endif %}
 {%- endmacro %}
+
+{%- macro child_getter(node, getter_name, child_type, child_rdltype) %}
+    def {{getter_name}}(self, unroll=False) -> Iterator[Union[{{child_type}},Tuple[{{child_type}},...]]]:
+        """
+        generator that produces all the {{child_type}} children of this node
+        """
+        {% for child_node in node.children(unroll=False) -%}
+            {%- if isinstance(child_node, child_rdltype) %}
+        {% if child_node.is_array -%}
+        if unroll:
+            for child in self.{{child_node.inst_name}}:
+                yield cast({{child_type}}, child)
+        else:
+            yield cast(Tuple[{{child_type}},...], self.{{child_node.inst_name}})
+        {% else -%}
+        yield cast({{child_type}}, self.{{child_node.inst_name}})
+        {%- endif %}
+            {%- endif -%}
+        {% endfor %}
+
+        # Empty generator in case there are no children of this type
+        if False: yield
+{%- endmacro %}
+
+
+
 
 {% if uses_enum %}
 # root level enum definitions
@@ -196,7 +308,7 @@ if __name__ == '__main__':
         Args:
             addr: Address to write to
             width: Width of the register in bits
-            accesswidth: Minimium access width of the register in bits
+            accesswidth: Minimum access width of the register in bits
 
         Returns:
             value inputted by the used
@@ -214,7 +326,7 @@ if __name__ == '__main__':
         Args:
             addr: Address to write to
             width: Width of the register in bits
-            accesswidth: Minimium access width of the register in bits
+            accesswidth: Minimum access width of the register in bits
             data: value to be written to the register
 
         Returns:

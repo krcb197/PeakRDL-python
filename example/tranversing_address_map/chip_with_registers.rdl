@@ -1,0 +1,24 @@
+addrmap chip_with_registers {
+
+    enum twoBitFieldType {
+		value1 = 0 { name = "Value 1"; };
+		value2 = 1 { name = "Value 2"; };
+	};
+
+    reg reg_Type {
+        default sw = rw;
+        default hw = r;
+        field {} first_field[15:0] = 0;
+        field { encode=twoBitFieldType; } second_field[17:16] =  {twoBitFieldType::value1};
+
+    };
+
+    regfile regfile_Type {
+        reg_Type single_reg;
+        reg_Type reg_array[4];
+    };
+
+    regfile_Type regfile_array[2];
+    regfile_Type single_regfile;
+
+};
