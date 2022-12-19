@@ -1,0 +1,11 @@
+property python_inst_name { type = string; component = addrmap | regfile | reg | field; };
+
+addrmap over_ridden_names {
+
+    reg {
+        default sw = rw;
+        default hw = r;
+        python_inst_name = "overridden_reg_a";
+        field { python_inst_name="overridden_field_a"; fieldwidth=1; } field_a;
+    } reg_a;
+};
