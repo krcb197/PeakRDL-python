@@ -95,7 +95,7 @@ jobs:
 
     - name: Backward Compatibility Test
       run: |
-        python -m tests/test_backward_compatibility.py
+        python -m tests/test_backward_compatibility
 
     - name: Run PeakRDL Case
       run: |
