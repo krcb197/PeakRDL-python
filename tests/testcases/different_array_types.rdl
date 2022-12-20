@@ -38,4 +38,75 @@ addrmap different_array_types {
         sw = w;
 
     } mem_write_only[2];
+
+    addrmap {
+         reg {
+            default sw = rw;
+            default hw = r;
+            field {} basicfield_a[31:0];
+        } register;
+    } addr_map_array[2];
+
+    regfile {
+         reg {
+            default sw = rw;
+            default hw = r;
+            field {} basicfield_a[31:0];
+        } register;
+    } regfile_array[2];
+
+    reg {
+        default sw = rw;
+        default hw = r;
+        field {} basicfield_a[31:0];
+    } single_read_write_array[1];
+
+    reg {
+        default sw = r;
+        default hw = w;
+        field {} basicfield_a[31:0];
+    } single_read_only_array[1];
+
+    reg {
+        default sw = w;
+        default hw = r;
+        field {} basicfield_a[31:0];
+    } single_write_only_array[1];
+
+    external mem {
+        mementries = 2;
+        memwidth = 32;
+        sw = rw;
+
+    } single_mem_read_write[1];
+
+    external mem {
+        mementries = 2;
+        memwidth = 32;
+        sw = r;
+
+    } single_mem_read_only[1];
+
+    external mem {
+        mementries = 2;
+        memwidth = 32;
+        sw = w;
+
+    } single_mem_write_only[1];
+
+    addrmap {
+         reg {
+            default sw = rw;
+            default hw = r;
+            field {} basicfield_a[31:0];
+        } register;
+    } single_addr_map_array[1];
+
+    regfile {
+         reg {
+            default sw = rw;
+            default hw = r;
+            field {} basicfield_a[31:0];
+        } register;
+    } single_regfile_array[1];
 };
