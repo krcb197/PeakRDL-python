@@ -1,0 +1,41 @@
+addrmap different_array_types {
+
+    reg {
+        default sw = rw;
+        default hw = r;
+        field {} basicfield_a[31:0];
+    } read_write_array[2];
+
+    reg {
+        default sw = r;
+        default hw = w;
+        field {} basicfield_a[31:0];
+    } read_only_array[2];
+
+    reg {
+        default sw = w;
+        default hw = r;
+        field {} basicfield_a[31:0];
+    } write_only_array[2];
+
+    external mem {
+        mementries = 2;
+        memwidth = 32;
+        sw = rw;
+
+    } mem_read_write[2];
+
+    external mem {
+        mementries = 2;
+        memwidth = 32;
+        sw = r;
+
+    } mem_read_only[2];
+
+    external mem {
+        mementries = 2;
+        memwidth = 32;
+        sw = w;
+
+    } mem_write_only[2];
+};
