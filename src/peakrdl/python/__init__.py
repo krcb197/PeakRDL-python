@@ -5,8 +5,8 @@ from peakrdl_python import __about__
 from peakrdl_python import exporter
 
 # hoist internal objects
-from peakrdl_ipxact.__about__ import __version__
-from peakrdl_ipxact.exporter import PythonExporter
+from peakrdl_python.__about__ import __version__
+from peakrdl_python.exporter import PythonExporter
 
 
 warnings.warn(

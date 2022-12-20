@@ -93,6 +93,10 @@ jobs:
         pytest testcase_output/raw
         pytest testcase_output/autopep8
 
+    - name: Backward Compatibility Test
+      run: |
+        python -m tests/test_backward_compatibility.py
+
     - name: Run PeakRDL Case
       run: |
         python -m pip install peakrdl
