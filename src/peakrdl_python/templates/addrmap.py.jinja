@@ -59,9 +59,7 @@ from ..lib import CallbackSet
                                                                                                   {{get_fully_qualified_type_name(node)}}_cls(callbacks=callbacks,
                                                                                                   address=self.address+{{node.raw_address_offset}}+({{node_instance_index}} * {{node.array_stride}}),
                                                                                                   logger_handle=logger_handle+'.{{node.inst_name}}[{{node_instance_index}}]',
-                                                                                                  inst_name='{{node.inst_name}}[{{node_instance_index}}]', parent=self)
-                                                                                                  {%- if not loop.last -%} ,  {%- endif -%}
-                                                                                                  {% endfor %} ),
+                                                                                                  inst_name='{{node.inst_name}}[{{node_instance_index}}]', parent=self),{% endfor %} ),
                                                                                      logger_handle=logger_handle+'.{{node.inst_name}}',
                                                                                      inst_name='{{node.inst_name}}', parent=self)
             {%- elif node.is_sw_readable and not node.is_sw_writable %}
@@ -69,9 +67,7 @@ from ..lib import CallbackSet
                                                                                                   {{get_fully_qualified_type_name(node)}}_cls(callbacks=callbacks,
                                                                                                   address=self.address+{{node.raw_address_offset}}+({{node_instance_index}} * {{node.array_stride}}),
                                                                                                   logger_handle=logger_handle+'.{{node.inst_name}}[{{node_instance_index}}]',
-                                                                                                  inst_name='{{node.inst_name}}[{{node_instance_index}}]', parent=self)
-                                                                                                  {%- if not loop.last -%} ,  {%- endif -%}
-                                                                                                  {% endfor %} ),
+                                                                                                  inst_name='{{node.inst_name}}[{{node_instance_index}}]', parent=self),{% endfor %} ),
                                                                                      logger_handle=logger_handle+'.{{node.inst_name}}',
                                                                                      inst_name='{{node.inst_name}}', parent=self)
             {%- elif not node.is_sw_readable and node.is_sw_writable %}
@@ -79,9 +75,7 @@ from ..lib import CallbackSet
                                                                                                   {{get_fully_qualified_type_name(node)}}_cls(callbacks=callbacks,
                                                                                                   address=self.address+{{node.raw_address_offset}}+({{node_instance_index}} * {{node.array_stride}}),
                                                                                                   logger_handle=logger_handle+'.{{node.inst_name}}[{{node_instance_index}}]',
-                                                                                                  inst_name='{{node.inst_name}}[{{node_instance_index}}]', parent=self)
-                                                                                                  {%- if not loop.last -%} ,  {%- endif -%}
-                                                                                                  {% endfor %} ),
+                                                                                                  inst_name='{{node.inst_name}}[{{node_instance_index}}]', parent=self),{% endfor %} ),
                                                                                      logger_handle=logger_handle+'.{{node.inst_name}}',
                                                                                      inst_name='{{node.inst_name}}', parent=self)
              {%- endif %}
@@ -109,9 +103,7 @@ from ..lib import CallbackSet
                                                                                                 {{get_fully_qualified_type_name(node)}}_cls(callbacks=callbacks,
                                                                                                                                             address=self.address+{{node.raw_address_offset}}+({{node_instance_index}} * {{node.array_stride}}),
                                                                                                                                             logger_handle=logger_handle+'.{{node.inst_name}}[{{node_instance_index}}]',
-                                                                                                                                            inst_name='{{node.inst_name}}[{{node_instance_index}}]', parent=self)
-                                                                                                {%- if not loop.last -%} ,  {%- endif -%}
-                                                                                                {% endfor %} ),
+                                                                                                                                            inst_name='{{node.inst_name}}[{{node_instance_index}}]', parent=self),{% endfor %} ),
                                                                                     logger_handle=logger_handle+'.{{node.inst_name}}',
                                                                                     inst_name='{{node.inst_name}}', parent=self)
         {%- else -%}

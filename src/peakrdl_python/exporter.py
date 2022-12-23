@@ -43,6 +43,8 @@ class PythonExporter:
             into the template namespace.
     """
 
+    # pylint: disable=too-few-public-methods
+
     def __init__(self, **kwargs):
 
         user_template_dir = kwargs.pop("user_template_dir", None)
@@ -106,13 +108,13 @@ class PythonExporter:
             node = node.top
 
         package_path = os.path.join(path, node.inst_name)
-        self.create_empty_package(package_path=package_path)
+        self._create_empty_package(package_path=package_path)
 
         modules = [node]
 
         for block in modules:
 
-            self.build_node_type_table(block)
+            self._build_node_type_table(block)
 
             context = {
                 'print': print,
@@ -130,7 +132,7 @@ class PythonExporter:
                 'isinstance': isinstance,
                 'uses_enum' : uses_enum(block),
                 'uses_memory' : uses_memory(block),
-                'get_fully_qualified_type_name': self.lookup_type_name,
+                'get_fully_qualified_type_name': self._lookup_type_name,
                 'get_array_dim': get_array_dim,
                 'get_dependent_component': get_dependent_component,
                 'get_dependent_enum': get_dependent_enum,
@@ -184,7 +186,7 @@ class PythonExporter:
 
         return [m.inst_name for m in modules]
 
-    def lookup_type_name(self, node: Node) -> str:
+    def _lookup_type_name(self, node: Node) -> str:
         """
         Retreive the unique type name from the current lookup list
 
@@ -198,7 +200,7 @@ class PythonExporter:
 
         return self.node_type_name[node.inst]
 
-    def build_node_type_table(self, node: AddressableNode) -> None:
+    def _build_node_type_table(self, node: AddressableNode) -> None:
         """
         Populate the type name lookup dictionary
 
@@ -227,7 +229,7 @@ class PythonExporter:
                 self.node_type_name[child_inst] = cand_type_name
 
     @staticmethod
-    def create_empty_package(package_path:str) -> None:
+    def _create_empty_package(package_path:str) -> None:
         """
         create the directories and __init__.py files associated with the exported package
 
