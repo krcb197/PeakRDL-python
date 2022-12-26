@@ -2,7 +2,6 @@
 {% from 'reg_definitions.py.jinja' import register_class_attributes with context %}
 {% from 'reg_definitions.py.jinja' import child_writable_register_getter with context %}
 {% from 'reg_definitions.py.jinja' import child_readable_register_getter with context %}
-{% from 'reg_definitions.py.jinja' import python_register_name with context %}
 
 {%- macro memory_class(node) %}
     {%- if node.is_sw_readable and node.is_sw_writable %}
@@ -43,7 +42,7 @@ class {{get_fully_qualified_type_name(node)}}_cls(MemoryWriteOnly):
         {%- for child_node in node.children(unroll=False) -%}
             {%- if isinstance(child_node, systemrdlRegNode)  %}
     @property
-    def {{python_register_name(child_node)}}(self) -> {% if child_node.is_array -%}{{get_fully_qualified_type_name(child_node)}}_array_cls{% else %}{{get_fully_qualified_type_name(child_node)}}_cls{%- endif -%}:
+    def {{safe_node_name(child_node)}}(self) -> {% if child_node.is_array -%}{{get_fully_qualified_type_name(child_node)}}_array_cls{% else %}{{get_fully_qualified_type_name(child_node)}}_cls{%- endif -%}:
         """
         Property to access {{child_node.inst_name}} register {% if child_node.is_array -%}array{% endif %}
 
@@ -74,7 +73,7 @@ class {{get_fully_qualified_type_name(node)}}_cls(MemoryWriteOnly):
         """
         return {
             {%- for child_node in node.children(unroll=False) -%}
-            '{{child_node.inst_name}}':'{{python_register_name(child_node)}}',
+            '{{child_node.inst_name}}':'{{safe_node_name(child_node)}}',
             {%- endfor %}
             }
 
@@ -112,10 +111,3 @@ class {{get_fully_qualified_type_name(node)}}_array_cls(MemoryWriteOnlyArray):
 
 {%- endmacro %}
 
-{%- macro python_memory_name(node) -%}
-{# provides the register name to use in the python visible parts of the API #}
-{%- if 'python_inst_name' in node.list_properties() -%}{{ node.get_property('python_inst_name') }}
-{%- elif is_safe_memory_name(node) -%}{{node.inst_name}}
-{%- else -%}memory_{{node.inst_name}}
-{%- endif -%}
-{%- endmacro -%}

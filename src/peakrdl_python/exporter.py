@@ -22,8 +22,7 @@ from .systemrdl_node_utility_functions import get_reg_readable_fields, get_reg_w
     get_memory_max_entry_value_hex_string, get_array_typecode, get_memory_width_bytes, \
     get_field_default_value
 
-from .safe_name_utility import is_safe_field_name, is_safe_register_name, is_safe_memory_name, \
-    is_safe_regfile_name, is_safe_addrmap_name, get_python_path_segments, python_field_name
+from .safe_name_utility import get_python_path_segments, safe_node_name
 
 file_path = os.path.dirname(__file__)
 
@@ -148,14 +147,9 @@ class PythonExporter:
                 'get_array_typecode': get_array_typecode,
                 'get_memory_width_bytes': get_memory_width_bytes,
                 'get_field_default_value': get_field_default_value,
-                'is_safe_field_name': is_safe_field_name,
-                'is_safe_register_name': is_safe_register_name,
-                'is_safe_memory_name': is_safe_memory_name,
-                'is_safe_regfile_name': is_safe_regfile_name,
-                'is_safe_addrmap_name': is_safe_addrmap_name,
                 'raise_template_error' : self._raise_template_error,
                 'get_python_path_segments' : get_python_path_segments,
-                'python_field_name': python_field_name,
+                'safe_node_name' : safe_node_name,
             }
 
             context.update(self.user_template_context)

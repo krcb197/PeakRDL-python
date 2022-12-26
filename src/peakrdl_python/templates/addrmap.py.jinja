@@ -28,26 +28,8 @@ from ..lib import CallbackSet
 {% from 'addrmap_field.py.jinja' import field_class with context %}
 {% from 'addrmap_register.py.jinja' import register_class with context %}
 {% from 'addrmap_memory.py.jinja' import memory_class with context %}
-{% from 'addrmap_memory.py.jinja' import python_memory_name with context %}
 {% from 'reg_definitions.py.jinja' import register_class_attributes with context %}
 {% from 'reg_definitions.py.jinja' import child_register_getter with context %}
-{% from 'reg_definitions.py.jinja' import python_register_name with context %}
-
-{%- macro python_register_file_name(node) -%}
-{# provides the register name to use in the python visible parts of the API #}
-{%- if 'python_inst_name' in node.list_properties() -%}{{ node.get_property('python_inst_name') }}
-{%- elif is_safe_regfile_name(node) -%}{{node.inst_name}}
-{%- else -%}regfile_{{node.inst_name}}
-{%- endif -%}
-{%- endmacro -%}
-
-{%- macro python_addrmap_name(node) -%}
-{# provides the register name to use in the python visible parts of the API #}
-{%- if 'python_inst_name' in node.list_properties() -%}{{ node.get_property('python_inst_name') }}
-{%- elif is_safe_addrmap_name(node) -%}{{node.inst_name}}
-{%- else -%}addrmap_{{node.inst_name}}
-{%- endif -%}
-{%- endmacro -%}
 
 {%- macro regfile_or_addr_instance(node) %}
     {%- if isinstance(node, systemrdlRegNode) %}
@@ -128,7 +110,7 @@ class {{get_fully_qualified_type_name(node)}}_cls(RegFile):
         {%- if isinstance(child_node, systemrdlRegNode) or isinstance(child_node, systemrdlRegfileNode) %}
     @property
     {%- if isinstance(child_node, systemrdlRegNode) -%}
-    {%- set property_name = python_register_name(child_node) -%}
+    {%- set property_name = safe_node_name(child_node) -%}
     {%- elif isinstance(child_node, systemrdlRegfileNode) -%}
     {%- set property_name = python_register_file_name(child_node) -%}
     {% else %}
@@ -156,9 +138,9 @@ class {{get_fully_qualified_type_name(node)}}_cls(RegFile):
         return {
             {%- for child_node in node.children(unroll=False) -%}
             {%- if isinstance(child_node, systemrdlRegNode) -%}
-            '{{child_node.inst_name}}':'{{python_register_name(child_node)}}',
+            '{{child_node.inst_name}}':'{{safe_node_name(child_node)}}',
             {%- elif isinstance(child_node, systemrdlRegfileNode) -%}
-            '{{child_node.inst_name}}':'{{python_register_file_name(child_node)}}',
+            '{{child_node.inst_name}}':'{{safe_node_name(child_node)}}',
             {% else %}
             {{ raise_template_error('unexpected type') }}
             {%- endif %}
@@ -226,13 +208,13 @@ class {{get_fully_qualified_type_name(node)}}_cls(AddressMap):
             {%- if isinstance(child_node, systemrdlRegNode) or isinstance(child_node, systemrdlRegfileNode) or isinstance(child_node, systemrdlAddrmapNode) or isinstance(child_node, systemrdlMemNode) %}
     @property
     {%- if isinstance(child_node, systemrdlRegNode) -%}
-    {%- set property_name = python_register_name(child_node) -%}
+    {%- set property_name = safe_node_name(child_node) -%}
     {%- elif isinstance(child_node, systemrdlRegfileNode) -%}
-    {%- set property_name = python_register_file_name(child_node) -%}
+    {%- set property_name = safe_node_name(child_node) -%}
     {%- elif isinstance(child_node, systemrdlAddrmapNode) -%}
-    {%- set property_name = python_addrmap_name(child_node) -%}
+    {%- set property_name = safe_node_name(child_node) -%}
     {%- elif isinstance(child_node, systemrdlMemNode) %}
-    {%- set property_name = python_memory_name(child_node) -%}
+    {%- set property_name = safe_node_name(child_node) -%}
     {% else %}
     {{ raise_template_error('unexpected type') }}
     {%- endif %}
@@ -258,13 +240,13 @@ class {{get_fully_qualified_type_name(node)}}_cls(AddressMap):
         return {
             {%- for child_node in node.children(unroll=False) -%}
             {%- if isinstance(child_node, systemrdlRegNode) -%}
-            '{{child_node.inst_name}}':'{{python_register_name(child_node)}}',
+            '{{child_node.inst_name}}':'{{safe_node_name(child_node)}}',
             {%- elif isinstance(child_node, systemrdlRegfileNode) -%}
-            '{{child_node.inst_name}}':'{{python_register_file_name(child_node)}}',
+            '{{child_node.inst_name}}':'{{safe_node_name(child_node)}}',
             {%- elif isinstance(child_node, systemrdlAddrmapNode) -%}
-            '{{child_node.inst_name}}':'{{python_addrmap_name(child_node)}}',
+            '{{child_node.inst_name}}':'{{safe_node_name(child_node)}}',
             {%- elif isinstance(child_node, systemrdlMemNode) %}
-            '{{child_node.inst_name}}':'{{python_memory_name(child_node)}}',
+            '{{child_node.inst_name}}':'{{safe_node_name(child_node)}}',
             {% else %}
             {{ raise_template_error('unexpected type') }}
             {%- endif %}
@@ -311,13 +293,13 @@ class {{get_fully_qualified_type_name(node)}}_array_cls(AddressMapArray):
             {%- if isinstance(child_node, child_rdltype) %}
 
                 {%- if isinstance(child_node, systemrdlRegNode) -%}
-                {%- set property_name = python_register_name(child_node) -%}
+                {%- set property_name = safe_node_name(child_node) -%}
                 {%- elif isinstance(child_node, systemrdlRegfileNode) -%}
-                {%- set property_name = python_register_file_name(child_node) -%}
+                {%- set property_name = safe_node_name(child_node) -%}
                 {%- elif isinstance(child_node, systemrdlAddrmapNode) -%}
-                {%- set property_name = python_addrmap_name(child_node) -%}
+                {%- set property_name = safe_node_name(child_node) -%}
                 {%- elif isinstance(child_node, systemrdlMemNode) %}
-                {%- set property_name = python_memory_name(child_node) -%}
+                {%- set property_name = safe_node_name(child_node) -%}
                 {% else %}
                 {{ raise_template_error('unexpected type') }}
                 {%- endif %}

@@ -1,10 +1,3 @@
-{%- macro python_field_name(node) -%}
-{# provides the field name to use in the python visible parts of the API #}
-{%- if 'python_inst_name' in node.list_properties() -%}{{ node.get_property('python_inst_name') }}
-{%- elif is_safe_field_name(node) -%}{{node.inst_name}}
-{%- else -%}field_{{node.inst_name}}
-{%- endif -%}
-{%- endmacro -%}
 
 {%- macro register_class(node) %}
     {%- if node.has_sw_readable and node.has_sw_writable %}
@@ -65,7 +58,7 @@ class {{get_fully_qualified_type_name(node)}}_cls(RegWriteOnly):
 
         return_dict = {
                         {%- for child_node in get_reg_readable_fields(node) %}
-                        '{{child_node.inst_name}}' : self.{{python_field_name(child_node)}}.decode_read_value(reg_value)
+                        '{{child_node.inst_name}}' : self.{{safe_node_name(child_node)}}.decode_read_value(reg_value)
                         {%- if not loop.last -%} ,  {%- endif -%}
                         {% endfor %}
                       }
@@ -78,7 +71,7 @@ class {{get_fully_qualified_type_name(node)}}_cls(RegWriteOnly):
         generator that produces has all the readable fields within the register
         """
         {% for child_node in get_reg_readable_fields(node) -%}
-        yield self.{{python_field_name(child_node)}}
+        yield self.{{safe_node_name(child_node)}}
         {% endfor %}
 
     {% endif %}
@@ -90,7 +83,7 @@ class {{get_fully_qualified_type_name(node)}}_cls(RegWriteOnly):
         generator that produces has all the writable fields within the register
         """
         {% for child_node in get_reg_writable_fields(node) -%}
-        yield self.{{python_field_name(child_node)}}
+        yield self.{{safe_node_name(child_node)}}
         {% endfor %}
 
     {% if node.has_sw_readable %}
@@ -106,10 +99,10 @@ class {{get_fully_qualified_type_name(node)}}_cls(RegWriteOnly):
         bit_mask = 0
         reg_value = 0
         {%- for child_node in get_reg_writable_fields(node) %}
-        if '{{python_field_name(child_node)}}' in kwargs:
-            reg_value |= self.{{python_field_name(child_node)}}.encode_write_value(kwargs['{{python_field_name(child_node)}}'])
-            bit_mask |= self.{{python_field_name(child_node)}}.bitmask
-            kwargs.pop('{{python_field_name(child_node)}}')
+        if '{{safe_node_name(child_node)}}' in kwargs:
+            reg_value |= self.{{safe_node_name(child_node)}}.encode_write_value(kwargs['{{safe_node_name(child_node)}}'])
+            bit_mask |= self.{{safe_node_name(child_node)}}.bitmask
+            kwargs.pop('{{safe_node_name(child_node)}}')
         {%- endfor %}
         if len(kwargs) != 0:
             # left over unhandled arguments
@@ -137,7 +130,7 @@ class {{get_fully_qualified_type_name(node)}}_cls(RegWriteOnly):
     {%- for child_node in node.children(unroll=False) -%}
         {%- if isinstance(child_node, systemrdlFieldNode) %}
     @property
-    def {{python_field_name(child_node)}}(self) -> {{get_fully_qualified_type_name(child_node)}}_cls:
+    def {{safe_node_name(child_node)}}(self) -> {{get_fully_qualified_type_name(child_node)}}_cls:
         """
         Property to access {{child_node.inst_name}} field of the register
 
@@ -158,7 +151,7 @@ class {{get_fully_qualified_type_name(node)}}_cls(RegWriteOnly):
         """
         return {
             {%- for child_node in node.children(unroll=False) -%}
-            '{{child_node.inst_name}}':'{{python_field_name(child_node)}}',
+            '{{child_node.inst_name}}':'{{safe_node_name(child_node)}}',
             {%- endfor %}
             }
 

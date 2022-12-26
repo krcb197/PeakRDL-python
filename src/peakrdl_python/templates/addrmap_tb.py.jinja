@@ -583,7 +583,7 @@ class {{top_node.type_name}}_TestCase(unittest.TestCase):
         {% if node.has_sw_readable %}
         write_field_cominbinations(reg=self.dut.{{'.'.join(get_python_path_segments(node))}},
                                    writable_fields = [ {% for field in get_reg_writable_fields(node) -%}
-                                                       '{{ python_field_name(field) }}' {%- if not loop.last -%},{%- endif %}
+                                                       '{{ safe_node_name(field) }}' {%- if not loop.last -%},{%- endif %}
                                                        {% endfor -%} ])
         {% else %}
         kwargs = {}
