@@ -2,7 +2,8 @@
 utility functions for turning potentially unsafe names from the system RDL and making them safe
 """
 import keyword
-from typing import List, Union, Type
+from typing import List, Union, Type, Callable, Dict
+from dataclasses import dataclass
 
 from systemrdl.node import RegNode  # type: ignore
 from systemrdl.node import FieldNode # type: ignore
@@ -10,6 +11,7 @@ from systemrdl.node import AddrmapNode # type: ignore
 from systemrdl.node import RegfileNode  # type: ignore
 from systemrdl.node import MemNode  # type: ignore
 from systemrdl.node import RootNode  # type: ignore
+from systemrdl.node import Node  # type: ignore
 
 from .templates.peakrdl_python.register import RegReadOnly
 from .templates.peakrdl_python.register import RegWriteOnly
@@ -234,6 +236,17 @@ def is_safe_addrmap_name(node: AddrmapNode) -> bool:
 
     return True
 
+@dataclass()
+class _node_process_scheme:
+    safe_func : Callable[[Node], bool]
+    prefix : str
+
+_node_processing: Dict[Node, _node_process_scheme] = {
+    RegNode: _node_process_scheme(is_safe_register_name, 'register'),
+    FieldNode: _node_process_scheme(is_safe_field_name, 'field'),
+    RegfileNode: _node_process_scheme(is_safe_regfile_name, 'regfile'),
+    AddrmapNode: _node_process_scheme(is_safe_addrmap_name, 'addrmap'),
+    MemNode: _node_process_scheme(is_safe_memory_name, 'memory')}
 
 def safe_node_name(node: Union[RegNode,
                                FieldNode,
@@ -245,22 +258,13 @@ def safe_node_name(node: Union[RegNode,
     if 'python_inst_name' in node.list_properties():
         node_name = node.get_property('python_inst_name')
     else:
-        node_processing = {RegNode: {'safefunc': is_safe_register_name,
-                                     'prefix': 'register'},
-                           FieldNode: {'safefunc': is_safe_field_name,
-                                       'prefix': 'field'},
-                           RegfileNode: {'safefunc': is_safe_regfile_name,
-                                         'prefix': 'regfile'},
-                           AddrmapNode: {'safefunc': is_safe_addrmap_name,
-                                         'prefix': 'addrmap'},
-                           MemNode: {'safefunc': is_safe_memory_name,
-                                     'prefix': 'memory'}}
+
 
         node_type = type(node)
 
         node_name = node.inst_name
-        if not node_processing[node_type]['safefunc'](node):
-            name_pre = node_processing[node_type]['prefix']
+        if not _node_processing[node_type].safe_func(node):
+            name_pre:str = _node_processing[node_type].prefix
             node_name = name_pre + '_' + node_name
 
             # check the proposed name will not clash with name already used by the parent
