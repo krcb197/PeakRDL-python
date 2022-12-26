@@ -25,6 +25,7 @@ from .register import RegWriteOnlyArray
 from .register import RegReadWriteArray
 from .register import ReadableRegisterArray
 from .register import WritableRegisterArray
+from .register import RegisterWriteVerifyError
 
 from .fields import FieldSizeProps
 from .fields import FieldMiscProps

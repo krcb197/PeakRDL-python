@@ -54,14 +54,17 @@ class {{get_fully_qualified_type_name(node)}}_cls(RegWriteOnly):
         """
         read the register and return a dictionary of the field values
         """
-        reg_value = self.read()
-
-        return_dict = {
-                        {%- for child_node in get_reg_readable_fields(node) %}
-                        '{{child_node.inst_name}}' : self.{{safe_node_name(child_node)}}.decode_read_value(reg_value)
-                        {%- if not loop.last -%} ,  {%- endif -%}
-                        {% endfor %}
-                      }
+        {% if node.has_sw_writable %}
+        with self.single_read_modify_write(skip_write=True) as reg:
+        {% else %}
+        with self.single_read() as reg:
+        {% endif %}
+            return_dict = {
+                            {%- for child_node in get_reg_readable_fields(node) %}
+                            '{{child_node.inst_name}}' : reg.{{safe_node_name(child_node)}}.read()
+                            {%- if not loop.last -%} ,  {%- endif -%}
+                            {% endfor %}
+                          }
 
         return return_dict
 
@@ -92,25 +95,20 @@ class {{get_fully_qualified_type_name(node)}}_cls(RegWriteOnly):
         Do a read-modify-write to the register, updating any field included in
         the arguments
         """
-
         if len(kwargs) == 0:
             raise ValueError('no command args')
 
-        bit_mask = 0
-        reg_value = 0
+        with self.single_read_modify_write() as reg:
         {%- for child_node in get_reg_writable_fields(node) %}
-        if '{{safe_node_name(child_node)}}' in kwargs:
-            reg_value |= self.{{safe_node_name(child_node)}}.encode_write_value(kwargs['{{safe_node_name(child_node)}}'])
-            bit_mask |= self.{{safe_node_name(child_node)}}.bitmask
-            kwargs.pop('{{safe_node_name(child_node)}}')
+            if '{{safe_node_name(child_node)}}' in kwargs:
+                self.{{safe_node_name(child_node)}}.write(kwargs['{{safe_node_name(child_node)}}'])
+                kwargs.pop('{{safe_node_name(child_node)}}')
         {%- endfor %}
-        if len(kwargs) != 0:
-            # left over unhandled arguments
-            raise ValueError('unrecognised arguments in field')
+            if len(kwargs) != 0:
+                # left over unhandled arguments
+                raise ValueError('unrecognised arguments in field')
 
-        inverse_bit_mask = self.max_value ^ bit_mask
 
-        self.write((self.read() & inverse_bit_mask) | reg_value)
 
     {% else %}
     def write_fields(self, {%- for child_node in node.fields() -%} {{safe_node_name(child_node)}} : {%- if 'encode' in child_node.list_properties() %}{{get_fully_qualified_enum_type(child_node.get_property('encode'), top_node.parent)}}_enumcls{% else %}int{% endif %}{%- if not loop.last -%},{%- endif -%}{%- endfor -%}) -> None: # type: ignore[override]
