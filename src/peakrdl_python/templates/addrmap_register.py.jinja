@@ -113,13 +113,13 @@ class {{get_fully_qualified_type_name(node)}}_cls(RegWriteOnly):
         self.write((self.read() & inverse_bit_mask) | reg_value)
 
     {% else %}
-    def write_fields(self, {%- for child_node in node.fields() -%} {{python_field_name(child_node)}} : {%- if 'encode' in child_node.list_properties() %}{{get_fully_qualified_enum_type(child_node.get_property('encode'), top_node.parent)}}_enumcls{% else %}int{% endif %}{%- if not loop.last -%},{%- endif -%}{%- endfor -%}) -> None: # type: ignore[override]
+    def write_fields(self, {%- for child_node in node.fields() -%} {{safe_node_name(child_node)}} : {%- if 'encode' in child_node.list_properties() %}{{get_fully_qualified_enum_type(child_node.get_property('encode'), top_node.parent)}}_enumcls{% else %}int{% endif %}{%- if not loop.last -%},{%- endif -%}{%- endfor -%}) -> None: # type: ignore[override]
         """
         Do a write to the register, updating all fields
         """
         reg_value = 0
         {%- for child_node in node.fields() %}
-        reg_value |= self.{{python_field_name(child_node)}}.encode_write_value({{python_field_name(child_node)}})
+        reg_value |= self.{{safe_node_name(child_node)}}.encode_write_value({{safe_node_name(child_node)}})
         {% endfor %}
 
         self.write(reg_value)

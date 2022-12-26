@@ -112,7 +112,7 @@ class {{get_fully_qualified_type_name(node)}}_cls(RegFile):
     {%- if isinstance(child_node, systemrdlRegNode) -%}
     {%- set property_name = safe_node_name(child_node) -%}
     {%- elif isinstance(child_node, systemrdlRegfileNode) -%}
-    {%- set property_name = python_register_file_name(child_node) -%}
+    {%- set property_name = safe_node_name(child_node) -%}
     {% else %}
     {{ raise_template_error('unexpected type') }}
     {%- endif %}
