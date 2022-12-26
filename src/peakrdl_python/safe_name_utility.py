@@ -245,40 +245,31 @@ def safe_node_name(node: Union[RegNode,
     if 'python_inst_name' in node.list_properties():
         node_name = node.get_property('python_inst_name')
     else:
-        node_processing = [{'type': RegNode,
-                            'safefunc': is_safe_register_name,
-                            'prefix' : 'register'},
-                            {'type': FieldNode,
-                             'safefunc': is_safe_field_name,
-                             'prefix' : 'field'},
-                           {'type': RegfileNode,
-                            'safefunc': is_safe_regfile_name,
-                            'prefix': 'regfile'},
-                           {'type': AddrmapNode,
-                            'safefunc': is_safe_addrmap_name,
-                            'prefix': 'addrmap'},
-                           {'type': MemNode,
-                            'safefunc': is_safe_memory_name,
-                            'prefix': 'memory'}
-        ]
+        node_processing = {RegNode: {'safefunc': is_safe_register_name,
+                                     'prefix': 'register'},
+                           FieldNode: {'safefunc': is_safe_field_name,
+                                       'prefix': 'field'},
+                           RegfileNode: {'safefunc': is_safe_regfile_name,
+                                         'prefix': 'regfile'},
+                           AddrmapNode: {'safefunc': is_safe_addrmap_name,
+                                         'prefix': 'addrmap'},
+                           MemNode: {'safefunc': is_safe_memory_name,
+                                     'prefix': 'memory'}}
 
-        for node_process in node_processing:
-            if isinstance(node, node_process['type']):
-                node_name = node.inst_name
-                if not node_process['safefunc'](node):
-                    node_name = node_process['prefix'] + '_' + node_name
+        node_type = type(node)
 
-                    # check the proposed name will not clash with name already used by the parent
-                    if node.parent is not None:
-                        other_names_to_avoid = [child.inst_name for child in node.parent.children(unroll=False)]
-                        index = 0
-                        while node_name in other_names_to_avoid:
-                            node_name = node_process['prefix'] + '_' + str(index) + '_' + node_name
-                            index += 1
+        node_name = node.inst_name
+        if not node_processing[node_type]['safefunc'](node):
+            name_pre = node_processing[node_type]['prefix']
+            node_name = name_pre + '_' + node_name
 
-                break
-        else:
-            raise TypeError(f'unhandled type {type(node)}')
+            # check the proposed name will not clash with name already used by the parent
+            if node.parent is not None:
+                names_to_avoid = [child.inst_name for child in node.parent.children(unroll=False)]
+                index = 0
+                while node_name in names_to_avoid:
+                    node_name = name_pre + '_' + str(index) + '_' + node_name
+                    index += 1
 
     if not isinstance(node, FieldNode):
         if node.is_array:
