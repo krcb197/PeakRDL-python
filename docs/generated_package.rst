@@ -384,6 +384,9 @@ consider the following example:
 
 This would create an object attribute ``address`` which would clash with an existing property of
 the ``my_addr_map`` object. The register field can not be called ``in`` as this is a python keyword.
+Therefore peakrdl python will use the name ``field_in`` in the generated code to avoid the clash.
+The algorithm for renaming node to avoid name clashes does not need to be known to an end user,
+the names can be looked up.
 
 User Defined Property
 ---------------------
