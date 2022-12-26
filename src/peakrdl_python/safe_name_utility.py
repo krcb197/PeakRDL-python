@@ -237,22 +237,32 @@ def is_safe_addrmap_name(node: AddrmapNode) -> bool:
     return True
 
 @dataclass()
-class _node_process_scheme:
+class _NodeProcessingScheme:
     safe_func : Callable[[Node], bool]
     prefix : str
 
-_node_processing: Dict[Node, _node_process_scheme] = {
-    RegNode: _node_process_scheme(is_safe_register_name, 'register'),
-    FieldNode: _node_process_scheme(is_safe_field_name, 'field'),
-    RegfileNode: _node_process_scheme(is_safe_regfile_name, 'regfile'),
-    AddrmapNode: _node_process_scheme(is_safe_addrmap_name, 'addrmap'),
-    MemNode: _node_process_scheme(is_safe_memory_name, 'memory')}
+_node_processing: Dict[Node, _NodeProcessingScheme] = {
+    RegNode: _NodeProcessingScheme(is_safe_register_name, 'register'),
+    FieldNode: _NodeProcessingScheme(is_safe_field_name, 'field'),
+    RegfileNode: _NodeProcessingScheme(is_safe_regfile_name, 'regfile'),
+    AddrmapNode: _NodeProcessingScheme(is_safe_addrmap_name, 'addrmap'),
+    MemNode: _NodeProcessingScheme(is_safe_memory_name, 'memory')}
+
 
 def safe_node_name(node: Union[RegNode,
                                FieldNode,
                                RegfileNode,
                                AddrmapNode,
                                MemNode]) -> str:
+    """
+    Generate the safe name for a node to avoid name clashes in the generated python
+
+    Args:
+        node: as node from the compiled systemRDL
+
+    Returns: python name to use
+
+    """
 
     # the node has an overridden name
     if 'python_inst_name' in node.list_properties():
