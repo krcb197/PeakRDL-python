@@ -1,3 +1,4 @@
+
 {%- macro register_class(node) %}
     {%- if node.has_sw_readable and node.has_sw_writable %}
 class {{get_fully_qualified_type_name(node)}}_cls(RegReadWrite):
@@ -32,7 +33,7 @@ class {{get_fully_qualified_type_name(node)}}_cls(RegWriteOnly):
         # build the field attributes
         {%- for child_node in node.fields() %}
             {%- if isinstance(child_node, systemrdlFieldNode) %}
-        self.__{{child_node.inst_name}} = {{get_fully_qualified_type_name(child_node)}}_cls(
+        self.__{{child_node.inst_name}}:{{get_fully_qualified_type_name(child_node)}}_cls = {{get_fully_qualified_type_name(child_node)}}_cls(
             parent_register=self,
             size_props=FieldSizeProps(
                 width={{child_node.width}},
@@ -57,7 +58,7 @@ class {{get_fully_qualified_type_name(node)}}_cls(RegWriteOnly):
 
         return_dict = {
                         {%- for child_node in get_reg_readable_fields(node) %}
-                        '{{child_node.inst_name}}' : self.{{child_node.inst_name}}.decode_read_value(reg_value)
+                        '{{child_node.inst_name}}' : self.{{safe_node_name(child_node)}}.decode_read_value(reg_value)
                         {%- if not loop.last -%} ,  {%- endif -%}
                         {% endfor %}
                       }
@@ -70,7 +71,7 @@ class {{get_fully_qualified_type_name(node)}}_cls(RegWriteOnly):
         generator that produces has all the readable fields within the register
         """
         {% for child_node in get_reg_readable_fields(node) -%}
-        yield self.{{child_node.inst_name}}
+        yield self.{{safe_node_name(child_node)}}
         {% endfor %}
 
     {% endif %}
@@ -82,7 +83,7 @@ class {{get_fully_qualified_type_name(node)}}_cls(RegWriteOnly):
         generator that produces has all the writable fields within the register
         """
         {% for child_node in get_reg_writable_fields(node) -%}
-        yield self.{{child_node.inst_name}}
+        yield self.{{safe_node_name(child_node)}}
         {% endfor %}
 
     {% if node.has_sw_readable %}
@@ -98,10 +99,10 @@ class {{get_fully_qualified_type_name(node)}}_cls(RegWriteOnly):
         bit_mask = 0
         reg_value = 0
         {%- for child_node in get_reg_writable_fields(node) %}
-        if '{{child_node.inst_name}}' in kwargs:
-            reg_value |= self.{{child_node.inst_name}}.encode_write_value(kwargs['{{child_node.inst_name}}'])
-            bit_mask |= self.{{child_node.inst_name}}.bitmask
-            kwargs.pop('{{child_node.inst_name}}')
+        if '{{safe_node_name(child_node)}}' in kwargs:
+            reg_value |= self.{{safe_node_name(child_node)}}.encode_write_value(kwargs['{{safe_node_name(child_node)}}'])
+            bit_mask |= self.{{safe_node_name(child_node)}}.bitmask
+            kwargs.pop('{{safe_node_name(child_node)}}')
         {%- endfor %}
         if len(kwargs) != 0:
             # left over unhandled arguments
@@ -112,13 +113,13 @@ class {{get_fully_qualified_type_name(node)}}_cls(RegWriteOnly):
         self.write((self.read() & inverse_bit_mask) | reg_value)
 
     {% else %}
-    def write_fields(self, {%- for child_node in node.fields() -%} {{child_node.inst_name}} : {%- if 'encode' in child_node.list_properties() %}{{get_fully_qualified_enum_type(child_node.get_property('encode'), top_node.parent)}}_enumcls{% else %}int{% endif %}{%- if not loop.last -%},{%- endif -%}{%- endfor -%}) -> None: # type: ignore[override]
+    def write_fields(self, {%- for child_node in node.fields() -%} {{safe_node_name(child_node)}} : {%- if 'encode' in child_node.list_properties() %}{{get_fully_qualified_enum_type(child_node.get_property('encode'), top_node.parent)}}_enumcls{% else %}int{% endif %}{%- if not loop.last -%},{%- endif -%}{%- endfor -%}) -> None: # type: ignore[override]
         """
         Do a write to the register, updating all fields
         """
         reg_value = 0
         {%- for child_node in node.fields() %}
-        reg_value |= self.{{child_node.inst_name}}.encode_write_value({{child_node.inst_name}})
+        reg_value |= self.{{safe_node_name(child_node)}}.encode_write_value({{safe_node_name(child_node)}})
         {% endfor %}
 
         self.write(reg_value)
@@ -129,7 +130,7 @@ class {{get_fully_qualified_type_name(node)}}_cls(RegWriteOnly):
     {%- for child_node in node.children(unroll=False) -%}
         {%- if isinstance(child_node, systemrdlFieldNode) %}
     @property
-    def {{child_node.inst_name}}(self) -> {{get_fully_qualified_type_name(child_node)}}_cls:
+    def {{safe_node_name(child_node)}}(self) -> {{get_fully_qualified_type_name(child_node)}}_cls:
         """
         Property to access {{child_node.inst_name}} field of the register
 
@@ -138,6 +139,21 @@ class {{get_fully_qualified_type_name(node)}}_cls(RegWriteOnly):
         return self.__{{child_node.inst_name}}
         {% endif %}
     {%- endfor %}
+
+    @property
+    def systemrdl_python_child_name_map(self) -> Dict[str, str]:
+        """
+        In some cases systemRDL names need to be converted make them python safe, this dictionary
+        is used to map the original systemRDL names to the names of the python attributes of this
+        class
+
+        Returns: dictionary whose key is the systemRDL names and value it the property name
+        """
+        return {
+            {%- for child_node in node.children(unroll=False) -%}
+            '{{child_node.inst_name}}':'{{safe_node_name(child_node)}}',
+            {%- endfor %}
+            }
 
     {%- if node.is_array %}
         {%- if node.has_sw_readable and node.has_sw_writable %}
@@ -154,12 +170,15 @@ class {{get_fully_qualified_type_name(node)}}_array_cls(RegWriteOnlyArray):
 
     def __init__(self, logger_handle: str, inst_name: str,
                  parent: Union[RegFile, AddressMap, Memory],
-                 elements: Tuple[{{get_fully_qualified_type_name(node)}}_cls, ...]):
+                 address: int,
+                 length: int,
+                 stride: int,
+                 callbacks: CallbackSet):
 
-        for element in elements:
-            if not isinstance(element, {{get_fully_qualified_type_name(node)}}_cls):
-                raise TypeError(f'All Elements should be of type {{get_fully_qualified_type_name(node)}}_cls, '
-                                f'found {type(element)}')
+
+        elements = tuple([{{get_fully_qualified_type_name(node)}}_cls(callbacks=callbacks,address=address+(index * stride),
+                          logger_handle=f'{logger_handle}.{inst_name}[{index:d}]',
+                          inst_name=f'{inst_name}[{index:d}]', parent=parent) for index in range(length)])
 
         super().__init__(logger_handle=logger_handle, inst_name=inst_name,
                          parent=parent, elements=elements)
