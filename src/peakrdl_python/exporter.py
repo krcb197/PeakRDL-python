@@ -24,6 +24,8 @@ from .systemrdl_node_utility_functions import get_reg_readable_fields, get_reg_w
 
 from .safe_name_utility import get_python_path_segments, safe_node_name
 
+from .__about__ import __version__
+
 file_path = os.path.dirname(__file__)
 
 class PythonExportTemplateError(Exception):
@@ -150,6 +152,7 @@ class PythonExporter:
                 'raise_template_error' : self._raise_template_error,
                 'get_python_path_segments' : get_python_path_segments,
                 'safe_node_name' : safe_node_name,
+                'version' : __version__
             }
 
             context.update(self.user_template_context)

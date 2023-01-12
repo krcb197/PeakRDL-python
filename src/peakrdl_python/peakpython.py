@@ -8,6 +8,7 @@ import os
 import subprocess
 import unittest.loader
 from typing import List, Optional
+import pathlib
 
 import coverage # type: ignore
 
@@ -44,7 +45,8 @@ def build_command_line_parser() -> argparse.ArgumentParser:
                         help='use autopep8 on generated code')
     parser.add_argument('--ipxact', dest='ipxact', nargs='*',
                         type=str)
-
+    parser.add_argument('--user_template_dir', action='store', type=pathlib.Path,
+                           help='directory of user templates to override the default ones')
     checker = parser.add_argument_group('post-generate checks')
     checker.add_argument('--lint', action='store_true',
                          help='run pylint on the generated python')
