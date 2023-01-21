@@ -26,7 +26,7 @@ from .templates.peakrdl_python.base import RegFile
 from .templates.peakrdl_python.base import AddressMap
 from .templates.peakrdl_python.base import Base
 
-def _build_class_method_list(peakrld_python_class:Type[Base]) -> list[str]:
+def _build_class_method_list(peakrld_python_class:Type[Base]) -> List[str]:
     return list(filter(lambda x: not x[0] == '_', dir(peakrld_python_class)))
 
 # the lists of methods to avoid for all the classes are pre-built to optimise the time taken
