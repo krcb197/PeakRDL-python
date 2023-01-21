@@ -89,7 +89,8 @@ class PythonExporter:
         self.node_type_name = {}
 
     def export(self, node: Node, path: str,
-               autoformatoutputs: bool=True) -> List[str]:
+               autoformatoutputs: bool=True,
+               skip_test_case_generation: bool=False) -> List[str]:
         """
         Generated Python Code and Testbench
 
@@ -99,6 +100,7 @@ class PythonExporter:
             path (str) : Output package path.
             autoformatoutputs (bool) : If set to True the code will be run through autopep8 to
                 clean it up. This can slow down large jobs or mask problems
+            skip_test_case_generation (bool): skip generation the generation of the test cases
 
         Returns:
             List[str] : modules that have been exported:
@@ -109,7 +111,8 @@ class PythonExporter:
             node = node.top
 
         package_path = os.path.join(path, node.inst_name)
-        self._create_empty_package(package_path=package_path)
+        self._create_empty_package(package_path=package_path,
+                                   skip_test_case_generation=skip_test_case_generation)
 
         modules = [node]
 
@@ -169,17 +172,18 @@ class PythonExporter:
                 stream = template.stream(context)
                 stream.dump(module_fqfn, encoding='utf-8')
 
-            template = self.jj_env.get_template("addrmap_tb.py.jinja")
-            module_tb_fqfn = os.path.join(package_path,
-                                          'tests',
-                                          'test_' + block.inst_name + '.py')
-            if autoformatoutputs is True:
-                module_tb_code_str = autopep8.fix_code(template.render(context))
-                with open(module_tb_fqfn, "w", encoding='utf-8') as fid:
-                    fid.write(module_tb_code_str)
-            else:
-                stream = template.stream(context)
-                stream.dump(module_tb_fqfn, encoding='utf-8')
+            if not skip_test_case_generation:
+                template = self.jj_env.get_template("addrmap_tb.py.jinja")
+                module_tb_fqfn = os.path.join(package_path,
+                                              'tests',
+                                              'test_' + block.inst_name + '.py')
+                if autoformatoutputs is True:
+                    module_tb_code_str = autopep8.fix_code(template.render(context))
+                    with open(module_tb_fqfn, "w", encoding='utf-8') as fid:
+                        fid.write(module_tb_code_str)
+                else:
+                    stream = template.stream(context)
+                    stream.dump(module_tb_fqfn, encoding='utf-8')
 
         return [m.inst_name for m in modules]
 
@@ -226,12 +230,14 @@ class PythonExporter:
                 self.node_type_name[child_inst] = cand_type_name
 
     @staticmethod
-    def _create_empty_package(package_path:str) -> None:
+    def _create_empty_package(package_path:str,
+                              skip_test_case_generation: bool) -> None:
         """
         create the directories and __init__.py files associated with the exported package
 
         Args:
             package_path: directory for the package output
+            skip_test_case_generation: skip the generation of the test folders
 
         Returns:
             None
@@ -240,15 +246,17 @@ class PythonExporter:
 
         Path(package_path).mkdir(parents=True, exist_ok=True)
         Path(os.path.join(package_path, 'reg_model')).mkdir(parents=True, exist_ok=True)
-        Path(os.path.join(package_path, 'tests')).mkdir(parents=True, exist_ok=True)
+        if not skip_test_case_generation:
+            Path(os.path.join(package_path, 'tests')).mkdir(parents=True, exist_ok=True)
         Path(os.path.join(package_path, 'lib')).mkdir(parents=True, exist_ok=True)
 
         module_fqfn = os.path.join(package_path, 'reg_model', '__init__.py')
         with open(module_fqfn, 'w', encoding='utf-8') as fid:
             fid.write('pass\n')
-        module_fqfn = os.path.join(package_path, 'tests', '__init__.py')
-        with open(module_fqfn, 'w', encoding='utf-8') as fid:
-            fid.write('pass\n')
+        if not skip_test_case_generation:
+            module_fqfn = os.path.join(package_path, 'tests', '__init__.py')
+            with open(module_fqfn, 'w', encoding='utf-8') as fid:
+                fid.write('pass\n')
         module_fqfn = os.path.join(package_path, '__init__.py')
         with open(module_fqfn, 'w', encoding='utf-8') as fid:
             fid.write('pass\n')
