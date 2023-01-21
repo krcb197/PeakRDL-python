@@ -32,6 +32,8 @@ class Exporter:
                                 help='use autopep8 on generated code')
         arg_group.add_argument('--user_template_dir', action='store', type=pathlib.Path,
                                help='directory of user templates to override the default ones')
+        arg_group.add_argument('--skip_test_case_generation', action='store_true',
+                            help='skip the generation of the test cases')
 
     def do_export(self, top_node: 'AddrmapNode', options: 'argparse.Namespace') -> None:
         """
@@ -52,5 +54,6 @@ class Exporter:
         peakrdl_exporter.export(
             top_node,
             options.output,
-            autoformatoutputs=options.autoformat
+            autoformatoutputs=options.autoformat,
+            skip_test_case_generation=options.skip_test_case_generation
         )
