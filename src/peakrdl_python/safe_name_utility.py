@@ -26,6 +26,20 @@ from .templates.peakrdl_python.base import RegFile
 from .templates.peakrdl_python.base import AddressMap
 from .templates.peakrdl_python.base import Base
 
+def _build_class_method_list(peakrld_python_class:Type[Base]) -> list[str]:
+    return list(filter(lambda x: not x[0] == '_', dir(peakrld_python_class)))
+
+# the lists of methods to avoid for all the classes are pre-built to optimise the time taken
+# in the tests
+addr_map_method_list = _build_class_method_list(AddressMap)
+reg_file_method_list = _build_class_method_list(RegFile)
+mem_read_write_method_list = _build_class_method_list(MemoryReadWrite)
+mem_write_only_method_list = _build_class_method_list(MemoryWriteOnly)
+mem_read_only_method_list = _build_class_method_list(MemoryReadOnly)
+reg_read_only_method_list = _build_class_method_list(RegReadOnly)
+reg_write_only_method_list = _build_class_method_list(RegWriteOnly)
+reg_read_write_method_list = _build_class_method_list(RegReadWrite)
+
 
 def _python_name_checks(instance_name:str) -> bool:
     """
@@ -76,15 +90,13 @@ def is_safe_field_name(node: FieldNode) -> bool:
     # next determine the base class that will get used, the criteria:
     # 1) is ReadOnly, WriteOnly, ReadWrite
     if parent_node.has_sw_readable and parent_node.has_sw_writable:
-        base_class:Type[Base] = RegReadWrite
+        method_list = reg_read_write_method_list
     elif not parent_node.has_sw_readable and parent_node.has_sw_writable:
-        base_class = RegWriteOnly
+        method_list = reg_write_only_method_list
     elif parent_node.has_sw_readable and not parent_node.has_sw_writable:
-        base_class= RegReadOnly
+        method_list = reg_read_only_method_list
     else:
         raise RuntimeError
-
-    method_list = list(filter( lambda x : not x[0] == '_' , dir(base_class)))
 
     if node.inst_name in method_list:
         return False
@@ -114,22 +126,20 @@ def is_safe_register_name(node: RegNode) -> bool:
     parent_node = node.parent
 
     if isinstance(parent_node, AddrmapNode):
-        base_class:Type[Base] = AddressMap
+        method_list = addr_map_method_list
     elif isinstance(parent_node, RegfileNode):
-        base_class = RegFile
+        method_list = reg_file_method_list
     elif isinstance(parent_node, MemNode):
         if parent_node.is_sw_readable and parent_node.is_sw_writable:
-            base_class = MemoryReadWrite
+            method_list = mem_read_write_method_list
         elif not parent_node.is_sw_readable and parent_node.is_sw_writable:
-            base_class = MemoryWriteOnly
+            method_list = mem_write_only_method_list
         elif parent_node.is_sw_readable and not parent_node.is_sw_writable:
-            base_class = MemoryReadOnly
+            method_list = mem_read_only_method_list
         else:
             raise RuntimeError('Code should never get here')
     else:
         raise TypeError(f'Unhandled type: {type(parent_node)}')
-
-    method_list = list(filter( lambda x : not x[0] == '_' , dir(base_class)))
 
     if node.inst_name in method_list:
         return False
@@ -159,13 +169,11 @@ def is_safe_memory_name(node: MemNode) -> bool:
     parent_node = node.parent
 
     if isinstance(parent_node, AddrmapNode):
-        base_class:Type[Base] = AddressMap
+        method_list = addr_map_method_list
     elif isinstance(parent_node, RegfileNode):
-        base_class = RegFile
+        method_list = reg_file_method_list
     else:
         raise TypeError(f'Unhandled type: {type(parent_node)}')
-
-    method_list = list(filter(lambda x: not x[0] == '_', dir(base_class)))
 
     if node.inst_name in method_list:
         return False
@@ -195,13 +203,11 @@ def is_safe_regfile_name(node: RegfileNode) -> bool:
     parent_node = node.parent
 
     if isinstance(parent_node, AddrmapNode):
-        base_class:Type[Base] = AddressMap
+        method_list = addr_map_method_list
     elif isinstance(parent_node, RegfileNode):
-        base_class = RegFile
+        method_list = reg_file_method_list
     else:
         raise TypeError(f'Unhandled type: {type(parent_node)}')
-
-    method_list = list(filter(lambda x: not x[0] == '_', dir(base_class)))
 
     if node.inst_name in method_list:
         return False
@@ -228,10 +234,7 @@ def is_safe_addrmap_name(node: AddrmapNode) -> bool:
     if _python_name_checks(node.inst_name) is False:
         return False
 
-    # next determine the base class that will get used, the criteria:
-    method_list = list(filter( lambda x : not x[0] == '_' , dir(AddressMap)))
-
-    if node.inst_name in method_list:
+    if node.inst_name in addr_map_method_list:
         return False
 
     return True
@@ -247,7 +250,6 @@ _node_processing: Dict[Node, _NodeProcessingScheme] = {
     RegfileNode: _NodeProcessingScheme(is_safe_regfile_name, 'regfile'),
     AddrmapNode: _NodeProcessingScheme(is_safe_addrmap_name, 'addrmap'),
     MemNode: _NodeProcessingScheme(is_safe_memory_name, 'memory')}
-
 
 def safe_node_name(node: Union[RegNode,
                                FieldNode,
