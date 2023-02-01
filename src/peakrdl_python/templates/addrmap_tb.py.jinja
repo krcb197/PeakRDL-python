@@ -502,28 +502,36 @@ class {{top_node.type_name}}_TestCase(unittest.TestCase):
         # build up the register value with a random base value, overlaid with
         # a random value for each field
         rand_reg_value = random.randrange(0, {{get_reg_max_value_hex_string(node)}} + 1)
-        {%- for field in node.children() %}
-        {%- if field.is_sw_readable -%}
-        {%- if 'encode' in field.list_properties() %}
-        rand_field_value = random.choice(list(self.dut.{{'.'.join(get_python_path_segments(field))}}.enum_cls)).value
-        {%- else %}
-        rand_field_value = random.randrange(0, {{ get_field_max_value_hex_string(field) }} + 1)
-        {%- endif %}
-        {% if field.msb == field.high -%}
-        rand_reg_value = (rand_reg_value & {{get_field_inv_bitmask_hex_string(field)}}) | (rand_field_value << {{ field.low }})
-        {% else -%}
-        rand_reg_value = (rand_reg_value & {{get_field_inv_bitmask_hex_string(field)}}) | (self._reverse_bits(value=rand_field_value, number_bits={{field.width}}) << {{ field.low }})
-        {% endif -%}
-        {%- endif %}
+        {%- for child_node in node.children() %}
+            {% if isinstance(child_node, systemrdlSignalNode) %}
+        # do nothing with signal {{ child_node.inst_name }}
+            {% elif isinstance(child_node, systemrdlFieldNode) %}
+                {% if child_node.is_sw_readable %}
+                    {% if 'encode' in child_node.list_properties() %}
+        rand_field_value = random.choice(list(self.dut.{{'.'.join(get_python_path_segments(child_node))}}.enum_cls)).value
+                    {%- else %}
+        rand_field_value = random.randrange(0, {{ get_field_max_value_hex_string(child_node) }} + 1)
+                    {% endif %}
+                    {% if child_node.msb == child_node.high %}
+        rand_reg_value = (rand_reg_value & {{get_field_inv_bitmask_hex_string(child_node)}}) | (rand_field_value << {{ child_node.low }})
+                    {% else %}
+        rand_reg_value = (rand_reg_value & {{get_field_inv_bitmask_hex_string(child_node)}}) | (self._reverse_bits(value=rand_field_value, number_bits={{child_node.width}}) << {{ child_node.low }})
+                     {% endif %}
+                {% endif %}
+            {% else %}
+        {{ raise_template_error('unexpected type') }}
+            {% endif %}
         {% endfor %}
         with patch(__name__ + '.' + 'read_addr_space', return_value=rand_reg_value):
             # the read_fields method gets a dictionary back
             # from the object with all the read back field
             # values
-            reference_read_fields = { {% for field in node.children() -%}
-                                      {%- if field.is_sw_readable %}
-                                      '{{ field.inst_name }}' : self.dut.{{'.'.join(get_python_path_segments(field))}}.read(){%- if not loop.last -%}, {%- endif %}
-                                      {%- endif -%}
+            reference_read_fields = { {% for child_node in node.children() -%}
+                                        {% if isinstance(child_node, systemrdlFieldNode) %}
+                                            {%- if child_node.is_sw_readable %}
+                                      '{{ child_node.inst_name }}' : self.dut.{{'.'.join(get_python_path_segments(child_node))}}.read(){%- if not loop.last -%}, {%- endif %}
+                                            {%- endif -%}
+                                          {%- endif -%}
                                       {%- endfor %}
                                     }
 
@@ -803,7 +811,7 @@ class {{top_node.type_name}}_TestCase(unittest.TestCase):
         self.assertFalse(hasattr(self.dut.{{'.'.join(get_python_path_segments(node))}}, 'writable_fields'))
                 {% endif %}
                 {% if node.has_sw_readable %}
-        expected_readable_fields = [ {%- for child_node in node.children(unroll=True) -%}{% if child_node.is_sw_readable %}self.dut.{{'.'.join(get_python_path_segments(child_node))}}, {% endif %}{%- endfor %} ]
+        expected_readable_fields = [ {%- for child_node in node.children(unroll=True) -%}{% if isinstance(child_node, systemrdlFieldNode) %}{% if child_node.is_sw_readable %}self.dut.{{'.'.join(get_python_path_segments(child_node))}}, {% endif %}{% endif %}{%- endfor %} ]
         readable_fields = []
         for readable_field in self.dut.{{'.'.join(get_python_path_segments(node))}}.readable_fields:
             readable_fields.append(readable_field)
@@ -838,12 +846,14 @@ class {{top_node.type_name}}_TestCase(unittest.TestCase):
 
     def test_name_map(self):
         """
-        Check that the function for getting a node by its origianl systemRDL name works
+        Check that the function for getting a node by its original systemRDL name works
         """
         {% for node in top_node.descendants(unroll=True) -%}
-        {% if not isinstance(node, systemrdlFieldNode) %}
+        {% if not isinstance(node, (systemrdlFieldNode, systemrdlSignalNode)) %}
         {% for child_node in node.children(unroll=False) %}
+        {% if not isinstance(child_node, systemrdlSignalNode) %}
         self.assertEqual(self.dut.{{'.'.join(get_python_path_segments(node))}}.get_child_by_system_rdl_name('{{child_node.inst_name}}').inst_name, '{{child_node.inst_name}}')
+        {% endif %}
         {% endfor %}
         {% endif %}
         {% endfor %}

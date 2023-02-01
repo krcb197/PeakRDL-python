@@ -1,0 +1,50 @@
+signal {signalwidth=1; sync; activehigh;} my_signal_outer;
+
+addrmap signals_definitions_at_various_levels {
+    default regwidth = 32;
+    default accesswidth = 32;
+
+    signal {signalwidth=1; sync; activehigh;
+    } my_signal_addrmap;
+
+    regfile {
+
+        signal {signalwidth=1; sync; activehigh;
+        } my_signal_regmap;
+
+        reg {
+            field {
+                signal {signalwidth=1; sync; activehigh;
+                } my_signal_field;
+            } my_field[32];
+        } my_reg_in_regfile;
+    } my_reg_file;
+
+    reg {
+        default sw = r;
+        default hw = w;
+
+        field {} my_field[32];
+    } my_reg;
+
+    my_reg.my_field->resetsignal = my_signal_addrmap;
+
+    external mem {
+
+
+        reg {
+            default sw = r;
+            default hw = w;
+
+            signal {signalwidth=1; sync; activehigh;
+            } my_signal_mem_reg;
+
+            field {} my_field[32];
+
+            my_field->resetsignal = my_signal_mem_reg;
+        } my_reg_mem;
+
+    } my_mem;
+
+
+};
