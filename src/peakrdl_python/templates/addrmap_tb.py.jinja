@@ -89,8 +89,12 @@ class {{top_node.type_name}}_TestCase(unittest.TestCase):
         Walk the address map and check the inst name has been correctly populated
         """
         {% for node in top_node.descendants(unroll=True) -%}
+        {% if isinstance(node, systemrdlSignalNode) %}
+        # doing nothing with signal node: {{node.inst_name}}
+        {% else %}
         self.assertEqual(self.dut.{{'.'.join(get_python_path_segments(node))}}.inst_name, '{{node.get_path_segments()[-1]}}')
         self.assertEqual(self.dut.{{'.'.join(get_python_path_segments(node))}}.full_inst_name, '{{'.'.join(node.get_path_segments())}}')
+        {% endif %}
         {% endfor %}
 
     def test_register_properties(self):
@@ -713,8 +717,12 @@ class {{top_node.type_name}}_TestCase(unittest.TestCase):
 
         """
         {%- for node in top_node.descendants(unroll=True) %}
+        {% if isinstance(node, systemrdlSignalNode) %}
+        # doing nothing with signal node: {{node.inst_name}}
+        {% else %}
         with self.assertRaises(AttributeError):
             self.dut.{{'.'.join(get_python_path_segments(node))}}.cppkbrgmgeloagvfgjjeiiushygirh = 1
+        {% endif %}
         {%- endfor %}
 
     {% macro check_readable_register_iterators(node) %}
