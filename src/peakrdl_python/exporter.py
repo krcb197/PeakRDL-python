@@ -12,6 +12,7 @@ import jinja2 as jj
 
 from systemrdl.node import RootNode, Node, RegNode, AddrmapNode, RegfileNode # type: ignore
 from systemrdl.node import FieldNode, MemNode, AddressableNode # type: ignore
+from systemrdl.node import SignalNode # type: ignore
 from systemrdl.rdltypes import OnReadType, OnWriteType, PropertyReference # type: ignore
 
 from .systemrdl_node_utility_functions import get_reg_readable_fields, get_reg_writable_fields, \
@@ -131,6 +132,7 @@ class PythonExporter:
                 'systemrdlAddrmapNode': AddrmapNode,
                 'systemrdlMemNode': MemNode,
                 'systemrdlAddressableNode': AddressableNode,
+                'systemrdlSignalNode': SignalNode,
                 'OnWriteType': OnWriteType,
                 'OnReadType': OnReadType,
                 'PropertyReference': PropertyReference,
