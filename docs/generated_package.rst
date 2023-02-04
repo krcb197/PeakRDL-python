@@ -254,8 +254,15 @@ Consider the following example of an GPIO block with 4 GPIO pins (configured in 
    :language: systemrdl
 
 In the to configure gpio_0 and gpio_1 whilst leaving the other two unaffected it can be done in two
-methods both demonstrated in the following code example:
+methods:
 
+* using the ``write_fields`` method of the register
+* using the register context manager
+
+Both demonstrated in the following code example:
+
+.. literalinclude :: ../example/optimised_access/optimised_access.py
+   :language: python
 
 Walking the Structure
 ---------------------

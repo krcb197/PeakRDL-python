@@ -58,4 +58,6 @@ if __name__ == '__main__':
     # It can also be done with the context manager
     with dut.gpio_register.single_read_modify_write() as reg:
         reg.gpio_0_dir.write(optimised_access_gpio_direction_enc_enumcls.GPIO_OUT)
-        reg.
+        reg.gpio_0_pullup.write(False)
+        reg.gpio_0_strength.write(2)
+        reg.gpio_0_dir.write(optimised_access_gpio_direction_enc_enumcls.GPIO_IN)
