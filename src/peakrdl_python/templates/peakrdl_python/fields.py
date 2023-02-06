@@ -404,6 +404,17 @@ class FieldReadOnly(Field, ABC):
         """
         return self.decode_read_value(self.parent_register.read())
 
+    async def async_read(self) -> int:
+        """
+        Asynchronously reads the register that this field is located in and retries the field
+        value applying the required masking and shifting
+
+        Returns:
+            field value
+
+        """
+        return self.decode_read_value(await self.parent_register.async_read())
+
     @property
     def parent_register(self) -> ReadableRegister:
         """
@@ -521,6 +532,53 @@ class FieldWriteOnly(Field, ABC):
                 raise TypeError('Unhandled parent type')
 
         self.parent_register.write(new_reg_value)
+
+    async def async_write(self, value: int) -> None:
+        """
+        The behaviour of this method depends on whether the field is located in
+        a readable register or not:
+
+        If the register is readable, the method will perform an async read-modify-write
+        on the register updating the field with the value provided
+
+        If the register is not writable all other field values will be asynchronously written
+        with zero.
+
+        Args:
+            value: field value to update to
+
+        """
+
+        if not isinstance(value, int):
+            raise TypeError(f'value must be an int but got {type(value)}')
+
+        if value < 0:
+            raise ValueError('value to be written to register must be greater '
+                             'than or equal to 0')
+
+        if value > self.max_value:
+            raise ValueError(f'value to be written to register must be less '
+                             f'than or equal to {self.max_value:d}')
+
+        if self.msb0:
+            value = swap_msb_lsb_ordering(value=value, width=self.width)
+
+        if (self.high == (self.register_data_width - 1)) and (self.low == 0):
+            # special case where the field occupies the whole register,
+            # there a straight write can be performed
+            new_reg_value = value
+        else:
+            # do a read, modify write
+            if isinstance(self.parent_register, RegReadWrite):
+                reg_value = await self.parent_register.async_read()
+                masked_reg_value = reg_value & self.inverse_bitmask
+                new_reg_value = masked_reg_value | (value << self.low)
+            elif isinstance(self.parent_register, RegWriteOnly):
+                new_reg_value = (value << self.low)
+            else:
+                raise TypeError('Unhandled parent type')
+
+        await self.parent_register.async_write(new_reg_value)
 
     @property
     def parent_register(self) -> WritableRegister:

@@ -104,6 +104,17 @@ class RegReadOnly(Reg, ABC):
                                              width=self.width,
                                              accesswidth=self.accesswidth)
 
+    async def async_read(self) -> int:
+        """Asynchronously read value from the register
+
+        Returns:
+            The value from register
+
+        """
+        return await self._callbacks.async_read_callback(addr=self.address,
+                                             width=self.width,
+                                             accesswidth=self.accesswidth)
+
     @property
     @abstractmethod
     def readable_fields(self) -> Iterator[Union['FieldReadOnly', 'FieldReadWrite']]:
@@ -116,6 +127,12 @@ class RegReadOnly(Reg, ABC):
         """
         read the register and return a dictionary of the field values
         """
+    @abstractmethod
+    async def async_read_fields(self):
+        """
+        asynchronously read the register and return a dictionary of the field values
+        """
+
 
 
 class RegWriteOnly(Reg, ABC):
@@ -152,6 +169,33 @@ class RegWriteOnly(Reg, ABC):
                                        accesswidth=self.accesswidth,
                                        data=data)
 
+    async def async_write(self, data: int) -> None:
+        """Asynchronously writes a value to the register
+
+        Args:
+            data: data to be written
+
+        Raises:
+            ValueError: if the value provided is outside the range of the
+                permissible values for the register
+            TypeError: if the type of data is wrong
+        """
+        if not isinstance(data, int):
+            raise TypeError(f'data should be an int got {type(data)}')
+
+        if data > self.max_value:
+            raise ValueError('data out of range')
+
+        if data < 0:
+            raise ValueError('data out of range')
+
+        self._logger.info('Writing data:%X to %X', data, self.address)
+
+        await self._callbacks.async_write_callback(addr=self.address,
+                                           width=self.width,
+                                           accesswidth=self.accesswidth,
+                                           data=data)
+
     @property
     @abstractmethod
     def writable_fields(self) -> Iterator[Union['FieldWriteOnly', 'FieldReadWrite']]:
@@ -165,6 +209,13 @@ class RegWriteOnly(Reg, ABC):
         Do a write to the register, updating any field included in
         the arguments
         """
+    @abstractmethod
+    async def async_write_fields(self, **kwargs) -> None:
+        """
+        Do an async write to the register, updating any field included in
+        the arguments
+        """
+
 
 
 class RegReadWrite(RegReadOnly, RegWriteOnly, ABC):
@@ -178,6 +229,13 @@ class RegReadWrite(RegReadOnly, RegWriteOnly, ABC):
     def write_fields(self, **kwargs) -> None:
         """
         Do a read-modify-write to the register, updating any field included in
+        the arguments
+        """
+
+    @abstractmethod
+    async def async_write_fields(self, **kwargs) -> None:
+        """
+        Do a async read-modify-write to the register, updating any field included in
         the arguments
         """
 
