@@ -1,10 +1,10 @@
 """
-Blah Blah
+Main Classes for the PeakRDL Python
 """
 import os
 from pathlib import Path
 from shutil import copyfile
-from typing import List
+from typing import List, NoReturn
 from glob import glob
 
 import autopep8 # type: ignore
@@ -12,6 +12,7 @@ import jinja2 as jj
 
 from systemrdl.node import RootNode, Node, RegNode, AddrmapNode, RegfileNode # type: ignore
 from systemrdl.node import FieldNode, MemNode, AddressableNode # type: ignore
+from systemrdl.node import SignalNode # type: ignore
 from systemrdl.rdltypes import OnReadType, OnWriteType, PropertyReference # type: ignore
 
 from .systemrdl_node_utility_functions import get_reg_readable_fields, get_reg_writable_fields, \
@@ -22,7 +23,16 @@ from .systemrdl_node_utility_functions import get_reg_readable_fields, get_reg_w
     get_memory_max_entry_value_hex_string, get_array_typecode, get_memory_width_bytes, \
     get_field_default_value
 
+from .safe_name_utility import get_python_path_segments, safe_node_name
+
+from .__about__ import __version__
+
 file_path = os.path.dirname(__file__)
+
+class PythonExportTemplateError(Exception):
+    """
+    Exception for hading errors in the templating
+    """
 
 class PythonExporter:
     """
@@ -80,7 +90,8 @@ class PythonExporter:
         self.node_type_name = {}
 
     def export(self, node: Node, path: str,
-               autoformatoutputs: bool=True) -> List[str]:
+               autoformatoutputs: bool=True,
+               skip_test_case_generation: bool=False) -> List[str]:
         """
         Generated Python Code and Testbench
 
@@ -90,17 +101,20 @@ class PythonExporter:
             path (str) : Output package path.
             autoformatoutputs (bool) : If set to True the code will be run through autopep8 to
                 clean it up. This can slow down large jobs or mask problems
+            skip_test_case_generation (bool): skip generation the generation of the test cases
 
         Returns:
             List[str] : modules that have been exported:
         """
+        # pylint: disable=too-many-locals
 
         # If it is the root node, skip to top addrmap
         if isinstance(node, RootNode):
             node = node.top
 
         package_path = os.path.join(path, node.inst_name)
-        self._create_empty_package(package_path=package_path)
+        self._create_empty_package(package_path=package_path,
+                                   skip_test_case_generation=skip_test_case_generation)
 
         modules = [node]
 
@@ -118,6 +132,7 @@ class PythonExporter:
                 'systemrdlAddrmapNode': AddrmapNode,
                 'systemrdlMemNode': MemNode,
                 'systemrdlAddressableNode': AddressableNode,
+                'systemrdlSignalNode': SignalNode,
                 'OnWriteType': OnWriteType,
                 'OnReadType': OnReadType,
                 'PropertyReference': PropertyReference,
@@ -140,6 +155,10 @@ class PythonExporter:
                 'get_array_typecode': get_array_typecode,
                 'get_memory_width_bytes': get_memory_width_bytes,
                 'get_field_default_value': get_field_default_value,
+                'raise_template_error' : self._raise_template_error,
+                'get_python_path_segments' : get_python_path_segments,
+                'safe_node_name' : safe_node_name,
+                'version' : __version__
             }
 
             context.update(self.user_template_context)
@@ -156,17 +175,18 @@ class PythonExporter:
                 stream = template.stream(context)
                 stream.dump(module_fqfn, encoding='utf-8')
 
-            template = self.jj_env.get_template("addrmap_tb.py.jinja")
-            module_tb_fqfn = os.path.join(package_path,
-                                          'tests',
-                                          'test_' + block.inst_name + '.py')
-            if autoformatoutputs is True:
-                module_tb_code_str = autopep8.fix_code(template.render(context))
-                with open(module_tb_fqfn, "w", encoding='utf-8') as fid:
-                    fid.write(module_tb_code_str)
-            else:
-                stream = template.stream(context)
-                stream.dump(module_tb_fqfn, encoding='utf-8')
+            if not skip_test_case_generation:
+                template = self.jj_env.get_template("addrmap_tb.py.jinja")
+                module_tb_fqfn = os.path.join(package_path,
+                                              'tests',
+                                              'test_' + block.inst_name + '.py')
+                if autoformatoutputs is True:
+                    module_tb_code_str = autopep8.fix_code(template.render(context))
+                    with open(module_tb_fqfn, "w", encoding='utf-8') as fid:
+                        fid.write(module_tb_code_str)
+                else:
+                    stream = template.stream(context)
+                    stream.dump(module_tb_fqfn, encoding='utf-8')
 
         return [m.inst_name for m in modules]
 
@@ -213,12 +233,14 @@ class PythonExporter:
                 self.node_type_name[child_inst] = cand_type_name
 
     @staticmethod
-    def _create_empty_package(package_path:str) -> None:
+    def _create_empty_package(package_path:str,
+                              skip_test_case_generation: bool) -> None:
         """
         create the directories and __init__.py files associated with the exported package
 
         Args:
             package_path: directory for the package output
+            skip_test_case_generation: skip the generation of the test folders
 
         Returns:
             None
@@ -227,15 +249,17 @@ class PythonExporter:
 
         Path(package_path).mkdir(parents=True, exist_ok=True)
         Path(os.path.join(package_path, 'reg_model')).mkdir(parents=True, exist_ok=True)
-        Path(os.path.join(package_path, 'tests')).mkdir(parents=True, exist_ok=True)
+        if not skip_test_case_generation:
+            Path(os.path.join(package_path, 'tests')).mkdir(parents=True, exist_ok=True)
         Path(os.path.join(package_path, 'lib')).mkdir(parents=True, exist_ok=True)
 
         module_fqfn = os.path.join(package_path, 'reg_model', '__init__.py')
         with open(module_fqfn, 'w', encoding='utf-8') as fid:
             fid.write('pass\n')
-        module_fqfn = os.path.join(package_path, 'tests', '__init__.py')
-        with open(module_fqfn, 'w', encoding='utf-8') as fid:
-            fid.write('pass\n')
+        if not skip_test_case_generation:
+            module_fqfn = os.path.join(package_path, 'tests', '__init__.py')
+            with open(module_fqfn, 'w', encoding='utf-8') as fid:
+                fid.write('pass\n')
         module_fqfn = os.path.join(package_path, '__init__.py')
         with open(module_fqfn, 'w', encoding='utf-8') as fid:
             fid.write('pass\n')
@@ -252,3 +276,15 @@ class PythonExporter:
                      dst=os.path.join(package_path,
                                       'lib',
                                       filename))
+
+    def _raise_template_error(self, message: str) -> NoReturn:
+        """
+        Helper function to raise an exception from within the templating
+
+        Args:
+            message: message to put in the exception
+
+        Raises: PythonExportTemplateError
+
+        """
+        raise PythonExportTemplateError(message)

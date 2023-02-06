@@ -1,0 +1,64 @@
+property python_inst_name { type = string; component = addrmap | regfile | reg | field | mem; };
+
+addrmap overridden_names {
+
+    reg {
+        python_inst_name="overidden_reg_a";
+        field { python_inst_name="overridden_field_a";  } field_a[31:0];
+    } reg_a;
+
+    reg {
+        python_inst_name="overidden_reg_b";
+        field { python_inst_name="overridden_field_a";  } field_a[31:0];
+    } reg_b[3];
+
+
+    regfile {
+        python_inst_name="regfile_a";
+        reg {
+            python_inst_name="overidden_reg_c";
+            field { python_inst_name="overridden_field_d";  } field_d[31:0];
+        } reg_c[3];
+        regfile {
+            reg {
+                python_inst_name="overidden_reg_e";
+                field { python_inst_name="overridden_field_f";  } field_f[31:0];
+            } reg_e;
+        } regfile_a;
+    } regfile_a[2];
+
+    regfile {
+        regfile {
+			desc = "some description of the regfile";
+            reg {
+                default sw = r;
+                default hw = r;
+                python_inst_name="overridden_reg_a";
+                field { python_inst_name="overridden_basicfield_a";  } basicfield_a[31:0];
+            } reg_a;
+        } layer2_regfile_a[2];
+    } layer1_regfile_b;
+
+    addrmap {
+        python_inst_name="overidden_addr_map_a";
+        reg {
+            python_inst_name="overidden_reg_a";
+            field { python_inst_name="overridden_field_a";  } field_a[31:0];
+        } reg_a;
+    } addr_map_a;
+
+    addrmap {
+        python_inst_name="overidden_addr_map_b";
+        reg {
+            python_inst_name="overidden_reg_a";
+            field { python_inst_name="overridden_field_a";  } field_a[31:0];
+        } reg_a;
+    } addr_map_b;
+
+    external mem {
+        mementries = 4;
+        memwidth = 32;
+        python_inst_name="overidden_mem_a";
+    } mem_a;
+
+};

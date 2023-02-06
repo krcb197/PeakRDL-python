@@ -93,6 +93,10 @@ jobs:
         pytest testcase_output/raw
         pytest testcase_output/autopep8
 
+    - name: Backward Compatibility Test
+      run: |
+        python tests/test_backward_compatibility.py
+
     - name: Run PeakRDL Case
       run: |
         python -m pip install peakrdl
@@ -102,6 +106,8 @@ jobs:
         pytest peakrdl_out/raw
         peakrdl python tests/testcases/basic.rdl -o peakrdl_out/autopep8/ --autoformat
         pytest peakrdl_out/autopep8
+
+        peakrdl python tests/testcases/basic.rdl -o peakrdl_out/no_test/ --skip_test_case_generation
 
     - name: Check Examples
       run: |
@@ -162,7 +168,7 @@ jobs:
           name: artifact
           path: dist
 
-      - uses: pypa/gh-action-pypi-publish@master
+      - uses: pypa/gh-action-pypi-publish@release/v1
         with:
           user: __token__
           password: ${{ secrets.PYPI_API_TOKEN }}
