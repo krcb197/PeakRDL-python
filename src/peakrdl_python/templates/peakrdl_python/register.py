@@ -234,16 +234,14 @@ class RegReadWrite(RegReadOnly, RegWriteOnly, ABC):
     @contextmanager
     def single_read_modify_write(self, verify:bool = False, skip_write: bool = False):
         self.__register_state = self.read()
-        self.__initial_register_state = self.__register_state
         self.__in_context_manager = True
         yield self
         self.__in_context_manager = False
         if not skip_write:
             self.write(self.__register_state, verify)
-        else:
-            # skip the write
-            if self.__register_state != self.__initial_register_state:
-                raise RuntimeError('Register state has changed ')
+
+        # clear the register states at the end of the context manager
+        self.__register_state = None
 
 
     def write(self, data: int, verify:bool = False) -> None:
@@ -262,6 +260,8 @@ class RegReadWrite(RegReadOnly, RegWriteOnly, ABC):
                                       expected value
         """
         if self.__in_context_manager:
+            if self.__register_state is None:
+                raise RuntimeError('The internal register state should never be None in the context manager')
             self.__register_state = data
         else:
             super().write(data)
@@ -277,6 +277,8 @@ class RegReadWrite(RegReadOnly, RegWriteOnly, ABC):
             The value from register
         """
         if self.__in_context_manager:
+            if self.__register_state is None:
+                raise RuntimeError('The internal register state should never be None in the context manager')
             return self.__register_state
 
         return self._callbacks.read_callback(addr=self.address,
