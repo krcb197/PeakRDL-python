@@ -241,8 +241,9 @@ class RegReadWrite(RegReadOnly, RegWriteOnly, ABC):
         if not skip_write:
             self.write(self.__register_state, verify)
         else:
+            # skip the write
             if self.__register_state != self.__initial_register_state:
-                raise
+                raise RuntimeError('Register state has changed ')
 
 
     def write(self, data: int, verify:bool = False) -> None:
