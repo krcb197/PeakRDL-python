@@ -1,0 +1,21 @@
+
+addrmap all_register_access_types {
+
+    reg {
+        default sw = rw;
+        default hw = r;
+        field {} basicfield[31:0];
+    } reg_rw;
+
+    reg {
+        default sw = r;
+        default hw = r;
+        field {} basicfield[31:0];
+    } reg_r;
+
+    reg {
+        default sw = w;
+        default hw = r;
+        field {} basicfield[31:0];
+    } reg_w;
+};

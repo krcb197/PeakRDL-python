@@ -241,8 +241,31 @@ simulator.
 .. literalinclude :: ../example/simulating_callbacks/flashing_the_LED.py
    :language: python
 
+Optimised Access
+----------------
+
+Each time the ``read`` or ``write`` method for a register field is accessed the hardware is read
+and or written (a write to a field will normally require a preceding read). When accessing multiple
+fields in the same register, it may be desirable to use one of the optimised access methods.
+
+Consider the following example of an GPIO block with 4 GPIO pins (configured in a single register):
+
+.. literalinclude :: ../example/optimised_access/optimised_access.rdl
+   :language: systemrdl
+
+In the to configure gpio_0 and gpio_1 whilst leaving the other two unaffected it can be done in two
+methods:
+
+* using the ``write_fields`` method of the register
+* using the register context manager
+
+Both demonstrated in the following code example:
+
+.. literalinclude :: ../example/optimised_access/optimised_access.py
+   :language: python
+
 Walking the Structure
-=====================
+---------------------
 
 The following two example show how to use the generators within the register abstraction layer
 package to traverse the structure.
@@ -261,7 +284,7 @@ a file called ``chip_with_registers.rdl``:
     peakpython chip_with_registers.rdl --outdir chip_with_registers --test
 
 Traversing without Unrolling Loops
-----------------------------------
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 The first example is reading all the readable registers from the register map and writing them
 into a JSON file. To exploit the capabilities of a JSON file the arrays of registers and
@@ -353,7 +376,7 @@ This will create a JSON file as follows:
     }
 
 Traversing without Unrolling Loops
-----------------------------------
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 The second example is setting every register in the address map back to its default values. In
 this case the loops are unrolled to conveniently access all the register without needing to
