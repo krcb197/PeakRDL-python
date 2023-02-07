@@ -1,8 +1,4 @@
-"""Python Wrapper for the {{top_node.inst_name}} register model
-
-This code was generated from the PeakRDL-python package
-
-"""
+{% include "header.py.jinja" with context %}
 {% if uses_enum %}from enum import IntEnum, unique{% endif %}
 from typing import Tuple
 from typing import Iterator
@@ -143,6 +139,8 @@ class {{get_fully_qualified_type_name(node)}}_cls(RegFile):
             '{{child_node.inst_name}}':'{{safe_node_name(child_node)}}',
             {%- elif isinstance(child_node, systemrdlRegfileNode) -%}
             '{{child_node.inst_name}}':'{{safe_node_name(child_node)}}',
+            {%- elif isinstance(child_node, systemrdlSignalNode) %}
+            # doing nothing with signal node: {{child_node.inst_name}}
             {% else %}
             {{ raise_template_error('unexpected type') }}
             {%- endif %}
@@ -249,6 +247,8 @@ class {{get_fully_qualified_type_name(node)}}_cls(AddressMap):
             '{{child_node.inst_name}}':'{{safe_node_name(child_node)}}',
             {%- elif isinstance(child_node, systemrdlMemNode) %}
             '{{child_node.inst_name}}':'{{safe_node_name(child_node)}}',
+            {%- elif isinstance(child_node, systemrdlSignalNode) %}
+            # doing nothing with signal node: {{child_node.inst_name}}
             {% else %}
             {{ raise_template_error('unexpected type') }}
             {%- endif %}

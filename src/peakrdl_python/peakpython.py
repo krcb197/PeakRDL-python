@@ -8,6 +8,7 @@ import os
 import subprocess
 import unittest.loader
 from typing import List, Optional
+import pathlib
 
 import coverage # type: ignore
 
@@ -44,7 +45,8 @@ def build_command_line_parser() -> argparse.ArgumentParser:
                         help='use autopep8 on generated code')
     parser.add_argument('--ipxact', dest='ipxact', nargs='*',
                         type=str)
-
+    parser.add_argument('--user_template_dir', action='store', type=pathlib.Path,
+                           help='directory of user templates to override the default ones')
     checker = parser.add_argument_group('post-generate checks')
     checker.add_argument('--lint', action='store_true',
                          help='run pylint on the generated python')
@@ -54,6 +56,8 @@ def build_command_line_parser() -> argparse.ArgumentParser:
                          help='run a coverage report on the unittests')
     checker.add_argument('--html_coverage_out',
                          help='output director (default: %(default)s)')
+    parser.add_argument('--skip_test_case_generation', action='store_true',
+                        help='skip the generation of the test cases')
 
     return parser
 
@@ -89,7 +93,9 @@ def compile_rdl(infile:str,
     return rdlc.elaborate(top_def_name=top).top
 
 
-def generate(root:Node, outdir:str, autoformatoutputs:bool=True) -> List[str]:
+def generate(root:Node, outdir:str,
+             autoformatoutputs:bool=True,
+             skip_test_case_generation:bool=False) -> List[str]:
     """
     Generate a PeakRDL output package from compiled systemRDL
 
@@ -105,7 +111,8 @@ def generate(root:Node, outdir:str, autoformatoutputs:bool=True) -> List[str]:
     """
     print(f'Info: Generating python for {root.inst_name} in {outdir}')
     modules = PythonExporter().export(root, outdir,
-                                      autoformatoutputs=autoformatoutputs)
+                                      autoformatoutputs=autoformatoutputs,
+                                      skip_test_case_generation=skip_test_case_generation)
 
     return modules
 
@@ -138,6 +145,9 @@ def main_function():
     cli_parser = build_command_line_parser()
     args = cli_parser.parse_args()
 
+    if args.test and args.skip_test_case_generation:
+        raise ValueError('it is not possible to run the tests if the generation has been skipped')
+
     print('***************************************************************')
     print('* Compile the SystemRDL                                       *')
     print('***************************************************************')
@@ -147,7 +157,8 @@ def main_function():
     print('***************************************************************')
     print('* Generate the Python Package                                 *')
     print('***************************************************************')
-    generate(spec, args.outdir, args.autoformat)
+    generate(spec, args.outdir, args.autoformat,
+             skip_test_case_generation=args.skip_test_case_generation)
 
     if args.lint:
         print('***************************************************************')

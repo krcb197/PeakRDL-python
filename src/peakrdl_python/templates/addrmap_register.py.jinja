@@ -161,7 +161,13 @@ class {{get_fully_qualified_type_name(node)}}_cls(RegWriteOnly):
         """
         return {
             {%- for child_node in node.children(unroll=False) -%}
+            {%- if isinstance(child_node, systemrdlFieldNode) %}
             '{{child_node.inst_name}}':'{{safe_node_name(child_node)}}',
+            {%- elif isinstance(child_node, systemrdlSignalNode) %}
+            # doing nothing with signal node: {{child_node.inst_name}}
+            {% else %}
+            {{ raise_template_error('unexpected type') }}
+            {% endif %}
             {%- endfor %}
             }
 

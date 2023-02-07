@@ -611,4 +611,3 @@ class FieldEnumWriteOnly(FieldWriteOnly, FieldEnum, ABC):
     """
     __slots__: List[str] = []
 
-
