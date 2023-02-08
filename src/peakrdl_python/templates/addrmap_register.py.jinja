@@ -1,11 +1,11 @@
 
 {%- macro register_class(node) %}
     {%- if node.has_sw_readable and node.has_sw_writable %}
-class {{get_fully_qualified_type_name(node)}}_cls(RegReadWrite):
+class {{get_fully_qualified_type_name(node)}}_cls(Reg{% if is_async %}Async{% endif %}ReadWrite):
     {%- elif node.has_sw_readable and not node.has_sw_writable %}
-class {{get_fully_qualified_type_name(node)}}_cls(RegReadOnly):
+class {{get_fully_qualified_type_name(node)}}_cls(Reg{% if is_async %}Async{% endif %}ReadOnly):
     {%- elif not node.has_sw_readable and node.has_sw_writable %}
-class {{get_fully_qualified_type_name(node)}}_cls(RegWriteOnly):
+class {{get_fully_qualified_type_name(node)}}_cls(Reg{% if is_async %}Async{% endif %}WriteOnly):
     {%- endif %}
     """
     Class to represent a register in the register model
@@ -50,11 +50,11 @@ class {{get_fully_qualified_type_name(node)}}_cls(RegWriteOnly):
         {%- endfor %}
 
     {% if node.has_sw_readable %}
-    def read_fields(self):
+    {% if is_async %}async {% endif %}def read_fields(self):
         """
         read the register and return a dictionary of the field values
         """
-        reg_value = self.read()
+        reg_value = {% if is_async %}await {% endif %}self.read()
 
         return_dict = {
                         {%- for child_node in get_reg_readable_fields(node) %}
@@ -65,23 +65,8 @@ class {{get_fully_qualified_type_name(node)}}_cls(RegWriteOnly):
 
         return return_dict
 
-    async def async_read_fields(self):
-        """
-        asynchronously read the register and return a dictionary of the field values
-        """
-        reg_value = await self.async_read()
-
-        return_dict = {
-                        {%- for child_node in get_reg_readable_fields(node) %}
-                        '{{child_node.inst_name}}' : self.{{child_node.inst_name}}.decode_read_value(reg_value)
-                        {%- if not loop.last -%} ,  {%- endif -%}
-                        {% endfor %}
-                      }
-
-        return return_dict
-
     @property
-    def readable_fields(self) -> Iterator[Union[FieldReadOnly, FieldReadWrite]]:
+    def readable_fields(self) -> Iterator[Union[Field{% if is_async %}Async{% endif %}ReadOnly, Field{% if is_async %}Async{% endif %}ReadWrite]]:
         """
         generator that produces has all the readable fields within the register
         """
@@ -93,7 +78,7 @@ class {{get_fully_qualified_type_name(node)}}_cls(RegWriteOnly):
 
     {% if node.has_sw_writable %}
     @property
-    def writable_fields(self) -> Iterator[Union[FieldWriteOnly, FieldReadWrite]]:
+    def writable_fields(self) -> Iterator[Union[Field{% if is_async %}Async{% endif %}WriteOnly, Field{% if is_async %}Async{% endif %}ReadWrite]]:
         """
         generator that produces has all the writable fields within the register
         """
@@ -102,7 +87,7 @@ class {{get_fully_qualified_type_name(node)}}_cls(RegWriteOnly):
         {% endfor %}
 
     {% if node.has_sw_readable %}
-    def write_fields(self, **kwargs) -> None:  # type
+    {% if is_async %}async {% endif %}def write_fields(self, **kwargs) -> None:  # type
         """
         Do a read-modify-write to the register, updating any field included in
         the arguments
@@ -125,35 +110,10 @@ class {{get_fully_qualified_type_name(node)}}_cls(RegWriteOnly):
 
         inverse_bit_mask = self.max_value ^ bit_mask
 
-        self.write((self.read() & inverse_bit_mask) | reg_value)
-
-    async def async_write_fields(self, **kwargs) -> None:  # type
-        """
-        Do an async read-modify-write to the register, updating any field included in
-        the arguments
-        """
-
-        if len(kwargs) == 0:
-            raise ValueError('no command args')
-
-        bit_mask = 0
-        reg_value = 0
-        {%- for child_node in get_reg_writable_fields(node) %}
-        if '{{child_node.inst_name}}' in kwargs:
-            reg_value |= self.{{child_node.inst_name}}.encode_write_value(kwargs['{{child_node.inst_name}}'])
-            bit_mask |= self.{{child_node.inst_name}}.bitmask
-            kwargs.pop('{{child_node.inst_name}}')
-        {%- endfor %}
-        if len(kwargs) != 0:
-            # left over unhandled arguments
-            raise ValueError('unrecognised arguments in field')
-
-        inverse_bit_mask = self.max_value ^ bit_mask
-
-        await self.async_write(((await self.async_read()) & inverse_bit_mask) | reg_value)
+        {% if is_async %}await {% endif %}self.write(({% if is_async %}await {% endif %}self.read() & inverse_bit_mask) | reg_value)
 
     {% else %}
-    def write_fields(self, {%- for child_node in node.fields() -%} {{safe_node_name(child_node)}} : {%- if 'encode' in child_node.list_properties() %}{{get_fully_qualified_enum_type(child_node.get_property('encode'), top_node.parent)}}_enumcls{% else %}int{% endif %}{%- if not loop.last -%},{%- endif -%}{%- endfor -%}) -> None: # type: ignore[override]
+    {% if is_async %}async {% endif %}def write_fields(self, {%- for child_node in node.fields() -%} {{safe_node_name(child_node)}} : {%- if 'encode' in child_node.list_properties() %}{{get_fully_qualified_enum_type(child_node.get_property('encode'), top_node.parent)}}_enumcls{% else %}int{% endif %}{%- if not loop.last -%},{%- endif -%}{%- endfor -%}) -> None: # type: ignore[override]
         """
         Do a write to the register, updating all fields
         """
@@ -162,18 +122,8 @@ class {{get_fully_qualified_type_name(node)}}_cls(RegWriteOnly):
         reg_value |= self.{{safe_node_name(child_node)}}.encode_write_value({{safe_node_name(child_node)}})
         {% endfor %}
 
-        self.write(reg_value)
+        {% if is_async %}await {% endif %}self.write(reg_value)
 
-    async def async_write_fields(self, {%- for child_node in node.fields() -%} {{child_node.inst_name}} : {%- if 'encode' in child_node.list_properties() %}{{get_fully_qualified_enum_type(child_node.get_property('encode'), top_node.parent)}}_enumcls{% else %}int{% endif %}{%- if not loop.last -%},{%- endif -%}{%- endfor -%}) -> None: # type: ignore[override]
-        """
-        Do a write to the register, updating all fields
-        """
-        reg_value = 0
-        {%- for child_node in node.fields() %}
-        reg_value |= self.{{child_node.inst_name}}.encode_write_value({{child_node.inst_name}})
-        {% endfor %}
-
-        await self.async_write(reg_value)
     {% endif %}
     {% endif %}
 
@@ -214,11 +164,11 @@ class {{get_fully_qualified_type_name(node)}}_cls(RegWriteOnly):
 
     {%- if node.is_array %}
         {%- if node.has_sw_readable and node.has_sw_writable %}
-class {{get_fully_qualified_type_name(node)}}_array_cls(RegReadWriteArray):
+class {{get_fully_qualified_type_name(node)}}_array_cls(Reg{% if is_async %}Async{% endif %}ReadWriteArray):
         {%- elif node.has_sw_readable and not node.has_sw_writable %}
-class {{get_fully_qualified_type_name(node)}}_array_cls(RegReadOnlyArray):
+class {{get_fully_qualified_type_name(node)}}_array_cls(Reg{% if is_async %}Async{% endif %}ReadOnlyArray):
         {%- elif not node.has_sw_readable and node.has_sw_writable %}
-class {{get_fully_qualified_type_name(node)}}_array_cls(RegWriteOnlyArray):
+class {{get_fully_qualified_type_name(node)}}_array_cls(Reg{% if is_async %}Async{% endif %}WriteOnlyArray):
         {%- endif %}
     """
     Class to represent a register array in the register model

@@ -11,6 +11,7 @@ from .callbacks import CallbackSet
 
 if TYPE_CHECKING:
     from .fields import FieldReadOnly, FieldWriteOnly, FieldReadWrite
+    from .fields import FieldAsyncReadOnly, FieldAsyncWriteOnly, FieldAsyncReadWrite
 
 
 class Reg(Node, ABC):
@@ -104,17 +105,6 @@ class RegReadOnly(Reg, ABC):
                                              width=self.width,
                                              accesswidth=self.accesswidth)
 
-    async def async_read(self) -> int:
-        """Asynchronously read value from the register
-
-        Returns:
-            The value from register
-
-        """
-        return await self._callbacks.async_read_callback(addr=self.address,
-                                             width=self.width,
-                                             accesswidth=self.accesswidth)
-
     @property
     @abstractmethod
     def readable_fields(self) -> Iterator[Union['FieldReadOnly', 'FieldReadWrite']]:
@@ -127,12 +117,6 @@ class RegReadOnly(Reg, ABC):
         """
         read the register and return a dictionary of the field values
         """
-    @abstractmethod
-    async def async_read_fields(self):
-        """
-        asynchronously read the register and return a dictionary of the field values
-        """
-
 
 
 class RegWriteOnly(Reg, ABC):
@@ -169,7 +153,85 @@ class RegWriteOnly(Reg, ABC):
                                        accesswidth=self.accesswidth,
                                        data=data)
 
-    async def async_write(self, data: int) -> None:
+    @property
+    @abstractmethod
+    def writable_fields(self) -> Iterator[Union['FieldWriteOnly', 'FieldReadWrite']]:
+        """
+        generator that produces has all the readable fields within the register
+        """
+
+    @abstractmethod
+    def write_fields(self, **kwargs) -> None:
+        """
+        Do a write to the register, updating any field included in
+        the arguments
+        """
+
+
+class RegReadWrite(RegReadOnly, RegWriteOnly, ABC):
+    """
+    class for a read and write only register
+
+    """
+    __slots__: List[str] = []
+
+    @abstractmethod
+    def write_fields(self, **kwargs) -> None:
+        """
+        Do a read-modify-write to the register, updating any field included in
+        the arguments
+        """
+
+
+class RegAsyncReadOnly(RegReadOnly, ABC):
+    """
+    class for an asynchronous read only register
+
+    Args:
+        callbacks: set of callback to be used for accessing the hardware or simulator
+        address: address of the register
+        width: width of the register in bits
+        accesswidth: minimum access width of the register in bits
+        logger_handle: name to be used logging messages associate with this
+            object
+
+    """
+
+    __slots__: List[str] = []
+
+    async def read(self) -> int:
+        """Read value from the register
+
+        Returns:
+            The value from register
+
+        """
+        return await self._callbacks.read_callback(addr=self.address,
+                                             width=self.width,
+                                             accesswidth=self.accesswidth)
+
+    @property
+    @abstractmethod
+    def readable_fields(self) -> Iterator[Union['FieldAsyncReadOnly', 'FieldAsyncReadWrite']]:
+        """
+        generator that produces has all the readable fields within the register
+        """
+
+    @abstractmethod
+    async def read_fields(self):
+        """
+        asynchronously read the register and return a dictionary of the field values
+        """
+
+
+class RegAsyncWriteOnly(RegWriteOnly, ABC):
+    """
+    class for an asynchronous write only register
+    """
+
+    __slots__: List[str] = []
+
+    async def write(self, data: int) -> None:
         """Asynchronously writes a value to the register
 
         Args:
@@ -191,57 +253,45 @@ class RegWriteOnly(Reg, ABC):
 
         self._logger.info('Writing data:%X to %X', data, self.address)
 
-        await self._callbacks.async_write_callback(addr=self.address,
-                                           width=self.width,
-                                           accesswidth=self.accesswidth,
-                                           data=data)
+        await self._callbacks.write_callback(addr=self.address,
+                                             width=self.width,
+                                             accesswidth=self.accesswidth,
+                                             data=data)
 
     @property
     @abstractmethod
-    def writable_fields(self) -> Iterator[Union['FieldWriteOnly', 'FieldReadWrite']]:
+    def writable_fields(self) -> Iterator[Union['FieldAsyncWriteOnly', 'FieldAsyncReadWrite']]:
         """
-        generator that produces has all the readable fields within the register
+        generator that produces has all the writable fields within the register
         """
 
     @abstractmethod
-    def write_fields(self, **kwargs) -> None:
-        """
-        Do a write to the register, updating any field included in
-        the arguments
-        """
-    @abstractmethod
-    async def async_write_fields(self, **kwargs) -> None:
+    async def write_fields(self, **kwargs) -> None:
         """
         Do an async write to the register, updating any field included in
         the arguments
         """
 
 
-
-class RegReadWrite(RegReadOnly, RegWriteOnly, ABC):
+class RegAsyncReadWrite(RegAsyncReadOnly, RegAsyncWriteOnly, ABC):
     """
-    class for a read and write only register
+    class for an asynchronous read and write register
 
     """
     __slots__: List[str] = []
 
     @abstractmethod
-    def write_fields(self, **kwargs) -> None:
+    async def write_fields(self, **kwargs) -> None:
         """
-        Do a read-modify-write to the register, updating any field included in
-        the arguments
-        """
-
-    @abstractmethod
-    async def async_write_fields(self, **kwargs) -> None:
-        """
-        Do a async read-modify-write to the register, updating any field included in
+        Do an async read-modify-write to the register, updating any field included in
         the arguments
         """
 
 
 ReadableRegister = Union[RegReadOnly, RegReadWrite]
 WritableRegister = Union[RegWriteOnly, RegReadWrite]
+ReadableAsyncRegister = Union[RegAsyncReadOnly, RegAsyncReadWrite]
+WritableAsyncRegister = Union[RegAsyncWriteOnly, RegAsyncReadWrite]
 
 
 class RegReadOnlyArray(BaseArray, ABC):
@@ -312,5 +362,74 @@ class RegReadWriteArray(RegReadOnlyArray, RegWriteOnlyArray, ABC):
         # this cast is OK because an explict typing check was done in the __init__
         return cast(Union[RegReadWrite, Tuple[RegReadWrite, ...]], super().__getitem__(item))
 
+class RegAsyncReadOnlyArray(BaseArray, ABC):
+    """
+    base class for a array of async read only registers
+    """
+    __slots__: List[str] = []
+
+    def __init__(self, logger_handle: str, inst_name: str,
+                 parent: Union[RegFile, AddressMap, Memory],
+                 elements: Tuple[RegAsyncReadOnly, ...]):
+
+        for element in elements:
+            if not isinstance(element, RegAsyncReadOnly):
+                raise TypeError(f'All Elements should be of type RegAsyncReadOnly, '
+                                f'found {type(element)}')
+
+        super().__init__(logger_handle=logger_handle, inst_name=inst_name,
+                         parent=parent, elements=elements)
+
+    def __getitem__(self, item) -> Union[RegAsyncReadOnly, Tuple[RegAsyncReadOnly, ...]]:
+        # this cast is OK because an explict typing check was done in the __init__
+        return cast(Union[RegAsyncReadOnly, Tuple[RegAsyncReadOnly, ...]], super().__getitem__(item))
+
+class RegAsyncWriteOnlyArray(BaseArray, ABC):
+    """
+    base class for a array of async write only registers
+    """
+    __slots__: List[str] = []
+
+    def __init__(self, logger_handle: str, inst_name: str,
+                 parent: Union[RegFile, AddressMap, Memory],
+                 elements: Tuple[RegAsyncWriteOnly, ...]):
+
+        for element in elements:
+            if not isinstance(element, RegAsyncWriteOnly):
+                raise TypeError(f'All Elements should be of type RegAsyncWriteOnly, '
+                                f'found {type(element)}')
+
+        super().__init__(logger_handle=logger_handle, inst_name=inst_name,
+                         parent=parent, elements=elements)
+
+    def __getitem__(self, item) -> Union[RegAsyncWriteOnly, Tuple[RegAsyncWriteOnly, ...]]:
+        # this cast is OK because an explict typing check was done in the __init__
+        return cast(Union[RegAsyncWriteOnly, Tuple[RegAsyncWriteOnly, ...]], super().__getitem__(item))
+
+
+class RegAsyncReadWriteArray(RegAsyncReadOnlyArray, RegAsyncWriteOnlyArray, ABC):
+    """
+    base class for a array of read and write registers
+    """
+    __slots__: List[str] = []
+
+    def __init__(self, logger_handle: str, inst_name: str,
+                 parent: Union[RegFile, AddressMap, Memory],
+                 elements: Tuple[RegAsyncReadWrite, ...]):
+
+        for element in elements:
+            if not isinstance(element, RegAsyncReadWrite):
+                raise TypeError(f'All Elements should be of type RegAsyncReadWrite, '
+                                f'found {type(element)}')
+
+        super().__init__(logger_handle=logger_handle, inst_name=inst_name,
+                         parent=parent, elements=elements)
+
+    def __getitem__(self, item) -> Union[RegAsyncReadWrite, Tuple[RegAsyncReadWrite, ...]]:
+        # this cast is OK because an explict typing check was done in the __init__
+        return cast(Union[RegAsyncReadWrite, Tuple[RegAsyncReadWrite, ...]], super().__getitem__(item))
+
 ReadableRegisterArray = Union[RegReadOnlyArray, RegReadWriteArray]
 WritableRegisterArray = Union[RegWriteOnlyArray, RegReadWriteArray]
+ReadableAsyncRegisterArray = Union[RegAsyncReadOnlyArray, RegAsyncReadWriteArray]
+WritableAsyncRegisterArray = Union[RegAsyncWriteOnlyArray, RegAsyncReadWriteArray]

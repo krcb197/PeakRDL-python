@@ -28,6 +28,8 @@ class Exporter:
         Returns:
 
         """
+        arg_group.add_argument('--async', action='store_true', dest='is_async',
+                               help='define accesses to register model as asynchronous')
         arg_group.add_argument('--autoformat', action='store_true',
                                 help='use autopep8 on generated code')
         arg_group.add_argument('--user_template_dir', action='store', type=pathlib.Path,
@@ -54,6 +56,7 @@ class Exporter:
         peakrdl_exporter.export(
             top_node,
             options.output,
+            options.is_async,
             autoformatoutputs=options.autoformat,
             skip_test_case_generation=options.skip_test_case_generation
         )

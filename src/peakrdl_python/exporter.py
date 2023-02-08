@@ -90,6 +90,7 @@ class PythonExporter:
         self.node_type_name = {}
 
     def export(self, node: Node, path: str,
+               is_async: bool=False,
                autoformatoutputs: bool=True,
                skip_test_case_generation: bool=False) -> List[str]:
         """
@@ -133,6 +134,7 @@ class PythonExporter:
                 'systemrdlMemNode': MemNode,
                 'systemrdlAddressableNode': AddressableNode,
                 'systemrdlSignalNode': SignalNode,
+                'is_async': is_async,
                 'OnWriteType': OnWriteType,
                 'OnReadType': OnReadType,
                 'PropertyReference': PropertyReference,

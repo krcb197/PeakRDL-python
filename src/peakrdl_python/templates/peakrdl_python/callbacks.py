@@ -6,7 +6,7 @@ import sys
 
 from array import array as Array
 
-from typing import Optional
+from typing import Optional, Union
 
 if sys.version_info >= (3, 8):
     # Python 3.8 introduced the Protocol class to the typing module which is more powerful than the
@@ -104,28 +104,18 @@ class CallbackSet:
     """
 
     __slots__ = ['__write_callback', '__read_callback',
-                 '__write_block_callback', '__read_block_callback',
-                 '__async_write_callback', '__async_read_callback',
-                 '__async_write_block_callback', '__async_read_block_callback']
+                 '__write_block_callback', '__read_block_callback']
 
     def __init__(self,
-                 write_callback: Optional[WriteCallback] = None,
-                 read_callback: Optional[ReadCallback] = None,
-                 write_block_callback: Optional[WriteBlockCallback] = None,
-                 read_block_callback: Optional[ReadBlockCallback] = None,
-                 async_write_callback: Optional[AsyncWriteCallback] = None,
-                 async_read_callback: Optional[AsyncReadCallback] = None,
-                 async_write_block_callback: Optional[AsyncWriteBlockCallback] = None,
-                 async_read_block_callback: Optional[AsyncReadBlockCallback] = None):
+                 write_callback: Optional[Union[WriteCallback, AsyncWriteCallback]] = None,
+                 read_callback: Optional[Union[ReadCallback, AsyncReadCallback]] = None,
+                 write_block_callback: Optional[Union[WriteBlockCallback, AsyncWriteBlockCallback]] = None,
+                 read_block_callback: Optional[Union[ReadBlockCallback, AsyncReadBlockCallback]] = None):
 
         self.__read_callback = read_callback
         self.__read_block_callback = read_block_callback
-        self.__async_read_callback = async_read_callback
-        self.__async_read_block_callback = async_read_block_callback
         self.__write_callback = write_callback
         self.__write_block_callback = write_block_callback
-        self.__async_write_callback = async_write_callback
-        self.__async_write_block_callback = async_write_block_callback
 
     @property
     def read_callback(self) -> Optional[ReadCallback]:
@@ -166,42 +156,3 @@ class CallbackSet:
 
         """
         return self.__write_block_callback
-
-    @property
-    def async_read_callback(self) -> Optional[AsyncReadCallback]:
-        """
-        async signle read callback function
-
-        Returns: call back function
-        """
-        return self.__async_read_callback
-
-    @property
-    def async_write_callback(self) -> Optional[AsyncWriteCallback]:
-        """
-        async single write callback function
-
-        Returns: call back function
-        """
-        return self.__async_write_callback
-
-    @property
-    def async_read_block_callback(self) -> Optional[AsyncReadBlockCallback]:
-        """
-        async block read callback function
-
-        Returns: call back function
-
-        """
-        return self.__async_read_block_callback
-
-    @property
-    def async_write_block_callback(self) -> Optional[AsyncWriteBlockCallback]:
-        """
-        async block read callback function
-
-        Returns: call back function
-
-        """
-        return self.__async_write_block_callback
-
