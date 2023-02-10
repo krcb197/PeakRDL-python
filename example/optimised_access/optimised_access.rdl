@@ -1,0 +1,34 @@
+addrmap optimised_access {
+
+    enum gpio_direction_enc {
+			gpio_in = 0;
+			gpio_out = 1;
+		};
+
+    field gpio_direction { encode = gpio_direction_enc; fieldwidth=1; };
+    field gpio_drive_str { fieldwidth=2; };
+    field gpio_pullup { fieldwidth=1; };
+
+
+    reg {
+        default sw = rw;
+        default hw = r;
+
+        gpio_direction gpio_0_dir;
+        gpio_drive_str gpio_0_strength;
+        gpio_pullup gpio_0_pullup;
+
+        gpio_direction gpio_1_dir;
+        gpio_drive_str gpio_1_strength;
+        gpio_pullup gpio_1_pullup;
+
+        gpio_direction gpio_2_dir;
+        gpio_drive_str gpio_2_strength;
+        gpio_pullup gpio_2_pullup;
+
+        gpio_direction gpio_3_dir;
+        gpio_drive_str gpio_3_strength;
+        gpio_pullup gpio_3_pullup;
+
+    } gpio_register;
+};

@@ -85,7 +85,7 @@ class {{get_fully_qualified_type_name(node)}}_cls(Field{%- if 'encode' in node.l
 
         This returns None:
         - if the field is not reset.
-        - if the register resets to a signal value tht can not be determined
+        - if the register resets to a signal value that can not be determined
         """
         int_default = super().default
 
