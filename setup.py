@@ -33,7 +33,7 @@ setup(
         "pylint",
         "coverage",
         "jinja2",
-        "asynctest",
+        "asynctest;python_version<'3.8'",
         "peakrdl-ipxact"
     ],
     classifiers=[

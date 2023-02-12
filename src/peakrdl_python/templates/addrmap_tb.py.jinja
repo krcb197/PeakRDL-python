@@ -1,9 +1,14 @@
 {% include "header_tb.py.jinja" with context %}
 from array import array as Array
 {% if asyncoutput %}
-import asynctest
-from asynctest.mock import patch, call
-import asyncio
+import sys
+if sys.version_info < (3, 8):
+    import asynctest
+    from asynctest.mock import patch, call
+    import asyncio
+else:
+    import unittest
+    from unittest.mock import patch, call
 {% else %}
 import unittest
 from unittest.mock import patch, call
@@ -71,7 +76,16 @@ from ..reg_model.{{top_node.type_name}} import {{top_node.type_name}}_cls
 {% if asyncoutput %}async {%endif %}def write_block_callback(addr: int, width: int, accesswidth: int,  data: Array):
     {% if asyncoutput %}await {% endif %}write_block_addr_space(addr=addr, width=width, accesswidth=accesswidth, data=data)
 
-class {{top_node.type_name}}_TestCase({%if asyncoutput %}asynctest{% else %}unittest{% endif %}.TestCase):
+{% if asyncoutput %}
+if sys.version_info < (3, 8):
+    TestCaseBase = asynctest.TestCase
+else:
+    TestCaseBase = unittest.TestCase
+{% else %}
+TestCaseBase = unittest.TestCase
+{% endif %}
+
+class {{top_node.type_name}}_TestCase(TestCaseBase):
 
     def setUp(self):
         self.dut = {{top_node.type_name}}_cls(CallbackSet(read_callback=read_callback,
@@ -1021,7 +1035,7 @@ class {{top_node.type_name}}_TestCase({%if asyncoutput %}asynctest{% else %}unit
         {% endif %}
         {% endfor %}
 
-class {{top_node.type_name}}_TestCase_BlockAccess({% if asyncoutput %}asynctest{% else %}unittest{% endif %}.TestCase):
+class {{top_node.type_name}}_TestCase_BlockAccess(TestCaseBase):
 
     def setUp(self):
         self.dut = {{top_node.type_name}}_cls(CallbackSet(read_callback=read_callback,
