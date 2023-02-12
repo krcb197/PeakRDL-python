@@ -3,7 +3,7 @@
 import sys
 import os
 
-import peakrdl_python.peakpython as pp
+import src.peakrdl_python.peakpython as pp
 
 from glob import glob
 
@@ -26,17 +26,18 @@ for case in testcases:
         root = pp.compile_rdl(rdl_file, ipxact_files=[os.path.join(test_case_path, 'simple.xml')])
     else:
         root = pp.compile_rdl(rdl_file)
-    modules = pp.generate(root, os.path.join('testcase_output', 'raw'), autoformatoutputs=False)
-    modules = pp.generate(root, os.path.join('testcase_output', 'autopep8'), autoformatoutputs=True)
 
-    module_fqfn = os.path.join('testcase_output', 'raw', '__init__.py')
-    with open(module_fqfn, 'w', encoding='utf-8') as fid:
-        fid.write('pass\n')
+    for autoformatoutputs, asyncoutput, folder_name in [(False, False, 'raw'),
+                                                        (True, False, 'autopep8'),
+                                                        (False, True, 'raw_async'),
+                                                        (True, True, 'autopep8_async')]:
+        _ = pp.generate(root, os.path.join('testcase_output', folder_name),
+                        autoformatoutputs=False,
+                        asyncoutput=asyncoutput)
 
-    module_fqfn = os.path.join('testcase_output', 'autopep8', '__init__.py')
-    with open(module_fqfn, 'w', encoding='utf-8') as fid:
-        fid.write('pass\n')
-
+        module_fqfn = os.path.join('testcase_output', folder_name, '__init__.py')
+        with open(module_fqfn, 'w', encoding='utf-8') as fid:
+            fid.write('pass\n')
 
     print("\n-----------------------------------------------------------------\n")
 
