@@ -6,7 +6,7 @@ import sys
 
 from array import array as Array
 
-from typing import Optional
+from typing import Optional, Union
 
 if sys.version_info >= (3, 8):
     # Python 3.8 introduced the Protocol class to the typing module which is more powerful than the
@@ -48,13 +48,53 @@ if sys.version_info >= (3, 8):
         # pylint: disable=too-few-public-methods
         def __call__(self, addr: int, width: int, accesswidth: int, data: Array) -> None:
             pass
+
+
+    class AsyncReadCallback(Protocol):
+        """
+        Callback definition for a single register async read operation
+        """
+        # pylint: disable=too-few-public-methods
+        def __await__(self, addr: int, width: int, accesswidth: int) -> int:
+            pass
+
+
+    class AsyncWriteCallback(Protocol):
+        """
+        Callback definition for a single register async write operation
+        """
+        # pylint: disable=too-few-public-methods
+        def __await__(self, addr: int, width: int, accesswidth: int, data: int) -> None:
+            pass
+
+
+    class AsyncReadBlockCallback(Protocol):
+        """
+        Callback definition for an async block read operation
+        """
+        # pylint: disable=too-few-public-methods
+        def __await__(self, addr: int, width: int, accesswidth: int, length: int) -> Array:
+            pass
+
+
+    class AsyncWriteBlockCallback(Protocol):
+        """
+        Callback definition for an async block write operation
+        """
+        # pylint: disable=too-few-public-methods
+        def __await__(self, addr: int, width: int, accesswidth: int, data: Array) -> None:
+            pass
 else:
-    from typing import Callable
+    from typing import Callable, Coroutine
 
     ReadCallback = Callable[[int, int, int], int]
     WriteCallback = Callable[[int, int, int, int], None]
     ReadBlockCallback = Callable[[int, int, int, int], Array]
     WriteBlockCallback = Callable[[int, int, int, Array], None]
+    AsyncReadCallback = Callable[[int, int, int], Coroutine[None, None, int]]
+    AsyncWriteCallback = Callable[[int, int, int, int], Coroutine[None, None, None]]
+    AsyncReadBlockCallback = Callable[[int, int, int, int], Coroutine[None, None, Array]]
+    AsyncWriteBlockCallback = Callable[[int, int, int, Array], Coroutine[None, None, None]]
 
 
 class CallbackSet:
@@ -67,10 +107,10 @@ class CallbackSet:
                  '__write_block_callback', '__read_block_callback']
 
     def __init__(self,
-                 write_callback: Optional[WriteCallback] = None,
-                 read_callback: Optional[ReadCallback] = None,
-                 write_block_callback: Optional[WriteBlockCallback] = None,
-                 read_block_callback: Optional[ReadBlockCallback] = None):
+                 write_callback: Optional[Union[WriteCallback, AsyncWriteCallback]] = None,
+                 read_callback: Optional[Union[ReadCallback, AsyncReadCallback]] = None,
+                 write_block_callback: Optional[Union[WriteBlockCallback, AsyncWriteBlockCallback]] = None,
+                 read_block_callback: Optional[Union[ReadBlockCallback, AsyncReadBlockCallback]] = None):
 
         self.__read_callback = read_callback
         self.__read_block_callback = read_block_callback

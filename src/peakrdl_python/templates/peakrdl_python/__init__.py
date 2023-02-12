@@ -27,6 +27,13 @@ from .register import ReadableRegisterArray
 from .register import WritableRegisterArray
 from .register import RegisterWriteVerifyError
 
+from .register import RegAsyncReadOnly
+from .register import RegAsyncWriteOnly
+from .register import RegAsyncReadWrite
+from .register import RegAsyncReadOnlyArray
+from .register import RegAsyncWriteOnlyArray
+from .register import RegAsyncReadWriteArray
+
 from .fields import FieldSizeProps
 from .fields import FieldMiscProps
 from .fields import FieldReadOnly
@@ -38,6 +45,12 @@ from .fields import FieldEnumWriteOnly
 from .fields import FieldEnumReadWrite
 from .fields import FieldEnum
 
+from .fields import FieldAsyncReadOnly
+from .fields import FieldAsyncWriteOnly
+from .fields import FieldAsyncReadWrite
+from .fields import FieldEnumAsyncReadOnly
+from .fields import FieldEnumAsyncWriteOnly
+from .fields import FieldEnumAsyncReadWrite
 
 from .memory import Memory
 from .memory import MemoryReadOnly
@@ -46,3 +59,9 @@ from .memory import MemoryReadWrite
 from .memory import MemoryReadOnlyArray
 from .memory import MemoryWriteOnlyArray
 from .memory import MemoryReadWriteArray
+from .memory import MemoryAsyncReadOnly
+from .memory import MemoryAsyncWriteOnly
+from .memory import MemoryAsyncReadWrite
+from .memory import MemoryAsyncReadOnlyArray
+from .memory import MemoryAsyncWriteOnlyArray
+from .memory import MemoryAsyncReadWriteArray

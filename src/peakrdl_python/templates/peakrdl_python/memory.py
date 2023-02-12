@@ -296,6 +296,139 @@ class MemoryReadWrite(MemoryReadOnly, MemoryWriteOnly, ABC):
     __slots__: List[str] = []
 
 
+class MemoryAsyncReadOnly(MemoryReadOnly, ABC):
+    """
+    base class of memory wrappers
+
+    Note:
+        It is not expected that this class will be instantiated under normal
+        circumstances however, it is useful for type checking
+    """
+
+    __slots__: List[str] = []
+
+    async def read(self, start_entry: int, number_entries: int) -> Array:
+        """
+        Asynchronously read from the memory
+
+        Args:
+            start_entry: index in the memory to start from, this is not the address
+            number_entries: number of enries to read
+
+        Returns: data read from memory
+
+        """
+
+        if not isinstance(start_entry, int):
+            raise TypeError(f'start_entry should be an int got {type(start_entry)}')
+
+        if not isinstance(number_entries, int):
+            raise TypeError(f'number_entries should be an int got {type(number_entries)}')
+
+        if start_entry not in range(0, self.entries):
+            raise ValueError(f'entry must be in range 0 to {self.entries - 1:d} '
+                             f'but got {start_entry:d}')
+
+        if number_entries not in range(0, self.entries - start_entry + 1):
+            raise ValueError(f'number_entries must be in range 0 to'
+                             f' {self.entries - start_entry:d} but got {number_entries:d}')
+
+        read_block_callback = self._callbacks.read_block_callback
+        read_callback = self._callbacks.read_callback
+
+        if read_block_callback is not None:
+
+            data_read = await read_block_callback(addr=self.address_lookup(entry=start_entry),
+                                                  width=self.width,
+                                                  accesswidth=self.width,
+                                                  length=number_entries)
+
+            if not isinstance(data_read, Array):
+                raise TypeError('The read block callback is expected to return an array')
+
+        else:
+            # there is not read_block_callback defined so we must used individual read
+            data_read = Array(self.array_typecode, [0 for _ in range(number_entries)])
+
+            for entry in range(number_entries):
+                entry_address = self.address_lookup(entry=start_entry+entry)
+                data_entry = await read_callback(addr=entry_address,
+                                                 width=self.width,
+                                                 accesswidth=self.width)
+
+                data_read[entry] = data_entry
+
+        return data_read
+
+
+class MemoryAsyncWriteOnly(MemoryWriteOnly, ABC):
+    """
+    base class of memory wrappers
+
+    Note:
+        It is not expected that this class will be instantiated under normal
+        circumstances however, it is useful for type checking
+    """
+
+    __slots__: List[str] = []
+
+    async def write(self, start_entry: int, data: Array) -> None:
+        """
+        Asynchronously write data to memory
+
+        Args:
+            start_entry: index in the memory to start from, this is not the address
+            data: data to write
+
+        Returns: None
+
+        """
+        if not isinstance(start_entry, int):
+            raise TypeError(f'start_entry should be an int got {type(start_entry)}')
+
+        if start_entry not in range(0, self.entries):
+            raise ValueError(f'entry must be in range 0 to {self.entries - 1:d} '
+                             f'but got {start_entry:d}')
+
+        if not isinstance(data, Array):
+            raise TypeError(f'data should be an array.array got {type(data)}')
+
+        if len(data) not in range(0, self.entries - start_entry + 1):
+            raise ValueError(f'data length must be in range 0 to {self.entries - start_entry:d} '
+                             f'but got {len(data):d}')
+
+        write_block_callback = self._callbacks.write_block_callback
+        write_callback = self._callbacks.write_callback
+
+        if write_block_callback is not None:
+
+            await write_block_callback(addr=self.address_lookup(entry=start_entry),
+                                       width=self.width,
+                                       accesswidth=self.width,
+                                       data=data)
+
+        else:
+            # there is not write_block_callback defined so we must used individual write
+            for entry_index, entry_data in enumerate(data):
+                entry_address = self.address_lookup(entry=start_entry+entry_index)
+                await write_callback(addr=entry_address,
+                                     width=self.width,
+                                     accesswidth=self.width,
+                                     data=entry_data)
+
+
+class MemoryAsyncReadWrite(MemoryAsyncReadOnly, MemoryAsyncWriteOnly, ABC):
+    """
+    base class of memory wrappers
+
+    Note:
+        It is not expected that this class will be instantiated under normal
+        circumstances however, it is useful for type checking
+    """
+
+    __slots__: List[str] = []
+
+
 class MemoryReadOnlyArray(BaseArray, ABC):
     """
     base class for a array of read only memories
@@ -363,3 +496,72 @@ class MemoryReadWriteArray(MemoryReadOnlyArray, MemoryWriteOnlyArray, ABC):
     def __getitem__(self, item) -> Union[MemoryReadWrite, Tuple[MemoryReadWrite, ...]]:
         # this cast is OK because an explict typing check was done in the __init__
         return cast(Union[MemoryReadWrite, Tuple[MemoryReadWrite, ...]], super().__getitem__(item))
+
+
+class MemoryAsyncReadOnlyArray(MemoryReadOnlyArray, BaseArray, ABC):
+    """
+    base class for a array of asynchronous read only memories
+    """
+    __slots__: List[str] = []
+
+    def __init__(self, logger_handle: str, inst_name: str,
+                 parent: AddressMap,
+                 elements: Tuple[MemoryAsyncReadOnly, ...]):
+
+        for element in elements:
+            if not isinstance(element, MemoryAsyncReadOnly):
+                raise TypeError(
+                    f'All Elements should be of type MemoryAsyncReadOnly, found {type(element)}')
+
+        super().__init__(logger_handle=logger_handle, inst_name=inst_name,
+                         parent=parent, elements=elements)
+
+    def __getitem__(self, item) -> Union[MemoryAsyncReadOnly, Tuple[MemoryAsyncReadOnly, ...]]:
+        # this cast is OK because an explict typing check was done in the __init__
+        return cast(Union[MemoryAsyncReadOnly, Tuple[MemoryAsyncReadOnly, ...]], super().__getitem__(item))
+
+
+class MemoryAsyncWriteOnlyArray(MemoryWriteOnlyArray, BaseArray, ABC):
+    """
+    base class for a array of asynchronous write only memories
+    """
+    __slots__: List[str] = []
+
+    def __init__(self, logger_handle: str, inst_name: str,
+                 parent: AddressMap,
+                 elements: Tuple[MemoryAsyncWriteOnly, ...]):
+
+        for element in elements:
+            if not isinstance(element, MemoryAsyncWriteOnly):
+                raise TypeError(
+                    f'All Elements should be of type MemoryAsyncWriteOnly, found {type(element)}')
+
+        super().__init__(logger_handle=logger_handle, inst_name=inst_name,
+                         parent=parent, elements=elements)
+
+    def __getitem__(self, item) -> Union[MemoryAsyncWriteOnly, Tuple[MemoryAsyncWriteOnly, ...]]:
+        # this cast is OK because an explict typing check was done in the __init__
+        return cast(Union[MemoryAsyncWriteOnly, Tuple[MemoryAsyncWriteOnly, ...]], super().__getitem__(item))
+
+
+class MemoryAsyncReadWriteArray(MemoryAsyncReadOnlyArray, MemoryAsyncWriteOnlyArray, ABC):
+    """
+    base class for a array of asynchronous read and write memories
+    """
+    __slots__: List[str] = []
+
+    def __init__(self, logger_handle: str, inst_name: str,
+                 parent: AddressMap,
+                 elements: Tuple[MemoryAsyncReadWrite, ...]):
+
+        for element in elements:
+            if not isinstance(element, MemoryAsyncReadWrite):
+                raise TypeError(
+                    f'All Elements should be of type MemoryAsyncReadWrite, found {type(element)}')
+
+        super().__init__(logger_handle=logger_handle, inst_name=inst_name,
+                         parent=parent, elements=elements)
+
+    def __getitem__(self, item) -> Union[MemoryAsyncReadWrite, Tuple[MemoryAsyncReadWrite, ...]]:
+        # this cast is OK because an explict typing check was done in the __init__
+        return cast(Union[MemoryAsyncReadWrite, Tuple[MemoryAsyncReadWrite, ...]], super().__getitem__(item))

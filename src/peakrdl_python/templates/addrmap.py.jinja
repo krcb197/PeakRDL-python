@@ -8,15 +8,23 @@ from typing import Union
 from typing import cast
 from typing import Dict
 from typing import Generator
-from contextlib import contextmanager
+from contextlib import {% if is_async %}async{% endif %}contextmanager
 
 from ..lib import AddressMap, RegFile, Memory
 from ..lib  import AddressMapArray, RegFileArray
+{% if is_async -%}
+from ..lib import MemoryAsyncReadOnlyArray, MemoryAsyncWriteOnlyArray, MemoryAsyncReadWriteArray
+from ..lib import RegAsyncReadOnly, RegAsyncWriteOnly, RegAsyncReadWrite
+from ..lib import RegAsyncReadOnlyArray, RegAsyncWriteOnlyArray, RegAsyncReadWriteArray
+from ..lib import FieldAsyncReadOnly, FieldAsyncWriteOnly, FieldAsyncReadWrite, Field
+{% if uses_enum %}from ..lib import FieldEnumAsyncReadOnly, FieldEnumAsyncWriteOnly, FieldEnumAsyncReadWrite, FieldEnumAsync{% endif %}
+{%- else -%}
 from ..lib import MemoryReadOnlyArray, MemoryWriteOnlyArray, MemoryReadWriteArray
 from ..lib import RegReadOnly, RegWriteOnly, RegReadWrite
 from ..lib import RegReadOnlyArray, RegWriteOnlyArray, RegReadWriteArray
 from ..lib import FieldReadOnly, FieldWriteOnly, FieldReadWrite, Field
 {% if uses_enum %}from ..lib import FieldEnumReadOnly, FieldEnumWriteOnly, FieldEnumReadWrite, FieldEnum{% endif %}
+{%- endif %}
 from ..lib import FieldSizeProps, FieldMiscProps
 from ..lib import ReadableRegister, WritableRegister
 from ..lib import ReadableRegisterArray, WritableRegisterArray
