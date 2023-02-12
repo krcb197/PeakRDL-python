@@ -8,11 +8,11 @@ from typing import Union
 from typing import cast
 from typing import Dict
 from typing import Generator
-from contextlib import {% if is_async %}async{% endif %}contextmanager
+from contextlib import {% if asyncoutput %}async{% endif %}contextmanager
 
 from ..lib import AddressMap, RegFile, Memory
 from ..lib  import AddressMapArray, RegFileArray
-{% if is_async -%}
+{% if asyncoutput -%}
 from ..lib import MemoryAsyncReadOnlyArray, MemoryAsyncWriteOnlyArray, MemoryAsyncReadWriteArray
 from ..lib import RegAsyncReadOnly, RegAsyncWriteOnly, RegAsyncReadWrite
 from ..lib import RegAsyncReadOnlyArray, RegAsyncWriteOnlyArray, RegAsyncReadWriteArray

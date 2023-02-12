@@ -1,10 +1,10 @@
 {%- macro field_class(node) %}
     {% if node.is_sw_readable and node.is_sw_writable %}
-class {{get_fully_qualified_type_name(node)}}_cls(Field{%- if 'encode' in node.list_properties() -%}Enum{% endif %}{% if is_async %}Async{% endif %}ReadWrite):
+class {{get_fully_qualified_type_name(node)}}_cls(Field{%- if 'encode' in node.list_properties() -%}Enum{% endif %}{% if asyncoutput %}Async{% endif %}ReadWrite):
     {% elif node.is_sw_readable and not node.is_sw_writable %}
-class {{get_fully_qualified_type_name(node)}}_cls(Field{%- if 'encode' in node.list_properties() -%}Enum{% endif %}{% if is_async %}Async{% endif %}ReadOnly):
+class {{get_fully_qualified_type_name(node)}}_cls(Field{%- if 'encode' in node.list_properties() -%}Enum{% endif %}{% if asyncoutput %}Async{% endif %}ReadOnly):
     {% elif not node.is_sw_readable and node.is_sw_writable %}
-class {{get_fully_qualified_type_name(node)}}_cls(Field{%- if 'encode' in node.list_properties() -%}Enum{% endif %}{% if is_async %}Async{% endif %}WriteOnly):
+class {{get_fully_qualified_type_name(node)}}_cls(Field{%- if 'encode' in node.list_properties() -%}Enum{% endif %}{% if asyncoutput %}Async{% endif %}WriteOnly):
     {% endif %}
     """
     Class to represent a register field in the register model
@@ -46,7 +46,7 @@ class {{get_fully_qualified_type_name(node)}}_cls(Field{%- if 'encode' in node.l
 
         return self.enum_cls(field_value)
 
-    {% if is_async %}async {% endif %}def read(self) -> {{get_fully_qualified_enum_type(node.get_property('encode'), top_node.parent)}}_enumcls:
+    {% if asyncoutput %}async {% endif %}def read(self) -> {{get_fully_qualified_enum_type(node.get_property('encode'), top_node.parent)}}_enumcls:
         """
         read the register and then perform the necessary actions, to report the
         value as the enumeration including:
@@ -58,7 +58,7 @@ class {{get_fully_qualified_type_name(node)}}_cls(Field{%- if 'encode' in node.l
         Returns:
             field value
         """
-        reg_value = {% if is_async %}await {% endif %}self.parent_register.read()
+        reg_value = {% if asyncoutput %}await {% endif %}self.parent_register.read()
         return self.decode_read_value(reg_value)
         {% endif %}
 
@@ -70,12 +70,12 @@ class {{get_fully_qualified_type_name(node)}}_cls(Field{%- if 'encode' in node.l
 
         return super().encode_write_value(value.value)
 
-    {% if is_async %}async {% endif %}def write(self, value : {{get_fully_qualified_enum_type(node.get_property('encode'), top_node.parent)}}_enumcls) -> None: # type: ignore[override]
+    {% if asyncoutput %}async {% endif %}def write(self, value : {{get_fully_qualified_enum_type(node.get_property('encode'), top_node.parent)}}_enumcls) -> None: # type: ignore[override]
 
         if not isinstance(value, self.enum_cls):
             raise TypeError('value must be an {{get_fully_qualified_enum_type(node.get_property('encode'), top_node.parent)}}_enumcls but got %s' % type(value))
 
-        {% if is_async %}await {% endif %}super().write(value.value)
+        {% if asyncoutput %}await {% endif %}super().write(value.value)
         {% endif %}
 
     @property
