@@ -87,11 +87,12 @@ jobs:
         wget -L https://raw.githubusercontent.com/SystemRDL/systemrdl-compiler/main/examples/accelera-generic_example.rdl -O tests/testcases/accelera-generic_example.rdl
         python generate_testcases.py
         mypy testcase_output/raw --config-file=tests/.mypy.ini
+        mypy testcase_output/raw_async --config-file=tests/.mypy.ini
         # autopep8 is moving some of the #ignore statements around so it no longer passes mypy
         # mypy testcase_output/autopep8 --config-file=tests/.mypy.ini
         # pylint --rcfile tests/pylint.rc testcase_output/autopep8 --disable=duplicate-code,line-too-long,too-many-statements,invalid-name,unused-import,too-many-instance-attributes,too-many-arguments,too-many-lines
-        pytest testcase_output/raw
-        pytest testcase_output/autopep8
+
+        pytest testcase_output
 
     - name: Backward Compatibility Test
       run: |
@@ -106,6 +107,8 @@ jobs:
         pytest peakrdl_out/raw
         peakrdl python tests/testcases/basic.rdl -o peakrdl_out/autopep8/ --autoformat
         pytest peakrdl_out/autopep8
+        peakrdl python tests/testcases/basic.rdl -o peakrdl_out/raw_async/ --async
+        pytest peakrdl_out/raw_async
 
         peakrdl python tests/testcases/basic.rdl -o peakrdl_out/no_test/ --skip_test_case_generation
 
