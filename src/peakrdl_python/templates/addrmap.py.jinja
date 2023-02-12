@@ -13,13 +13,19 @@ from contextlib import {% if asyncoutput %}async{% endif %}contextmanager
 from ..lib import AddressMap, RegFile, Memory
 from ..lib  import AddressMapArray, RegFileArray
 {% if asyncoutput -%}
+{% if uses_memory %}
+from ..lib import MemoryAsyncReadOnly, MemoryAsyncWriteOnly, MemoryAsyncReadWrite
 from ..lib import MemoryAsyncReadOnlyArray, MemoryAsyncWriteOnlyArray, MemoryAsyncReadWriteArray
+{% endif %}
 from ..lib import RegAsyncReadOnly, RegAsyncWriteOnly, RegAsyncReadWrite
 from ..lib import RegAsyncReadOnlyArray, RegAsyncWriteOnlyArray, RegAsyncReadWriteArray
 from ..lib import FieldAsyncReadOnly, FieldAsyncWriteOnly, FieldAsyncReadWrite, Field
 {% if uses_enum %}from ..lib import FieldEnumAsyncReadOnly, FieldEnumAsyncWriteOnly, FieldEnumAsyncReadWrite{% endif %}
 {%- else -%}
+{% if uses_memory %}
+from ..lib import MemoryReadOnly, MemoryWriteOnly, MemoryReadWrite
 from ..lib import MemoryReadOnlyArray, MemoryWriteOnlyArray, MemoryReadWriteArray
+ {% endif %}
 from ..lib import RegReadOnly, RegWriteOnly, RegReadWrite
 from ..lib import RegReadOnlyArray, RegWriteOnlyArray, RegReadWriteArray
 from ..lib import FieldReadOnly, FieldWriteOnly, FieldReadWrite, Field
@@ -29,7 +35,7 @@ from ..lib import FieldSizeProps, FieldMiscProps
 from ..lib import ReadableRegister, WritableRegister
 from ..lib import ReadableRegisterArray, WritableRegisterArray
 from ..lib import CallbackSet
-{% if uses_memory %}from ..lib import MemoryReadOnly, MemoryWriteOnly, MemoryReadWrite {% endif %}
+
 
 {% from 'addrmap_field.py.jinja' import field_class with context %}
 {% from 'addrmap_register.py.jinja' import register_class with context %}

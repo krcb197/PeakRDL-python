@@ -5,11 +5,11 @@
 
 {%- macro memory_class(node) %}
     {%- if node.is_sw_readable and node.is_sw_writable %}
-class {{get_fully_qualified_type_name(node)}}_cls(MemoryReadWrite):
+class {{get_fully_qualified_type_name(node)}}_cls(Memory{% if asyncoutput %}Async{% endif %}ReadWrite):
     {%- elif node.is_sw_readable and not node.is_sw_writable %}
-class {{get_fully_qualified_type_name(node)}}_cls(MemoryReadOnly):
+class {{get_fully_qualified_type_name(node)}}_cls(Memory{% if asyncoutput %}Async{% endif %}ReadOnly):
     {%- elif not node.is_sw_readable and node.is_sw_writable %}
-class {{get_fully_qualified_type_name(node)}}_cls(MemoryWriteOnly):
+class {{get_fully_qualified_type_name(node)}}_cls(Memory{% if asyncoutput %}Async{% endif %}WriteOnly):
     {%- endif %}
     """
     Class to represent a memory in the register model
@@ -79,11 +79,11 @@ class {{get_fully_qualified_type_name(node)}}_cls(MemoryWriteOnly):
 
     {%- if node.is_array %}
         {%- if node.is_sw_readable and node.is_sw_writable %}
-class {{get_fully_qualified_type_name(node)}}_array_cls(MemoryReadWriteArray):
+class {{get_fully_qualified_type_name(node)}}_array_cls(Memory{% if asyncoutput %}Async{% endif %}ReadWriteArray):
         {%- elif node.is_sw_readable and not node.is_sw_writable %}
-class {{get_fully_qualified_type_name(node)}}_array_cls(MemoryReadOnlyArray):
+class {{get_fully_qualified_type_name(node)}}_array_cls(Memory{% if asyncoutput %}Async{% endif %}ReadOnlyArray):
         {%- elif not node.is_sw_readable and node.is_sw_writable %}
-class {{get_fully_qualified_type_name(node)}}_array_cls(MemoryWriteOnlyArray):
+class {{get_fully_qualified_type_name(node)}}_array_cls(Memory{% if asyncoutput %}Async{% endif %}WriteOnlyArray):
         {%- endif %}
     """
     Class to represent a memory array in the register model
