@@ -43,6 +43,8 @@ def build_command_line_parser() -> argparse.ArgumentParser:
                         help='set logging verbosity')
     parser.add_argument('--autoformat', action='store_true',
                         help='use autopep8 on generated code')
+    parser.add_argument('--async', action='store_true',
+                        help='builds the register model using the async callbacks')
     parser.add_argument('--ipxact', dest='ipxact', nargs='*',
                         type=str)
     parser.add_argument('--user_template_dir', action='store', type=pathlib.Path,
@@ -94,7 +96,7 @@ def compile_rdl(infile:str,
 
 
 def generate(root:Node, outdir:str,
-             autoformatoutputs:bool=True,
+             autoformatoutputs:bool=True,asyncoutput:bool=False,
              skip_test_case_generation:bool=False) -> List[str]:
     """
     Generate a PeakRDL output package from compiled systemRDL
@@ -104,6 +106,8 @@ def generate(root:Node, outdir:str,
         outdir: directory to store the result in
         autoformatoutputs: If set to True the code will be run through autopep8 to
                 clean it up. This can slow down large jobs or mask problems
+        asyncoutput: If set to True the code build a register model with async operations to
+                access the harware layer
 
     Returns:
         List of strings with the module names generated
@@ -112,6 +116,7 @@ def generate(root:Node, outdir:str,
     print(f'Info: Generating python for {root.inst_name} in {outdir}')
     modules = PythonExporter().export(root, outdir,
                                       autoformatoutputs=autoformatoutputs,
+                                      asyncoutput=asyncoutput,
                                       skip_test_case_generation=skip_test_case_generation)
 
     return modules
@@ -157,8 +162,9 @@ def main_function():
     print('***************************************************************')
     print('* Generate the Python Package                                 *')
     print('***************************************************************')
-    generate(spec, args.outdir, args.autoformat,
-             skip_test_case_generation=args.skip_test_case_generation)
+    generate(spec, args.outdir, autoformatoutputs=args.autoformat,
+             skip_test_case_generation=args.skip_test_case_generation,
+             asyncoutput=args.asyncoutput)
 
     if args.lint:
         print('***************************************************************')
