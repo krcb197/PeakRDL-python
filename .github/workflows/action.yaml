@@ -35,8 +35,8 @@ jobs:
           python -m pip install .
           python -m pip install -U pylint
 
-      # - name: Run Lint
-      #  run: pylint --rcfile tests/pylint.rc src/peakrdl_python
+      - name: Run Lint
+        run: pylint --rcfile tests/pylint.rc src/peakrdl_python
 
   mypy:
     runs-on: ubuntu-latest
@@ -52,8 +52,8 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install .
           python -m pip install -U mypy
-      #- name: Type Check
-      #  run: mypy src/peakrdl_python --config-file=tests/.mypy.ini
+      - name: Type Check
+        run: mypy src/peakrdl_python --config-file=tests/.mypy.ini
 
   tests:
     needs:
@@ -86,8 +86,8 @@ jobs:
         # retrieve the example code from the systemRDL compiler
         wget -L https://raw.githubusercontent.com/SystemRDL/systemrdl-compiler/main/examples/accelera-generic_example.rdl -O tests/testcases/accelera-generic_example.rdl
         python generate_testcases.py
-        # mypy testcase_output/raw --config-file=tests/.mypy.ini
-        # mypy testcase_output/raw_async --config-file=tests/.mypy.ini
+        mypy testcase_output/raw --config-file=tests/.mypy.ini
+        mypy testcase_output/raw_async --config-file=tests/.mypy.ini
         # autopep8 is moving some of the #ignore statements around so it no longer passes mypy
         # mypy testcase_output/autopep8 --config-file=tests/.mypy.ini
         # pylint --rcfile tests/pylint.rc testcase_output/autopep8 --disable=duplicate-code,line-too-long,too-many-statements,invalid-name,unused-import,too-many-instance-attributes,too-many-arguments,too-many-lines
