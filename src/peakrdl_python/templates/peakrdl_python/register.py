@@ -14,6 +14,8 @@ if TYPE_CHECKING:
     from .fields import FieldReadOnly, FieldWriteOnly, FieldReadWrite
     from .fields import FieldAsyncReadOnly, FieldAsyncWriteOnly, FieldAsyncReadWrite
 
+# pylint: disable=redefined-slots-in-subclass
+
 class RegisterWriteVerifyError(Exception):
     """
     Exception that occurs when the read after a write does not match the expected value
@@ -30,7 +32,7 @@ class Reg(Node, ABC):
 
     __slots__: List[str] = ['__width', '__accesswidth']
 
-    # pylint: disable=too-many-arguments, duplicate-code
+    # pylint: disable=too-many-arguments,duplicate-code
     def __init__(self,
                  callbacks: CallbackSet,
                  address: int,
@@ -48,7 +50,7 @@ class Reg(Node, ABC):
 
         self.__width = width
         self.__accesswidth = accesswidth
-    # pylint: enable=too-many-arguments, duplicate-code
+    # pylint: enable=too-many-arguments,duplicate-code
 
     @property
     def max_value(self) -> int:
@@ -120,6 +122,13 @@ class RegReadOnly(Reg, ABC):
 
     @contextmanager
     def single_read(self):
+        """
+        Context manager to allow multiple field accesses to be performed with a single
+        read of the register
+
+        Returns:
+
+        """
         self.__register_state = self.read()
         self.__in_context_manager = True
         yield self
@@ -207,7 +216,7 @@ class RegReadWrite(RegReadOnly, RegWriteOnly, ABC):
     class for a read and write only register
 
     """
-    __slots__: List[str] = ['__in_context_manager', '__register_state', '__initial_register_state']
+    __slots__: List[str] = ['__in_context_manager', '__register_state']
 
     # pylint: disable=too-many-arguments, duplicate-code
     def __init__(self,
@@ -227,12 +236,22 @@ class RegReadWrite(RegReadOnly, RegWriteOnly, ABC):
 
         self.__in_context_manager:bool = False
         self.__register_state:Optional[int] = None
-        self.__initial_register_state:Optional[int] = None
 
     # pylint: enable=too-many-arguments, duplicate-code
 
     @contextmanager
     def single_read_modify_write(self, verify:bool = False, skip_write: bool = False):
+        """
+        Context manager to allow multiple field reads/write to be done with a single set of
+        field operations
+
+        Args:
+            verify (bool): very the write with a read afterwards
+            skip_write (bool): skip the write back at the end
+
+        Returns:
+
+        """
         self.__register_state = self.read()
         self.__in_context_manager = True
         yield self
@@ -244,7 +263,7 @@ class RegReadWrite(RegReadOnly, RegWriteOnly, ABC):
         self.__register_state = None
 
 
-    def write(self, data: int, verify:bool = False) -> None:
+    def write(self, data: int, verify:bool = False) -> None: # pylint: disable=arguments-differ
         """
         Writes a value to the register
 
@@ -261,7 +280,8 @@ class RegReadWrite(RegReadOnly, RegWriteOnly, ABC):
         """
         if self.__in_context_manager:
             if self.__register_state is None:
-                raise RuntimeError('The internal register state should never be None in the context manager')
+                raise RuntimeError('The internal register state should never be None in the '
+                                   'context manager')
             self.__register_state = data
         else:
             super().write(data)
@@ -278,7 +298,8 @@ class RegReadWrite(RegReadOnly, RegWriteOnly, ABC):
         """
         if self.__in_context_manager:
             if self.__register_state is None:
-                raise RuntimeError('The internal register state should never be None in the context manager')
+                raise RuntimeError('The internal register state should never be None in the '
+                                   'context manager')
             return self.__register_state
 
         return self._callbacks.read_callback(addr=self.address,
@@ -330,13 +351,13 @@ class RegAsyncReadOnly(RegReadOnly, ABC):
     # pylint: enable=too-many-arguments, duplicate-code
 
     @asynccontextmanager
-    async def single_read(self):
+    async def single_read(self):   # pylint: disable=invalid-overridden-method
         self.__register_state = await self.read()
         self.__in_context_manager = True
         yield self
         self.__in_context_manager = False
 
-    async def read(self) -> int:
+    async def read(self) -> int: # pylint: disable=invalid-overridden-method
         """Asynchronously read value from the register
 
         Returns:
@@ -358,7 +379,7 @@ class RegAsyncReadOnly(RegReadOnly, ABC):
         """
 
     @abstractmethod
-    async def read_fields(self):
+    async def read_fields(self): # pylint: disable=invalid-overridden-method
         """
         asynchronously read the register and return a dictionary of the field values
         """
@@ -371,7 +392,7 @@ class RegAsyncWriteOnly(RegWriteOnly, ABC):
 
     __slots__: List[str] = []
 
-    async def write(self, data: int) -> None:
+    async def write(self, data: int) -> None: # pylint: disable=invalid-overridden-method
         """Asynchronously writes a value to the register
 
         Args:
@@ -406,7 +427,7 @@ class RegAsyncWriteOnly(RegWriteOnly, ABC):
         """
 
     @abstractmethod
-    async def write_fields(self, **kwargs) -> None:
+    async def write_fields(self, **kwargs) -> None: # pylint: disable=invalid-overridden-method
         """
         Do an async write to the register, updating any field included in
         the arguments
@@ -418,7 +439,7 @@ class RegAsyncReadWrite(RegAsyncReadOnly, RegAsyncWriteOnly, ABC):
     class for an async read and write only register
 
     """
-    __slots__: List[str] = ['__in_context_manager', '__register_state', '__initial_register_state']
+    __slots__: List[str] = ['__in_context_manager', '__register_state']
 
     # pylint: disable=too-many-arguments, duplicate-code
     def __init__(self,
@@ -438,12 +459,22 @@ class RegAsyncReadWrite(RegAsyncReadOnly, RegAsyncWriteOnly, ABC):
 
         self.__in_context_manager:bool = False
         self.__register_state:Optional[int] = None
-        self.__initial_register_state:Optional[int] = None
 
     # pylint: enable=too-many-arguments, duplicate-code
 
     @asynccontextmanager
     async def single_read_modify_write(self, verify:bool = False, skip_write: bool = False):
+        """
+        Context manager to allow multiple field reads/write to be done with a single set of
+        field operations
+
+        Args:
+            verify (bool): very the write with a read afterwards
+            skip_write (bool): skip the write back at the end
+
+        Returns:
+
+        """
         self.__register_state = await self.read()
         self.__in_context_manager = True
         yield self
@@ -455,7 +486,7 @@ class RegAsyncReadWrite(RegAsyncReadOnly, RegAsyncWriteOnly, ABC):
         self.__register_state = None
 
 
-    async def write(self, data: int, verify:bool = False) -> None:
+    async def write(self, data: int, verify:bool = False) -> None: # pylint: disable=arguments-differ
         """
         Writes a value to the register
 
@@ -472,7 +503,8 @@ class RegAsyncReadWrite(RegAsyncReadOnly, RegAsyncWriteOnly, ABC):
         """
         if self.__in_context_manager:
             if self.__register_state is None:
-                raise RuntimeError('The internal register state should never be None in the context manager')
+                raise RuntimeError('The internal register state should never be None in the '
+                                   'context manager')
             self.__register_state = data
         else:
             await super().write(data)
@@ -489,7 +521,8 @@ class RegAsyncReadWrite(RegAsyncReadOnly, RegAsyncWriteOnly, ABC):
         """
         if self.__in_context_manager:
             if self.__register_state is None:
-                raise RuntimeError('The internal register state should never be None in the context manager')
+                raise RuntimeError('The internal register state should never be None in the '
+                                   'context manager')
             return self.__register_state
 
         return await self._callbacks.read_callback(addr=self.address,
@@ -597,7 +630,8 @@ class RegAsyncReadOnlyArray(BaseArray, ABC):
 
     def __getitem__(self, item) -> Union[RegAsyncReadOnly, Tuple[RegAsyncReadOnly, ...]]:
         # this cast is OK because an explict typing check was done in the __init__
-        return cast(Union[RegAsyncReadOnly, Tuple[RegAsyncReadOnly, ...]], super().__getitem__(item))
+        return cast(Union[RegAsyncReadOnly, Tuple[RegAsyncReadOnly, ...]],
+                    super().__getitem__(item))
 
 class RegAsyncWriteOnlyArray(BaseArray, ABC):
     """
@@ -619,7 +653,8 @@ class RegAsyncWriteOnlyArray(BaseArray, ABC):
 
     def __getitem__(self, item) -> Union[RegAsyncWriteOnly, Tuple[RegAsyncWriteOnly, ...]]:
         # this cast is OK because an explict typing check was done in the __init__
-        return cast(Union[RegAsyncWriteOnly, Tuple[RegAsyncWriteOnly, ...]], super().__getitem__(item))
+        return cast(Union[RegAsyncWriteOnly, Tuple[RegAsyncWriteOnly, ...]],
+                    super().__getitem__(item))
 
 
 class RegAsyncReadWriteArray(RegAsyncReadOnlyArray, RegAsyncWriteOnlyArray, ABC):
@@ -642,7 +677,8 @@ class RegAsyncReadWriteArray(RegAsyncReadOnlyArray, RegAsyncWriteOnlyArray, ABC)
 
     def __getitem__(self, item) -> Union[RegAsyncReadWrite, Tuple[RegAsyncReadWrite, ...]]:
         # this cast is OK because an explict typing check was done in the __init__
-        return cast(Union[RegAsyncReadWrite, Tuple[RegAsyncReadWrite, ...]], super().__getitem__(item))
+        return cast(Union[RegAsyncReadWrite, Tuple[RegAsyncReadWrite, ...]],
+                    super().__getitem__(item))
 
 ReadableRegisterArray = Union[RegReadOnlyArray, RegReadWriteArray]
 WritableRegisterArray = Union[RegWriteOnlyArray, RegReadWriteArray]

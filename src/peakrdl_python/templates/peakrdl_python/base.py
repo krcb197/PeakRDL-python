@@ -15,7 +15,6 @@ if TYPE_CHECKING:
 class Base(ABC):
     """
     base class of for all types
-
     """
     __slots__: List[str] = ['__logger', '__inst_name', '__parent']
 
@@ -56,6 +55,9 @@ class Base(ABC):
 
 
 class BaseArray(Base, ABC):
+    """
+    base class of for all array types
+    """
 
     # pylint: disable=too-few-public-methods
     __slots__: List[str] = ['__elements']

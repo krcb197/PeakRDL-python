@@ -516,7 +516,7 @@ class FieldWriteOnly(Field, ABC):
                 masked_reg_value = reg_value & self.inverse_bitmask
                 new_reg_value = masked_reg_value | (value << self.low)
             elif isinstance(self.parent_register, RegWriteOnly):
-                new_reg_value = (value << self.low)
+                new_reg_value = value << self.low
             else:
                 raise TypeError('Unhandled parent type')
 
@@ -591,8 +591,8 @@ class FieldAsyncReadOnly(FieldReadOnly, ABC):
                  inst_name: str):
 
         if not isinstance(parent_register, (RegAsyncReadWrite, RegAsyncReadOnly)):
-            raise TypeError(f'size_props must be of {type(RegAsyncReadWrite)} or {type(RegAsyncReadOnly)} '
-                            f'but got {type(parent_register)}')
+            raise TypeError(f'size_props must be of {type(RegAsyncReadWrite)} or '
+                            f'{type(RegAsyncReadOnly)} but got {type(parent_register)}')
 
         super().__init__(logger_handle=logger_handle,
                          size_props=size_props,
@@ -600,7 +600,7 @@ class FieldAsyncReadOnly(FieldReadOnly, ABC):
                          parent_register=parent_register,
                          inst_name=inst_name)
 
-    async def read(self) -> int:
+    async def read(self) -> int: # pylint: disable=invalid-overridden-method
         """
         Asynchronously reads the register that this field is located in and retries the field
         value applying the required masking and shifting
@@ -642,8 +642,8 @@ class FieldAsyncWriteOnly(FieldWriteOnly, ABC):
                  inst_name: str):
 
         if not isinstance(parent_register, (RegAsyncReadWrite, RegAsyncWriteOnly)):
-            raise TypeError(f'size_props must be of {type(RegASyncReadWrite)} or {type(RegAsyncWriteOnly)} '
-                            f'but got {type(parent_register)}')
+            raise TypeError(f'size_props must be of {type(RegAsyncReadWrite)} or '
+                            f'{type(RegAsyncWriteOnly)} but got {type(parent_register)}')
 
         super().__init__(logger_handle=logger_handle,
                          size_props=size_props,
@@ -651,7 +651,7 @@ class FieldAsyncWriteOnly(FieldWriteOnly, ABC):
                          parent_register=parent_register,
                          inst_name=inst_name)
 
-    async def write(self, value: int) -> None:
+    async def write(self, value: int) -> None: # pylint: disable=invalid-overridden-method
         """
         The behaviour of this method depends on whether the field is located in
         a readable register or not:
@@ -692,7 +692,7 @@ class FieldAsyncWriteOnly(FieldWriteOnly, ABC):
                 masked_reg_value = reg_value & self.inverse_bitmask
                 new_reg_value = masked_reg_value | (value << self.low)
             elif isinstance(self.parent_register, RegAsyncWriteOnly):
-                new_reg_value = (value << self.low)
+                new_reg_value = value << self.low
             else:
                 raise TypeError('Unhandled parent type')
 
@@ -759,7 +759,6 @@ class FieldEnum(Field, ABC):
         """
         The enumeration class for this field
         """
-        pass
 
 class FieldEnumReadWrite(FieldReadWrite, FieldEnum, ABC):
     """
@@ -805,4 +804,3 @@ class FieldEnumAsyncWriteOnly(FieldAsyncWriteOnly, FieldEnum, ABC):
     class for an async write only register field with an enumerated value
     """
     __slots__: List[str] = []
-

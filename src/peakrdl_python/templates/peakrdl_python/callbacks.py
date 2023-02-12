@@ -96,6 +96,10 @@ else:
     AsyncReadBlockCallback = Callable[[int, int, int, int], Coroutine[None, None, Array]]
     AsyncWriteBlockCallback = Callable[[int, int, int, Array], Coroutine[None, None, None]]
 
+WriteCallbackOrAsync = Union[WriteCallback, AsyncWriteCallback]
+ReadCallbackOrAsync = Union[ReadCallback, AsyncReadCallback]
+WriteBlockCallbackOrAsync = Union[WriteBlockCallback, AsyncWriteBlockCallback]
+ReadBlockCallbackOrAsync = Union[ReadBlockCallback, AsyncReadBlockCallback]
 
 class CallbackSet:
     """
@@ -107,10 +111,10 @@ class CallbackSet:
                  '__write_block_callback', '__read_block_callback']
 
     def __init__(self,
-                 write_callback: Optional[Union[WriteCallback, AsyncWriteCallback]] = None,
-                 read_callback: Optional[Union[ReadCallback, AsyncReadCallback]] = None,
-                 write_block_callback: Optional[Union[WriteBlockCallback, AsyncWriteBlockCallback]] = None,
-                 read_block_callback: Optional[Union[ReadBlockCallback, AsyncReadBlockCallback]] = None):
+                 write_callback: Optional[WriteCallbackOrAsync] = None,
+                 read_callback: Optional[ReadCallbackOrAsync] = None,
+                 write_block_callback: Optional[WriteBlockCallbackOrAsync] = None,
+                 read_block_callback: Optional[ReadBlockCallbackOrAsync] = None):
 
         self.__read_callback = read_callback
         self.__read_block_callback = read_block_callback
@@ -118,7 +122,7 @@ class CallbackSet:
         self.__write_block_callback = write_block_callback
 
     @property
-    def read_callback(self) -> Optional[ReadCallback]:
+    def read_callback(self) -> Optional[ReadCallbackOrAsync]:
         """
         single read callback function
 
@@ -128,7 +132,7 @@ class CallbackSet:
         return self.__read_callback
 
     @property
-    def write_callback(self) -> Optional[WriteCallback]:
+    def write_callback(self) -> Optional[WriteCallbackOrAsync]:
         """
         single write callback function
 
@@ -138,7 +142,7 @@ class CallbackSet:
         return self.__write_callback
 
     @property
-    def read_block_callback(self) -> Optional[ReadBlockCallback]:
+    def read_block_callback(self) -> Optional[ReadBlockCallbackOrAsync]:
         """
         block read callback function
 
@@ -148,7 +152,7 @@ class CallbackSet:
         return self.__read_block_callback
 
     @property
-    def write_block_callback(self) -> Optional[WriteBlockCallback]:
+    def write_block_callback(self) -> Optional[WriteBlockCallbackOrAsync]:
         """
         block read callback function
 

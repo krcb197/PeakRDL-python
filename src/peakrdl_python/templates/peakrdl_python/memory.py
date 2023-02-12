@@ -13,6 +13,7 @@ from .callbacks import CallbackSet
 if TYPE_CHECKING:
     from .register import ReadableRegister, WritableRegister
 
+# pylint: disable=duplicate-code
 
 class Memory(Node, ABC):
     """
@@ -44,7 +45,6 @@ class Memory(Node, ABC):
             width: width of the register in bits
             logger_handle: name to be used logging messages associate with thisobject
         """
-
         super().__init__(callbacks=callbacks,
                          address=address,
                          logger_handle=logger_handle,
@@ -307,13 +307,13 @@ class MemoryAsyncReadOnly(MemoryReadOnly, ABC):
 
     __slots__: List[str] = []
 
-    async def read(self, start_entry: int, number_entries: int) -> Array:
+    async def read(self, start_entry: int, number_entries: int) -> Array: # pylint: disable=invalid-overridden-method
         """
         Asynchronously read from the memory
 
         Args:
             start_entry: index in the memory to start from, this is not the address
-            number_entries: number of enries to read
+            number_entries: number of entries to read
 
         Returns: data read from memory
 
@@ -372,7 +372,7 @@ class MemoryAsyncWriteOnly(MemoryWriteOnly, ABC):
 
     __slots__: List[str] = []
 
-    async def write(self, start_entry: int, data: Array) -> None:
+    async def write(self, start_entry: int, data: Array) -> None: # pylint: disable=invalid-overridden-method
         """
         Asynchronously write data to memory
 
@@ -518,7 +518,8 @@ class MemoryAsyncReadOnlyArray(MemoryReadOnlyArray, BaseArray, ABC):
 
     def __getitem__(self, item) -> Union[MemoryAsyncReadOnly, Tuple[MemoryAsyncReadOnly, ...]]:
         # this cast is OK because an explict typing check was done in the __init__
-        return cast(Union[MemoryAsyncReadOnly, Tuple[MemoryAsyncReadOnly, ...]], super().__getitem__(item))
+        return cast(Union[MemoryAsyncReadOnly, Tuple[MemoryAsyncReadOnly, ...]],
+                    super().__getitem__(item))
 
 
 class MemoryAsyncWriteOnlyArray(MemoryWriteOnlyArray, BaseArray, ABC):
@@ -541,7 +542,8 @@ class MemoryAsyncWriteOnlyArray(MemoryWriteOnlyArray, BaseArray, ABC):
 
     def __getitem__(self, item) -> Union[MemoryAsyncWriteOnly, Tuple[MemoryAsyncWriteOnly, ...]]:
         # this cast is OK because an explict typing check was done in the __init__
-        return cast(Union[MemoryAsyncWriteOnly, Tuple[MemoryAsyncWriteOnly, ...]], super().__getitem__(item))
+        return cast(Union[MemoryAsyncWriteOnly, Tuple[MemoryAsyncWriteOnly, ...]],
+                    super().__getitem__(item))
 
 
 class MemoryAsyncReadWriteArray(MemoryAsyncReadOnlyArray, MemoryAsyncWriteOnlyArray, ABC):
@@ -564,4 +566,5 @@ class MemoryAsyncReadWriteArray(MemoryAsyncReadOnlyArray, MemoryAsyncWriteOnlyAr
 
     def __getitem__(self, item) -> Union[MemoryAsyncReadWrite, Tuple[MemoryAsyncReadWrite, ...]]:
         # this cast is OK because an explict typing check was done in the __init__
-        return cast(Union[MemoryAsyncReadWrite, Tuple[MemoryAsyncReadWrite, ...]], super().__getitem__(item))
+        return cast(Union[MemoryAsyncReadWrite, Tuple[MemoryAsyncReadWrite, ...]],
+                    super().__getitem__(item))
