@@ -80,7 +80,7 @@ from ..reg_model.{{top_node.type_name}} import {{top_node.type_name}}_cls
 if sys.version_info < (3, 8):
     TestCaseBase = asynctest.TestCase
 else:
-    TestCaseBase = unittest.TestCase
+    TestCaseBase = unittest.IsolatedAsyncioTestCase
 {% else %}
 TestCaseBase = unittest.TestCase
 {% endif %}
