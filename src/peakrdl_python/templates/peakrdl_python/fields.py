@@ -332,8 +332,58 @@ class Field(Base, ABC):
         # this cast is OK because an explict typing check was done in the __init__
         return cast(Reg, self.parent)
 
+class _FieldReadOnlyFramework(Field, ABC):
+    """
+    base class for a async or normal read only register field
 
-class FieldReadOnly(Field, ABC):
+    Args:
+        parent_register: register within which the field resides
+        size_props: object defining the msb, lsb, high bit, low bit and width
+        logger_handle: name to be used logging messages associate with this
+            object
+
+    """
+    __slots__ : List[str] = []
+
+    def decode_read_value(self, value: int) -> int:
+        """
+        extracts the field value from a register value, by applying the bit
+        mask and shift needed
+
+        Args:
+            value: value to decode, normally read from a register
+
+        Returns:
+            field value
+        """
+        if not isinstance(value, int):
+            raise TypeError(f'value must be an int but got {type(value)}')
+
+        if value < 0:
+            raise ValueError('value to be decoded must be greater '
+                             'than or equal to 0')
+
+        if value > self.__parent_register.max_value:
+            raise ValueError(f'value to bede coded must be less than or equal '
+                             f'to {self.__parent_register.max_value:d}')
+
+        if self.msb0 is False:
+            return_value = (value & self.bitmask) >> self.low
+        else:
+            return_value = swap_msb_lsb_ordering(value=(value & self.bitmask) >> self.low,
+                                                 width=self.width)
+
+        return return_value
+
+    @property
+    def __parent_register(self) -> Reg:
+        """
+        parent register the field is placed in
+        """
+        # this cast is OK because an explict typing check was done in the __init__
+        return cast(Reg, self.parent)
+
+class FieldReadOnly(_FieldReadOnlyFramework, ABC):
     """
     class for a read only register field
 
@@ -363,36 +413,6 @@ class FieldReadOnly(Field, ABC):
                          parent_register=parent_register,
                          inst_name=inst_name)
 
-    def decode_read_value(self, value: int) -> int:
-        """
-        extracts the field value from a register value, by applying the bit
-        mask and shift needed
-
-        Args:
-            value: value to decode, normally read from a register
-
-        Returns:
-            field value
-        """
-        if not isinstance(value, int):
-            raise TypeError(f'value must be an int but got {type(value)}')
-
-        if value < 0:
-            raise ValueError('value to be decoded must be greater '
-                             'than or equal to 0')
-
-        if value > self.parent_register.max_value:
-            raise ValueError(f'value to bede coded must be less than or equal '
-                             f'to {self.parent_register.max_value:d}')
-
-        if self.msb0 is False:
-            return_value = (value & self.bitmask) >> self.low
-        else:
-            return_value = swap_msb_lsb_ordering(value=(value & self.bitmask) >> self.low,
-                                                 width=self.width)
-
-        return return_value
-
     def read(self) -> int:
         """
         Reads the register that this field is located in and retries the field
@@ -413,8 +433,7 @@ class FieldReadOnly(Field, ABC):
         # this cast is OK because an explict typing check was done in the __init__
         return cast(ReadableRegister, self.parent)
 
-
-class FieldWriteOnly(Field, ABC):
+class _FieldWriteOnlyFramework(Field, ABC):
     """
     class for a write only register field
 
@@ -426,23 +445,6 @@ class FieldWriteOnly(Field, ABC):
 
     """
     __slots__ : List[str] = []
-
-    def __init__(self,
-                 parent_register: WritableRegister,
-                 size_props: FieldSizeProps,
-                 misc_props: FieldMiscProps,
-                 logger_handle: str,
-                 inst_name: str):
-
-        if not isinstance(parent_register, (RegReadWrite, RegWriteOnly)):
-            raise TypeError(f'size_props must be of {type(RegReadWrite)} or {type(RegWriteOnly)} '
-                            f'but got {type(parent_register)}')
-
-        super().__init__(logger_handle=logger_handle,
-                         size_props=size_props,
-                         misc_props=misc_props,
-                         parent_register=parent_register,
-                         inst_name=inst_name)
 
     def encode_write_value(self, value: int) -> int:
         """
@@ -474,6 +476,39 @@ class FieldWriteOnly(Field, ABC):
             return_value = swap_msb_lsb_ordering(value=value,  width=self.width) << self.low
 
         return return_value
+
+
+class FieldWriteOnly(_FieldWriteOnlyFramework, ABC):
+    """
+    class for a write only register field
+
+    Args:
+        parent_register: register within which the field resides
+        size_props: object defining the msb, lsb, high bit, low bit and width
+        logger_handle: name to be used logging messages associate with this
+            object
+
+    """
+    __slots__ : List[str] = []
+
+    def __init__(self,
+                 parent_register: WritableRegister,
+                 size_props: FieldSizeProps,
+                 misc_props: FieldMiscProps,
+                 logger_handle: str,
+                 inst_name: str):
+
+        if not isinstance(parent_register, (RegReadWrite, RegWriteOnly)):
+            raise TypeError(f'size_props must be of {type(RegReadWrite)} or {type(RegWriteOnly)} '
+                            f'but got {type(parent_register)}')
+
+        super().__init__(logger_handle=logger_handle,
+                         size_props=size_props,
+                         misc_props=misc_props,
+                         parent_register=parent_register,
+                         inst_name=inst_name)
+
+
 
     def write(self, value: int) -> None:
         """
@@ -570,7 +605,7 @@ class FieldReadWrite(FieldReadOnly, FieldWriteOnly, ABC):
         # this cast is OK because an explict typing check was done in the __init__
         return cast(RegReadWrite, self.parent)
 
-class FieldAsyncReadOnly(FieldReadOnly, ABC):
+class FieldAsyncReadOnly(_FieldReadOnlyFramework, ABC):
     """
     class for an asynchronous read only register field
 
@@ -584,7 +619,7 @@ class FieldAsyncReadOnly(FieldReadOnly, ABC):
     __slots__ : List[str] = []
 
     def __init__(self,
-                 parent_register: ReadableRegister,
+                 parent_register: ReadableAsyncRegister,
                  size_props: FieldSizeProps,
                  misc_props: FieldMiscProps,
                  logger_handle: str,
@@ -621,7 +656,7 @@ class FieldAsyncReadOnly(FieldReadOnly, ABC):
         return cast(ReadableAsyncRegister, self.parent)
 
 
-class FieldAsyncWriteOnly(FieldWriteOnly, ABC):
+class FieldAsyncWriteOnly(_FieldWriteOnlyFramework, ABC):
     """
     class for an asynchronous write only register field
 
@@ -699,7 +734,7 @@ class FieldAsyncWriteOnly(FieldWriteOnly, ABC):
         await self.parent_register.write(new_reg_value)
 
     @property
-    def parent_register(self) -> WritableRegister:
+    def parent_register(self) -> WritableAsyncRegister:
         """
         parent register the field is placed in
         """
@@ -719,7 +754,7 @@ class FieldAsyncReadWrite(FieldAsyncReadOnly, FieldAsyncWriteOnly, ABC):
             object
 
     """
-    __slots__ : List[str]  = []
+    __slots__ : List[str] = []
 
     def __init__(self, parent_register: RegAsyncReadWrite,
                  size_props: FieldSizeProps,
@@ -760,6 +795,7 @@ class FieldEnum(Field, ABC):
         The enumeration class for this field
         """
 
+
 class FieldEnumReadWrite(FieldReadWrite, FieldEnum, ABC):
     """
     class for a read/write register field with an enumerated value
@@ -775,17 +811,20 @@ class FieldEnumReadWrite(FieldReadWrite, FieldEnum, ABC):
         # this cast is OK because an explict typing check was done in the __init__
         return cast(RegReadWrite, self.parent)
 
+
 class FieldEnumReadOnly(FieldReadOnly, FieldEnum, ABC):
     """
     class for a read only register field with an enumerated value
     """
     __slots__: List[str] = []
 
+
 class FieldEnumWriteOnly(FieldWriteOnly, FieldEnum, ABC):
     """
     class for a write only register field with an enumerated value
     """
     __slots__: List[str] = []
+
 
 class FieldEnumAsyncReadWrite(FieldAsyncReadWrite, FieldEnum, ABC):
     """

@@ -314,7 +314,7 @@ class RegReadWrite(RegReadOnly, RegWriteOnly, ABC):
         """
 
 
-class RegAsyncReadOnly(RegReadOnly, ABC):
+class RegAsyncReadOnly(Reg, ABC):
     """
     class for an async read only register
 
@@ -351,13 +351,20 @@ class RegAsyncReadOnly(RegReadOnly, ABC):
     # pylint: enable=too-many-arguments, duplicate-code
 
     @asynccontextmanager
-    async def single_read(self):   # pylint: disable=invalid-overridden-method
+    async def single_read(self):
+        """
+        Context manager to allow multiple field accesses to be performed with a single
+        read of the register
+
+        Returns:
+
+        """
         self.__register_state = await self.read()
         self.__in_context_manager = True
         yield self
         self.__in_context_manager = False
 
-    async def read(self) -> int: # pylint: disable=invalid-overridden-method
+    async def read(self) -> int:
         """Asynchronously read value from the register
 
         Returns:
@@ -379,20 +386,20 @@ class RegAsyncReadOnly(RegReadOnly, ABC):
         """
 
     @abstractmethod
-    async def read_fields(self): # pylint: disable=invalid-overridden-method
+    async def read_fields(self):
         """
         asynchronously read the register and return a dictionary of the field values
         """
 
 
-class RegAsyncWriteOnly(RegWriteOnly, ABC):
+class RegAsyncWriteOnly(Reg, ABC):
     """
     class for an asynchronous write only register
     """
 
     __slots__: List[str] = []
 
-    async def write(self, data: int) -> None: # pylint: disable=invalid-overridden-method
+    async def write(self, data: int) -> None:
         """Asynchronously writes a value to the register
 
         Args:
@@ -427,7 +434,7 @@ class RegAsyncWriteOnly(RegWriteOnly, ABC):
         """
 
     @abstractmethod
-    async def write_fields(self, **kwargs) -> None: # pylint: disable=invalid-overridden-method
+    async def write_fields(self, **kwargs) -> None:
         """
         Do an async write to the register, updating any field included in
         the arguments
@@ -486,7 +493,7 @@ class RegAsyncReadWrite(RegAsyncReadOnly, RegAsyncWriteOnly, ABC):
         self.__register_state = None
 
 
-    async def write(self, data: int, verify:bool = False) -> None: # pylint: disable=arguments-differ
+    async def write(self, data: int, verify:bool = False) -> None:
         """
         Writes a value to the register
 
@@ -529,12 +536,6 @@ class RegAsyncReadWrite(RegAsyncReadOnly, RegAsyncWriteOnly, ABC):
                                              width=self.width,
                                              accesswidth=self.accesswidth)
 
-    @abstractmethod
-    async def write_fields(self, **kwargs) -> None:
-        """
-        Do an async read-modify-write to the register, updating any field included in
-        the arguments
-        """
 
 ReadableRegister = Union[RegReadOnly, RegReadWrite]
 WritableRegister = Union[RegWriteOnly, RegReadWrite]

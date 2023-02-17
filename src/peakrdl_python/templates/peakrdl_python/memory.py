@@ -12,6 +12,7 @@ from .callbacks import CallbackSet
 
 if TYPE_CHECKING:
     from .register import ReadableRegister, WritableRegister
+    from .register import ReadableAsyncRegister, WritableAsyncRegister
 
 # pylint: disable=duplicate-code
 
@@ -296,7 +297,7 @@ class MemoryReadWrite(MemoryReadOnly, MemoryWriteOnly, ABC):
     __slots__: List[str] = []
 
 
-class MemoryAsyncReadOnly(MemoryReadOnly, ABC):
+class MemoryAsyncReadOnly(Memory, ABC):
     """
     base class of memory wrappers
 
@@ -307,7 +308,7 @@ class MemoryAsyncReadOnly(MemoryReadOnly, ABC):
 
     __slots__: List[str] = []
 
-    async def read(self, start_entry: int, number_entries: int) -> Array: # pylint: disable=invalid-overridden-method
+    async def read(self, start_entry: int, number_entries: int) -> Array:
         """
         Asynchronously read from the memory
 
@@ -360,8 +361,16 @@ class MemoryAsyncReadOnly(MemoryReadOnly, ABC):
 
         return data_read
 
+    @abstractmethod
+    def get_readable_registers(self,
+                               unroll=False) -> Iterator[Union['ReadableAsyncRegister',
+                                                         Tuple['ReadableAsyncRegister', ...]]]:
+        """
+        generator that produces all the readable_registers of this node
+        """
 
-class MemoryAsyncWriteOnly(MemoryWriteOnly, ABC):
+
+class MemoryAsyncWriteOnly(Memory, ABC):
     """
     base class of memory wrappers
 
@@ -372,7 +381,7 @@ class MemoryAsyncWriteOnly(MemoryWriteOnly, ABC):
 
     __slots__: List[str] = []
 
-    async def write(self, start_entry: int, data: Array) -> None: # pylint: disable=invalid-overridden-method
+    async def write(self, start_entry: int, data: Array) -> None:
         """
         Asynchronously write data to memory
 
@@ -415,6 +424,14 @@ class MemoryAsyncWriteOnly(MemoryWriteOnly, ABC):
                                      width=self.width,
                                      accesswidth=self.width,
                                      data=entry_data)
+
+    @abstractmethod
+    def get_writable_registers(self,
+                               unroll=False) -> Iterator[Union['WritableAsyncRegister',
+                                                         Tuple['WritableAsyncRegister', ...]]]:
+        """
+        generator that produces all the readable_registers of this node
+        """
 
 
 class MemoryAsyncReadWrite(MemoryAsyncReadOnly, MemoryAsyncWriteOnly, ABC):
@@ -498,7 +515,7 @@ class MemoryReadWriteArray(MemoryReadOnlyArray, MemoryWriteOnlyArray, ABC):
         return cast(Union[MemoryReadWrite, Tuple[MemoryReadWrite, ...]], super().__getitem__(item))
 
 
-class MemoryAsyncReadOnlyArray(MemoryReadOnlyArray, BaseArray, ABC):
+class MemoryAsyncReadOnlyArray(BaseArray, ABC):
     """
     base class for a array of asynchronous read only memories
     """
@@ -522,7 +539,7 @@ class MemoryAsyncReadOnlyArray(MemoryReadOnlyArray, BaseArray, ABC):
                     super().__getitem__(item))
 
 
-class MemoryAsyncWriteOnlyArray(MemoryWriteOnlyArray, BaseArray, ABC):
+class MemoryAsyncWriteOnlyArray(BaseArray, ABC):
     """
     base class for a array of asynchronous write only memories
     """
