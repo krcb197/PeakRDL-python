@@ -2,10 +2,10 @@
 from array import array as Array
 {% if asyncoutput %}
 import sys
+import asyncio
 if sys.version_info < (3, 8):
     import asynctest
     from asynctest.mock import patch, call
-    import asyncio
 else:
     import unittest
     from unittest.mock import patch, call
@@ -1139,7 +1139,10 @@ class {{top_node.type_name}}_TestCase_BlockAccess(TestCaseBase):
 
 if __name__ == '__main__':
 {% if asyncoutput %}
-    asynctest.main()
+    if sys.version_info < (3, 8):
+        asynctest.main()
+    else:
+        unittest.main()
 {% else %}
     unittest.main()
 {% endif %}
