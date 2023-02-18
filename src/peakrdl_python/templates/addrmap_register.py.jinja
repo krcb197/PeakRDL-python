@@ -50,7 +50,6 @@ class {{get_fully_qualified_type_name(node)}}_cls(Reg{% if asyncoutput %}Async{%
         {%- endfor %}
 
     {% if node.has_sw_readable %}
-    {% if uses_enum %}IntEnum, {% endif %}
     {% if asyncoutput %}async {% endif %}def read_fields(self) -> Dict[str, Union[bool, {% if uses_enum %}IntEnum, {% endif %} int]]: # type: ignore[override]
         """
         read the register and return a dictionary of the field values
@@ -60,7 +59,7 @@ class {{get_fully_qualified_type_name(node)}}_cls(Reg{% if asyncoutput %}Async{%
         {% else %}
         {% if asyncoutput %}async {% endif %}with self.single_read() as reg:
         {% endif %}
-            return_dict = {
+            return_dict:Dict[str, Union[bool, {% if uses_enum %}IntEnum, {% endif %} int]] = {
                             {%- for child_node in get_reg_readable_fields(node) %}
                             '{{child_node.inst_name}}' : {% if asyncoutput %}await {% endif %}reg.{{safe_node_name(child_node)}}.read()
                             {%- if not loop.last -%} ,  {%- endif -%}

@@ -1,5 +1,5 @@
 {% include "header_tb.py.jinja" with context %}
-from typing import List, Union
+from typing import List, Union, Dict
 from array import array as Array
 {% if asyncoutput %}
 import sys
@@ -17,6 +17,7 @@ from unittest.mock import patch, call
 import random
 from itertools import combinations
 import math
+from enum import IntEnum
 
 from ..lib import RegisterWriteVerifyError
 {% if asyncoutput %}
@@ -503,7 +504,7 @@ class {{top_node.type_name}}_TestCase(TestCaseBase):
                     read_callback_mock.return_value = (random_reg_value & {{get_field_inv_bitmask_hex_string(node)}}) | \
                                      ({{get_field_bitmask_hex_string(node)}} & (self._reverse_bits(value=field_value, number_bits={{node.width}}) << {{node.low}}))
                     {% endif -%}
-                    decode_field_value = {% if asyncoutput %}await {%endif %}self.dut.{{'.'.join(get_python_path_segments(node))}}.read() # type: ignore[union-attr]
+                    _ = {% if asyncoutput %}await {%endif %}self.dut.{{'.'.join(get_python_path_segments(node))}}.read() # type: ignore[union-attr]
             {% endif %}
             write_callback_mock.assert_not_called()
             {% endif %}
@@ -569,6 +570,7 @@ class {{top_node.type_name}}_TestCase(TestCaseBase):
         """
         Walk the register map and check every register read_fields method
         """
+        reference_read_fields: Dict[str, Union[bool, IntEnum, int]]
         {%- for node in top_node.descendants(unroll=True) -%}
         {%- if isinstance(node, systemrdlRegNode) %}
         {% if node.has_sw_readable %}
@@ -626,6 +628,7 @@ class {{top_node.type_name}}_TestCase(TestCaseBase):
         """
         Walk the register map and check every register read_fields method
         """
+        reference_read_fields: Dict[str, Union[bool, IntEnum, int]]
         {%- for node in top_node.descendants(unroll=True) -%}
         {%- if isinstance(node, systemrdlRegNode) %}
         {% if node.has_sw_readable %}
@@ -638,7 +641,7 @@ class {{top_node.type_name}}_TestCase(TestCaseBase):
             {% if isinstance(field, systemrdlFieldNode) %}
                 {% if field.is_sw_readable %}
                     {% if 'encode' in field.list_properties() %}
-        rand_field_value = random.choice(list(self.dut.{{'.'.join(get_python_path_segments(field))}}.enum_cls)).value
+        rand_field_value = random.choice(list(self.dut.{{'.'.join(get_python_path_segments(field))}}.enum_cls)).value   # type: ignore[attr-defined]
                     {% else %}
         rand_field_value = random.randrange(0, {{ get_field_max_value_hex_string(field) }} + 1)
                     {% endif %}
@@ -704,7 +707,7 @@ class {{top_node.type_name}}_TestCase(TestCaseBase):
                             field = getattr(reg, field_str)
                             if hasattr(field, 'enum_cls'):
                                 rand_enum_value = random.choice(list(field.enum_cls))
-                                rand_field_value = rand_enum_value.value
+                                rand_field_value = rand_enum_value.value   # type: ignore[attr-defined]
                                 field_values[field_str] = rand_enum_value
                             else:
                                 rand_field_value = random.randrange(0, field.max_value + 1)
@@ -763,7 +766,7 @@ class {{top_node.type_name}}_TestCase(TestCaseBase):
         {%- for node in top_node.descendants(unroll=True) -%}
         {%- if isinstance(node, systemrdlRegNode) %}
         {% if node.has_sw_writable and node.has_sw_readable %}
-        rut = self.dut.{{'.'.join(get_python_path_segments(node))}} # type: ignore[union-attr]
+        rut = self.dut.{{'.'.join(get_python_path_segments(node))}} # type: ignore[union-attr,assignment]
         if not isinstance(rut, Reg{% if asyncoutput %}Async{% endif %}ReadWrite):
             raise TypeError('Failed to find read/write register')
         {% if asyncoutput %}await {% endif %}write_field_cominbinations(reg=rut,
@@ -779,6 +782,7 @@ class {{top_node.type_name}}_TestCase(TestCaseBase):
         Walk the register map and check every register write_fields method
         """
         rut:Reg{% if asyncoutput %}Async{% endif %}ReadWrite
+        rand_enum_value:IntEnum
         {% if asyncoutput %}async {% endif %}def write_field_cominbinations(reg: Reg{% if asyncoutput %}Async{% endif %}ReadWrite, writable_fields:List[str]) -> None:
             with patch(__name__ + '.' + 'write_addr_space') as write_callback_mock, \
                 patch(__name__ + '.' + 'read_addr_space', return_value=0) as read_callback_mock:
@@ -790,7 +794,7 @@ class {{top_node.type_name}}_TestCase(TestCaseBase):
                             field = getattr(reg, field_str)
                             if hasattr(field, 'enum_cls'):
                                 rand_enum_value = random.choice(list(field.enum_cls))
-                                rand_field_value = rand_enum_value.value
+                                rand_field_value = rand_enum_value.value   # type: ignore[attr-defined]
                                 kwargs[field_str] = rand_enum_value
                             else:
                                 rand_field_value = random.randrange(0, field.max_value + 1)
@@ -835,7 +839,7 @@ class {{top_node.type_name}}_TestCase(TestCaseBase):
         {% for field in get_reg_writable_fields(node) %}
         {%- if 'encode' in field.list_properties() %}
         rand_enum_value = random.choice(list(self.dut.{{'.'.join(get_python_path_segments(field))}}.enum_cls))
-        rand_field_value = rand_enum_value.value
+        rand_field_value = rand_enum_value.value   # type: ignore[attr-defined]
         kwargs['{{field.inst_name}}'] = rand_enum_value
         {%- else %}
         rand_field_value = random.randrange(0, {{ get_field_max_value_hex_string(field) }} + 1)
