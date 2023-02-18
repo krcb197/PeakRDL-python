@@ -34,7 +34,6 @@ setup(
         "coverage",
         "jinja2",
         "asynctest;python_version<'3.8'",
-        "singledispatchmethod;python_version<'3.8'",
         "peakrdl-ipxact"
     ],
     classifiers=[
