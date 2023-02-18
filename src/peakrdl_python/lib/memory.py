@@ -175,7 +175,7 @@ class MemoryReadOnly(Memory, ABC):
     @property
     def _callbacks(self) -> NormalCallbackSet:
         # This cast is OK because the type was checked in the __init__
-        return cast(NormalCallbackSet, self._callbacks)
+        return cast(NormalCallbackSet, super()._callbacks)
 
     def read(self, start_entry: int, number_entries: int) -> Array:
         """
@@ -279,7 +279,7 @@ class MemoryWriteOnly(Memory, ABC):
     @property
     def _callbacks(self) -> NormalCallbackSet:
         # This cast is OK because the type was checked in the __init__
-        return cast(NormalCallbackSet, self._callbacks)
+        return cast(NormalCallbackSet, super()._callbacks)
 
     def write(self, start_entry: int, data: Array) -> None:
         """
@@ -387,7 +387,7 @@ class MemoryAsyncReadOnly(Memory, ABC):
     @property
     def _callbacks(self) -> AysncCallbackSet:
         # This cast is OK because the type was checked in the __init__
-        return cast(AysncCallbackSet, self._callbacks)
+        return cast(AysncCallbackSet, super()._callbacks)
 
     async def read(self, start_entry: int, number_entries: int) -> Array:
         """
@@ -492,7 +492,7 @@ class MemoryAsyncWriteOnly(Memory, ABC):
     @property
     def _callbacks(self) -> AysncCallbackSet:
         # This cast is OK because the type was checked in the __init__
-        return cast(AysncCallbackSet, self._callbacks)
+        return cast(AysncCallbackSet, super()._callbacks)
 
     async def write(self, start_entry: int, data: Array) -> None:
         """

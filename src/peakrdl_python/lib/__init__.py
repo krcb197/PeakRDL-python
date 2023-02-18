@@ -20,8 +20,8 @@ from .register import RegReadOnly
 from .register import RegWriteOnly
 from .register import RegReadWrite
 from .register import Reg
-from .register import ReadableRegister
 from .register import WritableRegister
+from .register import ReadableRegister
 from .register import ReadableAsyncRegister
 from .register import WritableAsyncRegister
 from .register import RegReadOnlyArray

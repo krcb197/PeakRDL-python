@@ -20,7 +20,7 @@ class {{get_fully_qualified_type_name(node)}}_cls(Field{%- if 'encode' in node.l
 
     {%- if 'encode' in node.list_properties() %}
     @property
-    def enum_cls(self):
+    def enum_cls(self) -> EnumMeta:
         """
         The enumeration class for this field
         """
