@@ -55,7 +55,7 @@ if sys.version_info >= (3, 8):
         Callback definition for a single register async read operation
         """
         # pylint: disable=too-few-public-methods,unexpected-special-method-signature
-        def __await__(self, addr: int, width: int, accesswidth: int) -> int:
+        async def __call__(self, addr: int, width: int, accesswidth: int) -> int:
             pass
 
 
@@ -64,7 +64,7 @@ if sys.version_info >= (3, 8):
         Callback definition for a single register async write operation
         """
         # pylint: disable=too-few-public-methods,unexpected-special-method-signature
-        def __await__(self, addr: int, width: int, accesswidth: int, data: int) -> None:
+        async def __call__(self, addr: int, width: int, accesswidth: int, data: int) -> None:
             pass
 
 
@@ -73,7 +73,7 @@ if sys.version_info >= (3, 8):
         Callback definition for an async block read operation
         """
         # pylint: disable=too-few-public-methods,unexpected-special-method-signature
-        def __await__(self, addr: int, width: int, accesswidth: int, length: int) -> Array:
+        async def __call__(self, addr: int, width: int, accesswidth: int, length: int) -> Array:
             pass
 
 
@@ -82,7 +82,7 @@ if sys.version_info >= (3, 8):
         Callback definition for an async block write operation
         """
         # pylint: disable=too-few-public-methods,unexpected-special-method-signature
-        def __await__(self, addr: int, width: int, accesswidth: int, data: Array) -> None:
+        async def __call__(self, addr: int, width: int, accesswidth: int, data: Array) -> None:
             pass
 else:
     from typing import Callable, Coroutine
@@ -96,12 +96,8 @@ else:
     AsyncReadBlockCallback = Callable[[int, int, int, int], Coroutine[None, None, Array]]
     AsyncWriteBlockCallback = Callable[[int, int, int, Array], Coroutine[None, None, None]]
 
-WriteCallbackOrAsync = Union[WriteCallback, AsyncWriteCallback]
-ReadCallbackOrAsync = Union[ReadCallback, AsyncReadCallback]
-WriteBlockCallbackOrAsync = Union[WriteBlockCallback, AsyncWriteBlockCallback]
-ReadBlockCallbackOrAsync = Union[ReadBlockCallback, AsyncReadBlockCallback]
 
-class CallbackSet:
+class NormalCallbackSet:
     """
     Class to hold a set of callbacks, this reduces the number of callback that need to be passed
     around
@@ -111,10 +107,10 @@ class CallbackSet:
                  '__write_block_callback', '__read_block_callback']
 
     def __init__(self,
-                 write_callback: Optional[WriteCallbackOrAsync] = None,
-                 read_callback: Optional[ReadCallbackOrAsync] = None,
-                 write_block_callback: Optional[WriteBlockCallbackOrAsync] = None,
-                 read_block_callback: Optional[ReadBlockCallbackOrAsync] = None):
+                 write_callback: Optional[WriteCallback] = None,
+                 read_callback: Optional[ReadCallback] = None,
+                 write_block_callback: Optional[WriteBlockCallback] = None,
+                 read_block_callback: Optional[ReadBlockCallback] = None):
 
         self.__read_callback = read_callback
         self.__read_block_callback = read_block_callback
@@ -122,7 +118,7 @@ class CallbackSet:
         self.__write_block_callback = write_block_callback
 
     @property
-    def read_callback(self) -> Optional[ReadCallbackOrAsync]:
+    def read_callback(self) -> Optional[ReadCallback]:
         """
         single read callback function
 
@@ -132,7 +128,7 @@ class CallbackSet:
         return self.__read_callback
 
     @property
-    def write_callback(self) -> Optional[WriteCallbackOrAsync]:
+    def write_callback(self) -> Optional[WriteCallback]:
         """
         single write callback function
 
@@ -142,7 +138,7 @@ class CallbackSet:
         return self.__write_callback
 
     @property
-    def read_block_callback(self) -> Optional[ReadBlockCallbackOrAsync]:
+    def read_block_callback(self) -> Optional[ReadBlockCallback]:
         """
         block read callback function
 
@@ -152,7 +148,7 @@ class CallbackSet:
         return self.__read_block_callback
 
     @property
-    def write_block_callback(self) -> Optional[WriteBlockCallbackOrAsync]:
+    def write_block_callback(self) -> Optional[WriteBlockCallback]:
         """
         block read callback function
 
@@ -160,3 +156,65 @@ class CallbackSet:
 
         """
         return self.__write_block_callback
+
+class AysncCallbackSet:
+    """
+    Class to hold a set of callbacks, this reduces the number of callback that need to be passed
+    around
+    """
+
+    __slots__ = ['__write_callback', '__read_callback',
+                 '__write_block_callback', '__read_block_callback']
+
+    def __init__(self,
+                 write_callback: Optional[AsyncWriteCallback] = None,
+                 read_callback: Optional[AsyncReadCallback] = None,
+                 write_block_callback: Optional[AsyncWriteBlockCallback] = None,
+                 read_block_callback: Optional[AsyncReadBlockCallback] = None):
+
+        self.__read_callback = read_callback
+        self.__read_block_callback = read_block_callback
+        self.__write_callback = write_callback
+        self.__write_block_callback = write_block_callback
+
+    @property
+    def read_callback(self) -> Optional[AsyncReadCallback]:
+        """
+        single read callback function
+
+        Returns: call back function
+
+        """
+        return self.__read_callback
+
+    @property
+    def write_callback(self) -> Optional[AsyncWriteCallback]:
+        """
+        single write callback function
+
+        Returns: call back function
+
+        """
+        return self.__write_callback
+
+    @property
+    def read_block_callback(self) -> Optional[AsyncReadBlockCallback]:
+        """
+        block read callback function
+
+        Returns: call back function
+
+        """
+        return self.__read_block_callback
+
+    @property
+    def write_block_callback(self) -> Optional[AsyncWriteBlockCallback]:
+        """
+        block read callback function
+
+        Returns: call back function
+
+        """
+        return self.__write_block_callback
+
+CallbackSet = Union[AysncCallbackSet, NormalCallbackSet]

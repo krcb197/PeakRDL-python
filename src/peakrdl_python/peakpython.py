@@ -121,7 +121,7 @@ def generate(root:Node, outdir:str,
 
     return modules
 
-def run_lint(root, outdir):
+def run_lint(root:str, outdir:str) -> None:
     """
     Run the lint checks using pylint on a directory
 
@@ -137,7 +137,7 @@ def run_lint(root, outdir):
                     os.path.join(outdir, root)],
                    check=False)
 
-def main_function():
+def main_function() -> None:
     """
     Main function for the Command Line tool, this needs to be separated out so that it can be
     referenced in setup.py

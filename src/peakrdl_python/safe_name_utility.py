@@ -13,18 +13,18 @@ from systemrdl.node import MemNode  # type: ignore
 from systemrdl.node import RootNode  # type: ignore
 from systemrdl.node import Node  # type: ignore
 
-from .templates.peakrdl_python.register import RegReadOnly
-from .templates.peakrdl_python.register import RegWriteOnly
-from .templates.peakrdl_python.register import RegReadWrite
+from .lib import RegReadOnly
+from .lib import RegWriteOnly
+from .lib import RegReadWrite
 
 
-from .templates.peakrdl_python.memory import MemoryReadOnly
-from .templates.peakrdl_python.memory import MemoryWriteOnly
-from .templates.peakrdl_python.memory import MemoryReadWrite
+from .lib.memory import MemoryReadOnly
+from .lib.memory import MemoryWriteOnly
+from .lib.memory import MemoryReadWrite
 
-from .templates.peakrdl_python.base import RegFile
-from .templates.peakrdl_python.base import AddressMap
-from .templates.peakrdl_python.base import Base
+from .lib import RegFile
+from .lib import AddressMap
+from .lib.base import Base
 
 def _build_class_method_list(peakrld_python_class:Type[Base]) -> List[str]:
     return list(filter(lambda x: not x[0] == '_', dir(peakrld_python_class)))
@@ -315,7 +315,7 @@ def get_python_path_segments(node: Union[RegNode,
                                          RegfileNode,
                                          AddrmapNode,
                                          MemNode],
-                     child_list: List[str]):
+                     child_list: List[str]) -> List[str]:
         if isinstance(child_node.parent, RootNode):
             return child_list
         child_node_safe_name = safe_node_name(child_node)

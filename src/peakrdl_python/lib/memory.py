@@ -6,9 +6,9 @@ from array import array as Array
 from typing import List, Union, Tuple, Iterator, TYPE_CHECKING, cast
 from abc import ABC, abstractmethod
 
-from .base import Node, AddressMap, BaseArray
+from .base import Node, AddressMap, BaseArray, get_array_typecode
 
-from .callbacks import CallbackSet
+from .callbacks import CallbackSet, NormalCallbackSet, AysncCallbackSet
 
 if TYPE_CHECKING:
     from .register import ReadableRegister, WritableRegister
@@ -93,23 +93,10 @@ class Memory(Node, ABC):
         the python array.array type is initialised with a typecode. This property provides the
         recommended typecode to use with this class instance (based on the memwidth)
 
-
         Returns: typecode
 
         """
-
-        if self.width_in_bytes == 1:
-            typecode = 'B'
-        elif self.width_in_bytes == 2:
-            typecode = 'I'
-        elif self.width_in_bytes == 4:
-            typecode = 'L'
-        elif self.width_in_bytes == 8:
-            typecode = 'Q'
-        else:
-            raise RuntimeError(f'unsupported width of {self.width_in_bytes:d} Bytes')
-
-        return typecode
+        return get_array_typecode(self.width)
 
     @property
     def size_in_bytes(self) -> int:
@@ -161,6 +148,35 @@ class MemoryReadOnly(Memory, ABC):
 
     __slots__: List[str] = []
 
+    # pylint: disable=too-many-arguments
+    def __init__(self,
+                 callbacks: NormalCallbackSet,
+                 address: int,
+                 width: int,
+                 accesswidth: int,
+                 entries: int,
+                 logger_handle: str,
+                 inst_name: str,
+                 parent: AddressMap):
+
+        if not isinstance(callbacks, NormalCallbackSet):
+            raise TypeError(f'callback set type is wrong, got {type(callbacks)}')
+
+        super().__init__(callbacks=callbacks,
+                         address=address,
+                         width=width,
+                         accesswidth=accesswidth,
+                         entries=entries,
+                         logger_handle=logger_handle,
+                         inst_name=inst_name,
+                         parent=parent)
+
+    # pylint: enable=too-many-arguments
+    @property
+    def _callbacks(self) -> NormalCallbackSet:
+        # This cast is OK because the type was checked in the __init__
+        return cast(NormalCallbackSet, self._callbacks)
+
     def read(self, start_entry: int, number_entries: int) -> Array:
         """
         Read from the memory
@@ -200,7 +216,7 @@ class MemoryReadOnly(Memory, ABC):
             if not isinstance(data_read, Array):
                 raise TypeError('The read block callback is expected to return an array')
 
-        else:
+        elif read_callback is not None:
             # there is not read_block_callback defined so we must used individual read
             data_read = Array(self.array_typecode, [0 for _ in range(number_entries)])
 
@@ -211,11 +227,15 @@ class MemoryReadOnly(Memory, ABC):
                                            accesswidth=self.width)
 
                 data_read[entry] = data_entry
+        else:
+            raise RuntimeError(f'There is no usable callback, '
+                               f'block callback:{read_block_callback}, '
+                               f'normal callback:{read_callback}')
 
         return data_read
 
     @abstractmethod
-    def get_readable_registers(self, unroll=False) -> Iterator[Union['ReadableRegister',
+    def get_readable_registers(self, unroll: bool = False) -> Iterator[Union['ReadableRegister',
                                                                Tuple['ReadableRegister', ...]]]:
         """
         generator that produces all the readable_registers of this node
@@ -230,8 +250,36 @@ class MemoryWriteOnly(Memory, ABC):
         It is not expected that this class will be instantiated under normal
         circumstances however, it is useful for type checking
     """
-
     __slots__: List[str] = []
+
+    # pylint: disable=too-many-arguments
+    def __init__(self,
+                 callbacks: NormalCallbackSet,
+                 address: int,
+                 width: int,
+                 accesswidth: int,
+                 entries: int,
+                 logger_handle: str,
+                 inst_name: str,
+                 parent: AddressMap):
+
+        if not isinstance(callbacks, NormalCallbackSet):
+            raise TypeError(f'callback set type is wrong, got {type(callbacks)}')
+
+        super().__init__(callbacks=callbacks,
+                         address=address,
+                         width=width,
+                         accesswidth=accesswidth,
+                         entries=entries,
+                         logger_handle=logger_handle,
+                         inst_name=inst_name,
+                         parent=parent)
+
+    # pylint: enable=too-many-arguments
+    @property
+    def _callbacks(self) -> NormalCallbackSet:
+        # This cast is OK because the type was checked in the __init__
+        return cast(NormalCallbackSet, self._callbacks)
 
     def write(self, start_entry: int, data: Array) -> None:
         """
@@ -268,7 +316,8 @@ class MemoryWriteOnly(Memory, ABC):
                                  accesswidth=self.width,
                                  data=data)
 
-        else:
+
+        elif write_callback is not None:
             # there is not write_block_callback defined so we must used individual write
             for entry_index, entry_data in enumerate(data):
                 entry_address = self.address_lookup(entry=start_entry+entry_index)
@@ -277,9 +326,12 @@ class MemoryWriteOnly(Memory, ABC):
                                accesswidth=self.width,
                                data=entry_data)
 
+        else:
+            raise RuntimeError('No suitable callback')
+
     @abstractmethod
-    def get_writable_registers(self, unroll=False) -> Iterator[Union['WritableRegister',
-                                                               Tuple['WritableRegister', ...]]]:
+    def get_writable_registers(self, unroll: bool = False) -> \
+            Iterator[Union['WritableRegister',Tuple['WritableRegister', ...]]]:
         """
         generator that produces all the readable_registers of this node
         """
@@ -307,6 +359,35 @@ class MemoryAsyncReadOnly(Memory, ABC):
     """
 
     __slots__: List[str] = []
+
+    # pylint: disable=too-many-arguments
+    def __init__(self,
+                 callbacks: AysncCallbackSet,
+                 address: int,
+                 width: int,
+                 accesswidth: int,
+                 entries: int,
+                 logger_handle: str,
+                 inst_name: str,
+                 parent: AddressMap):
+
+        if not isinstance(callbacks, AysncCallbackSet):
+            raise TypeError(f'callback set type is wrong, got {type(callbacks)}')
+
+        super().__init__(callbacks=callbacks,
+                         address=address,
+                         width=width,
+                         accesswidth=accesswidth,
+                         entries=entries,
+                         logger_handle=logger_handle,
+                         inst_name=inst_name,
+                         parent=parent)
+
+    # pylint: enable=too-many-arguments
+    @property
+    def _callbacks(self) -> AysncCallbackSet:
+        # This cast is OK because the type was checked in the __init__
+        return cast(AysncCallbackSet, self._callbacks)
 
     async def read(self, start_entry: int, number_entries: int) -> Array:
         """
@@ -347,7 +428,7 @@ class MemoryAsyncReadOnly(Memory, ABC):
             if not isinstance(data_read, Array):
                 raise TypeError('The read block callback is expected to return an array')
 
-        else:
+        elif read_callback is not None:
             # there is not read_block_callback defined so we must used individual read
             data_read = Array(self.array_typecode, [0 for _ in range(number_entries)])
 
@@ -359,12 +440,15 @@ class MemoryAsyncReadOnly(Memory, ABC):
 
                 data_read[entry] = data_entry
 
+        else:
+            raise RuntimeError('No suitable callback type available')
+
         return data_read
 
     @abstractmethod
     def get_readable_registers(self,
-                               unroll=False) -> Iterator[Union['ReadableAsyncRegister',
-                                                         Tuple['ReadableAsyncRegister', ...]]]:
+                               unroll:bool=False) -> \
+            Iterator[Union['ReadableAsyncRegister', Tuple['ReadableAsyncRegister', ...]]]:
         """
         generator that produces all the readable_registers of this node
         """
@@ -380,6 +464,35 @@ class MemoryAsyncWriteOnly(Memory, ABC):
     """
 
     __slots__: List[str] = []
+
+    # pylint: disable=too-many-arguments
+    def __init__(self,
+                 callbacks: AysncCallbackSet,
+                 address: int,
+                 width: int,
+                 accesswidth: int,
+                 entries: int,
+                 logger_handle: str,
+                 inst_name: str,
+                 parent: AddressMap):
+
+        if not isinstance(callbacks, AysncCallbackSet):
+            raise TypeError(f'callback set type is wrong, got {type(callbacks)}')
+
+        super().__init__(callbacks=callbacks,
+                         address=address,
+                         width=width,
+                         accesswidth=accesswidth,
+                         entries=entries,
+                         logger_handle=logger_handle,
+                         inst_name=inst_name,
+                         parent=parent)
+
+    # pylint: enable=too-many-arguments
+    @property
+    def _callbacks(self) -> AysncCallbackSet:
+        # This cast is OK because the type was checked in the __init__
+        return cast(AysncCallbackSet, self._callbacks)
 
     async def write(self, start_entry: int, data: Array) -> None:
         """
@@ -416,7 +529,7 @@ class MemoryAsyncWriteOnly(Memory, ABC):
                                        accesswidth=self.width,
                                        data=data)
 
-        else:
+        elif write_callback is not None:
             # there is not write_block_callback defined so we must used individual write
             for entry_index, entry_data in enumerate(data):
                 entry_address = self.address_lookup(entry=start_entry+entry_index)
@@ -425,9 +538,12 @@ class MemoryAsyncWriteOnly(Memory, ABC):
                                      accesswidth=self.width,
                                      data=entry_data)
 
+        else:
+            raise RuntimeError('No suitable callback')
+
     @abstractmethod
     def get_writable_registers(self,
-                               unroll=False) -> Iterator[Union['WritableAsyncRegister',
+                               unroll:bool=False) -> Iterator[Union['WritableAsyncRegister',
                                                          Tuple['WritableAsyncRegister', ...]]]:
         """
         generator that produces all the readable_registers of this node
@@ -464,7 +580,8 @@ class MemoryReadOnlyArray(BaseArray, ABC):
         super().__init__(logger_handle=logger_handle, inst_name=inst_name,
                          parent=parent, elements=elements)
 
-    def __getitem__(self, item) -> Union[MemoryReadOnly, Tuple[MemoryReadOnly, ...]]:
+    def __getitem__(self, item:Union[int, slice]) -> \
+            Union[MemoryReadOnly, Tuple[MemoryReadOnly, ...]]:
         # this cast is OK because an explict typing check was done in the __init__
         return cast(Union[MemoryReadOnly, Tuple[MemoryReadOnly, ...]], super().__getitem__(item))
 
@@ -487,7 +604,7 @@ class MemoryWriteOnlyArray(BaseArray, ABC):
         super().__init__(logger_handle=logger_handle, inst_name=inst_name,
                          parent=parent, elements=elements)
 
-    def __getitem__(self, item) -> Union[MemoryWriteOnly, Tuple[MemoryWriteOnly, ...]]:
+    def __getitem__(self, item:Union[slice, int]) -> Union[MemoryWriteOnly, Tuple[MemoryWriteOnly, ...]]:
         # this cast is OK because an explict typing check was done in the __init__
         return cast(Union[MemoryWriteOnly, Tuple[MemoryWriteOnly, ...]], super().__getitem__(item))
 
@@ -510,7 +627,7 @@ class MemoryReadWriteArray(MemoryReadOnlyArray, MemoryWriteOnlyArray, ABC):
         super().__init__(logger_handle=logger_handle, inst_name=inst_name,
                          parent=parent, elements=elements)
 
-    def __getitem__(self, item) -> Union[MemoryReadWrite, Tuple[MemoryReadWrite, ...]]:
+    def __getitem__(self, item:Union[int, slice]) -> Union[MemoryReadWrite, Tuple[MemoryReadWrite, ...]]:
         # this cast is OK because an explict typing check was done in the __init__
         return cast(Union[MemoryReadWrite, Tuple[MemoryReadWrite, ...]], super().__getitem__(item))
 
@@ -533,7 +650,7 @@ class MemoryAsyncReadOnlyArray(BaseArray, ABC):
         super().__init__(logger_handle=logger_handle, inst_name=inst_name,
                          parent=parent, elements=elements)
 
-    def __getitem__(self, item) -> Union[MemoryAsyncReadOnly, Tuple[MemoryAsyncReadOnly, ...]]:
+    def __getitem__(self, item:Union[int, slice]) -> Union[MemoryAsyncReadOnly, Tuple[MemoryAsyncReadOnly, ...]]:
         # this cast is OK because an explict typing check was done in the __init__
         return cast(Union[MemoryAsyncReadOnly, Tuple[MemoryAsyncReadOnly, ...]],
                     super().__getitem__(item))
@@ -557,7 +674,7 @@ class MemoryAsyncWriteOnlyArray(BaseArray, ABC):
         super().__init__(logger_handle=logger_handle, inst_name=inst_name,
                          parent=parent, elements=elements)
 
-    def __getitem__(self, item) -> Union[MemoryAsyncWriteOnly, Tuple[MemoryAsyncWriteOnly, ...]]:
+    def __getitem__(self, item:Union[int, slice]) -> Union[MemoryAsyncWriteOnly, Tuple[MemoryAsyncWriteOnly, ...]]:
         # this cast is OK because an explict typing check was done in the __init__
         return cast(Union[MemoryAsyncWriteOnly, Tuple[MemoryAsyncWriteOnly, ...]],
                     super().__getitem__(item))
@@ -581,7 +698,8 @@ class MemoryAsyncReadWriteArray(MemoryAsyncReadOnlyArray, MemoryAsyncWriteOnlyAr
         super().__init__(logger_handle=logger_handle, inst_name=inst_name,
                          parent=parent, elements=elements)
 
-    def __getitem__(self, item) -> Union[MemoryAsyncReadWrite, Tuple[MemoryAsyncReadWrite, ...]]:
+    def __getitem__(self, item: Union[slice, int]) -> \
+            Union[MemoryAsyncReadWrite, Tuple[MemoryAsyncReadWrite, ...]]:
         # this cast is OK because an explict typing check was done in the __init__
         return cast(Union[MemoryAsyncReadWrite, Tuple[MemoryAsyncReadWrite, ...]],
                     super().__getitem__(item))

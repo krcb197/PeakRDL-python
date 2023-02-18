@@ -20,8 +20,10 @@ from .systemrdl_node_utility_functions import get_reg_readable_fields, get_reg_w
     get_field_bitmask_hex_string, get_field_inv_bitmask_hex_string, \
     get_field_max_value_hex_string, get_reg_max_value_hex_string, get_fully_qualified_type_name, \
     uses_enum, fully_qualified_enum_type, uses_memory, \
-    get_memory_max_entry_value_hex_string, get_array_typecode, get_memory_width_bytes, \
+    get_memory_max_entry_value_hex_string, get_memory_width_bytes, \
     get_field_default_value
+
+from .lib import get_array_typecode
 
 from .safe_name_utility import get_python_path_segments, safe_node_name
 
@@ -47,7 +49,7 @@ class PythonExporter:
 
     # pylint: disable=too-few-public-methods
 
-    def __init__(self, **kwargs):
+    def __init__(self, **kwargs):  # type: ignore[no-untyped-def]
 
         user_template_dir = kwargs.pop("user_template_dir", None)
         self.user_template_context = kwargs.pop("user_template_context",
@@ -268,8 +270,7 @@ class PythonExporter:
             fid.write('pass\n')
 
         template_package = os.path.join(os.path.dirname(__file__),
-                                        'templates',
-                                        'peakrdl_python')
+                                        'lib')
         files_in_package = glob(os.path.join(template_package,'*.py'))
 
         for file_in_package in files_in_package:

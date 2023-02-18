@@ -7,6 +7,8 @@ from .callbacks import ReadCallback
 from .callbacks import ReadBlockCallback
 from .callbacks import WriteCallback
 from .callbacks import WriteBlockCallback
+from .callbacks import NormalCallbackSet
+from .callbacks import AysncCallbackSet
 from .callbacks import CallbackSet
 
 from .base import AddressMap
@@ -20,6 +22,8 @@ from .register import RegReadWrite
 from .register import Reg
 from .register import ReadableRegister
 from .register import WritableRegister
+from .register import ReadableAsyncRegister
+from .register import WritableAsyncRegister
 from .register import RegReadOnlyArray
 from .register import RegWriteOnlyArray
 from .register import RegReadWriteArray
@@ -65,3 +69,5 @@ from .memory import MemoryAsyncReadWrite
 from .memory import MemoryAsyncReadOnlyArray
 from .memory import MemoryAsyncWriteOnlyArray
 from .memory import MemoryAsyncReadWriteArray
+
+from .base import get_array_typecode
