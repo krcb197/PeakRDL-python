@@ -597,7 +597,8 @@ class RegAsyncReadWrite(RegAsyncReadOnly, RegAsyncWriteOnly, ABC):
     # pylint: enable=too-many-arguments, duplicate-code
 
     @asynccontextmanager
-    async def single_read_modify_write(self, verify:bool = False, skip_write: bool = False) ->  AsyncGenerator['RegAsyncReadWrite', None]:
+    async def single_read_modify_write(self, verify:bool = False, skip_write: bool = False) -> \
+        AsyncGenerator['RegAsyncReadWrite', None]:
         """
         Context manager to allow multiple field reads/write to be done with a single set of
         field operations
@@ -754,7 +755,8 @@ class RegAsyncReadOnlyArray(BaseArray, ABC):
         super().__init__(logger_handle=logger_handle, inst_name=inst_name,
                          parent=parent, elements=elements)
 
-    def __getitem__(self, item:Union[int, slice]) -> Union[RegAsyncReadOnly, Tuple[RegAsyncReadOnly, ...]]:
+    def __getitem__(self, item:Union[int, slice]) ->\
+            Union[RegAsyncReadOnly, Tuple[RegAsyncReadOnly, ...]]:
         # this cast is OK because an explict typing check was done in the __init__
         return cast(Union[RegAsyncReadOnly, Tuple[RegAsyncReadOnly, ...]],
                     super().__getitem__(item))
@@ -777,7 +779,8 @@ class RegAsyncWriteOnlyArray(BaseArray, ABC):
         super().__init__(logger_handle=logger_handle, inst_name=inst_name,
                          parent=parent, elements=elements)
 
-    def __getitem__(self, item:Union[int, slice]) -> Union[RegAsyncWriteOnly, Tuple[RegAsyncWriteOnly, ...]]:
+    def __getitem__(self, item:Union[int, slice]) -> \
+            Union[RegAsyncWriteOnly, Tuple[RegAsyncWriteOnly, ...]]:
         # this cast is OK because an explict typing check was done in the __init__
         return cast(Union[RegAsyncWriteOnly, Tuple[RegAsyncWriteOnly, ...]],
                     super().__getitem__(item))
