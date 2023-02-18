@@ -10,6 +10,7 @@ from systemrdl.node import Node, RegNode  # type: ignore
 from systemrdl.node import FieldNode, AddressableNode  # type: ignore
 from systemrdl.node import MemNode  # type: ignore
 from systemrdl.node import SignalNode  # type: ignore
+from systemrdl.rdltypes import UserEnum # type: ignore
 
 def get_fully_qualified_type_name(node: Node) -> str:
     """
@@ -85,7 +86,7 @@ def get_dependent_enum(node: AddressableNode) -> Iterable[FieldNode]:
                     yield field_enum
 
 
-def fully_qualified_enum_type(field_enum, root_node: AddressableNode) -> str:
+def fully_qualified_enum_type(field_enum: UserEnum, root_node: AddressableNode) -> str:
     """
     Returns the fully qualified class type name, for an enum
     """

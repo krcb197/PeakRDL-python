@@ -49,9 +49,11 @@ class Exporter:
 
         """
         if options.user_template_dir is None:
-            peakrdl_exporter = PythonExporter()
+            peakrdl_exporter = PythonExporter()  # type: ignore[no-untyped-call]
         else:
-            peakrdl_exporter = PythonExporter(user_template_dir=options.user_template_dir)
+            templates = options.user_template_dir
+            peakrdl_exporter = \
+                PythonExporter(user_template_dir=templates) # type: ignore[no-untyped-call]
 
         peakrdl_exporter.export(
             top_node,

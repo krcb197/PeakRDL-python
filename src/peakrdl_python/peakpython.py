@@ -114,7 +114,7 @@ def generate(root:Node, outdir:str,
 
     """
     print(f'Info: Generating python for {root.inst_name} in {outdir}')
-    modules = PythonExporter().export(root, outdir,
+    modules = PythonExporter().export(root, outdir, # type: ignore[no-untyped-call]
                                       autoformatoutputs=autoformatoutputs,
                                       asyncoutput=asyncoutput,
                                       skip_test_case_generation=skip_test_case_generation)
