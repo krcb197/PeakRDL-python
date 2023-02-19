@@ -106,7 +106,7 @@ else:
 TestCaseBase = unittest.TestCase
 {% endif %}
 
-class {{top_node.type_name}}_TestCase(TestCaseBase): # type: ignore[valid-type]
+class {{top_node.type_name}}_TestCase(TestCaseBase): # type: ignore[valid-type,misc]
 
     def setUp(self) -> None:
         self.dut = {{top_node.type_name}}_cls({% if asyncoutput %}AysncCallbackSet{% else %}NormalCallbackSet{% endif %}(read_callback=read_callback,
@@ -1137,7 +1137,7 @@ class {{top_node.type_name}}_TestCase(TestCaseBase): # type: ignore[valid-type]
         {% endif %}
         {% endfor %}
 
-class {{top_node.type_name}}_TestCase_BlockAccess(TestCaseBase): # type: ignore[valid-type]
+class {{top_node.type_name}}_TestCase_BlockAccess(TestCaseBase): # type: ignore[valid-type,misc]
 
     def setUp(self) -> None:
         self.dut = {{top_node.type_name}}_cls({% if asyncoutput %}AysncCallbackSet{% else %}NormalCallbackSet{% endif %}(read_callback=read_callback,
