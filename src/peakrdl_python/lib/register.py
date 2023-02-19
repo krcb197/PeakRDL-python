@@ -160,15 +160,19 @@ class RegReadOnly(Reg, ABC):
         read_callback = self._callbacks.read_callback
 
         if read_callback is not None:
-            return read_callback(addr=self.address,
-                                 width=self.width,
-                                 accesswidth=self.accesswidth)
+            # python 3.7 doesn't have the callback defined as protocol so mypy doesn't recognise
+            # the argumaents in the call back functions
+            return read_callback(addr=self.address, # type: ignore[call-arg]
+                                 width=self.width,  # type: ignore[call-arg]
+                                 accesswidth=self.accesswidth)  # type: ignore[call-arg]
 
         if read_block_callback is not None:
-            return read_block_callback(addr=self.address,
-                                       width=self.width,
-                                       accesswidth=self.accesswidth,
-                                       length=1)[0]
+            # python 3.7 doesn't have the callback defined as protocol so mypy doesn't recognise
+            # the argumaents in the call back functions
+            return read_block_callback(addr=self.address, # type: ignore[call-arg]
+                                       width=self.width, # type: ignore[call-arg]
+                                       accesswidth=self.accesswidth, # type: ignore[call-arg]
+                                       length=1)[0] # type: ignore[call-arg]
 
 
         raise RuntimeError('This function does not have a useable callback')
@@ -246,16 +250,21 @@ class RegWriteOnly(Reg, ABC):
         single_callback = self._callbacks.write_callback
 
         if single_callback is not None:
-            single_callback(addr=self.address,
-                            width=self.width,
-                            accesswidth=self.accesswidth,
-                            data=data)
+            # python 3.7 doesn't have the callback defined as protocol so mypy doesn't recognise
+            # the argumaents in the call back functions
+            single_callback(addr=self.address, # type: ignore[call-arg]
+                            width=self.width, # type: ignore[call-arg]
+                            accesswidth=self.accesswidth, # type: ignore[call-arg]
+                            data=data) # type: ignore[call-arg]
 
         elif block_callback is not None:
-            block_callback(addr=self.address,
-                           width=self.width,
-                           accesswidth=self.accesswidth,
-                           data=Array(get_array_typecode(self.width), [data]))
+            # python 3.7 doesn't have the callback defined as protocol so mypy doesn't recognise
+            # the argumaents in the call back functions
+            data_as_array = Array(get_array_typecode(self.width), [data])
+            block_callback(addr=self.address, # type: ignore[call-arg]
+                           width=self.width, # type: ignore[call-arg]
+                           accesswidth=self.accesswidth, # type: ignore[call-arg]
+                           data=data_as_array) # type: ignore[call-arg]
 
         else:
             raise RuntimeError('This function does not have a useable callback')
@@ -450,15 +459,20 @@ class RegAsyncReadOnly(Reg, ABC):
         read_callback = self._callbacks.read_callback
 
         if read_callback is not None:
-            return await read_callback(addr=self.address,
-                                 width=self.width,
-                                 accesswidth=self.accesswidth)
+            # python 3.7 doesn't have the callback defined as protocol so mypy doesn't recognise
+            # the argumaents in the call back functions
+            return await read_callback(addr=self.address,  # type: ignore[call-arg]
+                                       width=self.width,  # type: ignore[call-arg]
+                                       accesswidth=self.accesswidth)  # type: ignore[call-arg]
 
         if read_block_callback is not None:
-            array_read_result = await read_block_callback(addr=self.address,
-                                                          width=self.width,
-                                                          accesswidth=self.accesswidth,
-                                                          length=1)
+            # python 3.7 doesn't have the callback defined as protocol so mypy doesn't recognise
+            # the argumaents in the call back functions
+            array_read_result = \
+                await read_block_callback(addr=self.address,  # type: ignore[call-arg]
+                                          width=self.width,  # type: ignore[call-arg]
+                                          accesswidth=self.accesswidth, # type: ignore[call-arg]
+                                          length=1)  # type: ignore[call-arg]
             return array_read_result[0]
 
 
@@ -538,16 +552,21 @@ class RegAsyncWriteOnly(Reg, ABC):
         single_callback = self._callbacks.write_callback
 
         if single_callback is not None:
-            await single_callback(addr=self.address,
-                                  width=self.width,
-                                  accesswidth=self.accesswidth,
-                                  data=data)
+            # python 3.7 doesn't have the callback defined as protocol so mypy doesn't recognise
+            # the argumaents in the call back functions
+            await single_callback(addr=self.address, # type: ignore[call-arg]
+                                  width=self.width, # type: ignore[call-arg]
+                                  accesswidth=self.accesswidth, # type: ignore[call-arg]
+                                  data=data) # type: ignore[call-arg]
 
         elif block_callback is not None:
-            await block_callback(addr=self.address,
-                                       width=self.width,
-                                       accesswidth=self.accesswidth,
-                                       data=Array(get_array_typecode(self.width),[data]))
+            # python 3.7 doesn't have the callback defined as protocol so mypy doesn't recognise
+            # the argumaents in the call back functions
+            data_as_array=Array(get_array_typecode(self.width),[data])
+            await block_callback(addr=self.address, # type: ignore[call-arg]
+                                       width=self.width, # type: ignore[call-arg]
+                                       accesswidth=self.accesswidth, # type: ignore[call-arg]
+                                       data=data_as_array) # type: ignore[call-arg]
 
         else:
             raise RuntimeError('This function does not have a useable callback')

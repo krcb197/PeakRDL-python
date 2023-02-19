@@ -207,11 +207,14 @@ class MemoryReadOnly(Memory, ABC):
         read_callback = self._callbacks.read_callback
 
         if read_block_callback is not None:
-
-            data_read = read_block_callback(addr=self.address_lookup(entry=start_entry),
-                                            width=self.width,
-                                            accesswidth=self.width,
-                                            length=number_entries)
+            # python 3.7 doesn't have the callback defined as protocol so mypy doesn't recognise
+            # the argumaents in the call back functions
+            addr=self.address_lookup(entry=start_entry)
+            data_read = \
+                read_block_callback(addr=addr,  # type: ignore[call-arg]
+                                    width=self.width,  # type: ignore[call-arg]
+                                    accesswidth=self.width,  # type: ignore[call-arg]
+                                    length=number_entries)  # type: ignore[call-arg]
 
             if not isinstance(data_read, Array):
                 raise TypeError('The read block callback is expected to return an array')
@@ -222,9 +225,11 @@ class MemoryReadOnly(Memory, ABC):
 
             for entry in range(number_entries):
                 entry_address = self.address_lookup(entry=start_entry+entry)
-                data_entry = read_callback(addr=entry_address,
-                                           width=self.width,
-                                           accesswidth=self.width)
+                # python 3.7 doesn't have the callback defined as protocol so mypy doesn't
+                # recognise the argumaents in the call back functions
+                data_entry = read_callback(addr=entry_address, # type: ignore[call-arg]
+                                           width=self.width, # type: ignore[call-arg]
+                                           accesswidth=self.width) # type: ignore[call-arg]
 
                 data_read[entry] = data_entry
         else:
@@ -310,21 +315,25 @@ class MemoryWriteOnly(Memory, ABC):
         write_callback = self._callbacks.write_callback
 
         if write_block_callback is not None:
-
-            write_block_callback(addr=self.address_lookup(entry=start_entry),
-                                 width=self.width,
-                                 accesswidth=self.width,
-                                 data=data)
+            # python 3.7 doesn't have the callback defined as protocol so mypy doesn't recognise
+            # the argumaents in the call back functions
+            addr = self.address_lookup(entry=start_entry)
+            write_block_callback(addr=addr, # type: ignore[call-arg]
+                                 width=self.width, # type: ignore[call-arg]
+                                 accesswidth=self.width, # type: ignore[call-arg]
+                                 data=data) # type: ignore[call-arg]
 
 
         elif write_callback is not None:
             # there is not write_block_callback defined so we must used individual write
             for entry_index, entry_data in enumerate(data):
                 entry_address = self.address_lookup(entry=start_entry+entry_index)
-                write_callback(addr=entry_address,
-                               width=self.width,
-                               accesswidth=self.width,
-                               data=entry_data)
+                # python 3.7 doesn't have the callback defined as protocol so mypy doesn't
+                # recognise the argumaents in the call back functions
+                write_callback(addr=entry_address, # type: ignore[call-arg]
+                               width=self.width, # type: ignore[call-arg]
+                               accesswidth=self.width, # type: ignore[call-arg]
+                               data=entry_data) # type: ignore[call-arg]
 
         else:
             raise RuntimeError('No suitable callback')
@@ -419,11 +428,13 @@ class MemoryAsyncReadOnly(Memory, ABC):
         read_callback = self._callbacks.read_callback
 
         if read_block_callback is not None:
-
-            data_read = await read_block_callback(addr=self.address_lookup(entry=start_entry),
-                                                  width=self.width,
-                                                  accesswidth=self.width,
-                                                  length=number_entries)
+            # python 3.7 doesn't have the callback defined as protocol so mypy doesn't recognise
+            # the argumaents in the call back functions
+            addr = self.address_lookup(entry=start_entry)
+            data_read = await read_block_callback(addr=addr, # type: ignore[call-arg]
+                                                  width=self.width, # type: ignore[call-arg]
+                                                  accesswidth=self.width, # type: ignore[call-arg]
+                                                  length=number_entries) # type: ignore[call-arg]
 
             if not isinstance(data_read, Array):
                 raise TypeError('The read block callback is expected to return an array')
@@ -434,9 +445,11 @@ class MemoryAsyncReadOnly(Memory, ABC):
 
             for entry in range(number_entries):
                 entry_address = self.address_lookup(entry=start_entry+entry)
-                data_entry = await read_callback(addr=entry_address,
-                                                 width=self.width,
-                                                 accesswidth=self.width)
+                # python 3.7 doesn't have the callback defined as protocol so mypy doesn't
+                # recognise the argumaents in the call back functions
+                data_entry = await read_callback(addr=entry_address, # type: ignore[call-arg]
+                                                 width=self.width, # type: ignore[call-arg]
+                                                 accesswidth=self.width) # type: ignore[call-arg]
 
                 data_read[entry] = data_entry
 
@@ -523,20 +536,24 @@ class MemoryAsyncWriteOnly(Memory, ABC):
         write_callback = self._callbacks.write_callback
 
         if write_block_callback is not None:
-
-            await write_block_callback(addr=self.address_lookup(entry=start_entry),
-                                       width=self.width,
-                                       accesswidth=self.width,
-                                       data=data)
+            # python 3.7 doesn't have the callback defined as protocol so mypy doesn't recognise
+            # the argumaents in the call back functions
+            addr = self.address_lookup(entry=start_entry)
+            await write_block_callback(addr=addr, # type: ignore[call-arg]
+                                       width=self.width, # type: ignore[call-arg]
+                                       accesswidth=self.width, # type: ignore[call-arg]
+                                       data=data) # type: ignore[call-arg]
 
         elif write_callback is not None:
             # there is not write_block_callback defined so we must used individual write
             for entry_index, entry_data in enumerate(data):
                 entry_address = self.address_lookup(entry=start_entry+entry_index)
-                await write_callback(addr=entry_address,
-                                     width=self.width,
-                                     accesswidth=self.width,
-                                     data=entry_data)
+                # python 3.7 doesn't have the callback defined as protocol so mypy doesn't
+                # recognise the argumaents in the call back functions
+                await write_callback(addr=entry_address, # type: ignore[call-arg]
+                                     width=self.width, # type: ignore[call-arg]
+                                     accesswidth=self.width, # type: ignore[call-arg]
+                                     data=entry_data) # type: ignore[call-arg]
 
         else:
             raise RuntimeError('No suitable callback')

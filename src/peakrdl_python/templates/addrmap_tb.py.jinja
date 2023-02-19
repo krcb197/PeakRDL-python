@@ -5,8 +5,8 @@ from array import array as Array
 import sys
 import asyncio
 if sys.version_info < (3, 8):
-    import asynctest
-    from asynctest.mock import patch, call
+    import asynctest  # type: ignore[import]
+    from asynctest.mock import patch, call  # type: ignore[import]
 else:
     import unittest
     from unittest.mock import patch, call
@@ -106,7 +106,7 @@ else:
 TestCaseBase = unittest.TestCase
 {% endif %}
 
-class {{top_node.type_name}}_TestCase(TestCaseBase):
+class {{top_node.type_name}}_TestCase(TestCaseBase): # type: ignore[valid-type]
 
     def setUp(self) -> None:
         self.dut = {{top_node.type_name}}_cls({% if asyncoutput %}AysncCallbackSet{% else %}NormalCallbackSet{% endif %}(read_callback=read_callback,
@@ -1137,7 +1137,7 @@ class {{top_node.type_name}}_TestCase(TestCaseBase):
         {% endif %}
         {% endfor %}
 
-class {{top_node.type_name}}_TestCase_BlockAccess(TestCaseBase):
+class {{top_node.type_name}}_TestCase_BlockAccess(TestCaseBase): # type: ignore[valid-type]
 
     def setUp(self) -> None:
         self.dut = {{top_node.type_name}}_cls({% if asyncoutput %}AysncCallbackSet{% else %}NormalCallbackSet{% endif %}(read_callback=read_callback,
