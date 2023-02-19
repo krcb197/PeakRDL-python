@@ -29,103 +29,103 @@ The Register Model is built from the following classes
 Address Maps
 ^^^^^^^^^^^^
 
-.. autoclass:: peakrdl_python.templates.peakrdl_python.base.AddressMap
+.. autoclass:: peakrdl_python.lib.base.AddressMap
     :members:
     :inherited-members:
 
-.. autoclass:: peakrdl_python.templates.peakrdl_python.base.AddressMapArray
+.. autoclass:: peakrdl_python.lib.base.AddressMapArray
     :members:
     :inherited-members:
 
 Register Files
 ^^^^^^^^^^^^^^
 
-.. autoclass:: peakrdl_python.templates.peakrdl_python.base.RegFile
+.. autoclass:: peakrdl_python.lib.base.RegFile
     :members:
     :inherited-members:
 
-.. autoclass:: peakrdl_python.templates.peakrdl_python.base.RegFileArray
+.. autoclass:: peakrdl_python.lib.base.RegFileArray
     :members:
     :inherited-members:
 
 Memories
 ^^^^^^^^
 
-.. autoclass:: peakrdl_python.templates.peakrdl_python.memory.MemoryReadOnly
+.. autoclass:: peakrdl_python.lib.memory.MemoryReadOnly
     :members:
     :inherited-members:
 
-.. autoclass:: peakrdl_python.templates.peakrdl_python.memory.MemoryWriteOnly
+.. autoclass:: peakrdl_python.lib.memory.MemoryWriteOnly
     :members:
     :inherited-members:
 
-.. autoclass:: peakrdl_python.templates.peakrdl_python.memory.MemoryReadWrite
+.. autoclass:: peakrdl_python.lib.memory.MemoryReadWrite
     :members:
     :inherited-members:
 
-.. autoclass:: peakrdl_python.templates.peakrdl_python.memory.MemoryReadOnlyArray
+.. autoclass:: peakrdl_python.lib.memory.MemoryReadOnlyArray
     :members:
     :inherited-members:
 
-.. autoclass:: peakrdl_python.templates.peakrdl_python.memory.MemoryWriteOnlyArray
+.. autoclass:: peakrdl_python.lib.memory.MemoryWriteOnlyArray
     :members:
     :inherited-members:
 
-.. autoclass:: peakrdl_python.templates.peakrdl_python.memory.MemoryReadWriteArray
+.. autoclass:: peakrdl_python.lib.memory.MemoryReadWriteArray
     :members:
     :inherited-members:
 
 Registers
 ^^^^^^^^^
 
-.. autoclass:: peakrdl_python.templates.peakrdl_python.register.RegReadOnly
+.. autoclass:: peakrdl_python.lib.register.RegReadOnly
     :members:
     :inherited-members:
 
-.. autoclass:: peakrdl_python.templates.peakrdl_python.register.RegWriteOnly
+.. autoclass:: peakrdl_python.lib.register.RegWriteOnly
     :members:
     :inherited-members:
 
-.. autoclass:: peakrdl_python.templates.peakrdl_python.register.RegReadWrite
+.. autoclass:: peakrdl_python.lib.register.RegReadWrite
     :members:
     :inherited-members:
 
-.. autoclass:: peakrdl_python.templates.peakrdl_python.register.RegReadOnlyArray
+.. autoclass:: peakrdl_python.lib.register.RegReadOnlyArray
     :members:
     :inherited-members:
 
-.. autoclass:: peakrdl_python.templates.peakrdl_python.register.RegWriteOnlyArray
+.. autoclass:: peakrdl_python.lib.register.RegWriteOnlyArray
     :members:
     :inherited-members:
 
-.. autoclass:: peakrdl_python.templates.peakrdl_python.register.RegReadWriteArray
+.. autoclass:: peakrdl_python.lib.register.RegReadWriteArray
     :members:
     :inherited-members:
 
 Register Fields
 ^^^^^^^^^^^^^^^
 
-.. autoclass:: peakrdl_python.templates.peakrdl_python.fields.FieldReadOnly
+.. autoclass:: peakrdl_python.lib.fields.FieldReadOnly
     :members:
     :inherited-members:
 
-.. autoclass:: peakrdl_python.templates.peakrdl_python.fields.FieldWriteOnly
+.. autoclass:: peakrdl_python.lib.fields.FieldWriteOnly
     :members:
     :inherited-members:
 
-.. autoclass:: peakrdl_python.templates.peakrdl_python.fields.FieldReadWrite
+.. autoclass:: peakrdl_python.lib.fields.FieldReadWrite
     :members:
     :inherited-members:
 
-.. autoclass:: peakrdl_python.templates.peakrdl_python.fields.FieldEnumReadOnly
+.. autoclass:: peakrdl_python.lib.fields.FieldEnumReadOnly
     :members:
     :inherited-members:
 
-.. autoclass:: peakrdl_python.templates.peakrdl_python.fields.FieldEnumWriteOnly
+.. autoclass:: peakrdl_python.lib.fields.FieldEnumWriteOnly
     :members:
     :inherited-members:
 
-.. autoclass:: peakrdl_python.templates.peakrdl_python.fields.FieldEnumReadWrite
+.. autoclass:: peakrdl_python.lib.fields.FieldEnumReadWrite
     :members:
     :inherited-members:
 
@@ -176,7 +176,7 @@ access layer package so that it can be used from the console:
         assert isinstance(accesswidth, int)
         return input('value to read from address:0x%X' % addr)
 
-    def write_addr_space(addr: int, width: int, accesswidth: int, data: int) -> NoReturn:
+    def write_addr_space(addr: int, width: int, accesswidth: int, data: int) -> None:
         """
         Callback to simulate the operation of the package, everytime the read is called, it will
         request the user input the value to be read back.
@@ -198,10 +198,17 @@ access layer package so that it can be used from the console:
 
 In a real system these call backs will be connected to a driver.
 
+In addition there is also an option to use ``async`` callbacks if the package is built
+``asyncoutput`` set to True.
+
 Callback Set
 ------------
 
-The callbacks are passed into the register abstraction layer using a ``CallbackSet``.
+The callbacks are passed into the register abstraction layer using either:
+
+* ``NormalCallbackSet`` for standard python function callbacks
+* ``AysncCallbackSet`` for async python function callbacks, these are called from the library using
+  ``await``
 
 Using the Register Abstraction Layer
 ====================================
