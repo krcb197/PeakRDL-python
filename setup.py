@@ -19,6 +19,7 @@ setup(
     url="https://github.com/krcb197/PeakRDL-python",
     package_dir={'': 'src'},
     packages=[ 'peakrdl_python',
+               'peakrdl_python.lib',
                'peakrdl.python'],   # backwards compatibility shim
     package_data={"peakrdl_python.templates": ["*.py.jinga"]},
     include_package_data = True,
@@ -33,6 +34,7 @@ setup(
         "pylint",
         "coverage",
         "jinja2",
+        "asynctest;python_version<'3.8'",
         "peakrdl-ipxact"
     ],
     classifiers=[

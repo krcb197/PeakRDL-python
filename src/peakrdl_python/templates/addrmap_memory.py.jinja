@@ -5,11 +5,11 @@
 
 {%- macro memory_class(node) %}
     {%- if node.is_sw_readable and node.is_sw_writable %}
-class {{get_fully_qualified_type_name(node)}}_cls(MemoryReadWrite):
+class {{get_fully_qualified_type_name(node)}}_cls(Memory{% if asyncoutput %}Async{% endif %}ReadWrite):
     {%- elif node.is_sw_readable and not node.is_sw_writable %}
-class {{get_fully_qualified_type_name(node)}}_cls(MemoryReadOnly):
+class {{get_fully_qualified_type_name(node)}}_cls(Memory{% if asyncoutput %}Async{% endif %}ReadOnly):
     {%- elif not node.is_sw_readable and node.is_sw_writable %}
-class {{get_fully_qualified_type_name(node)}}_cls(MemoryWriteOnly):
+class {{get_fully_qualified_type_name(node)}}_cls(Memory{% if asyncoutput %}Async{% endif %}WriteOnly):
     {%- endif %}
     """
     Class to represent a memory in the register model
@@ -20,7 +20,7 @@ class {{get_fully_qualified_type_name(node)}}_cls(MemoryWriteOnly):
     __slots__ : List[str] = [{%- for child_node in node.children(unroll=False) -%}{%- if isinstance(child_node, systemrdlRegNode) -%}'__{{child_node.inst_name}}'{% if not loop.last %}, {% endif %}{% endif %}{%- endfor %}]
 
     def __init__(self,
-                 callbacks: CallbackSet,
+                 callbacks: {% if asyncoutput %}AysncCallbackSet{% else %}NormalCallbackSet{% endif %},
                  address: int,
                  logger_handle: str,
                  inst_name: str,
@@ -42,13 +42,15 @@ class {{get_fully_qualified_type_name(node)}}_cls(MemoryWriteOnly):
         {%- for child_node in node.children(unroll=False) -%}
             {%- if isinstance(child_node, systemrdlRegNode)  %}
     @property
-    def {{child_node.inst_name}}(self) -> {% if child_node.is_array -%}{{get_fully_qualified_type_name(child_node)}}_array_cls{% else %}{{get_fully_qualified_type_name(child_node)}}_cls{%- endif -%}:
+    def {{safe_node_name(child_node)}}(self) -> {% if child_node.is_array -%}{{get_fully_qualified_type_name(child_node)}}_array_cls{% else %}{{get_fully_qualified_type_name(child_node)}}_cls{%- endif -%}:
         """
         Property to access {{child_node.inst_name}} register {% if child_node.is_array -%}array{% endif %}
 
         {{get_table_block(child_node) | indent(8)}}
         """
         return self.__{{child_node.inst_name}}
+            {% else %}
+            {{ raise_template_error('unexpected type') }}
             {%- endif %}
         {% endfor %}
 
@@ -60,13 +62,28 @@ class {{get_fully_qualified_type_name(node)}}_cls(MemoryWriteOnly):
     {{ child_writable_register_getter(node) }}
     {% endif %}
 
+    @property
+    def systemrdl_python_child_name_map(self) -> Dict[str, str]:
+        """
+        In some cases systemRDL names need to be converted make them python safe, this dictionary
+        is used to map the original systemRDL names to the names of the python attributes of this
+        class
+
+        Returns: dictionary whose key is the systemRDL names and value it the property name
+        """
+        return {
+            {%- for child_node in node.children(unroll=False) -%}
+            '{{child_node.inst_name}}':'{{safe_node_name(child_node)}}',
+            {%- endfor %}
+            }
+
     {%- if node.is_array %}
         {%- if node.is_sw_readable and node.is_sw_writable %}
-class {{get_fully_qualified_type_name(node)}}_array_cls(MemoryReadWriteArray):
+class {{get_fully_qualified_type_name(node)}}_array_cls(Memory{% if asyncoutput %}Async{% endif %}ReadWriteArray):
         {%- elif node.is_sw_readable and not node.is_sw_writable %}
-class {{get_fully_qualified_type_name(node)}}_array_cls(MemoryReadOnlyArray):
+class {{get_fully_qualified_type_name(node)}}_array_cls(Memory{% if asyncoutput %}Async{% endif %}ReadOnlyArray):
         {%- elif not node.is_sw_readable and node.is_sw_writable %}
-class {{get_fully_qualified_type_name(node)}}_array_cls(MemoryWriteOnlyArray):
+class {{get_fully_qualified_type_name(node)}}_array_cls(Memory{% if asyncoutput %}Async{% endif %}WriteOnlyArray):
         {%- endif %}
     """
     Class to represent a memory array in the register model
@@ -75,19 +92,22 @@ class {{get_fully_qualified_type_name(node)}}_array_cls(MemoryWriteOnlyArray):
 
     def __init__(self, logger_handle: str, inst_name: str,
                  parent: AddressMap,
-                 elements: Tuple[{{get_fully_qualified_type_name(node)}}_cls, ...]):
+                 address: int,
+                 length: int,
+                 stride: int,
+                 callbacks: {% if asyncoutput %}AysncCallbackSet{% else %}NormalCallbackSet{% endif %}):
 
-        for element in elements:
-            if not isinstance(element, {{get_fully_qualified_type_name(node)}}_cls):
-                raise TypeError(f'All Elements should be of type {{get_fully_qualified_type_name(node)}}_cls, '
-                                f'found {type(element)}')
+        elements = tuple([{{get_fully_qualified_type_name(node)}}_cls(callbacks=callbacks,address=address+(index * stride),
+                          logger_handle=f'{logger_handle}.{inst_name}[{index:d}]',
+                          inst_name=f'{inst_name}[{index:d}]', parent=parent) for index in range(length)])
 
         super().__init__(logger_handle=logger_handle, inst_name=inst_name,
                          parent=parent, elements=elements)
 
-    def __getitem__(self, item) -> Union[{{get_fully_qualified_type_name(node)}}_cls, Tuple[{{get_fully_qualified_type_name(node)}}_cls, ...]]:
+    def __getitem__(self, item:Union[int, slice]) -> Union[{{get_fully_qualified_type_name(node)}}_cls, Tuple[{{get_fully_qualified_type_name(node)}}_cls, ...]]:
         # this cast is OK because an explict typing check was done in the __init__
         return cast(Union[{{get_fully_qualified_type_name(node)}}_cls, Tuple[{{get_fully_qualified_type_name(node)}}_cls, ...]], super().__getitem__(item))
     {%- endif %}
 
 {%- endmacro %}
+

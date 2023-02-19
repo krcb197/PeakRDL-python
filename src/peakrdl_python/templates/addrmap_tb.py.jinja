@@ -1,37 +1,67 @@
-"""
-Unit Tests for the {{top_node.inst_name}} register model Python Wrapper
-
-This code was generated from the PeakRDL-python package
-"""
+{% include "header_tb.py.jinja" with context %}
+from typing import List, Union, Dict
 from array import array as Array
+{% if asyncoutput %}
+import sys
+import asyncio
+if sys.version_info < (3, 8):
+    import asynctest  # type: ignore[import]
+    from asynctest.mock import patch, call  # type: ignore[import]
+else:
+    import unittest
+    from unittest.mock import patch, call
+{% else %}
 import unittest
 from unittest.mock import patch, call
+{% endif %}
 import random
 from itertools import combinations
 import math
+from enum import IntEnum
 
-from ..lib import CallbackSet
+from ..lib import RegisterWriteVerifyError
+{% if asyncoutput %}
+from ..lib import AysncCallbackSet
+{% else %}
+from ..lib import NormalCallbackSet
+{% endif %}
+
 
 from ..reg_model.{{top_node.type_name}} import {{top_node.type_name}}_cls
+{% if asyncoutput %}
+from ..lib import FieldAsyncReadOnly, FieldAsyncWriteOnly, FieldAsyncReadWrite
+from ..lib import WritableAsyncRegister, ReadableAsyncRegister, RegAsyncReadWrite, RegAsyncReadOnly, RegAsyncWriteOnly
+from ..lib import MemoryAsyncReadOnly, MemoryAsyncWriteOnly, MemoryAsyncReadWrite
+{% else %}
+from ..lib import FieldReadOnly, FieldWriteOnly, FieldReadWrite
+from ..lib import WritableRegister, ReadableRegister, RegReadWrite, RegReadOnly, RegWriteOnly
+from ..lib import MemoryReadOnly, MemoryWriteOnly, MemoryReadWrite
+{% endif %}
+from ..lib import AddressMap, RegFile
+from ..lib import Memory
+from ..lib import Field
+from ..lib import Reg
 
 # dummy functions to support the test cases, note that these are not used as
 # they get patched
-def read_addr_space(addr: int, width: int, accesswidth: int):
+{% if asyncoutput %}async {% endif %}def read_addr_space(addr: int, width: int, accesswidth: int) -> int:
     assert isinstance(addr, int)
     assert isinstance(width, int)
     assert isinstance(accesswidth, int)
+    {% if asyncoutput %}await asyncio.sleep(1) {% endif %}
     return 0
 
-def write_addr_space(addr: int, width: int, accesswidth: int,  data: int):
+{% if asyncoutput %}async {% endif %}def write_addr_space(addr: int, width: int, accesswidth: int,  data: int) -> None:
     assert isinstance(addr, int)
     assert isinstance(width, int)
     assert isinstance(accesswidth, int)
     assert isinstance(data, int)
+    {% if asyncoutput %}await asyncio.sleep(1) {% endif %}
 
-def read_callback(addr: int, width: int, accesswidth: int):
-    return read_addr_space(addr=addr, width=width, accesswidth=accesswidth)
+{% if asyncoutput %}async {% endif %}def read_callback(addr: int, width: int, accesswidth: int) -> int:
+    return {% if asyncoutput %}await {% endif %}read_addr_space(addr=addr, width=width, accesswidth=accesswidth)
 
-def read_block_addr_space(addr: int, width: int, accesswidth: int, length:int) -> Array:
+{% if asyncoutput %}async {%endif %}def read_block_addr_space(addr: int, width: int, accesswidth: int, length:int) -> Array:
     assert isinstance(addr, int)
     assert isinstance(width, int)
     assert isinstance(accesswidth, int)
@@ -48,27 +78,38 @@ def read_block_addr_space(addr: int, width: int, accesswidth: int, length:int) -
     else:
         raise ValueError('unhandled memory width')
 
+    {% if asyncoutput %}await asyncio.sleep(1) {% endif %}
     return Array(typecode, [0 for x in range(length)])
 
-def read_block_callback(addr: int, width: int, accesswidth: int, length: int):
-    return read_block_addr_space(addr=addr, width=width, accesswidth=accesswidth, length=length)
+{% if asyncoutput %}async {%endif %}def read_block_callback(addr: int, width: int, accesswidth: int, length: int) -> Array:
+    return {% if asyncoutput %}await {% endif %}read_block_addr_space(addr=addr, width=width, accesswidth=accesswidth, length=length)
 
-def write_callback(addr: int, width: int, accesswidth: int,  data: int):
-    write_addr_space(addr=addr, width=width, accesswidth=accesswidth, data=data)
+{% if asyncoutput %}async {%endif %}def write_callback(addr: int, width: int, accesswidth: int,  data: int) -> None:
+    {% if asyncoutput %}await {% endif %}write_addr_space(addr=addr, width=width, accesswidth=accesswidth, data=data)
 
-def write_block_addr_space(addr: int, width: int, accesswidth: int,  data: Array):
+{% if asyncoutput %}async {%endif %}def write_block_addr_space(addr: int, width: int, accesswidth: int,  data: Array) -> None:
     assert isinstance(addr, int)
     assert isinstance(width, int)
     assert isinstance(accesswidth, int)
     assert isinstance(data, Array)
+    {% if asyncoutput %}await asyncio.sleep(1) {% endif %}
 
-def write_block_callback(addr: int, width: int, accesswidth: int,  data: Array):
-    write_block_addr_space(addr=addr, width=width, accesswidth=accesswidth, data=data)
+{% if asyncoutput %}async {%endif %}def write_block_callback(addr: int, width: int, accesswidth: int,  data: Array) -> None:
+    {% if asyncoutput %}await {% endif %}write_block_addr_space(addr=addr, width=width, accesswidth=accesswidth, data=data)
 
-class {{top_node.type_name}}_TestCase(unittest.TestCase):
+{% if asyncoutput %}
+if sys.version_info < (3, 8):
+    TestCaseBase = asynctest.TestCase
+else:
+    TestCaseBase = unittest.IsolatedAsyncioTestCase
+{% else %}
+TestCaseBase = unittest.TestCase
+{% endif %}
 
-    def setUp(self):
-        self.dut = {{top_node.type_name}}_cls(CallbackSet(read_callback=read_callback,
+class {{top_node.type_name}}_TestCase(TestCaseBase): # type: ignore[valid-type,misc]
+
+    def setUp(self) -> None:
+        self.dut = {{top_node.type_name}}_cls({% if asyncoutput %}AysncCallbackSet{% else %}NormalCallbackSet{% endif %}(read_callback=read_callback,
                                                           write_callback=write_callback))
 
     @staticmethod
@@ -88,119 +129,129 @@ class {{top_node.type_name}}_TestCase(unittest.TestCase):
                 result |= 1 << (number_bits - 1 - i)
         return result
 
-    def test_inst_name(self):
+    def test_inst_name(self)  -> None:
         """
         Walk the address map and check the inst name has been correctly populated
         """
         {% for node in top_node.descendants(unroll=True) -%}
-        self.assertEqual(self.dut.{{'.'.join(node.get_path_segments()[1:])}}.inst_name, '{{node.get_path_segments()[-1]}}')
-        self.assertEqual(self.dut.{{'.'.join(node.get_path_segments()[1:])}}.full_inst_name, '{{'.'.join(node.get_path_segments())}}')
+        {% if isinstance(node, systemrdlSignalNode) %}
+        # doing nothing with signal node: {{node.inst_name}}
+        {% else %}
+        self.assertEqual(self.dut.{{'.'.join(get_python_path_segments(node))}}.inst_name, '{{node.get_path_segments()[-1]}}') # type: ignore[union-attr]
+        self.assertEqual(self.dut.{{'.'.join(get_python_path_segments(node))}}.full_inst_name, '{{'.'.join(node.get_path_segments())}}')  # type: ignore[union-attr]
+        {% endif %}
         {% endfor %}
 
-    def test_register_properties(self):
+    def test_register_properties(self)  -> None:
         """
         Walk the address map and check the address, size and accesswidth of every register is
         correct
         """
         {%- for node in top_node.descendants(unroll=True) -%}
             {%- if isinstance(node, systemrdlRegNode) %}
-        self.assertEqual(self.dut.{{'.'.join(node.get_path_segments()[1:])}}.address, {{node.absolute_address}})
-        self.assertEqual(self.dut.{{'.'.join(node.get_path_segments()[1:])}}.width, {{node.size * 8}})
-        {% if 'accesswidth' in node.list_properties() -%}self.assertEqual(self.dut.{{'.'.join(node.get_path_segments()[1:])}}.accesswidth, {{node.get_property('accesswidth')}}){%- else -%} self.assertEqual(self.dut.{{'.'.join(node.get_path_segments()[1:])}}.accesswidth, self.dut.{{'.'.join(node.get_path_segments()[1:])}}.accesswidth){%- endif %}
+        self.assertEqual(self.dut.{{'.'.join(get_python_path_segments(node))}}.address, {{node.absolute_address}}) # type: ignore[union-attr]
+        self.assertEqual(self.dut.{{'.'.join(get_python_path_segments(node))}}.width, {{node.size * 8}}) # type: ignore[union-attr]
+        {% if 'accesswidth' in node.list_properties() -%}self.assertEqual(self.dut.{{'.'.join(get_python_path_segments(node))}}.accesswidth, {{node.get_property('accesswidth')}}){%- else -%} self.assertEqual(self.dut.{{'.'.join(get_python_path_segments(node))}}.accesswidth, self.dut.{{'.'.join(get_python_path_segments(node))}}.accesswidth){%- endif %} # type: ignore[union-attr]
             {%- endif %}
         {%- endfor %}
 
-    def test_memory_properties(self):
+    def test_memory_properties(self)  -> None:
         """
         Walk the address map and check the address, size and accesswidth of every memory is
         correct
         """
+        mut: Memory
         {%- for node in top_node.descendants(unroll=True) -%}
             {%- if isinstance(node, systemrdlMemNode) %}
-        self.assertEqual(self.dut.{{'.'.join(node.get_path_segments()[1:])}}.address, {{node.absolute_address}})
-        self.assertEqual(self.dut.{{'.'.join(node.get_path_segments()[1:])}}.width, {{node.get_property('memwidth')}})
-        self.assertEqual(self.dut.{{'.'.join(node.get_path_segments()[1:])}}.entries, {{node.get_property('mementries')}})
-        {% if 'accesswidth' in node.list_properties() -%}self.assertEqual(self.dut.{{'.'.join(node.get_path_segments()[1:])}}.accesswidth, {{node.get_property('accesswidth')}}){%- else -%} self.assertEqual(self.dut.{{'.'.join(node.get_path_segments()[1:])}}.accesswidth, self.dut.{{'.'.join(node.get_path_segments()[1:])}}.accesswidth){%- endif %}
+        mut = self.dut.{{'.'.join(get_python_path_segments(node))}} # type: ignore[union-attr,assignment]
+        self.assertIsInstance(mut, Memory)
+        self.assertEqual(mut.address, {{node.absolute_address}})
+        self.assertEqual(mut.width, {{node.get_property('memwidth')}})
+        self.assertEqual(mut.entries, {{node.get_property('mementries')}})
+        {% if 'accesswidth' in node.list_properties() -%}self.assertEqual(mut.accesswidth, {{node.get_property('accesswidth')}}){%- else -%}self.assertEqual(mut.accesswidth, mut.accesswidth){%- endif %}
             {%- endif %}
         {%- endfor %}
 
-    def test_field_properties(self):
+    def test_field_properties(self)  -> None:
         """
         walk the address map and check:
         - that the lsb and msb of every field is correct
         - that where default values are provided they are applied correctly
         """
+        fut:Field
         {%- for node in top_node.descendants(unroll=True) -%}
             {%- if isinstance(node, systemrdlFieldNode) %}
-        # test field properties: {{'.'.join(node.get_path_segments())}}
-        self.assertEqual(self.dut.{{'.'.join(node.get_path_segments()[1:])}}.lsb,
-                        {{node.lsb}})
-        self.assertEqual(self.dut.{{'.'.join(node.get_path_segments()[1:])}}.msb,
-                         {{node.msb}})
-        self.assertEqual(self.dut.{{'.'.join(node.get_path_segments()[1:])}}.low,
-                        {{node.low}})
-        self.assertEqual(self.dut.{{'.'.join(node.get_path_segments()[1:])}}.high,
-                         {{node.high}})
-        self.assertEqual(self.dut.{{'.'.join(node.get_path_segments()[1:])}}.bitmask,
-                         {{get_field_bitmask_hex_string(node)}})
-        self.assertEqual(self.dut.{{'.'.join(node.get_path_segments()[1:])}}.inverse_bitmask,
-                         {{get_field_inv_bitmask_hex_string(node)}})
-        self.assertEqual(self.dut.{{'.'.join(node.get_path_segments()[1:])}}.max_value,
-                         {{get_field_max_value_hex_string(node)}})
-        self.assertEqual(self.dut.{{'.'.join(node.get_path_segments()[1:])}}.default,
-                         {{get_field_default_value(node)}})
-        self.assertEqual(self.dut.{{'.'.join(node.get_path_segments()[1:])}}.is_volatile,
-                         {{node.is_hw_writable}})
+        # test properties of field: {{'.'.join(node.get_path_segments())}}
+        fut = self.dut.{{'.'.join(get_python_path_segments(node))}} # type: ignore[union-attr]
+        if not isinstance(fut, Field):
+            raise TypeError('This test relies on node being of type Field')
+        self.assertEqual(fut.lsb,{{node.lsb}})
+        self.assertEqual(fut.msb,{{node.msb}})
+        self.assertEqual(fut.low,{{node.low}})
+        self.assertEqual(fut.high,{{node.high}})
+        self.assertEqual(fut.bitmask,{{get_field_bitmask_hex_string(node)}})
+        self.assertEqual(fut.inverse_bitmask,{{get_field_inv_bitmask_hex_string(node)}})
+        self.assertEqual(fut.max_value,{{get_field_max_value_hex_string(node)}})
+        self.assertEqual(fut.default,{{get_field_default_value(node)}})
+        self.assertEqual(fut.is_volatile,{{node.is_hw_writable}})
             {%- endif -%}
         {%- endfor %}
 
-    def test_register_read_and_write(self):
+    {% if asyncoutput %}async {% endif %}def test_register_read_and_write(self) -> None:
         """
         Walk the register map and check every register can be read and written to correctly
         """
+        rut: Reg
         {%- for node in top_node.descendants(unroll=True) -%}
             {%- if isinstance(node, systemrdlRegNode) %}
-
         # test access operations (read and/or write) to register:
         # {{'.'.join(node.get_path_segments())}}
+        rut=self.dut.{{'.'.join(get_python_path_segments(node))}} # type: ignore[union-attr,assignment]
         with patch(__name__ + '.' + 'write_addr_space') as write_callback_mock, \
             patch(__name__ + '.' + 'read_addr_space', return_value=1) as read_callback_mock:
 
             {% if node.has_sw_readable -%}
+            {% if asyncoutput %}
+            if not isinstance(rut, (RegAsyncReadOnly, RegAsyncReadWrite)):
+                raise TypeError('Register is not a Readable Async Type')
+            {% else %}
+            if not isinstance(rut, (RegReadOnly, RegReadWrite)):
+                raise TypeError('Register is not a Readable Type')
+            {% endif %}
             # test reading back 1 (the unpatched version returns 0 so this confirms the patch works)
-            self.assertEqual(self.dut.{{'.'.join(node.get_path_segments()[1:])}}.read(), 1)
+            self.assertEqual({% if asyncoutput %}await {%endif %}rut.read(), 1)
             read_callback_mock.assert_called_once_with(
                                 addr={{node.absolute_address}},
                                 width={{node.size * 8}},
-                                accesswidth=self.dut.{{'.'.join(node.get_path_segments()[1:])}}.accesswidth)
+                                accesswidth=rut.accesswidth)
 
             # test the read check with high value
             read_callback_mock.reset_mock()
             read_callback_mock.return_value = {{get_reg_max_value_hex_string(node)}}
-            self.assertEqual(self.dut.{{'.'.join(node.get_path_segments()[1:])}}.read(), {{get_reg_max_value_hex_string(node)}})
+            self.assertEqual({% if asyncoutput %}await {%endif %}rut.read(), {{get_reg_max_value_hex_string(node)}})
             read_callback_mock.assert_called_once_with(
                                 addr={{node.absolute_address}},
                                 width={{node.size * 8}},
-                                accesswidth=self.dut.{{'.'.join(node.get_path_segments()[1:])}}.accesswidth)
+                                accesswidth=rut.accesswidth)
 
             # test the read of the low value
             read_callback_mock.reset_mock()
             read_callback_mock.return_value = 0
-            self.assertEqual(self.dut.{{'.'.join(node.get_path_segments()[1:])}}.read(), 0x0)
+            self.assertEqual({% if asyncoutput %}await {%endif %}rut.read(), 0x0)
             read_callback_mock.assert_called_once_with(
                                 addr={{node.absolute_address}},
                                 width={{node.size * 8}},
-                                accesswidth=self.dut.{{'.'.join(node.get_path_segments()[1:])}}.accesswidth)
+                                accesswidth=rut.accesswidth)
 
             # test the read of a random value
             random_value = random.randrange(0, {{get_reg_max_value_hex_string(node)}}+1)
             read_callback_mock.reset_mock()
             read_callback_mock.return_value = random_value
-            self.assertEqual(self.dut.{{'.'.join(node.get_path_segments()[1:])}}.read(), random_value)
+            self.assertEqual({% if asyncoutput %}await {%endif %}rut.read(), random_value)
             read_callback_mock.assert_called_once_with(
                                 addr={{node.absolute_address}},
                                 width={{node.size * 8}},
-                                accesswidth=self.dut.{{'.'.join(node.get_path_segments()[1:])}}.accesswidth)
+                                accesswidth=rut.accesswidth)
 
             # at the end of the read tests the write should not have been called
             read_callback_mock.reset_mock()
@@ -208,45 +259,52 @@ class {{top_node.type_name}}_TestCase(unittest.TestCase):
             {% endif %}
 
             {% if node.has_sw_writable -%}
+            {% if asyncoutput %}
+            if not isinstance(rut, (RegAsyncWriteOnly, RegAsyncReadWrite)):
+                raise TypeError('Register is not a Writeable Async Type')
+            {% else %}
+            if not isinstance(rut, (RegWriteOnly, RegReadWrite)):
+                raise TypeError('Register is not a Writeable Type')
+            {% endif %}
             # test the write with high value
-            self.dut.{{'.'.join(node.get_path_segments()[1:])}}.write({{get_reg_max_value_hex_string(node)}})
+            {% if asyncoutput %}await {%endif %}rut.write({{get_reg_max_value_hex_string(node)}})
             write_callback_mock.assert_called_once_with(
                                 addr={{node.absolute_address}},
                                 width={{node.size * 8}},
-                                accesswidth=self.dut.{{'.'.join(node.get_path_segments()[1:])}}.accesswidth,
+                                accesswidth=rut.accesswidth,
                                 data={{get_reg_max_value_hex_string(node)}})
             write_callback_mock.reset_mock()
 
             # test the write of a low value
-            self.dut.{{'.'.join(node.get_path_segments()[1:])}}.write(0)
+            {% if asyncoutput %}await {%endif %}rut.write(0)
             write_callback_mock.assert_called_once_with(
                                 addr={{node.absolute_address}},
                                 width={{node.size * 8}},
-                                accesswidth=self.dut.{{'.'.join(node.get_path_segments()[1:])}}.accesswidth,
+                                accesswidth=rut.accesswidth,
                                 data=0)
             write_callback_mock.reset_mock()
 
             # test the write of a random
             random_value = random.randrange(0, {{get_reg_max_value_hex_string(node)}}+1)
-            self.dut.{{'.'.join(node.get_path_segments()[1:])}}.write(random_value)
+            {% if asyncoutput %}await {%endif %}rut.write(random_value)  # type: ignore[union-attr]
             write_callback_mock.assert_called_once_with(
                                 addr={{node.absolute_address}},
                                 width={{node.size * 8}},
-                                accesswidth=self.dut.{{'.'.join(node.get_path_segments()[1:])}}.accesswidth,
+                                accesswidth=rut.accesswidth,
                                 data=random_value)
             write_callback_mock.reset_mock()
 
             # test writting a value beyond the register range is blocked with an exception being raised
             with self.assertRaises(ValueError):
-                self.dut.{{'.'.join(node.get_path_segments()[1:])}}.write(-1)
+                {% if asyncoutput %}await {%endif %}rut.write(-1)
 
             with self.assertRaises(ValueError):
-                self.dut.{{'.'.join(node.get_path_segments()[1:])}}.write({{get_reg_max_value_hex_string(node)}}+1)
+                {% if asyncoutput %}await {%endif %}rut.write({{get_reg_max_value_hex_string(node)}}+1)
 
             {%- else %}
             # test that a non-writable register has no write method and attempting one generates and error
             with self.assertRaises(AttributeError):
-                self.dut.{{'.'.join(node.get_path_segments()[1:])}}.write(0)
+                {% if asyncoutput %}await {%endif %}rut.write(0) # type: ignore[attr-defined]
             {%- endif %}
 
             # check the read has not been called in the write test
@@ -254,39 +312,48 @@ class {{top_node.type_name}}_TestCase(unittest.TestCase):
             {%- endif %}
         {%- endfor %}
 
-    def test_int_field_read_and_write(self):
+    {% if asyncoutput %}async {% endif %}def test_int_field_read_and_write(self) -> None:
         """
         Check the ability to read and write to integer (non-eumn) fields
         """
+        fut:Field
     {%- for node in top_node.descendants(unroll=True) -%}
         {%- if isinstance(node, systemrdlFieldNode) %}
         {%- if 'encode' not in node.list_properties() %}
 
         # test access operations (read and/or write) to field:
         # {{'.'.join(node.get_path_segments())}}
+        fut = self.dut.{{'.'.join(get_python_path_segments(node))}} # type: ignore[union-attr]
         with patch(__name__ + '.' + 'write_addr_space') as write_callback_mock,\
             patch(__name__ + '.' + 'read_addr_space', return_value=0) as read_callback_mock:
 
             {% if node.is_sw_readable %}
+            {% if asyncoutput %}
+            if not isinstance(fut, (FieldAsyncReadOnly, FieldAsyncReadWrite)):
+                raise TypeError('Test can not proceed as the fut is not a readable async field')
+            {% else %}
+            if not isinstance(fut, (FieldReadOnly, FieldReadWrite)):
+                raise TypeError('Test can not proceed as the fut is not a readable field')
+            {% endif %}
 
             # read back - zero, this is achieved by setting the register to inverse bitmask
             read_callback_mock.return_value = {{get_field_inv_bitmask_hex_string(node)}}
-            self.assertEqual(self.dut.{{'.'.join(node.get_path_segments()[1:])}}.read(),
+            self.assertEqual({% if asyncoutput %}await {%endif %}fut.read(),
                              0)
             read_callback_mock.assert_called_once_with(
                                 addr={{node.parent.absolute_address}},
                                 width={{node.parent.size * 8}},
-                                accesswidth=self.dut.{{'.'.join(node.get_path_segments()[1:])}}.parent_register.accesswidth)
+                                accesswidth=fut.parent_register.accesswidth)
 
             # read back - max_value, this is achieved by setting the register to bitmask
             read_callback_mock.reset_mock()
             read_callback_mock.return_value = {{get_field_bitmask_hex_string(node)}}
-            self.assertEqual(self.dut.{{'.'.join(node.get_path_segments()[1:])}}.read(),
+            self.assertEqual({% if asyncoutput %}await {%endif %}fut.read(),
                              {{ get_field_max_value_hex_string(node) }})
             read_callback_mock.assert_called_once_with(
                                 addr={{node.parent.absolute_address}},
                                 width={{node.parent.size * 8}},
-                                accesswidth=self.dut.{{'.'.join(node.get_path_segments()[1:])}}.parent_register.accesswidth)
+                                accesswidth=fut.parent_register.accesswidth)
 
             # read back - random value
             read_callback_mock.reset_mock()
@@ -294,16 +361,16 @@ class {{top_node.type_name}}_TestCase(unittest.TestCase):
             read_callback_mock.return_value = random_value
             random_field_value = (random_value & {{get_field_bitmask_hex_string(node)}}) >> {{node.low}}
             {% if node.msb == node.high -%}
-            self.assertEqual(self.dut.{{'.'.join(node.get_path_segments()[1:])}}.read(),
+            self.assertEqual({% if asyncoutput %}await {%endif %}fut.read(),
                              random_field_value)
             {% else -%}
-            self.assertEqual(self.dut.{{'.'.join(node.get_path_segments()[1:])}}.read(),
+            self.assertEqual({% if asyncoutput %}await {%endif %}fut.read(),
                              self._reverse_bits(value=random_field_value, number_bits={{node.width}}))
             {% endif -%}
             read_callback_mock.assert_called_once_with(
                                 addr={{node.parent.absolute_address}},
                                 width={{node.parent.size * 8}},
-                                accesswidth=self.dut.{{'.'.join(node.get_path_segments()[1:])}}.parent_register.accesswidth)
+                                accesswidth=fut.parent_register.accesswidth)
 
             # at the end of the read tests the write should not have been called
             read_callback_mock.reset_mock()
@@ -312,6 +379,14 @@ class {{top_node.type_name}}_TestCase(unittest.TestCase):
 
             {%- if node.is_sw_writable %}
             # check the write
+            {% if asyncoutput %}
+            if not isinstance(fut, (FieldAsyncWriteOnly, FieldAsyncReadWrite)):
+                raise TypeError('Test can not proceed as the fut is not a writable async field')
+            {% else %}
+            if not isinstance(fut, (FieldWriteOnly, FieldReadWrite)):
+                raise TypeError('Test can not proceed as the fut is not a writable field')
+            {% endif %}
+
             random_reg_value = random.randrange(0, {{get_reg_max_value_hex_string(node.parent)}} + 1)
             random_field_value = random.randrange(0, {{ get_field_max_value_hex_string(node) }} + 1)
             for reg_base_value in [0, {{get_reg_max_value_hex_string(node.parent)}}, random_reg_value]:
@@ -320,13 +395,13 @@ class {{top_node.type_name}}_TestCase(unittest.TestCase):
                     write_callback_mock.reset_mock()
                     read_callback_mock.return_value = reg_base_value
 
-                    self.dut.{{'.'.join(node.get_path_segments()[1:])}}.write(field_value)
+                    {% if asyncoutput %}await {%endif %}self.dut.{{'.'.join(get_python_path_segments(node))}}.write(field_value) # type: ignore[union-attr]
 
                     {% if (((node.high+1) - node.low) < (node.parent.size*8)) and (node.parent.has_sw_readable) %}
                     read_callback_mock.assert_called_once_with(
                                 addr={{node.parent.absolute_address}},
                                 width={{node.parent.size * 8}},
-                                accesswidth=self.dut.{{'.'.join(node.get_path_segments()[1:])}}.parent_register.accesswidth)
+                                accesswidth=fut.parent_register.accesswidth)
                     {% else %}
                     read_callback_mock.assert_not_called()
                     {%- endif %}
@@ -335,14 +410,14 @@ class {{top_node.type_name}}_TestCase(unittest.TestCase):
                     write_callback_mock.assert_called_once_with(
                                 addr={{node.parent.absolute_address}},
                                 width={{node.parent.size * 8}},
-                                accesswidth=self.dut.{{'.'.join(node.get_path_segments()[1:])}}.parent_register.accesswidth,
+                                accesswidth=self.dut.{{'.'.join(get_python_path_segments(node))}}.parent_register.accesswidth, # type: ignore[union-attr]
                                 data=(reg_base_value & {{get_field_inv_bitmask_hex_string(node)}}) | \
                                      ({{get_field_bitmask_hex_string(node)}} & (field_value << {{node.low}})))
                     {% else -%}
                     write_callback_mock.assert_called_once_with(
                                 addr={{node.parent.absolute_address}},
                                 width={{node.parent.size * 8}},
-                                accesswidth=self.dut.{{'.'.join(node.get_path_segments()[1:])}}.parent_register.accesswidth,
+                                accesswidth=fut.parent_register.accesswidth,
                                 data=(reg_base_value & {{get_field_inv_bitmask_hex_string(node)}}) | \
                                      ({{get_field_bitmask_hex_string(node)}} & (self._reverse_bits(value=field_value, number_bits={{node.width}}) << {{node.low}})))
                     {% endif -%}
@@ -352,23 +427,23 @@ class {{top_node.type_name}}_TestCase(unittest.TestCase):
                     write_callback_mock.assert_called_once_with(
                                 addr={{node.parent.absolute_address}},
                                 width={{node.parent.size * 8}},
-                                accesswidth=self.dut.{{'.'.join(node.get_path_segments()[1:])}}.parent_register.accesswidth,
+                                accesswidth=fut.parent_register.accesswidth,
                                 data=field_value << {{node.low}})
                     {% else -%}
                     write_callback_mock.assert_called_once_with(
                                 addr={{node.parent.absolute_address}},
                                 width={{node.parent.size * 8}},
-                                accesswidth=self.dut.{{'.'.join(node.get_path_segments()[1:])}}.parent_register.accesswidth,
+                                accesswidth=fut.parent_register.accesswidth,
                                 data=self._reverse_bits(value=field_value, number_bits={{node.width}}) << {{node.low}})
                     {% endif -%}
                     {% endif %}
 
             # check invalid write values bounce
             with self.assertRaises(ValueError):
-                self.dut.{{'.'.join(node.get_path_segments()[1:])}}.write({{ get_field_max_value_hex_string(node) }} + 1)
+                {% if asyncoutput %}await {%endif %}fut.write({{ get_field_max_value_hex_string(node) }} + 1)
 
             with self.assertRaises(ValueError):
-                self.dut.{{'.'.join(node.get_path_segments()[1:])}}.write(-1)
+                {% if asyncoutput %}await {%endif %}fut.write(-1)
             {%- endif %}
 
         {%- endif %}
@@ -376,7 +451,7 @@ class {{top_node.type_name}}_TestCase(unittest.TestCase):
     {%- endfor %}
 
     {% if uses_enum %}
-    def test_enum_field_read_and_write(self):
+    {% if asyncoutput %}async {% endif %}def test_enum_field_read_and_write(self) -> None:
         """
         Check the ability to read and write to enum fields
         """
@@ -392,7 +467,7 @@ class {{top_node.type_name}}_TestCase(unittest.TestCase):
             {% if node.is_sw_readable %}
             # read back test
             {%- for value_of_enum_needed in node.get_property('encode') -%}
-            # set the simulated read_back value to {{value_of_enum_needed.name}}
+            # set the simulated read_back value to {{value_of_enum_needed.name.upper()}}
             random_reg_value = random.randrange(0, {{get_reg_max_value_hex_string(node.parent)}} + 1)
             read_callback_mock.reset_mock()
             {% if node.msb == node.high -%}
@@ -403,12 +478,12 @@ class {{top_node.type_name}}_TestCase(unittest.TestCase):
                                               ({{get_field_bitmask_hex_string(node)}} & (self._reverse_bits(value={{value_of_enum_needed.value}}, number_bits={{node.width}}) << {{node.low}} ))
             {% endif -%}
 
-            self.assertEqual(self.dut.{{'.'.join(node.get_path_segments()[1:])}}.read(),
-                             self.dut.{{'.'.join(node.get_path_segments()[1:])}}.enum_cls.{{value_of_enum_needed.name}})
+            self.assertEqual({% if asyncoutput %}await {%endif %}self.dut.{{'.'.join(get_python_path_segments(node))}}.read(), # type: ignore[union-attr]
+                             self.dut.{{'.'.join(get_python_path_segments(node))}}.enum_cls.{{value_of_enum_needed.name.upper()}}) # type: ignore[attr-defined]
             read_callback_mock.assert_called_once_with(
                                 addr={{node.parent.absolute_address}},
                                 width={{node.parent.size * 8}},
-                                accesswidth=self.dut.{{'.'.join(node.get_path_segments()[1:])}}.parent_register.accesswidth)
+                                accesswidth=self.dut.{{'.'.join(get_python_path_segments(node))}}.parent_register.accesswidth) # type: ignore[union-attr]
             {% endfor %}
 
             {% if node.get_property('encode').__len__() < (2**((node.high+1) - node.low)) %}
@@ -429,20 +504,20 @@ class {{top_node.type_name}}_TestCase(unittest.TestCase):
                     read_callback_mock.return_value = (random_reg_value & {{get_field_inv_bitmask_hex_string(node)}}) | \
                                      ({{get_field_bitmask_hex_string(node)}} & (self._reverse_bits(value=field_value, number_bits={{node.width}}) << {{node.low}}))
                     {% endif -%}
-                    decode_field_value = self.dut.{{'.'.join(node.get_path_segments()[1:])}}.read()
+                    _ = {% if asyncoutput %}await {%endif %}self.dut.{{'.'.join(get_python_path_segments(node))}}.read() # type: ignore[union-attr]
             {% endif %}
             write_callback_mock.assert_not_called()
             {% endif %}
 
             {% if node.is_sw_writable %}
-            enum_cls = self.dut.{{'.'.join(node.get_path_segments()[1:])}}.enum_cls
+            enum_cls = self.dut.{{'.'.join(get_python_path_segments(node))}}.enum_cls
             {% for value_of_enum_needed in node.get_property('encode') %}
             random_reg_value = random.randrange(0, {{get_reg_max_value_hex_string(node.parent)}} + 1)
             read_callback_mock.reset_mock()
             write_callback_mock.reset_mock()
             read_callback_mock.return_value = random_reg_value
 
-            self.dut.{{'.'.join(node.get_path_segments()[1:])}}.write(enum_cls.{{value_of_enum_needed.name}})
+            {% if asyncoutput %}await {%endif %}self.dut.{{'.'.join(get_python_path_segments(node))}}.write(enum_cls.{{value_of_enum_needed.name.upper()}}) # type: ignore[attr-defined]
 
             {% if ( node.width < (node.parent.size*8)) and (node.parent.has_sw_readable) %}
             read_callback_mock.assert_called_once()
@@ -455,14 +530,14 @@ class {{top_node.type_name}}_TestCase(unittest.TestCase):
             write_callback_mock.assert_called_once_with(
                                 addr={{node.parent.absolute_address}},
                                 width={{node.parent.size * 8}},
-                                accesswidth=self.dut.{{'.'.join(node.get_path_segments()[1:])}}.parent_register.accesswidth,
+                                accesswidth=self.dut.{{'.'.join(get_python_path_segments(node))}}.parent_register.accesswidth, # type: ignore[union-attr]
                                 data=(random_reg_value & {{get_field_inv_bitmask_hex_string(node)}}) | \
                                      ({{get_field_bitmask_hex_string(node)}} & ({{value_of_enum_needed.value}} << {{node.low}})))
             {% else -%}
             write_callback_mock.assert_called_once_with(
                                 addr={{node.parent.absolute_address}},
                                 width={{node.parent.size * 8}},
-                                accesswidth=self.dut.{{'.'.join(node.get_path_segments()[1:])}}.parent_register.accesswidth,
+                                accesswidth=self.dut.{{'.'.join(get_python_path_segments(node))}}.parent_register.accesswidth, # type: ignore[union-attr]
                                 data=(random_reg_value & {{get_field_inv_bitmask_hex_string(node)}}) | \
                                      ({{get_field_bitmask_hex_string(node)}} & (self._reverse_bits(value={{value_of_enum_needed.value}}, number_bits={{node.width}}) << {{node.low}})))
             {% endif -%}
@@ -472,13 +547,13 @@ class {{top_node.type_name}}_TestCase(unittest.TestCase):
             write_callback_mock.assert_called_once_with(
                                 addr={{node.parent.absolute_address}},
                                 width={{node.parent.size * 8}},
-                                accesswidth=self.dut.{{'.'.join(node.get_path_segments()[1:])}}.parent_register.accesswidth,
+                                accesswidth=self.dut.{{'.'.join(get_python_path_segments(node))}}.parent_register.accesswidth, # type: ignore[union-attr]
                                 data={{value_of_enum_needed.value}} << {{node.low}})
             {% else -%}
             write_callback_mock.assert_called_once_with(
                                 addr={{node.parent.absolute_address}},
                                 width={{node.parent.size * 8}},
-                                accesswidth=self.dut.{{'.'.join(node.get_path_segments()[1:])}}.parent_register.accesswidth,
+                                accesswidth=self.dut.{{'.'.join(get_python_path_segments(node))}}.parent_register.accesswidth, # type: ignore[union-attr]
                                 data=self._reverse_bits(value={{value_of_enum_needed.value}}, number_bits={{node.width}}) << {{node.low}})
             {% endif -%}
             {% endif %}
@@ -491,10 +566,11 @@ class {{top_node.type_name}}_TestCase(unittest.TestCase):
     {%- endfor %}
     {%- endif %}
 
-    def test_register_read_fields(self):
+    {% if asyncoutput %}async {% endif %}def test_register_read_fields(self) -> None:
         """
         Walk the register map and check every register read_fields method
         """
+        reference_read_fields: Dict[str, Union[bool, IntEnum, int]]
         {%- for node in top_node.descendants(unroll=True) -%}
         {%- if isinstance(node, systemrdlRegNode) %}
         {% if node.has_sw_readable %}
@@ -503,43 +579,211 @@ class {{top_node.type_name}}_TestCase(unittest.TestCase):
         # build up the register value with a random base value, overlaid with
         # a random value for each field
         rand_reg_value = random.randrange(0, {{get_reg_max_value_hex_string(node)}} + 1)
-        {%- for field in node.children() %}
-        {%- if field.is_sw_readable -%}
-        {%- if 'encode' in field.list_properties() %}
-        rand_field_value = random.choice(list(self.dut.{{'.'.join(field.get_path_segments()[1:])}}.enum_cls)).value
-        {%- else %}
-        rand_field_value = random.randrange(0, {{ get_field_max_value_hex_string(field) }} + 1)
-        {%- endif %}
-        {% if field.msb == field.high -%}
-        rand_reg_value = (rand_reg_value & {{get_field_inv_bitmask_hex_string(field)}}) | (rand_field_value << {{ field.low }})
-        {% else -%}
-        rand_reg_value = (rand_reg_value & {{get_field_inv_bitmask_hex_string(field)}}) | (self._reverse_bits(value=rand_field_value, number_bits={{field.width}}) << {{ field.low }})
-        {% endif -%}
-        {%- endif %}
+        {%- for child_node in node.children() %}
+            {% if isinstance(child_node, systemrdlSignalNode) %}
+        # do nothing with signal {{ child_node.inst_name }}
+            {% elif isinstance(child_node, systemrdlFieldNode) %}
+                {% if child_node.is_sw_readable %}
+                    {% if 'encode' in child_node.list_properties() %}
+        rand_field_value = random.choice(list(self.dut.{{'.'.join(get_python_path_segments(child_node))}}.enum_cls)).value  # type: ignore[attr-defined]
+                    {%- else %}
+        rand_field_value = random.randrange(0, {{ get_field_max_value_hex_string(child_node) }} + 1)
+                    {% endif %}
+                    {% if child_node.msb == child_node.high %}
+        rand_reg_value = (rand_reg_value & {{get_field_inv_bitmask_hex_string(child_node)}}) | (rand_field_value << {{ child_node.low }})
+                    {% else %}
+        rand_reg_value = (rand_reg_value & {{get_field_inv_bitmask_hex_string(child_node)}}) | (self._reverse_bits(value=rand_field_value, number_bits={{child_node.width}}) << {{ child_node.low }})
+                     {% endif %}
+                {% endif %}
+            {% else %}
+        {{ raise_template_error('unexpected type') }}
+            {% endif %}
         {% endfor %}
-        with patch(__name__ + '.' + 'read_addr_space', return_value=rand_reg_value):
+        with patch(__name__ + '.' + 'write_addr_space') as write_callback_mock, \
+             patch(__name__ + '.' + 'read_addr_space', return_value=rand_reg_value) as read_callback_mock:
             # the read_fields method gets a dictionary back
             # from the object with all the read back field
             # values
-            reference_read_fields = { {% for field in node.children() -%}
-                                      {%- if field.is_sw_readable %}
-                                      '{{ field.inst_name }}' : self.dut.{{'.'.join(field.get_path_segments()[1:])}}.read(){%- if not loop.last -%}, {%- endif %}
-                                      {%- endif -%}
+            reference_read_fields = { {% for child_node in node.children() -%}
+                                        {% if isinstance(child_node, systemrdlFieldNode) %}
+                                            {%- if child_node.is_sw_readable %}
+                                      '{{ child_node.inst_name }}' : {% if asyncoutput %}await {%endif %}self.dut.{{'.'.join(get_python_path_segments(child_node))}}.read(){%- if not loop.last -%}, {%- endif %} # type: ignore[union-attr]
+                                            {%- endif -%}
+                                          {%- endif -%}
                                       {%- endfor %}
                                     }
 
-            self.assertDictEqual(self.dut.{{'.'.join(node.get_path_segments()[1:])}}.read_fields(),
+            read_callback_mock.reset_mock()
+
+            self.assertDictEqual({% if asyncoutput %}await {% endif %}self.dut.{{'.'.join(get_python_path_segments(node))}}.read_fields(), # type: ignore[union-attr]
                                  reference_read_fields)
+            read_callback_mock.assert_called_once()
+            write_callback_mock.assert_not_called()
 
         {%- endif %}
         {%- endif %}
         {%- endfor %}
 
-    def test_register_write_fields(self):
+    {% if asyncoutput %}async {% endif %}def test_register_read_context_manager(self) -> None:
+        """
+        Walk the register map and check every register read_fields method
+        """
+        reference_read_fields: Dict[str, Union[bool, IntEnum, int]]
+        {%- for node in top_node.descendants(unroll=True) -%}
+        {%- if isinstance(node, systemrdlRegNode) %}
+        {% if node.has_sw_readable %}
+        # test context manager to register:
+        # {{'.'.join(node.get_path_segments())}}
+        # build up the register value with a random base value, overlaid with
+        # a random value for each field
+        rand_reg_value = random.randrange(0, {{get_reg_max_value_hex_string(node)}} + 1)
+        {%- for field in node.children() %}
+            {% if isinstance(field, systemrdlFieldNode) %}
+                {% if field.is_sw_readable %}
+                    {% if 'encode' in field.list_properties() %}
+        rand_field_value = random.choice(list(self.dut.{{'.'.join(get_python_path_segments(field))}}.enum_cls)).value   # type: ignore[attr-defined]
+                    {% else %}
+        rand_field_value = random.randrange(0, {{ get_field_max_value_hex_string(field) }} + 1)
+                    {% endif %}
+                    {% if field.msb == field.high %}
+        rand_reg_value = (rand_reg_value & {{get_field_inv_bitmask_hex_string(field)}}) | (rand_field_value << {{ field.low }})
+                    {% else %}
+        rand_reg_value = (rand_reg_value & {{get_field_inv_bitmask_hex_string(field)}}) | (self._reverse_bits(value=rand_field_value, number_bits={{field.width}}) << {{ field.low }})
+                    {% endif %}
+                {% endif %}
+            {% else %}
+            # skipping {{field.inst_name}}
+            {% endif %}
+        {% endfor %}
+        with patch(__name__ + '.' + 'write_addr_space') as write_callback_mock, \
+             patch(__name__ + '.' + 'read_addr_space', return_value=rand_reg_value) as read_callback_mock:
+
+            # first read the fields using the "normal" method, then compare the result to reading
+            # via the context manager
+            reference_read_fields = { {% for field in node.children() -%}
+                                      {%- if isinstance(field, systemrdlFieldNode) -%}
+                                      {%- if field.is_sw_readable %}
+                                      '{{ field.inst_name }}' : {%if asyncoutput %}await {% endif %}self.dut.{{'.'.join(get_python_path_segments(field))}}.read(){%- if not loop.last -%}, {%- endif %}  # type: ignore[union-attr]
+                                      {%- endif -%}
+                                      {%- endif -%}
+                                      {%- endfor %}
+                                    }
+            read_callback_mock.reset_mock()
+
+            {% if node.has_sw_writable %}
+            {% if asyncoutput %}async {% endif %}with self.dut.{{'.'.join(get_python_path_segments(node))}}.single_read_modify_write(skip_write=True) as reg_context: # type: ignore[union-attr]
+            {% else %}
+            {% if asyncoutput %}async {% endif %}with self.dut.{{'.'.join(get_python_path_segments(node))}}.single_read() as reg_context: # type: ignore[union-attr]
+            {%- endif -%}
+                {% for field in node.children() -%}
+                {%- if isinstance(field, systemrdlFieldNode) -%}
+                {%- if field.is_sw_readable %}
+                self.assertEqual(reference_read_fields['{{ field.inst_name }}'],
+                                 {% if asyncoutput %} await {% endif %}reg_context.get_child_by_system_rdl_name('{{ field.inst_name }}').read())  # type: ignore[attr-defined,union-attr]
+                {%- endif -%}
+                {%- endif -%}
+                {%- endfor %}
+
+            read_callback_mock.assert_called_once()
+            write_callback_mock.assert_not_called()
+
+        {%- endif %}
+        {%- endif %}
+        {%- endfor %}
+
+    {% if asyncoutput %}async {% endif %}def test_register_write_context_manager(self) -> None:
+        """
+        Test the read modify write context manager
+        """
+        rut:Reg{% if asyncoutput %}Async{% endif %}ReadWrite
+        {% if asyncoutput %}async {% endif %}def write_field_cominbinations(reg: Reg{% if asyncoutput %}Async{% endif %}ReadWrite, writable_fields:List[str]) -> None:
+            with patch(__name__ + '.' + 'write_addr_space') as write_callback_mock, \
+                patch(__name__ + '.' + 'read_addr_space', return_value=0) as read_callback_mock:
+                for num_parm in range(1, len(writable_fields) + 1):
+                    for fields_to_write in combinations(writable_fields, num_parm):
+                        field_values = {}
+                        expected_value = 0
+                        for field_str in fields_to_write:
+                            field = getattr(reg, field_str)
+                            if hasattr(field, 'enum_cls'):
+                                rand_enum_value = random.choice(list(field.enum_cls))
+                                rand_field_value = rand_enum_value.value   # type: ignore[attr-defined]
+                                field_values[field_str] = rand_enum_value
+                            else:
+                                rand_field_value = random.randrange(0, field.max_value + 1)
+                                field_values[field_str] = rand_field_value
+
+                            if field.msb == field.high:
+                                expected_value = ( expected_value & field.inverse_bitmask ) | (rand_field_value << field.low)
+                            elif field.msb == field.low:
+                                expected_value = ( expected_value & field.inverse_bitmask ) | (self._reverse_bits(value=rand_field_value, number_bits=field.width) << field.low)
+                            else:
+                                raise RuntimeError('invalid msb/lsb high/low combination')
+
+                        # read/write without verify
+                        read_callback_mock.return_value = 0
+                        {% if asyncoutput %}async {% endif %}with reg.single_read_modify_write(verify=False) as reg_session:
+                            for field_name, field_value in field_values.items():
+                                field = getattr(reg_session, field_name)
+                                {% if asyncoutput %}await {% endif %}field.write(field_value)
+
+                        write_callback_mock.assert_called_once_with(
+                                addr=reg.address,
+                                width=reg.width,
+                                accesswidth=reg.accesswidth,
+                                data=expected_value)
+                        read_callback_mock.assert_called_once()
+                        write_callback_mock.reset_mock()
+                        read_callback_mock.reset_mock()
+
+                        # read/write/verify pass
+                        {% if asyncoutput %}async {% endif %}with reg.single_read_modify_write(verify=True) as reg_session:
+                            for field_name, field_value in field_values.items():
+                                field = getattr(reg_session, field_name)
+                                {% if asyncoutput %}await {% endif %}field.write(field_value)
+                            read_callback_mock.return_value = expected_value
+
+                        write_callback_mock.assert_called_once_with(
+                                addr=reg.address,
+                                width=reg.width,
+                                accesswidth=reg.accesswidth,
+                                data=expected_value)
+                        self.assertEqual(read_callback_mock.call_count, 2)
+                        write_callback_mock.reset_mock()
+                        read_callback_mock.reset_mock()
+
+                        # read/write/verify pass
+                        with self.assertRaises(RegisterWriteVerifyError) as context:
+                            {% if asyncoutput %}async {% endif %}with reg.single_read_modify_write(verify=True) as reg_session:
+                                for field_name, field_value in field_values.items():
+                                    field = getattr(reg_session, field_name)
+                                    {% if asyncoutput %}await {% endif %}field.write(field_value)
+                                read_callback_mock.return_value = expected_value ^ reg_session.max_value
+
+                        write_callback_mock.reset_mock()
+                        read_callback_mock.reset_mock()
+
+        {%- for node in top_node.descendants(unroll=True) -%}
+        {%- if isinstance(node, systemrdlRegNode) %}
+        {% if node.has_sw_writable and node.has_sw_readable %}
+        rut = self.dut.{{'.'.join(get_python_path_segments(node))}} # type: ignore[union-attr,assignment]
+        if not isinstance(rut, Reg{% if asyncoutput %}Async{% endif %}ReadWrite):
+            raise TypeError('Failed to find read/write register')
+        {% if asyncoutput %}await {% endif %}write_field_cominbinations(reg=rut,
+                           writable_fields = [ {% for field in get_reg_writable_fields(node) -%}
+                                               '{{ safe_node_name(field) }}' {%- if not loop.last -%},{%- endif %}
+                                               {% endfor -%} ])
+        {%- endif %}
+        {%- endif %}
+        {%- endfor %}
+
+    {% if asyncoutput %}async {% endif %}def test_register_write_fields(self) -> None:
         """
         Walk the register map and check every register write_fields method
         """
-        def write_field_cominbinations(reg, writable_fields):
+        rut:Reg{% if asyncoutput %}Async{% endif %}ReadWrite
+        rand_enum_value:IntEnum
+        {% if asyncoutput %}async {% endif %}def write_field_cominbinations(reg: Reg{% if asyncoutput %}Async{% endif %}ReadWrite, writable_fields:List[str]) -> None:
             with patch(__name__ + '.' + 'write_addr_space') as write_callback_mock, \
                 patch(__name__ + '.' + 'read_addr_space', return_value=0) as read_callback_mock:
                 for num_parm in range(1, len(writable_fields) + 1):
@@ -550,7 +794,7 @@ class {{top_node.type_name}}_TestCase(unittest.TestCase):
                             field = getattr(reg, field_str)
                             if hasattr(field, 'enum_cls'):
                                 rand_enum_value = random.choice(list(field.enum_cls))
-                                rand_field_value = rand_enum_value.value
+                                rand_field_value = rand_enum_value.value   # type: ignore[attr-defined]
                                 kwargs[field_str] = rand_enum_value
                             else:
                                 rand_field_value = random.randrange(0, field.max_value + 1)
@@ -563,7 +807,7 @@ class {{top_node.type_name}}_TestCase(unittest.TestCase):
                             else:
                                 raise RuntimeError('invalid msb/lsb high/low combination')
 
-                        reg.write_fields(**kwargs)
+                        {% if asyncoutput %}await {% endif %}reg.write_fields(**kwargs)
                         write_callback_mock.assert_called_once_with(
                                 addr=reg.address,
                                 width=reg.width,
@@ -582,17 +826,20 @@ class {{top_node.type_name}}_TestCase(unittest.TestCase):
 
 
         {% if node.has_sw_readable %}
-        write_field_cominbinations(reg=self.dut.{{'.'.join(node.get_path_segments()[1:])}},
+        rut = self.dut.{{'.'.join(get_python_path_segments(node))}} # type: ignore[union-attr,assignment]
+        if not isinstance(rut, Reg{% if asyncoutput %}Async{% endif %}ReadWrite):
+            raise TypeError('Failed to find read/write register')
+        {% if asyncoutput %}await {% endif %}write_field_cominbinations(reg=rut,
                                    writable_fields = [ {% for field in get_reg_writable_fields(node) -%}
-                                                       '{{ field.inst_name }}' {%- if not loop.last -%},{%- endif %}
+                                                       '{{ safe_node_name(field) }}' {%- if not loop.last -%},{%- endif %}
                                                        {% endfor -%} ])
         {% else %}
-        kwargs = {}
+        kwargs = {} # type: ignore[var-annotated]
         expected_value = 0
         {% for field in get_reg_writable_fields(node) %}
         {%- if 'encode' in field.list_properties() %}
-        rand_enum_value = random.choice(list(self.dut.{{'.'.join(field.get_path_segments()[1:])}}.enum_cls))
-        rand_field_value = rand_enum_value.value
+        rand_enum_value = random.choice(list(self.dut.{{'.'.join(get_python_path_segments(field))}}.enum_cls))
+        rand_field_value = rand_enum_value.value   # type: ignore[attr-defined]
         kwargs['{{field.inst_name}}'] = rand_enum_value
         {%- else %}
         rand_field_value = random.randrange(0, {{ get_field_max_value_hex_string(field) }} + 1)
@@ -602,11 +849,11 @@ class {{top_node.type_name}}_TestCase(unittest.TestCase):
         {% endfor %}
         with patch(__name__ + '.' + 'write_addr_space') as write_callback_mock, \
             patch(__name__ + '.' + 'read_addr_space', return_value=0) as read_callback_mock:
-            self.dut.{{'.'.join(node.get_path_segments()[1:])}}.write_fields(**kwargs)
+            {% if asyncoutput %}await {% endif %}self.dut.{{'.'.join(get_python_path_segments(node))}}.write_fields(**kwargs)  # type: ignore[union-attr]
             write_callback_mock.assert_called_once_with(
                                 addr={{node.absolute_address}},
                                 width={{node.size * 8}},
-                                accesswidth=self.dut.{{'.'.join(node.get_path_segments()[1:])}}.accesswidth,
+                                accesswidth=self.dut.{{'.'.join(get_python_path_segments(node))}}.accesswidth, # type: ignore[union-attr]
                                 data=expected_value)
             read_callback_mock.assert_not_called()
             write_callback_mock.reset_mock()
@@ -620,7 +867,7 @@ class {{top_node.type_name}}_TestCase(unittest.TestCase):
         {%- endfor %}
 
     {% if uses_memory %}
-    def test_memory_read_and_write(self):
+    {% if asyncoutput %}async {% endif %}def test_memory_read_and_write(self) -> None:
         """
         Walk the register map and check every register can be read and written to correctly
         """
@@ -639,7 +886,7 @@ class {{top_node.type_name}}_TestCase(unittest.TestCase):
                 for value in [0, random.randint(0,{{get_memory_max_entry_value_hex_string(node)}}), {{get_memory_max_entry_value_hex_string(node)}}]:
                     read_callback_mock.reset_mock()
                     read_callback_mock.return_value = value
-                    self.assertEqual(self.dut.{{'.'.join(node.get_path_segments()[1:])}}.read(start_entry=entry, number_entries=1),
+                    self.assertEqual({% if asyncoutput %}await {%endif %}self.dut.{{'.'.join(get_python_path_segments(node))}}.read(start_entry=entry, number_entries=1), # type: ignore[union-attr]
                                                              Array('{{get_array_typecode(node.get_property('memwidth'))}}', [value]))
                     read_callback_mock.assert_called_once_with(
                                         addr={{node.absolute_address}}+(entry * {{get_memory_width_bytes(node)}}),
@@ -662,9 +909,8 @@ class {{top_node.type_name}}_TestCase(unittest.TestCase):
             read_callback_mock.reset_mock()
             read_callback_mock.side_effect=read_data_mock
 
-            self.assertEqual(self.dut.{{'.'.join(node.get_path_segments()[1:])}}.read(start_entry=0,
-                                          number_entries=entries_to_test),
-                                          random_data)
+            self.assertEqual({% if asyncoutput %}await {%endif %}self.dut.{{'.'.join(get_python_path_segments(node))}}.read(start_entry=0, number_entries=entries_to_test), # type: ignore[union-attr]
+                             random_data)
 
             write_callback_mock.assert_not_called()
             read_callback_mock.reset_mock()
@@ -676,7 +922,7 @@ class {{top_node.type_name}}_TestCase(unittest.TestCase):
             for entry in [0, random.randint(0,{{node.get_property('mementries')-1}}), {{node.get_property('mementries')-1}}]:
                 for value in [0, random.randint(0,{{get_memory_max_entry_value_hex_string(node)}}), {{get_memory_max_entry_value_hex_string(node)}}]:
                     write_callback_mock.reset_mock()
-                    self.dut.{{'.'.join(node.get_path_segments()[1:])}}.write(start_entry=entry, data=Array('{{get_array_typecode(node.get_property('memwidth'))}}', [value]))
+                    {% if asyncoutput %}await {%endif %}self.dut.{{'.'.join(get_python_path_segments(node))}}.write(start_entry=entry, data=Array('{{get_array_typecode(node.get_property('memwidth'))}}', [value])) # type: ignore[union-attr]
                     write_callback_mock.assert_called_once_with(
                                         addr={{node.absolute_address}}+(entry * {{get_memory_width_bytes(node)}}),
                                         width={{node.get_property('memwidth')}},
@@ -691,7 +937,7 @@ class {{top_node.type_name}}_TestCase(unittest.TestCase):
             entries_to_test = {% if node.get_property('mementries') > 10 %}10{% else %}{{node.get_property('mementries')}}{% endif %}
             random_data = Array('{{get_array_typecode(node.get_property('memwidth'))}}',
                                 [random.randint(0,{{get_memory_max_entry_value_hex_string(node)}}) for x in range(entries_to_test)])
-            self.dut.{{'.'.join(node.get_path_segments()[1:])}}.write(start_entry=0, data=random_data)
+            {% if asyncoutput %}await {%endif %}self.dut.{{'.'.join(get_python_path_segments(node))}}.write(start_entry=0, data=random_data) # type: ignore[union-attr]
 
             for x in range(entries_to_test):
                 self.assertEqual(write_callback_mock.call_args_list[x],
@@ -709,7 +955,7 @@ class {{top_node.type_name}}_TestCase(unittest.TestCase):
         {%- endfor %}
     {%- endif %}
 
-    def test_adding_attributes(self):
+    def test_adding_attributes(self) -> None:
         """
         Walk the address map and attempt to set a new value on each node
 
@@ -718,107 +964,151 @@ class {{top_node.type_name}}_TestCase(unittest.TestCase):
 
         """
         {%- for node in top_node.descendants(unroll=True) %}
+        {% if isinstance(node, systemrdlSignalNode) %}
+        # doing nothing with signal node: {{node.inst_name}}
+        {% else %}
         with self.assertRaises(AttributeError):
-            self.dut.{{'.'.join(node.get_path_segments()[1:])}}.cppkbrgmgeloagvfgjjeiiushygirh = 1
+            # this line is trying to set an illegal value so by definition should fail the type
+            # checks
+            self.dut.{{'.'.join(get_python_path_segments(node))}}.cppkbrgmgeloagvfgjjeiiushygirh = 1 # type: ignore[attr-defined,union-attr]
+        {% endif %}
         {%- endfor %}
 
     {% macro check_readable_register_iterators(node) %}
         {# check the unrolled case first #}
-        expected_readable_regs = [ {%- for child_node in node.children(unroll=True) -%}{%- if isinstance(child_node, systemrdlRegNode) %}{% if child_node.has_sw_readable %}self.dut.{{'.'.join(child_node.get_path_segments()[1:])}}, {% endif %}{% endif %}{%- endfor %} ]
+        expected_readable_regs = [ {%- for child_node in node.children(unroll=True) %}
+                                    {%- if isinstance(child_node, systemrdlRegNode) %}{% if child_node.has_sw_readable %}self.dut.{{'.'.join(get_python_path_segments(child_node))}}, # type: ignore[union-attr,list-item] {% endif %}{% endif %}
+                                    {% endfor %} ]
         readable_regs = []
-        for readable_reg in self.dut.{{'.'.join(node.get_path_segments()[1:])}}.get_readable_registers(unroll=True):
+        for readable_reg in self.dut.{{'.'.join(get_python_path_segments(node))}}.get_readable_registers(unroll=True):  # type: ignore[union-attr]
             readable_regs.append(readable_reg)
         self.assertCountEqual(expected_readable_regs, readable_regs)
         {# check the rolled case second #}
-        expected_readable_regs = [ {%- for child_node in node.children(unroll=False) -%}{%- if isinstance(child_node, systemrdlRegNode) %}{% if child_node.has_sw_readable %}self.dut.{{'.'.join(child_node.get_path_segments(empty_array_suffix='')[1:])}}, {% endif %}{% endif %}{%- endfor %} ]
+        expected_readable_regs = [ {%- for child_node in node.children(unroll=False) %}
+                                   {%- if isinstance(child_node, systemrdlRegNode) %}{% if child_node.has_sw_readable %}self.dut.{{'.'.join(get_python_path_segments(child_node))}}, # type: ignore[union-attr,list-item] {% endif %}{% endif %}
+                                   {% endfor %} ]
         readable_regs = []
-        for readable_reg in self.dut.{{'.'.join(node.get_path_segments()[1:])}}.get_readable_registers(unroll=False):
+        for readable_reg in self.dut.{{'.'.join(get_python_path_segments(node))}}.get_readable_registers(unroll=False):  # type: ignore[union-attr]
             readable_regs.append(readable_reg)
         self.assertCountEqual(expected_readable_regs, readable_regs)
     {% endmacro %}
 
     {% macro check_writable_register_iterators(node) %}
         {# check the unrolled case first #}
-        expected_writable_regs = [ {%- for child_node in node.children(unroll=True) -%}{%- if isinstance(child_node, systemrdlRegNode) %}{% if child_node.has_sw_writable %}self.dut.{{'.'.join(child_node.get_path_segments()[1:])}}, {% endif %}{% endif %}{%- endfor %} ]
+        expected_writable_regs = [ {%- for child_node in node.children(unroll=True) %}
+                                   {%- if isinstance(child_node, systemrdlRegNode) %}{% if child_node.has_sw_writable %}self.dut.{{'.'.join(get_python_path_segments(child_node))}}, # type: ignore[union-attr,list-item] {% endif %}{% endif %}
+                                   {% endfor %} ]
         writable_regs = []
-        for writable_reg in self.dut.{{'.'.join(node.get_path_segments()[1:])}}.get_writable_registers(unroll=True):
+        for writable_reg in self.dut.{{'.'.join(get_python_path_segments(node))}}.get_writable_registers(unroll=True):  # type: ignore[union-attr]
             writable_regs.append(writable_reg)
         self.assertCountEqual(expected_writable_regs, writable_regs)
         {# check the rolled case second #}
-        expected_writable_regs = [ {%- for child_node in node.children(unroll=False) -%}{%- if isinstance(child_node, systemrdlRegNode) %}{% if child_node.has_sw_writable %}self.dut.{{'.'.join(child_node.get_path_segments(empty_array_suffix='')[1:])}}, {% endif %}{% endif %}{%- endfor %} ]
+        expected_writable_regs = [ {%- for child_node in node.children(unroll=False) %}
+                                   {%- if isinstance(child_node, systemrdlRegNode) %}{% if child_node.has_sw_writable %}self.dut.{{'.'.join(get_python_path_segments(child_node))}}, # type: ignore[union-attr,list-item] {% endif %}{% endif %}
+                                   {% endfor %} ]
         writable_regs = []
-        for writable_reg in self.dut.{{'.'.join(node.get_path_segments()[1:])}}.get_writable_registers(unroll=False):
+        for writable_reg in self.dut.{{'.'.join(get_python_path_segments(node))}}.get_writable_registers(unroll=False):  # type: ignore[union-attr]
             writable_regs.append(writable_reg)
         self.assertCountEqual(expected_writable_regs, writable_regs)
     {% endmacro %}
 
     {% macro check_section_iterators(node) %}
         {# check the unrolled case first #}
-        expected_sections = [ {%- for child_node in node.children(unroll=True) -%}{%- if isinstance(child_node, (systemrdlAddrmapNode, systemrdlRegfileNode)) %}self.dut.{{'.'.join(child_node.get_path_segments()[1:])}}, {% endif %}{%- endfor %} ]
+        expected_sections = [ {%- for child_node in node.children(unroll=True) %}
+                              {%- if isinstance(child_node, (systemrdlAddrmapNode, systemrdlRegfileNode)) %}self.dut.{{'.'.join(get_python_path_segments(child_node))}}, # type: ignore[union-attr,list-item] {% endif %}
+                              {% endfor %} ]
         sections = []
-        for section in self.dut.{{'.'.join(node.get_path_segments()[1:])}}.get_sections(unroll=True):
+        for section in self.dut.{{'.'.join(get_python_path_segments(node))}}.get_sections(unroll=True):  # type: ignore[union-attr]
             sections.append(section)
         self.assertCountEqual(expected_sections, sections)
         {# check the rolled case second #}
-        expected_sections = [ {%- for child_node in node.children(unroll=False) -%}{%- if isinstance(child_node, (systemrdlAddrmapNode, systemrdlRegfileNode)) %}self.dut.{{'.'.join(child_node.get_path_segments(empty_array_suffix='')[1:])}}, {% endif %}{%- endfor %} ]
+        expected_sections = [ {%- for child_node in node.children(unroll=False) %}
+                              {%- if isinstance(child_node, (systemrdlAddrmapNode, systemrdlRegfileNode)) %}self.dut.{{'.'.join(get_python_path_segments(child_node))}},  # type: ignore[union-attr,list-item] {% endif %}
+                              {% endfor %} ]
         sections = []
-        for section in self.dut.{{'.'.join(node.get_path_segments()[1:])}}.get_sections(unroll=False):
+        for section in self.dut.{{'.'.join(get_python_path_segments(node))}}.get_sections(unroll=False):  # type: ignore[union-attr]
             sections.append(section)
         self.assertCountEqual(expected_sections, sections)
     {% endmacro %}
 
     {% macro check_memory_iterators(node) %}
         {# check the unrolled case first #}
-        expected_memories = [ {%- for child_node in node.children(unroll=True) -%}{%- if isinstance(child_node, systemrdlMemNode) %}self.dut.{{'.'.join(child_node.get_path_segments()[1:])}}, {% endif %}{%- endfor %} ]
+        expected_memories = [ {%- for child_node in node.children(unroll=True) %}
+                              {%- if isinstance(child_node, systemrdlMemNode) %}self.dut.{{'.'.join(get_python_path_segments(child_node))}}, # type: ignore[union-attr,list-item] {% endif %}
+                              {% endfor %} ]
         memories = []
-        for memory in self.dut.{{'.'.join(node.get_path_segments()[1:])}}.get_memories(unroll=True):
+        for memory in self.dut.{{'.'.join(get_python_path_segments(node))}}.get_memories(unroll=True):  # type: ignore[union-attr]
             memories.append(memory)
         self.assertCountEqual(expected_memories, memories)
         {# check the rolled case second #}
-        expected_memories = [ {%- for child_node in node.children(unroll=False) -%}{%- if isinstance(child_node, systemrdlMemNode) %}self.dut.{{'.'.join(child_node.get_path_segments(empty_array_suffix='')[1:])}}, {% endif %}{%- endfor %} ]
+        expected_memories = [ {%- for child_node in node.children(unroll=False) %}
+                              {%- if isinstance(child_node, systemrdlMemNode) %}self.dut.{{'.'.join(get_python_path_segments(child_node))}}, # type: ignore[union-attr,list-item] {% endif %}
+                              {% endfor %} ]
         memories = []
-        for memory in self.dut.{{'.'.join(node.get_path_segments()[1:])}}.get_memories(unroll=False):
+        for memory in self.dut.{{'.'.join(get_python_path_segments(node))}}.get_memories(unroll=False):  # type: ignore[union-attr]
             memories.append(memory)
         self.assertCountEqual(expected_memories, memories)
     {% endmacro %}
 
-    def test_traversal_iterators(self):
+    def test_traversal_iterators(self) -> None:
         """
         Walk the address map and check that the iterators for each node as as expected
         """
+        {% if asyncoutput %}
+        expected_writable_fields: List[Union[FieldAsyncWriteOnly, FieldAsyncReadWrite]]
+        expected_readable_fields: List[Union[FieldAsyncReadOnly, FieldAsyncReadWrite]]
+        expected_writable_regs: List[WritableAsyncRegister]
+        expected_readable_regs: List[ReadableAsyncRegister]
+        expected_memories:List[Union[MemoryAsyncReadOnly, MemoryAsyncWriteOnly, MemoryAsyncReadWrite]]
+
+        {% else %}
+        expected_writable_fields: List[Union[FieldWriteOnly, FieldReadWrite]]
+        expected_readable_fields: List[Union[FieldReadOnly, FieldReadWrite]]
+        expected_writable_regs: List[WritableRegister]
+        expected_readable_regs: List[ReadableRegister]
+        expected_memories:List[Union[MemoryReadOnly, MemoryWriteOnly, MemoryReadWrite]]
+        {% endif %}
+        expected_sections : List[Union[AddressMap, RegFile]]
+
         {%- for node in top_node.descendants(unroll=True) %}
             {%- if isinstance(node, systemrdlRegNode) %}
                 {# a register can only have fields beneath it #}
                 {% if node.has_sw_writable %}
-        expected_writable_fields = [ {%- for child_node in node.children(unroll=True) -%}{% if child_node.is_sw_writable %}self.dut.{{'.'.join(child_node.get_path_segments()[1:])}}, {% endif %}{%- endfor %} ]
+        expected_writable_fields = [ {%- for child_node in node.children(unroll=True) -%}
+                                     {% if child_node.is_sw_writable %}self.dut.{{'.'.join(get_python_path_segments(child_node))}}, # type: ignore[union-attr,list-item] {% endif %}
+                                     {% endfor %}
+                                     ]
         writable_fields = []
-        for writable_field in self.dut.{{'.'.join(node.get_path_segments()[1:])}}.writable_fields:
+        for writable_field in self.dut.{{'.'.join(get_python_path_segments(node))}}.writable_fields:  # type: ignore[union-attr]
             writable_fields.append(writable_field)
         self.assertCountEqual(expected_writable_fields, writable_fields)
                 {% else %}
         # register should not have writable_fields attribute
-        self.assertFalse(hasattr(self.dut.{{'.'.join(node.get_path_segments()[1:])}}, 'writable_fields'))
+        self.assertFalse(hasattr(self.dut.{{'.'.join(get_python_path_segments(node))}}, 'writable_fields')) # type: ignore[union-attr]
                 {% endif %}
                 {% if node.has_sw_readable %}
-        expected_readable_fields = [ {%- for child_node in node.children(unroll=True) -%}{% if child_node.is_sw_readable %}self.dut.{{'.'.join(child_node.get_path_segments()[1:])}}, {% endif %}{%- endfor %} ]
+        expected_readable_fields = [ {%- for child_node in node.children(unroll=True) -%}
+                                     {% if isinstance(child_node, systemrdlFieldNode) %}{% if child_node.is_sw_readable %}self.dut.{{'.'.join(get_python_path_segments(child_node))}}, # type: ignore[union-attr,list-item] {% endif %}{% endif %}
+                                     {% endfor %}
+                                     ]
         readable_fields = []
-        for readable_field in self.dut.{{'.'.join(node.get_path_segments()[1:])}}.readable_fields:
+        for readable_field in self.dut.{{'.'.join(get_python_path_segments(node))}}.readable_fields: # type: ignore[union-attr]
             readable_fields.append(readable_field)
         self.assertCountEqual(expected_readable_fields, readable_fields)
                 {% else %}
         # register should not have readable_fields attribute
-        self.assertFalse(hasattr(self.dut.{{'.'.join(node.get_path_segments()[1:])}}, 'readable_fields'))
+        self.assertFalse(hasattr(self.dut.{{'.'.join(get_python_path_segments(node))}}, 'readable_fields')) # type: ignore[union-attr]
                 {% endif %}
             {%- elif isinstance(node, systemrdlMemNode) %}
                 {% if node.is_sw_writable %}
                     {{ check_writable_register_iterators(node) }}
                 {% else %}
-        self.assertFalse(hasattr(self.dut.{{'.'.join(node.get_path_segments()[1:])}}, 'get_writeable_registers'))
+        self.assertFalse(hasattr(self.dut.{{'.'.join(get_python_path_segments(node))}}, 'get_writeable_registers')) # type: ignore[union-attr]
                 {% endif %}
                 {% if node.is_sw_readable %}
                     {{ check_readable_register_iterators(node) }}
                 {% else %}
-        self.assertFalse(hasattr(self.dut.{{'.'.join(node.get_path_segments()[1:])}}, 'get_readable_registers'))
+        self.assertFalse(hasattr(self.dut.{{'.'.join(get_python_path_segments(node))}}, 'get_readable_registers')) # type: ignore[union-attr]
                 {% endif %}
             {%- elif isinstance(node, systemrdlAddrmapNode) %}
             {{ check_readable_register_iterators(node) }}
@@ -829,20 +1119,34 @@ class {{top_node.type_name}}_TestCase(unittest.TestCase):
             {{ check_readable_register_iterators(node) }}
             {{ check_writable_register_iterators(node) }}
             {{ check_section_iterators(node) }}
-        self.assertFalse(hasattr(self.dut.{{'.'.join(node.get_path_segments()[1:])}}, 'get_memories'))
+        self.assertFalse(hasattr(self.dut.{{'.'.join(get_python_path_segments(node))}}, 'get_memories')) # type: ignore[union-attr]
             {% endif %}
         {%- endfor %}
 
-class {{top_node.type_name}}_TestCase_BlockAccess(unittest.TestCase):
+    def test_name_map(self) -> None:
+        """
+        Check that the function for getting a node by its original systemRDL name works
+        """
+        {% for node in top_node.descendants(unroll=True) -%}
+        {% if not isinstance(node, (systemrdlFieldNode, systemrdlSignalNode)) %}
+        {% for child_node in node.children(unroll=False) %}
+        {% if not isinstance(child_node, systemrdlSignalNode) %}
+        self.assertEqual(self.dut.{{'.'.join(get_python_path_segments(node))}}.get_child_by_system_rdl_name('{{child_node.inst_name}}').inst_name, '{{child_node.inst_name}}')  # type: ignore[union-attr]
+        {% endif %}
+        {% endfor %}
+        {% endif %}
+        {% endfor %}
 
-    def setUp(self):
-        self.dut = {{top_node.type_name}}_cls(CallbackSet(read_callback=read_callback,
+class {{top_node.type_name}}_TestCase_BlockAccess(TestCaseBase): # type: ignore[valid-type,misc]
+
+    def setUp(self) -> None:
+        self.dut = {{top_node.type_name}}_cls({% if asyncoutput %}AysncCallbackSet{% else %}NormalCallbackSet{% endif %}(read_callback=read_callback,
                                                           write_callback=write_callback,
                                                           read_block_callback=read_block_callback,
                                                           write_block_callback=write_block_callback))
 
     {% if uses_memory %}
-    def test_memory_read_and_write(self):
+    {% if asyncoutput %}async {% endif %}def test_memory_read_and_write(self) -> None:
         """
         Walk the register map and check every register can be read and written to correctly
         """
@@ -865,7 +1169,7 @@ class {{top_node.type_name}}_TestCase_BlockAccess(unittest.TestCase):
                     read_block_callback_mock.reset_mock()
                     read_block_callback_mock.return_value = Array('{{get_array_typecode(node.get_property('memwidth'))}}',
                                                                   [value])
-                    self.assertEqual(self.dut.{{'.'.join(node.get_path_segments()[1:])}}.read(start_entry=entry, number_entries=1),
+                    self.assertEqual({% if asyncoutput %}await {%endif %}self.dut.{{'.'.join(get_python_path_segments(node))}}.read(start_entry=entry, number_entries=1), # type: ignore[union-attr]
                                                              Array('{{get_array_typecode(node.get_property('memwidth'))}}', [value]))
                     read_block_callback_mock.assert_called_once_with(
                                         addr={{node.absolute_address}}+(entry * {{get_memory_width_bytes(node)}}),
@@ -882,7 +1186,7 @@ class {{top_node.type_name}}_TestCase_BlockAccess(unittest.TestCase):
             read_block_callback_mock.reset_mock()
             read_block_callback_mock.return_value = random_data
 
-            self.assertEqual(self.dut.{{'.'.join(node.get_path_segments()[1:])}}.read(start_entry=0,
+            self.assertEqual({% if asyncoutput %}await {%endif %}self.dut.{{'.'.join(get_python_path_segments(node))}}.read(start_entry=0, # type: ignore[union-attr]
                                           number_entries=entries_to_test),
                                           random_data)
 
@@ -898,7 +1202,7 @@ class {{top_node.type_name}}_TestCase_BlockAccess(unittest.TestCase):
             for entry in [0, random.randint(0,{{node.get_property('mementries')-1}}), {{node.get_property('mementries')-1}}]:
                 for value in [0, random.randint(0,{{get_memory_max_entry_value_hex_string(node)}}), {{get_memory_max_entry_value_hex_string(node)}}]:
                     write_block_callback_mock.reset_mock()
-                    self.dut.{{'.'.join(node.get_path_segments()[1:])}}.write(start_entry=entry, data=Array('{{get_array_typecode(node.get_property('memwidth'))}}', [value]))
+                    {% if asyncoutput %}await {%endif %}self.dut.{{'.'.join(get_python_path_segments(node))}}.write(start_entry=entry, data=Array('{{get_array_typecode(node.get_property('memwidth'))}}', [value])) # type: ignore[union-attr]
                     write_block_callback_mock.assert_called_once_with(
                                         addr={{node.absolute_address}}+(entry * {{get_memory_width_bytes(node)}}),
                                         width={{node.get_property('memwidth')}},
@@ -915,7 +1219,7 @@ class {{top_node.type_name}}_TestCase_BlockAccess(unittest.TestCase):
             entries_to_test = {% if node.get_property('mementries') > 10 %}10{% else %}{{node.get_property('mementries')}}{% endif %}
             random_data = Array('{{get_array_typecode(node.get_property('memwidth'))}}',
                                 [random.randint(0,{{get_memory_max_entry_value_hex_string(node)}}) for x in range(entries_to_test)])
-            self.dut.{{'.'.join(node.get_path_segments()[1:])}}.write(start_entry=0, data=random_data)
+            {% if asyncoutput %}await {%endif %}self.dut.{{'.'.join(get_python_path_segments(node))}}.write(start_entry=0, data=random_data) # type: ignore[union-attr]
 
             write_block_callback_mock.assert_called_once_with(
                                         addr={{node.absolute_address}},
@@ -936,7 +1240,14 @@ class {{top_node.type_name}}_TestCase_BlockAccess(unittest.TestCase):
 
 
 if __name__ == '__main__':
+{% if asyncoutput %}
+    if sys.version_info < (3, 8):
+        asynctest.main()
+    else:
+        unittest.main()
+{% else %}
     unittest.main()
+{% endif %}
 
 
 

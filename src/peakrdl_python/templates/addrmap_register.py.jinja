@@ -1,10 +1,11 @@
+
 {%- macro register_class(node) %}
     {%- if node.has_sw_readable and node.has_sw_writable %}
-class {{get_fully_qualified_type_name(node)}}_cls(RegReadWrite):
+class {{get_fully_qualified_type_name(node)}}_cls(Reg{% if asyncoutput %}Async{% endif %}ReadWrite):
     {%- elif node.has_sw_readable and not node.has_sw_writable %}
-class {{get_fully_qualified_type_name(node)}}_cls(RegReadOnly):
+class {{get_fully_qualified_type_name(node)}}_cls(Reg{% if asyncoutput %}Async{% endif %}ReadOnly):
     {%- elif not node.has_sw_readable and node.has_sw_writable %}
-class {{get_fully_qualified_type_name(node)}}_cls(RegWriteOnly):
+class {{get_fully_qualified_type_name(node)}}_cls(Reg{% if asyncoutput %}Async{% endif %}WriteOnly):
     {%- endif %}
     """
     Class to represent a register in the register model
@@ -15,7 +16,7 @@ class {{get_fully_qualified_type_name(node)}}_cls(RegWriteOnly):
     __slots__ : List[str] = [{%- for child_node in node.children(unroll=False) -%}'__{{child_node.inst_name}}'{% if not loop.last %}, {% endif %}{%- endfor %}]
 
     def __init__(self,
-                 callbacks: CallbackSet,
+                 callbacks: {% if asyncoutput %}AysncCallbackSet{% else %}NormalCallbackSet{% endif %},
                  address: int,
                  logger_handle: str,
                  inst_name: str,
@@ -32,7 +33,7 @@ class {{get_fully_qualified_type_name(node)}}_cls(RegWriteOnly):
         # build the field attributes
         {%- for child_node in node.fields() %}
             {%- if isinstance(child_node, systemrdlFieldNode) %}
-        self.__{{child_node.inst_name}} = {{get_fully_qualified_type_name(child_node)}}_cls(
+        self.__{{child_node.inst_name}}:{{get_fully_qualified_type_name(child_node)}}_cls = {{get_fully_qualified_type_name(child_node)}}_cls(
             parent_register=self,
             size_props=FieldSizeProps(
                 width={{child_node.width}},
@@ -49,79 +50,97 @@ class {{get_fully_qualified_type_name(node)}}_cls(RegWriteOnly):
         {%- endfor %}
 
     {% if node.has_sw_readable %}
-    def read_fields(self):
+    {% if asyncoutput %}async {% endif %}def read_fields(self) -> Dict[str, Union[bool, {% if uses_enum %}IntEnum, {% endif %} int]]: # type: ignore[override]
         """
         read the register and return a dictionary of the field values
         """
-        reg_value = self.read()
-
-        return_dict = {
-                        {%- for child_node in get_reg_readable_fields(node) %}
-                        '{{child_node.inst_name}}' : self.{{child_node.inst_name}}.decode_read_value(reg_value)
-                        {%- if not loop.last -%} ,  {%- endif -%}
-                        {% endfor %}
-                      }
+        {% if node.has_sw_writable %}
+        {% if asyncoutput %}async {% endif %}with self.single_read_modify_write(skip_write=True) as reg:
+        {% else %}
+        {% if asyncoutput %}async {% endif %}with self.single_read() as reg:
+        {% endif %}
+            return_dict:Dict[str, Union[bool, {% if uses_enum %}IntEnum, {% endif %} int]] = {
+                            {%- for child_node in get_reg_readable_fields(node) %}
+                            '{{child_node.inst_name}}' : {% if asyncoutput %}await {% endif %}reg.{{safe_node_name(child_node)}}.read()
+                            {%- if not loop.last -%} ,  {%- endif -%}
+                            {% endfor %}
+                          }
 
         return return_dict
 
     @property
-    def readable_fields(self) -> Iterator[Union[FieldReadOnly, FieldReadWrite]]:
+    def readable_fields(self) -> Iterator[Union[Field{% if asyncoutput %}Async{% endif %}ReadOnly, Field{% if asyncoutput %}Async{% endif %}ReadWrite]]:
         """
         generator that produces has all the readable fields within the register
         """
         {% for child_node in get_reg_readable_fields(node) -%}
-        yield self.{{child_node.inst_name}}
+        yield self.{{safe_node_name(child_node)}}
         {% endfor %}
+
+    {# context manager #}
+    @{% if asyncoutput %}async{% endif %}contextmanager
+    {% if asyncoutput %}async {% endif %}def single_read(self) -> {% if asyncoutput %}AsyncGenerator['{{get_fully_qualified_type_name(node)}}_cls', None]{% else %}Generator['{{get_fully_qualified_type_name(node)}}_cls', None, None]{% endif %}:
+        """
+        Context Manager to do multiple accesses using a single read operation
+        """
+        {% if asyncoutput %}async {% endif %}with super().single_read() as reg:
+           yield cast('{{get_fully_qualified_type_name(node)}}_cls',reg)
+
+    {% if node.has_sw_writable %}
+    @{% if asyncoutput %}async{% endif %}contextmanager
+    {% if asyncoutput %}async {% endif %}def single_read_modify_write(self, verify:bool = False, skip_write: bool = False) -> {% if asyncoutput %}AsyncGenerator['{{get_fully_qualified_type_name(node)}}_cls', None]{% else %}Generator['{{get_fully_qualified_type_name(node)}}_cls', None, None]{% endif %}:
+        """
+        Context Manager to do multiple accesses using a single read/modify write operation
+        """
+        {% if asyncoutput %}async {% endif %}with super().single_read_modify_write(verify=verify, skip_write=skip_write) as reg:
+           yield cast('{{get_fully_qualified_type_name(node)}}_cls',reg)
+    {% endif %}
+
 
     {% endif %}
 
     {% if node.has_sw_writable %}
     @property
-    def writable_fields(self) -> Iterator[Union[FieldWriteOnly, FieldReadWrite]]:
+    def writable_fields(self) -> Iterator[Union[Field{% if asyncoutput %}Async{% endif %}WriteOnly, Field{% if asyncoutput %}Async{% endif %}ReadWrite]]:
         """
         generator that produces has all the writable fields within the register
         """
         {% for child_node in get_reg_writable_fields(node) -%}
-        yield self.{{child_node.inst_name}}
+        yield self.{{safe_node_name(child_node)}}
         {% endfor %}
 
     {% if node.has_sw_readable %}
-    def write_fields(self, **kwargs) -> None:  # type
+    {% if asyncoutput %}async {% endif %}def write_fields(self, **kwargs) -> None:  # type: ignore[no-untyped-def]
         """
         Do a read-modify-write to the register, updating any field included in
         the arguments
         """
-
         if len(kwargs) == 0:
             raise ValueError('no command args')
 
-        bit_mask = 0
-        reg_value = 0
+        {% if asyncoutput %}async {% endif %}with self.single_read_modify_write() as reg:
         {%- for child_node in get_reg_writable_fields(node) %}
-        if '{{child_node.inst_name}}' in kwargs:
-            reg_value |= self.{{child_node.inst_name}}.encode_write_value(kwargs['{{child_node.inst_name}}'])
-            bit_mask |= self.{{child_node.inst_name}}.bitmask
-            kwargs.pop('{{child_node.inst_name}}')
+            if '{{safe_node_name(child_node)}}' in kwargs:
+                {% if asyncoutput %}await {% endif %}self.{{safe_node_name(child_node)}}.write(kwargs['{{safe_node_name(child_node)}}'])
+                kwargs.pop('{{safe_node_name(child_node)}}')
         {%- endfor %}
-        if len(kwargs) != 0:
-            # left over unhandled arguments
-            raise ValueError('unrecognised arguments in field')
+            if len(kwargs) != 0:
+                # left over unhandled arguments
+                raise ValueError('unrecognised arguments in field')
 
-        inverse_bit_mask = self.max_value ^ bit_mask
-
-        self.write((self.read() & inverse_bit_mask) | reg_value)
 
     {% else %}
-    def write_fields(self, {%- for child_node in node.fields() -%} {{child_node.inst_name}} : {%- if 'encode' in child_node.list_properties() %}{{get_fully_qualified_enum_type(child_node.get_property('encode'), top_node.parent)}}_enumcls{% else %}int{% endif %}{%- if not loop.last -%},{%- endif -%}{%- endfor -%}) -> None: # type: ignore[override]
+    {% if asyncoutput %}async {% endif %}def write_fields(self, {%- for child_node in node.fields() -%} {{safe_node_name(child_node)}} : {%- if 'encode' in child_node.list_properties() %}{{get_fully_qualified_enum_type(child_node.get_property('encode'), top_node.parent)}}_enumcls{% else %}int{% endif %}{%- if not loop.last -%},{%- endif -%}{%- endfor -%}) -> None: # type: ignore[override]
         """
         Do a write to the register, updating all fields
         """
         reg_value = 0
         {%- for child_node in node.fields() %}
-        reg_value |= self.{{child_node.inst_name}}.encode_write_value({{child_node.inst_name}})
+        reg_value |= self.{{safe_node_name(child_node)}}.encode_write_value({{safe_node_name(child_node)}})
         {% endfor %}
 
-        self.write(reg_value)
+        {% if asyncoutput %}await {% endif %}self.write(reg_value)
+
     {% endif %}
     {% endif %}
 
@@ -129,7 +148,7 @@ class {{get_fully_qualified_type_name(node)}}_cls(RegWriteOnly):
     {%- for child_node in node.children(unroll=False) -%}
         {%- if isinstance(child_node, systemrdlFieldNode) %}
     @property
-    def {{child_node.inst_name}}(self) -> {{get_fully_qualified_type_name(child_node)}}_cls:
+    def {{safe_node_name(child_node)}}(self) -> {{get_fully_qualified_type_name(child_node)}}_cls:
         """
         Property to access {{child_node.inst_name}} field of the register
 
@@ -139,13 +158,34 @@ class {{get_fully_qualified_type_name(node)}}_cls(RegWriteOnly):
         {% endif %}
     {%- endfor %}
 
+    @property
+    def systemrdl_python_child_name_map(self) -> Dict[str, str]:
+        """
+        In some cases systemRDL names need to be converted make them python safe, this dictionary
+        is used to map the original systemRDL names to the names of the python attributes of this
+        class
+
+        Returns: dictionary whose key is the systemRDL names and value it the property name
+        """
+        return {
+            {%- for child_node in node.children(unroll=False) -%}
+            {%- if isinstance(child_node, systemrdlFieldNode) %}
+            '{{child_node.inst_name}}':'{{safe_node_name(child_node)}}',
+            {%- elif isinstance(child_node, systemrdlSignalNode) %}
+            # doing nothing with signal node: {{child_node.inst_name}}
+            {% else %}
+            {{ raise_template_error('unexpected type') }}
+            {% endif %}
+            {%- endfor %}
+            }
+
     {%- if node.is_array %}
         {%- if node.has_sw_readable and node.has_sw_writable %}
-class {{get_fully_qualified_type_name(node)}}_array_cls(RegReadWriteArray):
+class {{get_fully_qualified_type_name(node)}}_array_cls(Reg{% if asyncoutput %}Async{% endif %}ReadWriteArray):
         {%- elif node.has_sw_readable and not node.has_sw_writable %}
-class {{get_fully_qualified_type_name(node)}}_array_cls(RegReadOnlyArray):
+class {{get_fully_qualified_type_name(node)}}_array_cls(Reg{% if asyncoutput %}Async{% endif %}ReadOnlyArray):
         {%- elif not node.has_sw_readable and node.has_sw_writable %}
-class {{get_fully_qualified_type_name(node)}}_array_cls(RegWriteOnlyArray):
+class {{get_fully_qualified_type_name(node)}}_array_cls(Reg{% if asyncoutput %}Async{% endif %}WriteOnlyArray):
         {%- endif %}
     """
     Class to represent a register array in the register model
@@ -154,17 +194,20 @@ class {{get_fully_qualified_type_name(node)}}_array_cls(RegWriteOnlyArray):
 
     def __init__(self, logger_handle: str, inst_name: str,
                  parent: Union[RegFile, AddressMap, Memory],
-                 elements: Tuple[{{get_fully_qualified_type_name(node)}}_cls, ...]):
+                 address: int,
+                 length: int,
+                 stride: int,
+                 callbacks: {% if asyncoutput %}AysncCallbackSet{% else %}NormalCallbackSet{% endif %}):
 
-        for element in elements:
-            if not isinstance(element, {{get_fully_qualified_type_name(node)}}_cls):
-                raise TypeError(f'All Elements should be of type {{get_fully_qualified_type_name(node)}}_cls, '
-                                f'found {type(element)}')
+
+        elements = tuple([{{get_fully_qualified_type_name(node)}}_cls(callbacks=callbacks,address=address+(index * stride),
+                          logger_handle=f'{logger_handle}.{inst_name}[{index:d}]',
+                          inst_name=f'{inst_name}[{index:d}]', parent=parent) for index in range(length)])
 
         super().__init__(logger_handle=logger_handle, inst_name=inst_name,
                          parent=parent, elements=elements)
 
-    def __getitem__(self, item) -> Union[{{get_fully_qualified_type_name(node)}}_cls, Tuple[{{get_fully_qualified_type_name(node)}}_cls, ...]]:
+    def __getitem__(self, item:Union[int, slice]) -> Union[{{get_fully_qualified_type_name(node)}}_cls, Tuple[{{get_fully_qualified_type_name(node)}}_cls, ...]]:
         # this cast is OK because an explict typing check was done in the __init__
         return cast(Union[{{get_fully_qualified_type_name(node)}}_cls, Tuple[{{get_fully_qualified_type_name(node)}}_cls, ...]], super().__getitem__(item))
     {%- endif %}

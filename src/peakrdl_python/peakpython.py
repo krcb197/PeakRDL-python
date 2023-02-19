@@ -8,6 +8,7 @@ import os
 import subprocess
 import unittest.loader
 from typing import List, Optional
+import pathlib
 
 import coverage # type: ignore
 
@@ -42,9 +43,12 @@ def build_command_line_parser() -> argparse.ArgumentParser:
                         help='set logging verbosity')
     parser.add_argument('--autoformat', action='store_true',
                         help='use autopep8 on generated code')
+    parser.add_argument('--async', action='store_true',
+                        help='builds the register model using the async callbacks')
     parser.add_argument('--ipxact', dest='ipxact', nargs='*',
                         type=str)
-
+    parser.add_argument('--user_template_dir', action='store', type=pathlib.Path,
+                           help='directory of user templates to override the default ones')
     checker = parser.add_argument_group('post-generate checks')
     checker.add_argument('--lint', action='store_true',
                          help='run pylint on the generated python')
@@ -54,6 +58,8 @@ def build_command_line_parser() -> argparse.ArgumentParser:
                          help='run a coverage report on the unittests')
     checker.add_argument('--html_coverage_out',
                          help='output director (default: %(default)s)')
+    parser.add_argument('--skip_test_case_generation', action='store_true',
+                        help='skip the generation of the test cases')
 
     return parser
 
@@ -89,7 +95,9 @@ def compile_rdl(infile:str,
     return rdlc.elaborate(top_def_name=top).top
 
 
-def generate(root:Node, outdir:str, autoformatoutputs:bool=True) -> List[str]:
+def generate(root:Node, outdir:str,
+             autoformatoutputs:bool=True,asyncoutput:bool=False,
+             skip_test_case_generation:bool=False) -> List[str]:
     """
     Generate a PeakRDL output package from compiled systemRDL
 
@@ -98,18 +106,22 @@ def generate(root:Node, outdir:str, autoformatoutputs:bool=True) -> List[str]:
         outdir: directory to store the result in
         autoformatoutputs: If set to True the code will be run through autopep8 to
                 clean it up. This can slow down large jobs or mask problems
+        asyncoutput: If set to True the code build a register model with async operations to
+                access the harware layer
 
     Returns:
         List of strings with the module names generated
 
     """
     print(f'Info: Generating python for {root.inst_name} in {outdir}')
-    modules = PythonExporter().export(root, outdir,
-                                      autoformatoutputs=autoformatoutputs)
+    modules = PythonExporter().export(root, outdir, # type: ignore[no-untyped-call]
+                                      autoformatoutputs=autoformatoutputs,
+                                      asyncoutput=asyncoutput,
+                                      skip_test_case_generation=skip_test_case_generation)
 
     return modules
 
-def run_lint(root, outdir):
+def run_lint(root:str, outdir:str) -> None:
     """
     Run the lint checks using pylint on a directory
 
@@ -125,7 +137,7 @@ def run_lint(root, outdir):
                     os.path.join(outdir, root)],
                    check=False)
 
-def main_function():
+def main_function() -> None:
     """
     Main function for the Command Line tool, this needs to be separated out so that it can be
     referenced in setup.py
@@ -138,6 +150,9 @@ def main_function():
     cli_parser = build_command_line_parser()
     args = cli_parser.parse_args()
 
+    if args.test and args.skip_test_case_generation:
+        raise ValueError('it is not possible to run the tests if the generation has been skipped')
+
     print('***************************************************************')
     print('* Compile the SystemRDL                                       *')
     print('***************************************************************')
@@ -147,7 +162,9 @@ def main_function():
     print('***************************************************************')
     print('* Generate the Python Package                                 *')
     print('***************************************************************')
-    generate(spec, args.outdir, args.autoformat)
+    generate(spec, args.outdir, autoformatoutputs=args.autoformat,
+             skip_test_case_generation=args.skip_test_case_generation,
+             asyncoutput=args.asyncoutput)
 
     if args.lint:
         print('***************************************************************')

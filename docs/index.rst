@@ -35,6 +35,7 @@ Install from `PyPi`_ using pip
    generated_package
    api
    command_line
+   customisation
 
 .. toctree::
    :hidden:
