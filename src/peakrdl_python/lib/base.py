@@ -15,7 +15,6 @@ if TYPE_CHECKING:
 class Base(ABC):
     """
     base class of for all types
-
     """
     __slots__: List[str] = ['__logger', '__inst_name', '__parent']
 
@@ -56,6 +55,9 @@ class Base(ABC):
 
 
 class BaseArray(Base, ABC):
+    """
+    base class of for all array types
+    """
 
     # pylint: disable=too-few-public-methods
     __slots__: List[str] = ['__elements']
@@ -69,13 +71,13 @@ class BaseArray(Base, ABC):
 
         self.__elements = elements
 
-    def __getitem__(self, item) -> Union[Base, Tuple[Base, ...]]:
+    def __getitem__(self, item: Union[slice, int]) -> Union[Base, Tuple[Base, ...]]:
         return self.__elements[item]
 
-    def __len__(self):
+    def __len__(self) -> int:
         return len(self.__elements)
 
-    def __iter__(self):
+    def __iter__(self) -> Iterator[Base]:
         return self.__elements.__iter__()
 
 
@@ -109,7 +111,7 @@ class Node(Base, ABC):
         return self.__address
 
     @property
-    def _callbacks(self):
+    def _callbacks(self) -> CallbackSet:
         return self.__callbacks
 
     @property
@@ -161,7 +163,7 @@ class AddressMap(Node, ABC):
                          parent=parent)
 
     @abstractmethod
-    def get_sections(self, unroll=False) -> \
+    def get_sections(self, unroll: bool = False) -> \
             Iterator[Union[Union['AddressMap', RegFile],
                            Tuple[Union['AddressMap', RegFile], ...]]]:
         """
@@ -175,7 +177,7 @@ class AddressMap(Node, ABC):
         """
 
     @abstractmethod
-    def get_memories(self, unroll=False) -> Iterator[Union['Memory', Tuple['Memory', ...]]]:
+    def get_memories(self, unroll:bool=False) -> Iterator[Union['Memory', Tuple['Memory', ...]]]:
         """
         generator that produces all the Memory children of this node
 
@@ -205,7 +207,7 @@ class AddressMapArray(BaseArray, ABC):
         super().__init__(logger_handle=logger_handle, inst_name=inst_name,
                          parent=parent, elements=elements)
 
-    def __getitem__(self, item) -> Union[AddressMap, Tuple[AddressMap, ...]]:
+    def __getitem__(self, item: Union[int, slice]) -> Union[AddressMap, Tuple[AddressMap, ...]]:
         # this cast is OK because an explict typing check was done in the __init__
         return cast(Union[AddressMap, Tuple[AddressMap, ...]], super().__getitem__(item))
 
@@ -235,7 +237,7 @@ class RegFile(Node, ABC):
                          parent=parent)
 
     @abstractmethod
-    def get_sections(self, unroll=False) -> Iterator[Union['RegFile', Tuple['RegFile', ...]]]:
+    def get_sections(self, unroll:bool=False) -> Iterator[Union['RegFile', Tuple['RegFile', ...]]]:
         """
         generator that produces all the RegFile children of this node
 
@@ -265,7 +267,7 @@ class RegFileArray(BaseArray, ABC):
         super().__init__(logger_handle=logger_handle, inst_name=inst_name,
                          parent=parent, elements=elements)
 
-    def __getitem__(self, item) -> Union[RegFile, Tuple[RegFile, ...]]:
+    def __getitem__(self, item: Union[int, slice]) -> Union[RegFile, Tuple[RegFile, ...]]:
         # this cast is OK because an explict typing check was done in the __init__
         return cast(Union[RegFile, Tuple[RegFile, ...]], super().__getitem__(item))
 
@@ -283,3 +285,28 @@ def swap_msb_lsb_ordering(width: int, value: int) -> int:
         value_to_return |= bit_value << bit_positions[1]
 
     return value_to_return
+
+def get_array_typecode(width: int) -> str:
+    """
+        python array typecode
+
+        Args:
+            width: in tbits
+
+        Returns:
+            string to pass into the array generator
+
+        """
+    if width == 32:
+        return 'L'
+
+    if width == 64:
+        return 'Q'
+
+    if width == 16:
+        return 'I'
+
+    if width == 8:
+        return 'B'
+
+    raise ValueError(f'unhandled width {width:d}')

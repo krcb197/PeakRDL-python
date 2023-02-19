@@ -10,6 +10,7 @@ from systemrdl.node import Node, RegNode  # type: ignore
 from systemrdl.node import FieldNode, AddressableNode  # type: ignore
 from systemrdl.node import MemNode  # type: ignore
 from systemrdl.node import SignalNode  # type: ignore
+from systemrdl.rdltypes import UserEnum # type: ignore
 
 def get_fully_qualified_type_name(node: Node) -> str:
     """
@@ -32,7 +33,7 @@ def get_fully_qualified_type_name(node: Node) -> str:
     return scope_path + '_' + inst_type_name
 
 
-def get_array_dim(node: AddressableNode):
+def get_array_dim(node: AddressableNode) -> None:
     """
     Returns the class type name
     """
@@ -63,7 +64,7 @@ def get_dependent_component(node: AddressableNode) -> Iterable[Node]:
         yield child_node
 
 
-def get_dependent_enum(node: AddressableNode):
+def get_dependent_enum(node: AddressableNode) -> Iterable[FieldNode]:
     """
     iterable of enums which is used by a descendant of the input node,
     this list is de-duplicated
@@ -85,7 +86,7 @@ def get_dependent_enum(node: AddressableNode):
                     yield field_enum
 
 
-def fully_qualified_enum_type(field_enum, root_node: AddressableNode):
+def fully_qualified_enum_type(field_enum: UserEnum, root_node: AddressableNode) -> str:
     """
     Returns the fully qualified class type name, for an enum
     """
@@ -333,30 +334,6 @@ def get_memory_max_entry_value_hex_string(node: MemNode) -> str:
     max_value = ((2 ** (node.get_property('memwidth'))) - 1)
     return f'0x{max_value:X}'
 
-def get_array_typecode(width: int) -> str:
-    """
-        python array typecode
-
-        Args:
-            width: in tbits
-
-        Returns:
-            string to pass into the array generator
-
-        """
-    if width == 32:
-        return 'L'
-
-    if width == 64:
-        return 'Q'
-
-    if width == 16:
-        return 'I'
-
-    if width == 8:
-        return 'B'
-
-    raise ValueError(f'unhandled width {width:d}')
 
 def get_memory_width_bytes(node: MemNode) -> int:
     """

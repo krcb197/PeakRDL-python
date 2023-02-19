@@ -3,7 +3,7 @@ from typing import Union
 
 from chip_with_registers.reg_model.chip_with_registers import chip_with_registers_cls
 
-from chip_with_registers.lib import CallbackSet, RegReadOnly, RegReadWrite, \
+from chip_with_registers.lib import NormalCallbackSet, RegReadOnly, RegReadWrite, \
     MemoryReadOnly, MemoryReadWrite, RegFile, AddressMap, RegReadOnlyArray, RegReadWriteArray, \
     AddressMapArray, RegFileArray, MemoryReadOnlyArray, MemoryReadWriteArray
 
@@ -172,8 +172,8 @@ if __name__ == '__main__':
 
     # create an instance of the address map with the simulated callback necessary to demonstrate
     # the example
-    dut = chip_with_registers_cls(callbacks=CallbackSet(read_callback=read_addr_space,
-                                                        write_callback=write_addr_space))
+    dut = chip_with_registers_cls(callbacks=NormalCallbackSet(read_callback=read_addr_space,
+                                                              write_callback=write_addr_space))
 
     # generate an instance of the RegisterDumper and write the registers to a file
     reg_dumper = RegisterDumper(dut)

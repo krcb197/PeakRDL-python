@@ -28,7 +28,7 @@
 {%- endmacro %}
 
 {%- macro child_readable_register_getter(node) %}
-    def get_readable_registers(self, unroll=False) -> Iterator[Union[ReadableRegister, Tuple[ReadableRegister, ...]]]:
+    def get_readable_registers(self, unroll:bool=False) -> Iterator[Union[Readable{% if asyncoutput %}Async{% endif %}Register, Tuple[Readable{% if asyncoutput %}Async{% endif %}Register, ...]]]:
         """
         generator that produces all the readable_registers of this node
         """
@@ -38,11 +38,11 @@
                     {% if child_node.is_array %}
         if unroll:
             for child in self.{{safe_node_name(child_node)}}:
-                yield cast(ReadableRegister, child)
+                yield cast(Readable{% if asyncoutput %}Async{% endif %}Register, child)
         else:
-            yield cast(Tuple[ReadableRegister, ...], self.{{safe_node_name(child_node)}})
+            yield cast(Tuple[Readable{% if asyncoutput %}Async{% endif %}Register, ...], self.{{safe_node_name(child_node)}})
                     {% else %}
-        yield cast(ReadableRegister, self.{{safe_node_name(child_node)}})
+        yield cast(Readable{% if asyncoutput %}Async{% endif %}Register, self.{{safe_node_name(child_node)}})
                     {%- endif %}
                 {%- endif -%}
             {%- endif -%}
@@ -53,7 +53,7 @@
 {%- endmacro %}
 
 {%- macro child_writable_register_getter(node) %}
-    def get_writable_registers(self, unroll=False) -> Iterator[Union[WritableRegister, Tuple[WritableRegister, ...]]]:
+    def get_writable_registers(self, unroll:bool=False) -> Iterator[Union[Writable{% if asyncoutput %}Async{% endif %}Register, Tuple[Writable{% if asyncoutput %}Async{% endif %}Register, ...]]]:
         """
         generator that produces all the readable_registers of this node
         """
@@ -63,11 +63,11 @@
                     {% if child_node.is_array %}
         if unroll:
             for child in self.{{safe_node_name(child_node)}}:
-                yield cast(WritableRegister, child)
+                yield cast(Writable{% if asyncoutput %}Async{% endif %}Register, child)
         else:
-            yield cast(Tuple[WritableRegister, ...], self.{{safe_node_name(child_node)}})
+            yield cast(Tuple[Writable{% if asyncoutput %}Async{% endif %}Register, ...], self.{{safe_node_name(child_node)}})
                     {% else %}
-        yield cast(WritableRegister, self.{{safe_node_name(child_node)}})
+        yield cast(Writable{% if asyncoutput %}Async{% endif %}Register, self.{{safe_node_name(child_node)}})
                     {%- endif %}
                 {%- endif -%}
             {%- endif -%}
