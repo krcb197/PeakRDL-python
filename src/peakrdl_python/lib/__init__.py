@@ -16,27 +16,32 @@ from .base import RegFile
 from .base import AddressMapArray
 from .base import RegFileArray
 
+from .register import Reg
+from .register import RegisterWriteVerifyError
+
 from .register import RegReadOnly
 from .register import RegWriteOnly
 from .register import RegReadWrite
-from .register import Reg
 from .register import WritableRegister
 from .register import ReadableRegister
-from .register import ReadableAsyncRegister
-from .register import WritableAsyncRegister
+
 from .register import RegReadOnlyArray
 from .register import RegWriteOnlyArray
 from .register import RegReadWriteArray
 from .register import ReadableRegisterArray
 from .register import WritableRegisterArray
-from .register import RegisterWriteVerifyError
+
 
 from .register import RegAsyncReadOnly
 from .register import RegAsyncWriteOnly
 from .register import RegAsyncReadWrite
+from .register import ReadableAsyncRegister
+from .register import WritableAsyncRegister
 from .register import RegAsyncReadOnlyArray
 from .register import RegAsyncWriteOnlyArray
 from .register import RegAsyncReadWriteArray
+from .register import ReadableAsyncRegisterArray
+from .register import WritableAsyncRegisterArray
 
 from .fields import FieldSizeProps
 from .fields import FieldMiscProps
