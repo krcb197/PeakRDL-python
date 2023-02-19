@@ -1,7 +1,7 @@
 import tkinter as tk
 
 from mychip.reg_model.mychip import mychip_cls
-from mychip.lib import CallbackSet
+from mychip.lib import NormalCallbackSet
 
 class ChipSim:
 
@@ -128,8 +128,8 @@ if __name__ == '__main__':
                                         data=data)
 
     # create a callback set for the callbacks
-    callbacks = CallbackSet(read_callback=read_call_back,
-                            write_callback=write_call_back)
+    callbacks = NormalCallbackSet(read_callback=read_call_back,
+                                  write_callback=write_call_back)
 
     # created an instance of the register model and connect the callbacks to the simulator
     mychip = mychip_cls(callbacks=callbacks)

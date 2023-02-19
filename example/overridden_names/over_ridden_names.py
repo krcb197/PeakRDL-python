@@ -2,7 +2,7 @@ import json
 from typing import Union
 
 from over_ridden_names.reg_model.over_ridden_names import over_ridden_names_cls
-from over_ridden_names.lib import CallbackSet
+from over_ridden_names.lib import NormalCallbackSet
 
 # dummy functions to demonstrate the class
 def read_addr_space(addr: int, width: int, accesswidth: int) -> int:
@@ -23,7 +23,7 @@ def read_addr_space(addr: int, width: int, accesswidth: int) -> int:
 if __name__ == '__main__':
 
     # create an instance of the class
-    over_ridden_names = over_ridden_names_cls(callbacks=CallbackSet(read_callback=read_addr_space))
+    over_ridden_names = over_ridden_names_cls(callbacks=NormalCallbackSet(read_callback=read_addr_space))
 
     # access the field value directly
     print(over_ridden_names.overridden_reg_a.overridden_field_a.read())

@@ -3,7 +3,7 @@ from typing import Union, Dict, List
 
 from chip_with_registers.reg_model.chip_with_registers import chip_with_registers_cls
 
-from chip_with_registers.lib import CallbackSet, RegWriteOnly, RegReadWrite, \
+from chip_with_registers.lib import NormalCallbackSet, RegWriteOnly, RegReadWrite, \
     MemoryWriteOnly, MemoryReadWrite, RegFile, AddressMap, RegWriteOnlyArray, RegReadWriteArray, \
     AddressMapArray, RegFileArray, MemoryWriteOnlyArray, MemoryReadWriteArray, FieldEnum, Field
 
@@ -248,8 +248,8 @@ if __name__ == '__main__':
 
     # create an instance of the address map with the simulated callback necessary to demonstrate
     # the example
-    dut = chip_with_registers_cls(callbacks=CallbackSet(read_callback=read_addr_space,
-                                                        write_callback=write_addr_space))
+    dut = chip_with_registers_cls(callbacks=NormalCallbackSet(read_callback=read_addr_space,
+                                                              write_callback=write_addr_space))
 
     # generate an instance of the RegisterWriter and write the template JSON file for registers
     # in the design. In the template all the values are set to null (None in python)

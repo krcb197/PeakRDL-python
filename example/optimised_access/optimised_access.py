@@ -4,7 +4,7 @@ PeakRDL Python example to show the different methods to access the fields of a r
 from optimised_access.reg_model.optimised_access import optimised_access_cls, \
     optimised_access_gpio_direction_enc_enumcls
 
-from optimised_access.lib import CallbackSet
+from optimised_access.lib import NormalCallbackSet
 
 # dummy functions to demonstrate the class
 def read_addr_space(addr: int, width: int, accesswidth: int) -> int:
@@ -43,8 +43,8 @@ if __name__ == '__main__':
 
     # create an instance of the address map with the simulated callback necessary to demonstrate
     # the example
-    dut = optimised_access_cls(callbacks=CallbackSet(read_callback=read_addr_space,
-                                                        write_callback=write_addr_space))
+    dut = optimised_access_cls(callbacks=NormalCallbackSet(read_callback=read_addr_space,
+                                                           write_callback=write_addr_space))
 
     # configure the GPIO 0 and GPIO 1 without affecting the state of the GPIO 2 and GPIO 3
     # configuration.
