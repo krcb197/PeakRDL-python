@@ -207,7 +207,7 @@ Callback Set
 The callbacks are passed into the register abstraction layer using either:
 
 * ``NormalCallbackSet`` for standard python function callbacks
-* ``AysncCallbackSet`` for async python function callbacks, these are called from the library using
+* ``AsyncCallbackSet`` for async python function callbacks, these are called from the library using
   ``await``
 
 Using the Register Abstraction Layer
