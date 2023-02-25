@@ -54,3 +54,6 @@ __pycache__/
 
 # Vim swapfiles
 .*.sw[a-p]
+/example/overridden_names/over_ridden_names/
+/example/simulating_callbacks/mychip/
+/example/tranversing_address_map/chip_with_registers/

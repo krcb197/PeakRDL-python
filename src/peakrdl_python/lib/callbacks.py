@@ -157,7 +157,7 @@ class NormalCallbackSet:
         """
         return self.__write_block_callback
 
-class AysncCallbackSet:
+class AsyncCallbackSet:
     """
     Class to hold a set of callbacks, this reduces the number of callback that need to be passed
     around
@@ -217,4 +217,4 @@ class AysncCallbackSet:
         """
         return self.__write_block_callback
 
-CallbackSet = Union[AysncCallbackSet, NormalCallbackSet]
+CallbackSet = Union[AsyncCallbackSet, NormalCallbackSet]

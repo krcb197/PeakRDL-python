@@ -8,7 +8,7 @@ from abc import ABC, abstractmethod
 
 from .base import Node, AddressMap, BaseArray, get_array_typecode
 
-from .callbacks import CallbackSet, NormalCallbackSet, AysncCallbackSet
+from .callbacks import CallbackSet, NormalCallbackSet, AsyncCallbackSet
 
 if TYPE_CHECKING:
     from .register import ReadableRegister, WritableRegister
@@ -371,7 +371,7 @@ class MemoryAsyncReadOnly(Memory, ABC):
 
     # pylint: disable=too-many-arguments
     def __init__(self,
-                 callbacks: AysncCallbackSet,
+                 callbacks: AsyncCallbackSet,
                  address: int,
                  width: int,
                  accesswidth: int,
@@ -380,7 +380,7 @@ class MemoryAsyncReadOnly(Memory, ABC):
                  inst_name: str,
                  parent: AddressMap):
 
-        if not isinstance(callbacks, AysncCallbackSet):
+        if not isinstance(callbacks, AsyncCallbackSet):
             raise TypeError(f'callback set type is wrong, got {type(callbacks)}')
 
         super().__init__(callbacks=callbacks,
@@ -394,9 +394,9 @@ class MemoryAsyncReadOnly(Memory, ABC):
 
     # pylint: enable=too-many-arguments
     @property
-    def _callbacks(self) -> AysncCallbackSet:
+    def _callbacks(self) -> AsyncCallbackSet:
         # This cast is OK because the type was checked in the __init__
-        return cast(AysncCallbackSet, super()._callbacks)
+        return cast(AsyncCallbackSet, super()._callbacks)
 
     async def read(self, start_entry: int, number_entries: int) -> Array:
         """
@@ -480,7 +480,7 @@ class MemoryAsyncWriteOnly(Memory, ABC):
 
     # pylint: disable=too-many-arguments
     def __init__(self,
-                 callbacks: AysncCallbackSet,
+                 callbacks: AsyncCallbackSet,
                  address: int,
                  width: int,
                  accesswidth: int,
@@ -489,7 +489,7 @@ class MemoryAsyncWriteOnly(Memory, ABC):
                  inst_name: str,
                  parent: AddressMap):
 
-        if not isinstance(callbacks, AysncCallbackSet):
+        if not isinstance(callbacks, AsyncCallbackSet):
             raise TypeError(f'callback set type is wrong, got {type(callbacks)}')
 
         super().__init__(callbacks=callbacks,
@@ -503,9 +503,9 @@ class MemoryAsyncWriteOnly(Memory, ABC):
 
     # pylint: enable=too-many-arguments
     @property
-    def _callbacks(self) -> AysncCallbackSet:
+    def _callbacks(self) -> AsyncCallbackSet:
         # This cast is OK because the type was checked in the __init__
-        return cast(AysncCallbackSet, super()._callbacks)
+        return cast(AsyncCallbackSet, super()._callbacks)
 
     async def write(self, start_entry: int, data: Array) -> None:
         """
