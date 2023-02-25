@@ -797,7 +797,7 @@ class FieldEnum(Field, ABC):
         """
 
     @property
-    def _enum_values(self) -> list[int]:
+    def _enum_values(self) -> List[int]:
         """
         checks whether the default value is within the legal range for the enum
 
