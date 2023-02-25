@@ -77,7 +77,6 @@ jobs:
         python -m pip install --upgrade pip
         python -m pip install .
 
-        python -m pip install pytest
         python -m pip install mypy
 
 
@@ -89,7 +88,7 @@ jobs:
         mypy testcase_output --config-file=tests/.mypy.ini
         # pylint --rcfile tests/pylint.rc testcase_output/autopep8 --disable=duplicate-code,line-too-long,too-many-statements,invalid-name,unused-import,too-many-instance-attributes,too-many-arguments,too-many-lines
 
-        pytest testcase_output
+        python -m unittest discover -s testcase_output
 
     - name: Backward Compatibility Test
       run: |
@@ -101,11 +100,11 @@ jobs:
 
         peakrdl python tests/testcases/basic.rdl -o peakrdl_out/raw/
         peakrdl python tests/testcases/simple.xml tests/testcases/multifile.rdl -o peakrdl_out/raw
-        pytest peakrdl_out/raw
+        python -m unittest discover -s peakrdl_out/raw
         peakrdl python tests/testcases/basic.rdl -o peakrdl_out/autopep8/ --autoformat
-        pytest peakrdl_out/autopep8
+        python -m unittest discover -s peakrdl_out/autopep8
         peakrdl python tests/testcases/basic.rdl -o peakrdl_out/raw_async/ --async
-        pytest peakrdl_out/raw_async
+        python -m unittest discover -s peakrdl_out/raw_async
 
         peakrdl python tests/testcases/basic.rdl -o peakrdl_out/no_test/ --skip_test_case_generation
 
