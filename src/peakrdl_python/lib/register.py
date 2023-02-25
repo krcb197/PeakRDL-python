@@ -11,7 +11,7 @@ from array import array as Array
 
 from .base import Node, AddressMap, RegFile, BaseArray, get_array_typecode
 from .memory import Memory
-from .callbacks import CallbackSet, NormalCallbackSet, AysncCallbackSet
+from .callbacks import CallbackSet, NormalCallbackSet, AsyncCallbackSet
 
 if TYPE_CHECKING:
     from .fields import FieldReadOnly, FieldWriteOnly, FieldReadWrite
@@ -404,7 +404,7 @@ class RegAsyncReadOnly(Reg, ABC):
 
     # pylint: disable=too-many-arguments, duplicate-code
     def __init__(self,
-                 callbacks: AysncCallbackSet,
+                 callbacks: AsyncCallbackSet,
                  address: int,
                  width: int,
                  accesswidth: int,
@@ -412,7 +412,7 @@ class RegAsyncReadOnly(Reg, ABC):
                  inst_name: str,
                  parent: Union[AddressMap, RegFile, Memory]):
 
-        if not isinstance(callbacks, AysncCallbackSet):
+        if not isinstance(callbacks, AsyncCallbackSet):
             raise TypeError(f'callback set type is wrong, got {type(callbacks)}')
 
         super().__init__(callbacks=callbacks,
@@ -425,9 +425,9 @@ class RegAsyncReadOnly(Reg, ABC):
         self.__register_state: int = 0
 
     @property
-    def _callbacks(self) -> AysncCallbackSet:
+    def _callbacks(self) -> AsyncCallbackSet:
         # This cast is OK because the type was checked in the __init__
-        return cast(AysncCallbackSet, super()._callbacks)
+        return cast(AsyncCallbackSet, super()._callbacks)
 
     # pylint: enable=too-many-arguments, duplicate-code
 
@@ -502,7 +502,7 @@ class RegAsyncWriteOnly(Reg, ABC):
 
     # pylint: disable=too-many-arguments, duplicate-code
     def __init__(self,
-                 callbacks: AysncCallbackSet,
+                 callbacks: AsyncCallbackSet,
                  address: int,
                  width: int,
                  accesswidth: int,
@@ -510,7 +510,7 @@ class RegAsyncWriteOnly(Reg, ABC):
                  inst_name: str,
                  parent: Union[AddressMap, RegFile, Memory]):
 
-        if not isinstance(callbacks, AysncCallbackSet):
+        if not isinstance(callbacks, AsyncCallbackSet):
             raise TypeError(f'callback set type is wrong, got {type(callbacks)}')
 
         super().__init__(callbacks=callbacks,
@@ -520,9 +520,9 @@ class RegAsyncWriteOnly(Reg, ABC):
                          parent=parent, width=width, accesswidth=accesswidth)
 
     @property
-    def _callbacks(self) -> AysncCallbackSet:
+    def _callbacks(self) -> AsyncCallbackSet:
         # This cast is OK because the type was checked in the __init__
-        return cast(AysncCallbackSet, super()._callbacks)
+        return cast(AsyncCallbackSet, super()._callbacks)
 
     # pylint: enable=too-many-arguments, duplicate-code
 
@@ -596,7 +596,7 @@ class RegAsyncReadWrite(RegAsyncReadOnly, RegAsyncWriteOnly, ABC):
 
     # pylint: disable=too-many-arguments, duplicate-code
     def __init__(self,
-                 callbacks: AysncCallbackSet,
+                 callbacks: AsyncCallbackSet,
                  address: int,
                  width: int,
                  accesswidth: int,

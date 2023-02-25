@@ -45,7 +45,7 @@ from ..lib import ReadableRegisterArray, WritableRegisterArray
 from ..lib import FieldSizeProps, FieldMiscProps
 
 {% if asyncoutput %}
-from ..lib import AysncCallbackSet
+from ..lib import AsyncCallbackSet
 {% else %}
 from ..lib import NormalCallbackSet
 {% endif %}
@@ -113,10 +113,10 @@ class {{get_fully_qualified_type_name(node)}}_cls(RegFile):
 
     __slots__ : List[str] = [{%- for child_node in node.children(unroll=False) -%}'__{{child_node.inst_name}}'{% if not loop.last %}, {% endif %}{%- endfor %}]
 
-    {% if asyncoutput %}AysncCallbackSet{% else %}NormalCallbackSet{% endif %}
+    {% if asyncoutput %}AsyncCallbackSet{% else %}NormalCallbackSet{% endif %}
 
     def __init__(self,
-                 callbacks: {% if asyncoutput %}AysncCallbackSet{% else %}NormalCallbackSet{% endif %},
+                 callbacks: {% if asyncoutput %}AsyncCallbackSet{% else %}NormalCallbackSet{% endif %},
                  address: int,
                  logger_handle:str,
                  inst_name:str,
@@ -192,7 +192,7 @@ class {{get_fully_qualified_type_name(node)}}_array_cls(RegFileArray):
                  address: int,
                  length: int,
                  stride: int,
-                 callbacks: {% if asyncoutput %}AysncCallbackSet{% else %}NormalCallbackSet{% endif %}):
+                 callbacks: {% if asyncoutput %}AsyncCallbackSet{% else %}NormalCallbackSet{% endif %}):
 
         elements = tuple([{{get_fully_qualified_type_name(node)}}_cls(callbacks=callbacks,address=address+(index * stride),
                           logger_handle=f'{logger_handle}.{inst_name}[{index:d}]',
@@ -218,7 +218,7 @@ class {{get_fully_qualified_type_name(node)}}_cls(AddressMap):
     __slots__ : List[str] = [{%- for child_node in node.children(unroll=False) -%}{%- if isinstance(child_node, systemrdlRegNode) or isinstance(child_node, systemrdlRegfileNode) or isinstance(child_node, systemrdlAddrmapNode) or isinstance(child_node, systemrdlMemNode) -%}'__{{child_node.inst_name}}'{% if not loop.last %}, {% endif %}{% endif %}{%- endfor %}]
 
     def __init__(self,
-                 callbacks: {% if asyncoutput %}AysncCallbackSet{% else %}NormalCallbackSet{% endif %},
+                 callbacks: {% if asyncoutput %}AsyncCallbackSet{% else %}NormalCallbackSet{% endif %},
                  address:int {%- if node == top_node -%}={{top_node.absolute_address}}{%- endif -%},
                  logger_handle:str {%- if node == top_node -%}='reg_model.{{top_node.get_path()}}'{%- endif -%},
                  inst_name:str{%- if node == top_node -%}='{{node.inst_name}}'{%- endif -%},
@@ -301,7 +301,7 @@ class {{get_fully_qualified_type_name(node)}}_array_cls(AddressMapArray):
                  address: int,
                  length: int,
                  stride: int,
-                 callbacks: {% if asyncoutput %}AysncCallbackSet{% else %}NormalCallbackSet{% endif %}):
+                 callbacks: {% if asyncoutput %}AsyncCallbackSet{% else %}NormalCallbackSet{% endif %}):
 
         elements = tuple([{{get_fully_qualified_type_name(node)}}_cls(callbacks=callbacks,address=address+(index * stride),
                           logger_handle=f'{logger_handle}.{inst_name}[{index:d}]',
@@ -426,5 +426,5 @@ if __name__ == '__main__':
         print('write data:0x%X to address:0x%X'%(data, addr))
 
     # create an instance of the class
-    {{top_node.inst_name}} = {{get_fully_qualified_type_name(top_node)}}_cls(callbacks = {% if asyncoutput %}AysncCallbackSet{% else %}NormalCallbackSet{% endif %}(read_callback=read_addr_space,
+    {{top_node.inst_name}} = {{get_fully_qualified_type_name(top_node)}}_cls(callbacks = {% if asyncoutput %}AsyncCallbackSet{% else %}NormalCallbackSet{% endif %}(read_callback=read_addr_space,
                                                                                                      write_callback=write_addr_space))

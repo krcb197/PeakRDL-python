@@ -21,7 +21,7 @@ from enum import IntEnum
 
 from ..lib import RegisterWriteVerifyError
 {% if asyncoutput %}
-from ..lib import AysncCallbackSet
+from ..lib import AsyncCallbackSet
 {% else %}
 from ..lib import NormalCallbackSet
 {% endif %}
@@ -109,7 +109,7 @@ TestCaseBase = unittest.TestCase
 class {{top_node.type_name}}_TestCase(TestCaseBase): # type: ignore[valid-type,misc]
 
     def setUp(self) -> None:
-        self.dut = {{top_node.type_name}}_cls({% if asyncoutput %}AysncCallbackSet{% else %}NormalCallbackSet{% endif %}(read_callback=read_callback,
+        self.dut = {{top_node.type_name}}_cls({% if asyncoutput %}AsyncCallbackSet{% else %}NormalCallbackSet{% endif %}(read_callback=read_callback,
                                                           write_callback=write_callback))
 
     @staticmethod
@@ -1166,7 +1166,7 @@ class {{top_node.type_name}}_TestCase(TestCaseBase): # type: ignore[valid-type,m
 class {{top_node.type_name}}_TestCase_BlockAccess(TestCaseBase): # type: ignore[valid-type,misc]
 
     def setUp(self) -> None:
-        self.dut = {{top_node.type_name}}_cls({% if asyncoutput %}AysncCallbackSet{% else %}NormalCallbackSet{% endif %}(read_callback=read_callback,
+        self.dut = {{top_node.type_name}}_cls({% if asyncoutput %}AsyncCallbackSet{% else %}NormalCallbackSet{% endif %}(read_callback=read_callback,
                                                           write_callback=write_callback,
                                                           read_block_callback=read_block_callback,
                                                           write_block_callback=write_block_callback))
