@@ -4,7 +4,7 @@ Main Classes for the PeakRDL Python
 import os
 from pathlib import Path
 from shutil import copyfile
-from typing import List, NoReturn
+from typing import List, NoReturn, Iterable, Tuple
 from glob import glob
 
 import autopep8 # type: ignore
@@ -13,13 +13,13 @@ import jinja2 as jj
 from systemrdl.node import RootNode, Node, RegNode, AddrmapNode, RegfileNode # type: ignore
 from systemrdl.node import FieldNode, MemNode, AddressableNode # type: ignore
 from systemrdl.node import SignalNode # type: ignore
-from systemrdl.rdltypes import OnReadType, OnWriteType, PropertyReference # type: ignore
+from systemrdl.rdltypes import OnReadType, OnWriteType, PropertyReference, UserEnum  # type: ignore
 
 from .systemrdl_node_utility_functions import get_reg_readable_fields, get_reg_writable_fields, \
-    get_array_dim, get_table_block, get_dependent_enum, get_dependent_component, \
+    get_array_dim, get_table_block, get_dependent_component, \
     get_field_bitmask_hex_string, get_field_inv_bitmask_hex_string, \
     get_field_max_value_hex_string, get_reg_max_value_hex_string, get_fully_qualified_type_name, \
-    uses_enum, fully_qualified_enum_type, uses_memory, \
+    uses_enum, uses_memory, \
     get_memory_max_entry_value_hex_string, get_memory_width_bytes, \
     get_field_default_value
 
@@ -147,8 +147,8 @@ class PythonExporter:
                 'get_fully_qualified_type_name': self._lookup_type_name,
                 'get_array_dim': get_array_dim,
                 'get_dependent_component': get_dependent_component,
-                'get_dependent_enum': get_dependent_enum,
-                'get_fully_qualified_enum_type': fully_qualified_enum_type,
+                'get_dependent_enum': self._get_dependent_enum,
+                'get_fully_qualified_enum_type': self._fully_qualified_enum_type,
                 'get_field_bitmask_hex_string': get_field_bitmask_hex_string,
                 'get_field_inv_bitmask_hex_string': get_field_inv_bitmask_hex_string,
                 'get_field_max_value_hex_string': get_field_max_value_hex_string,
@@ -292,3 +292,55 @@ class PythonExporter:
 
         """
         raise PythonExportTemplateError(message)
+
+    def _fully_qualified_enum_type(self,
+                                   field_enum: UserEnum,
+                                   root_node: AddressableNode,
+                                   owning_field: FieldNode) -> str:
+        """
+        Returns the fully qualified class type name, for an enum
+        """
+        if not hasattr(field_enum, '_parent_scope'):
+            # this happens if the enum is has been declared in an IPXACT file
+            # which is imported
+            return self._lookup_type_name(owning_field) + '_' + field_enum.__name__
+
+        if field_enum._parent_scope is None:
+            # this happens if the enum is has been declared in an IPXACT file
+            # which is imported
+            return self._lookup_type_name(owning_field) + '_' + field_enum.__name__
+
+        parent_scope = getattr(field_enum, '_parent_scope')
+
+        if root_node.inst.original_def == parent_scope:
+            return field_enum.__name__
+
+        dependent_components = get_dependent_component(root_node)
+
+        for component in dependent_components:
+            if component.inst.original_def == parent_scope:
+                return get_fully_qualified_type_name(component) + '_' + field_enum.__name__
+
+        raise RuntimeError('Failed to find parent node to reference')
+
+    def _get_dependent_enum(self, node: AddressableNode) -> Iterable[Tuple[UserEnum, FieldNode]]:
+        """
+        iterable of enums which is used by a descendant of the input node,
+        this list is de-duplicated
+
+        :param node: node to analysis
+        :return: nodes that are dependent on the specified node
+        """
+        enum_needed = []
+        for child_node in node.descendants():
+            if isinstance(child_node, FieldNode):
+                if 'encode' in child_node.list_properties():
+                    # found an field with an enumeration
+
+                    field_enum = child_node.get_property('encode')
+                    fully_qualified_enum_name = self._fully_qualified_enum_type(field_enum, node,
+                                                                                child_node)
+
+                    if fully_qualified_enum_name not in enum_needed:
+                        enum_needed.append(fully_qualified_enum_name)
+                        yield field_enum, child_node
