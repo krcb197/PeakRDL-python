@@ -2,7 +2,7 @@
 A set of utility functions that perform supplementary processing on a node in a compiled
 system RDL dataset.
 """
-from typing import Iterable, Optional
+from typing import Iterable, Optional, List
 
 import textwrap
 
@@ -10,7 +10,7 @@ from systemrdl.node import Node, RegNode  # type: ignore
 from systemrdl.node import FieldNode, AddressableNode  # type: ignore
 from systemrdl.node import MemNode  # type: ignore
 from systemrdl.node import SignalNode  # type: ignore
-from systemrdl.rdltypes import UserEnum # type: ignore
+from systemrdl.rdltypes.user_enum import UserEnumMeta  # type: ignore
 
 def get_fully_qualified_type_name(node: Node) -> str:
     """
@@ -62,52 +62,6 @@ def get_dependent_component(node: AddressableNode) -> Iterable[Node]:
         components_needed.append(child_inst)
 
         yield child_node
-
-
-def get_dependent_enum(node: AddressableNode) -> Iterable[FieldNode]:
-    """
-    iterable of enums which is used by a descendant of the input node,
-    this list is de-duplicated
-
-    :param node: node to analysis
-    :return: nodes that are dependent on the specified node
-    """
-    enum_needed = []
-    for child_node in node.descendants():
-        if isinstance(child_node, FieldNode):
-            if 'encode' in child_node.list_properties():
-                # found an field with an enumeration
-
-                field_enum = child_node.get_property('encode')
-                fully_qualified_enum_name = fully_qualified_enum_type(field_enum, node)
-
-                if fully_qualified_enum_name not in enum_needed:
-                    enum_needed.append(fully_qualified_enum_name)
-                    yield field_enum
-
-
-def fully_qualified_enum_type(field_enum: UserEnum, root_node: AddressableNode) -> str:
-    """
-    Returns the fully qualified class type name, for an enum
-    """
-    if not hasattr(field_enum, '_parent_scope'):
-        # this happens if the enum is has been declared in an IPXACT file
-        # which is imported
-        return field_enum.__name__
-
-    parent_scope = getattr(field_enum, '_parent_scope')
-
-    if root_node.inst.original_def == parent_scope:
-        return field_enum.__name__
-
-    dependent_components = get_dependent_component(root_node)
-
-    for component in dependent_components:
-        if component.inst.original_def == parent_scope:
-            return get_fully_qualified_type_name(component) + '_' + field_enum.__name__
-
-    raise RuntimeError('Failed to find parent node to reference')
-
 
 def get_table_block(node: Node) -> str:
     """
@@ -358,6 +312,8 @@ def get_field_default_value(node: FieldNode) -> Optional[int]:
     None if the field is not reset or if the reset value is a signal that can be in an unknown
     state
     """
+    if not isinstance(node, FieldNode):
+        raise TypeError(f'node is not a {type(FieldNode)} got {type(node)}')
 
     value = node.get_property('reset')
 
@@ -365,6 +321,7 @@ def get_field_default_value(node: FieldNode) -> Optional[int]:
         return None
 
     if isinstance(value, int):
+
         return value
 
     if isinstance(value, (FieldNode, SignalNode)):
@@ -373,3 +330,18 @@ def get_field_default_value(node: FieldNode) -> Optional[int]:
         return None
 
     raise TypeError(f'unhandled type for field default type={type(value)}')
+
+
+def get_enum_values(enum: UserEnumMeta) -> List[int]:
+    """
+
+    Args:
+        enum: a field enum
+
+    Returns: A list of all the values for an enum
+
+    """
+    if not isinstance(enum, UserEnumMeta):
+        raise TypeError(f'node is not a {type(UserEnumMeta)} got {type(enum)}')
+
+    return [e.value for e in enum]

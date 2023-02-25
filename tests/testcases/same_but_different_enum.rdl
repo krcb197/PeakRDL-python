@@ -1,0 +1,45 @@
+enum internal_enum {
+		    value1 = 0;
+		    value2 = 1;
+		};
+
+field field_t { fieldwidth=1; encode=internal_enum; };
+
+reg register_t {
+        default sw = r;
+        default hw = r;
+
+        field_t value = {internal_enum::value1};
+    };
+
+addrmap same_but_different_enum {
+
+
+
+    addrmap {
+        enum internal_enum {
+		    block_a_value1 = 0;
+		    block_a_value2 = 1;
+		};
+
+        register_t register;
+        register.value -> encode = internal_enum;
+        register.value -> reset = {internal_enum::block_a_value1};
+
+    } block_a;
+
+    addrmap {
+        enum internal_enum {
+		    block_b_value1 = 0;
+		    block_b_value2 = 1;
+		};
+
+		register_t register;
+        register.value -> encode = internal_enum;
+        register.value -> reset = {internal_enum::block_b_value1};
+
+
+
+    } block_b;
+
+};

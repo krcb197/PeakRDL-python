@@ -1,0 +1,15 @@
+addrmap write_only_enum_with_undefined_reset {
+
+    enum command_type {
+		command1 = 1;
+		command2 = 2;
+	};
+
+	reg  {
+        default sw = w;
+        default hw = r;
+
+		field { encode = command_type; } command[2:0] = 0;
+    } command_register;
+
+};

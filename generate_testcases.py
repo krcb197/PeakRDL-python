@@ -24,6 +24,10 @@ for case in testcases:
     if testcase_name == 'multifile':
         # this needs the simple.xml file included
         root = pp.compile_rdl(rdl_file, ipxact_files=[os.path.join(test_case_path, 'simple.xml')])
+    elif testcase_name == 'multi_block':
+        # this needs the simple.xml file included
+        root = pp.compile_rdl(rdl_file, ipxact_files=[os.path.join(test_case_path, 'block_a.xml'),
+                                                      os.path.join(test_case_path, 'block_b.xml')])
     else:
         root = pp.compile_rdl(rdl_file)
 

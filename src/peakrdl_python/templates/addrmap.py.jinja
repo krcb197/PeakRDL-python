@@ -12,6 +12,7 @@ from typing import AsyncGenerator
 {% else %}
 from typing import Generator
 {% endif %}
+import warnings
 
 
 from contextlib import {% if asyncoutput %}async{% endif %}contextmanager
@@ -357,9 +358,9 @@ class {{get_fully_qualified_type_name(node)}}_array_cls(AddressMapArray):
 
 {% if uses_enum %}
 # root level enum definitions
-{%- for enum_needed in get_dependent_enum(top_node.parent) %}
+{%- for enum_needed, owning_field in get_dependent_enum(top_node.parent) %}
 @unique
-class {{get_fully_qualified_enum_type(enum_needed, top_node.parent)}}_enumcls(IntEnum):
+class {{get_fully_qualified_enum_type(enum_needed, top_node.parent, owning_field)}}_enumcls(IntEnum):
 
     {% for value_of_enum_needed in enum_needed -%}
     {{ value_of_enum_needed.name.upper() }} = {{ value_of_enum_needed.value }}  {%- if value_of_enum_needed.rdl_desc is not none -%}# {{ value_of_enum_needed.rdl_desc }} {%- endif %}
