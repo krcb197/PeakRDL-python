@@ -95,7 +95,7 @@ class {{get_fully_qualified_type_name(node)}}_cls(Field{%- if 'encode' in node.l
             else:
                 msg = f'reset value {int_default:d} is not within the enumeration for the class'
                 self._logger.warn(msg)
-                warnings.warn(msg)
+                warnings.warning(msg)
                 return None
 
         return None
