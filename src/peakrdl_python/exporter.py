@@ -14,7 +14,7 @@ from systemrdl.node import RootNode, Node, RegNode, AddrmapNode, RegfileNode # t
 from systemrdl.node import FieldNode, MemNode, AddressableNode # type: ignore
 from systemrdl.node import SignalNode # type: ignore
 from systemrdl.rdltypes import OnReadType, OnWriteType, PropertyReference  # type: ignore
-from systemrdl.rdltypes.user_enum import UserEnumMeta
+from systemrdl.rdltypes.user_enum import UserEnumMeta  # type: ignore
 
 from .systemrdl_node_utility_functions import get_reg_readable_fields, get_reg_writable_fields, \
     get_array_dim, get_table_block, get_dependent_component, \
