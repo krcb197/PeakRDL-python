@@ -1,4 +1,4 @@
-addrmap multiblock {
+addrmap multi_block {
 
     block_a__block_a_mmap__block_a block_a;
     block_b__block_b_mmap__block_b block_b;
