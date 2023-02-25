@@ -13,7 +13,8 @@ import jinja2 as jj
 from systemrdl.node import RootNode, Node, RegNode, AddrmapNode, RegfileNode # type: ignore
 from systemrdl.node import FieldNode, MemNode, AddressableNode # type: ignore
 from systemrdl.node import SignalNode # type: ignore
-from systemrdl.rdltypes import OnReadType, OnWriteType, PropertyReference, UserEnum  # type: ignore
+from systemrdl.rdltypes import OnReadType, OnWriteType, PropertyReference  # type: ignore
+from systemrdl.rdltypes.user_enum import UserEnumMeta
 
 from .systemrdl_node_utility_functions import get_reg_readable_fields, get_reg_writable_fields, \
     get_array_dim, get_table_block, get_dependent_component, \
@@ -295,7 +296,7 @@ class PythonExporter:
         raise PythonExportTemplateError(message)
 
     def _fully_qualified_enum_type(self,
-                                   field_enum: UserEnum,
+                                   field_enum: UserEnumMeta,
                                    root_node: AddressableNode,
                                    owning_field: FieldNode) -> str:
         """
@@ -324,7 +325,7 @@ class PythonExporter:
 
         raise RuntimeError('Failed to find parent node to reference')
 
-    def _get_dependent_enum(self, node: AddressableNode) -> Iterable[Tuple[UserEnum, FieldNode]]:
+    def _get_dependent_enum(self, node: AddressableNode) -> Iterable[Tuple[UserEnumMeta, FieldNode]]:
         """
         iterable of enums which is used by a descendant of the input node,
         this list is de-duplicated
