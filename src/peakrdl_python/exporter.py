@@ -325,7 +325,8 @@ class PythonExporter:
 
         raise RuntimeError('Failed to find parent node to reference')
 
-    def _get_dependent_enum(self, node: AddressableNode) -> Iterable[Tuple[UserEnumMeta, FieldNode]]:
+    def _get_dependent_enum(self, node: AddressableNode) -> \
+            Iterable[Tuple[UserEnumMeta, FieldNode]]:
         """
         iterable of enums which is used by a descendant of the input node,
         this list is de-duplicated
@@ -340,7 +341,8 @@ class PythonExporter:
                     # found an field with an enumeration
 
                     field_enum = child_node.get_property('encode')
-                    fully_qualified_enum_name = self._fully_qualified_enum_type(field_enum, node,
+                    fully_qualified_enum_name = self._fully_qualified_enum_type(field_enum,
+                                                                                node,
                                                                                 child_node)
 
                     if fully_qualified_enum_name not in enum_needed:
