@@ -196,14 +196,14 @@ class {{top_node.type_name}}_TestCase(TestCaseBase): # type: ignore[valid-type,m
             self.assertEqual(fut.bitmask,{{get_field_bitmask_hex_string(node)}})
             self.assertEqual(fut.inverse_bitmask,{{get_field_inv_bitmask_hex_string(node)}})
             self.assertEqual(fut.max_value,{{get_field_max_value_hex_string(node)}})
-                {% if 'encode' in node.list_properties() -%}
+                {% if 'encode' in node.list_properties() %}
                 {# only attempt to test enum fields if the reset value is legal for the field #}
                     {% if get_field_default_value(node) in get_enum_values(node.get_property('encode')) %}
             self.assertEqual(fut.default,{{get_field_default_value(node)}})
                     {% else %}
             self.assertIsNone(fut.default)
                     {% endif %}
-                {% else -%}
+                {% else %}
             self.assertEqual(fut.default,{{get_field_default_value(node)}})
                 {% endif %}
             self.assertEqual(fut.is_volatile,{{node.is_hw_writable}})
