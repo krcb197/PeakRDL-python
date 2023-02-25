@@ -94,7 +94,7 @@ class {{get_fully_qualified_type_name(node)}}_cls(Field{%- if 'encode' in node.l
                 return {{get_fully_qualified_enum_type(node.get_property('encode'), top_node.parent, node)}}_enumcls(int_default)
             else:
                 msg = f'reset value {int_default:d} is not within the enumeration for the class'
-                self._logger.warn(msg)
+                self._logger.warning(msg)
                 warnings.warn(msg)
                 return None
 
