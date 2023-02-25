@@ -796,6 +796,16 @@ class FieldEnum(Field, ABC):
         The enumeration class for this field
         """
 
+    @property
+    def _enum_values(self) -> list[int]:
+        """
+        checks whether the default value is within the legal range for the enum
+
+        Returns:
+
+        """
+        return [e.value for e in self.enum_cls] # type: ignore[var-annotated]
+
 
 class FieldEnumReadWrite(FieldReadWrite, FieldEnum, ABC):
     """

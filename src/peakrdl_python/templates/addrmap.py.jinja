@@ -12,6 +12,7 @@ from typing import AsyncGenerator
 {% else %}
 from typing import Generator
 {% endif %}
+import warnings
 
 
 from contextlib import {% if asyncoutput %}async{% endif %}contextmanager

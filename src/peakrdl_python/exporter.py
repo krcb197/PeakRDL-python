@@ -21,7 +21,7 @@ from .systemrdl_node_utility_functions import get_reg_readable_fields, get_reg_w
     get_field_max_value_hex_string, get_reg_max_value_hex_string, get_fully_qualified_type_name, \
     uses_enum, uses_memory, \
     get_memory_max_entry_value_hex_string, get_memory_width_bytes, \
-    get_field_default_value
+    get_field_default_value, get_enum_values
 
 from .lib import get_array_typecode
 
@@ -148,6 +148,7 @@ class PythonExporter:
                 'get_array_dim': get_array_dim,
                 'get_dependent_component': get_dependent_component,
                 'get_dependent_enum': self._get_dependent_enum,
+                'get_enum_values': get_enum_values,
                 'get_fully_qualified_enum_type': self._fully_qualified_enum_type,
                 'get_field_bitmask_hex_string': get_field_bitmask_hex_string,
                 'get_field_inv_bitmask_hex_string': get_field_inv_bitmask_hex_string,
@@ -305,12 +306,12 @@ class PythonExporter:
             # which is imported
             return self._lookup_type_name(owning_field) + '_' + field_enum.__name__
 
-        if field_enum._parent_scope is None:
+        parent_scope = getattr(field_enum, '_parent_scope')
+
+        if parent_scope is None:
             # this happens if the enum is has been declared in an IPXACT file
             # which is imported
             return self._lookup_type_name(owning_field) + '_' + field_enum.__name__
-
-        parent_scope = getattr(field_enum, '_parent_scope')
 
         if root_node.inst.original_def == parent_scope:
             return field_enum.__name__

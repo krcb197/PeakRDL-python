@@ -2,7 +2,7 @@
 A set of utility functions that perform supplementary processing on a node in a compiled
 system RDL dataset.
 """
-from typing import Iterable, Optional, Tuple
+from typing import Iterable, Optional, List
 
 import textwrap
 
@@ -10,7 +10,7 @@ from systemrdl.node import Node, RegNode  # type: ignore
 from systemrdl.node import FieldNode, AddressableNode  # type: ignore
 from systemrdl.node import MemNode  # type: ignore
 from systemrdl.node import SignalNode  # type: ignore
-from systemrdl.rdltypes import UserEnum # type: ignore
+from systemrdl.rdltypes.user_enum import UserEnumMeta  # type: ignore
 
 def get_fully_qualified_type_name(node: Node) -> str:
     """
@@ -312,6 +312,8 @@ def get_field_default_value(node: FieldNode) -> Optional[int]:
     None if the field is not reset or if the reset value is a signal that can be in an unknown
     state
     """
+    if not isinstance(node, FieldNode):
+        raise TypeError(f'node is not a {type(FieldNode)} got {type(node)}')
 
     value = node.get_property('reset')
 
@@ -319,6 +321,7 @@ def get_field_default_value(node: FieldNode) -> Optional[int]:
         return None
 
     if isinstance(value, int):
+
         return value
 
     if isinstance(value, (FieldNode, SignalNode)):
@@ -327,3 +330,18 @@ def get_field_default_value(node: FieldNode) -> Optional[int]:
         return None
 
     raise TypeError(f'unhandled type for field default type={type(value)}')
+
+
+def get_enum_values(enum: UserEnumMeta) -> List[int]:
+    """
+
+    Args:
+        enum: a field enum
+
+    Returns: A list of all the values for an enum
+
+    """
+    if not isinstance(enum, UserEnumMeta):
+        raise TypeError(f'node is not a {type(UserEnumMeta)} got {type(enum)}')
+
+    return [e.value for e in enum]
