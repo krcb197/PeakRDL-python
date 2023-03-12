@@ -14,7 +14,7 @@ import coverage # type: ignore
 
 from systemrdl import RDLCompiler # type: ignore
 from systemrdl.node import Node, AddrmapNode # type: ignore
-from peakrdl.ipxact import IPXACTImporter # type: ignore
+from peakrdl_ipxact import IPXACTImporter # type: ignore
 
 from .exporter import PythonExporter
 
