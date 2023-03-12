@@ -3,12 +3,12 @@ Module for integrating with PeakRDL. This module is not intended to be used dire
 refer to the PeakRDL documentation
 """
 from typing import TYPE_CHECKING
-import pathlib
 
 # depending on whether peakrdl is installed or not you get a slightly different pylint error
 # from the following line, therefore two errors have to be suppressed
 #pylint: disable=no-name-in-module,import-error
-from peakrdl.plugins.exporter import ExporterSubcommandPlugin # type: ignore[import]
+from peakrdl.plugins.exporter import ExporterSubcommandPlugin  # type: ignore[import]
+from peakrdl.config import schema  # type: ignore[import]
 #pylint: enable=no-name-in-module,import-error
 
 from .exporter import PythonExporter
@@ -22,7 +22,12 @@ class Exporter(ExporterSubcommandPlugin):
     """
     PeakRDL export class, see PeakRDL for more details
     """
-    short_desc = "Export the register model to Python Wrappers"
+    short_desc = "Generater Python Wrappers"
+    long_desc = "Generate Python Wrappers for the Register Model"
+
+    cfg_schema = {
+        "user_template_dir": schema.DirectoryPath(),
+    }
 
     def add_exporter_arguments(self, arg_group: 'argparse.ArgumentParser') -> None:
         """
@@ -38,8 +43,6 @@ class Exporter(ExporterSubcommandPlugin):
                                help='define accesses to register model as asynchronous')
         arg_group.add_argument('--autoformat', action='store_true',
                                 help='use autopep8 on generated code')
-        arg_group.add_argument('--user_template_dir', action='store', type=pathlib.Path,
-                               help='directory of user templates to override the default ones')
         arg_group.add_argument('--skip_test_case_generation', action='store_true',
                             help='skip the generation of the test cases')
 
@@ -54,12 +57,9 @@ class Exporter(ExporterSubcommandPlugin):
         Returns:
 
         """
-        if options.user_template_dir is None:
-            peakrdl_exporter = PythonExporter()  # type: ignore[no-untyped-call]
-        else:
-            templates = options.user_template_dir
-            peakrdl_exporter = \
-                PythonExporter(user_template_dir=templates) # type: ignore[no-untyped-call]
+        templates = self.cfg['user_template_dir']
+        peakrdl_exporter = \
+            PythonExporter(user_template_dir=templates) # type: ignore[no-untyped-call]
 
         peakrdl_exporter.export(
             top_node,

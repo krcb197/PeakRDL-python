@@ -50,9 +50,17 @@ The path to the folder of alternative templates must be ``PythonExporter`` is in
     exporter = PythonExporter(user_template_dir='my_company_headers')
     exporter.export(node=spec, path='generated_code')
 
-alternatively it can be generated from the PeakRDL command line as follows:
+alternatively it can be generated from the PeakRDL, this requires the PeakRDL TOML config options
+to be setup, see `Configuring PeakRDL <https://peakrdl.readthedocs.io/en/latest/configuring.html>`_
+
+.. code-block::
+
+    [python]
+    user_template_dir = "path/to/dir/"
+
+command line as follows:
 
 .. code-block:: bash
 
-   peakrdl python basic.rdl -o . --user_template_dir my_company_headers
+   peakrdl python basic.rdl -o .
 
