@@ -5,6 +5,8 @@ refer to the PeakRDL documentation
 from typing import TYPE_CHECKING
 import pathlib
 
+from peakrdl.plugins.exporter import ExporterSubcommandPlugin #pylint: disable=import-error
+
 from .exporter import PythonExporter
 
 if TYPE_CHECKING:
@@ -12,7 +14,7 @@ if TYPE_CHECKING:
     from systemrdl.node import AddrmapNode  # type: ignore
 
 
-class Exporter:
+class Exporter(ExporterSubcommandPlugin):
     """
     PeakRDL export class, see PeakRDL for more details
     """
