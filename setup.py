@@ -19,8 +19,7 @@ setup(
     url="https://github.com/krcb197/PeakRDL-python",
     package_dir={'': 'src'},
     packages=[ 'peakrdl_python',
-               'peakrdl_python.lib',
-               'peakrdl.python'],   # backwards compatibility shim
+               'peakrdl_python.lib'],
     package_data={"peakrdl_python.templates": ["*.py.jinga"]},
     include_package_data = True,
     entry_points= { 'console_scripts' : ['peakrdl_python=peakrdl_python.peakpython:main_function'],
