@@ -5,9 +5,11 @@ refer to the PeakRDL documentation
 from typing import TYPE_CHECKING
 import pathlib
 
-#pylint: disable=no-name-in-module
+# depending on whether peakrdl is installed or not you get a slightly different pylint error
+# from the following line, therefore two errors have to be suppressed
+#pylint: disable=no-name-in-module,import-error
 from peakrdl.plugins.exporter import ExporterSubcommandPlugin # type: ignore[import]
-#pylint: enable=no-name-in-module
+#pylint: enable=no-name-in-module,import-error
 
 from .exporter import PythonExporter
 
