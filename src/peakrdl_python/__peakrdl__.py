@@ -5,7 +5,9 @@ refer to the PeakRDL documentation
 from typing import TYPE_CHECKING
 import pathlib
 
-from peakrdl.plugins.exporter import ExporterSubcommandPlugin #pylint: disable=import-error
+#pylint: disable=no-name-in-module
+from peakrdl.plugins.exporter import ExporterSubcommandPlugin # type: ignore[import]
+#pylint: enable=no-name-in-module
 
 from .exporter import PythonExporter
 
