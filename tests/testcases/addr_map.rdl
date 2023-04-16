@@ -29,7 +29,7 @@ addrmap child_addr_map_type_c {
 };
 
 addrmap addr_map {
-
+    regtype_a top_reg;
     child_addr_map_type_a child_a;
     child_addr_map_type_b child_b[2];
     child_addr_map_type_c child_c;
