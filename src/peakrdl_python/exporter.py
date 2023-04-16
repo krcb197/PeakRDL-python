@@ -9,7 +9,7 @@ from glob import glob
 
 import autopep8 # type: ignore
 import jinja2 as jj
-from systemrdl import RDLWalker
+from systemrdl import RDLWalker # type: ignore
 
 from systemrdl.node import RootNode, Node, RegNode, AddrmapNode, RegfileNode # type: ignore
 from systemrdl.node import FieldNode, MemNode, AddressableNode # type: ignore

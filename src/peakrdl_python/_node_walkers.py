@@ -1,10 +1,10 @@
 """
 Node walkers to be used in the generated of the output code
 """
-from typing import Optional, List, Union
+from typing import Optional, List, Union, Iterator
 
-from systemrdl import RDLListener, WalkerAction
-from systemrdl import RegNode, MemNode, FieldNode, AddrmapNode, RegfileNode
+from systemrdl import RDLListener, WalkerAction # type: ignore
+from systemrdl.node import RegNode, MemNode, FieldNode, AddrmapNode, RegfileNode # type: ignore
 
 
 class AddressMaps(RDLListener):
@@ -12,17 +12,15 @@ class AddressMaps(RDLListener):
     class intended to be used as part of the walker/listener protocol to find all the desendent
     address maps
     """
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__()
         self.__address_maps: List[AddrmapNode] = []
 
-    def enter_Addrmap(self, node):
-        if not isinstance(node, AddrmapNode):
-            raise ValueError(f'node:{node.inst_name} is not an Address Map')
+    def enter_Addrmap(self, node: AddrmapNode) -> Optional[WalkerAction]:
         self.__address_maps.append(node)
         return WalkerAction.Continue
 
-    def __iter__(self):
+    def __iter__(self) -> Iterator[AddrmapNode]:
         return self.__address_maps.__iter__()
 
 
@@ -31,7 +29,7 @@ class OwnedbyAddressMap(RDLListener):
     class intended to be used as part of the walker/listener protocol to find all the items owned
     by an address map but not the descendents of any address map
     """
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__()
 
         self.registers: List[RegNode] = []
@@ -52,7 +50,7 @@ class OwnedbyAddressMap(RDLListener):
         self.fields.append(node)
         return WalkerAction.Continue
 
-    def enter_Addrmap(self, node) -> Optional[WalkerAction]:
+    def enter_Addrmap(self, node: AddrmapNode) -> Optional[WalkerAction]:
         self.addr_maps.append(node)
         return WalkerAction.SkipDescendants
 
@@ -62,4 +60,15 @@ class OwnedbyAddressMap(RDLListener):
 
     @property
     def nodes(self) -> List[Union[RegNode, MemNode, FieldNode, AddrmapNode, RegfileNode]]:
+        """
+        All the nodes owned by the address map, including:
+        - address maps
+        - register files
+        - registers
+        - memories
+        - fields
+
+        Returns: list of nodes
+
+        """
         return self.addr_maps + self.reg_files + self.memories + self.registers + self.fields
