@@ -248,6 +248,7 @@ class PythonExporter:
                     'get_reg_max_value_hex_string': get_reg_max_value_hex_string,
                     'get_reg_writable_fields': get_reg_writable_fields,
                     'get_reg_readable_fields': get_reg_readable_fields,
+                    'get_enum_values': get_enum_values,
                     'asyncoutput': asyncoutput,
                     'uses_enum': uses_enum(block),
                     'version': __version__

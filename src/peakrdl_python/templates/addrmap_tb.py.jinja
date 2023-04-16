@@ -20,12 +20,6 @@ import math
 from enum import IntEnum
 
 from ..lib import RegisterWriteVerifyError
-{% if asyncoutput %}
-from ..lib import AsyncCallbackSet
-{% else %}
-from ..lib import NormalCallbackSet
-{% endif %}
-
 
 from ..reg_model.{{top_node.type_name}} import {{top_node.type_name}}_cls
 {% if asyncoutput %}
@@ -67,7 +61,7 @@ class {{fq_block_name}}_single_access({{top_node.type_name}}_TestCase): # type: 
             self.assertEqual(self.dut.{{'.'.join(get_python_path_segments(node))}}.address, {{node.absolute_address}}) # type: ignore[union-attr]
             self.assertEqual(self.dut.{{'.'.join(get_python_path_segments(node))}}.width, {{node.size * 8}}) # type: ignore[union-attr]
             {% if 'accesswidth' in node.list_properties() -%}self.assertEqual(self.dut.{{'.'.join(get_python_path_segments(node))}}.accesswidth, {{node.get_property('accesswidth')}}){%- else -%} self.assertEqual(self.dut.{{'.'.join(get_python_path_segments(node))}}.accesswidth, self.dut.{{'.'.join(get_python_path_segments(node))}}.accesswidth){%- endif %} # type: ignore[union-attr]
-        {%- endfor %}
+        {% endfor %}
 
     def test_memory_properties(self)  -> None:
         """
@@ -83,7 +77,7 @@ class {{fq_block_name}}_single_access({{top_node.type_name}}_TestCase): # type: 
             self.assertEqual(mut.width, {{node.get_property('memwidth')}})
             self.assertEqual(mut.entries, {{node.get_property('mementries')}})
             {% if 'accesswidth' in node.list_properties() -%}self.assertEqual(mut.accesswidth, {{node.get_property('accesswidth')}}){%- else -%}self.assertEqual(mut.accesswidth, mut.accesswidth){%- endif %}
-        {%- endfor %}
+        {% endfor %}
 
     def test_field_properties(self)  -> None:
         """
@@ -230,7 +224,7 @@ class {{fq_block_name}}_single_access({{top_node.type_name}}_TestCase): # type: 
 
                 # check the read has not been called in the write test
                 read_callback_mock.assert_not_called()
-        {%- endfor %}
+        {% endfor %}
 
     {% if asyncoutput %}async {% endif %}def test_int_field_read_and_write(self) -> None:
         """
@@ -882,7 +876,7 @@ class {{fq_block_name}}_single_access({{top_node.type_name}}_TestCase): # type: 
                 # this line is trying to set an illegal value so by definition should fail the type
                 # checks
                 self.dut.{{'.'.join(get_python_path_segments(node))}}.cppkbrgmgeloagvfgjjeiiushygirh = 1 # type: ignore[attr-defined,union-attr]
-        {%- endfor %}
+        {% endfor %}
 
     {% macro check_readable_register_iterators(node) %}
         {# check the unrolled case first #}
