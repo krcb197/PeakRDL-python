@@ -9,6 +9,7 @@ from glob import glob
 
 import autopep8 # type: ignore
 import jinja2 as jj
+from systemrdl import RDLWalker # type: ignore
 
 from systemrdl.node import RootNode, Node, RegNode, AddrmapNode, RegfileNode # type: ignore
 from systemrdl.node import FieldNode, MemNode, AddressableNode # type: ignore
@@ -27,6 +28,8 @@ from .systemrdl_node_utility_functions import get_reg_readable_fields, get_reg_w
 from .lib import get_array_typecode
 
 from .safe_name_utility import get_python_path_segments, safe_node_name
+
+from ._node_walkers import AddressMaps, OwnedbyAddressMap
 
 from .__about__ import __version__
 
@@ -115,78 +118,145 @@ class PythonExporter:
 
         # If it is the root node, skip to top addrmap
         if isinstance(node, RootNode):
-            node = node.top
+            top_block = node.top
+        else:
+            top_block = node
 
         package_path = os.path.join(path, node.inst_name)
         self._create_empty_package(package_path=package_path,
                                    skip_test_case_generation=skip_test_case_generation)
 
-        modules = [node]
+        self._build_node_type_table(top_block)
 
-        for block in modules:
+        context = {
+            'print': print,
+            'type': type,
+            'top_node': top_block,
+            'systemrdlFieldNode': FieldNode,
+            'systemrdlRegNode': RegNode,
+            'systemrdlRegfileNode': RegfileNode,
+            'systemrdlAddrmapNode': AddrmapNode,
+            'systemrdlMemNode': MemNode,
+            'systemrdlAddressableNode': AddressableNode,
+            'systemrdlSignalNode': SignalNode,
+            'asyncoutput': asyncoutput,
+            'OnWriteType': OnWriteType,
+            'OnReadType': OnReadType,
+            'PropertyReference': PropertyReference,
+            'isinstance': isinstance,
+            'uses_enum' : uses_enum(top_block),
+            'uses_memory' : uses_memory(top_block),
+            'get_fully_qualified_type_name': self._lookup_type_name,
+            'get_array_dim': get_array_dim,
+            'get_dependent_component': get_dependent_component,
+            'get_dependent_enum': self._get_dependent_enum,
+            'get_enum_values': get_enum_values,
+            'get_fully_qualified_enum_type': self._fully_qualified_enum_type,
+            'get_field_bitmask_hex_string': get_field_bitmask_hex_string,
+            'get_field_inv_bitmask_hex_string': get_field_inv_bitmask_hex_string,
+            'get_field_max_value_hex_string': get_field_max_value_hex_string,
+            'get_reg_max_value_hex_string': get_reg_max_value_hex_string,
+            'get_table_block': get_table_block,
+            'get_reg_writable_fields': get_reg_writable_fields,
+            'get_reg_readable_fields': get_reg_readable_fields,
+            'get_memory_max_entry_value_hex_string': get_memory_max_entry_value_hex_string,
+            'get_array_typecode': get_array_typecode,
+            'get_memory_width_bytes': get_memory_width_bytes,
+            'get_field_default_value': get_field_default_value,
+            'raise_template_error' : self._raise_template_error,
+            'get_python_path_segments' : get_python_path_segments,
+            'safe_node_name' : safe_node_name,
+            'version' : __version__
+        }
 
-            self._build_node_type_table(block)
+        context.update(self.user_template_context)
+
+        template = self.jj_env.get_template("addrmap.py.jinja")
+        module_fqfn = os.path.join(package_path,
+                                   'reg_model',
+                                   top_block.inst_name + '.py')
+        if autoformatoutputs is True:
+            module_code_str = autopep8.fix_code(template.render(context))
+            with open(module_fqfn, "w", encoding='utf-8') as fid:
+                fid.write(module_code_str)
+        else:
+            stream = template.stream(context)
+            stream.dump(module_fqfn, encoding='utf-8')
+
+        if not skip_test_case_generation:
+
+            # make the top level base class for all the other test, this is what instantes
+            # the register model
+            template = self.jj_env.get_template("baseclass_tb.py.jinja")
+            module_tb_fqfn = os.path.join(package_path,
+                                          'tests',
+                                          '_' + top_block.inst_name + '_test_base.py')
 
             context = {
-                'print': print,
-                'type': type,
-                'top_node': block,
-                'systemrdlFieldNode': FieldNode,
-                'systemrdlRegNode': RegNode,
-                'systemrdlRegfileNode': RegfileNode,
-                'systemrdlAddrmapNode': AddrmapNode,
-                'systemrdlMemNode': MemNode,
-                'systemrdlAddressableNode': AddressableNode,
-                'systemrdlSignalNode': SignalNode,
+                'top_node': top_block,
                 'asyncoutput': asyncoutput,
-                'OnWriteType': OnWriteType,
-                'OnReadType': OnReadType,
-                'PropertyReference': PropertyReference,
-                'isinstance': isinstance,
-                'uses_enum' : uses_enum(block),
-                'uses_memory' : uses_memory(block),
-                'get_fully_qualified_type_name': self._lookup_type_name,
-                'get_array_dim': get_array_dim,
-                'get_dependent_component': get_dependent_component,
-                'get_dependent_enum': self._get_dependent_enum,
-                'get_enum_values': get_enum_values,
-                'get_fully_qualified_enum_type': self._fully_qualified_enum_type,
-                'get_field_bitmask_hex_string': get_field_bitmask_hex_string,
-                'get_field_inv_bitmask_hex_string': get_field_inv_bitmask_hex_string,
-                'get_field_max_value_hex_string': get_field_max_value_hex_string,
-                'get_reg_max_value_hex_string': get_reg_max_value_hex_string,
-                'get_table_block': get_table_block,
-                'get_reg_writable_fields': get_reg_writable_fields,
-                'get_reg_readable_fields': get_reg_readable_fields,
-                'get_memory_max_entry_value_hex_string': get_memory_max_entry_value_hex_string,
-                'get_array_typecode': get_array_typecode,
-                'get_memory_width_bytes': get_memory_width_bytes,
-                'get_field_default_value': get_field_default_value,
-                'raise_template_error' : self._raise_template_error,
-                'get_python_path_segments' : get_python_path_segments,
-                'safe_node_name' : safe_node_name,
-                'version' : __version__
+                'version': __version__
             }
 
-            context.update(self.user_template_context)
-
-            template = self.jj_env.get_template("addrmap.py.jinja")
-            module_fqfn = os.path.join(package_path,
-                                       'reg_model',
-                                       block.inst_name + '.py')
             if autoformatoutputs is True:
-                module_code_str = autopep8.fix_code(template.render(context))
-                with open(module_fqfn, "w", encoding='utf-8') as fid:
-                    fid.write(module_code_str)
+                module_tb_code_str = autopep8.fix_code(template.render(context))
+                with open(module_tb_fqfn, "w", encoding='utf-8') as fid:
+                    fid.write(module_tb_code_str)
             else:
                 stream = template.stream(context)
-                stream.dump(module_fqfn, encoding='utf-8')
+                stream.dump(module_tb_fqfn, encoding='utf-8')
 
-            if not skip_test_case_generation:
-                template = self.jj_env.get_template("addrmap_tb.py.jinja")
+            # make the tests themselves
+            template = self.jj_env.get_template("addrmap_tb.py.jinja")
+
+            blocks = AddressMaps()
+            # running the walker populated the blocks with all the address maps in within the
+            # top block, including the top_block itself
+            RDLWalker(unroll=True).walk(top_block, blocks, skip_top=False)
+
+            for block in blocks:
+                owned_elements = OwnedbyAddressMap()
+                # running the walker populated the blocks with all the address maps in within the
+                # top block, including the top_block itself
+                RDLWalker(unroll=True).walk(block, owned_elements, skip_top=True)
+
+                fq_block_name = '_'.join(block.get_path_segments(array_suffix = '_{index:d}_'))
+
                 module_tb_fqfn = os.path.join(package_path,
                                               'tests',
-                                              'test_' + block.inst_name + '.py')
+                                              'test_' + fq_block_name + '.py')
+
+                context = {
+                    'top_node': top_block,
+                    'block' : block,
+                    'fq_block_name' : fq_block_name,
+                    'owned_elements': owned_elements,
+                    'systemrdlFieldNode': FieldNode,
+                    'systemrdlSignalNode': SignalNode,
+                    'systemrdlRegNode': RegNode,
+                    'systemrdlMemNode': MemNode,
+                    'systemrdlRegfileNode': RegfileNode,
+                    'systemrdlAddrmapNode': AddrmapNode,
+                    'isinstance': isinstance,
+                    'get_python_path_segments': get_python_path_segments,
+                    'safe_node_name': safe_node_name,
+                    'uses_memory': (len(owned_elements.memories) > 0),
+                    'get_field_bitmask_hex_string': get_field_bitmask_hex_string,
+                    'get_field_inv_bitmask_hex_string': get_field_inv_bitmask_hex_string,
+                    'get_field_max_value_hex_string': get_field_max_value_hex_string,
+                    'get_field_default_value': get_field_default_value,
+                    'get_reg_max_value_hex_string': get_reg_max_value_hex_string,
+                    'get_reg_writable_fields': get_reg_writable_fields,
+                    'get_reg_readable_fields': get_reg_readable_fields,
+                    'get_memory_max_entry_value_hex_string': get_memory_max_entry_value_hex_string,
+                    'get_enum_values': get_enum_values,
+                    'get_array_typecode': get_array_typecode,
+                    'get_memory_width_bytes': get_memory_width_bytes,
+                    'asyncoutput': asyncoutput,
+                    'uses_enum': uses_enum(block),
+                    'version': __version__
+                }
+
                 if autoformatoutputs is True:
                     module_tb_code_str = autopep8.fix_code(template.render(context))
                     with open(module_tb_fqfn, "w", encoding='utf-8') as fid:
@@ -195,7 +265,7 @@ class PythonExporter:
                     stream = template.stream(context)
                     stream.dump(module_tb_fqfn, encoding='utf-8')
 
-        return [m.inst_name for m in modules]
+        return top_block.inst_name
 
     def _lookup_type_name(self, node: Node) -> str:
         """
