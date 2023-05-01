@@ -11,8 +11,6 @@ import warnings
 from typing import List, Optional
 import pathlib
 
-import coverage # type: ignore
-
 from systemrdl import RDLCompiler # type: ignore
 from systemrdl.node import Node, AddrmapNode # type: ignore
 from peakrdl_ipxact import IPXACTImporter # type: ignore
@@ -176,23 +174,11 @@ def main_function() -> None:
         print('***************************************************************')
         print('* Unit Test Run                                               *')
         print('***************************************************************')
-        if args.coverage:
-            cov = coverage.Coverage(
-                include=[f'*\\{spec.inst_name}\\reg_model\\*.py',
-                         f'*\\{spec.inst_name}\\tests\\*.py'])
-            cov.start()
         tests = unittest.TestLoader().discover(
             start_dir=os.path.join(args.outdir, spec.inst_name, 'tests'),
             top_level_dir=args.outdir)
         runner = unittest.TextTestRunner()
         runner.run(tests)
-
-        if args.coverage:
-            cov.stop()
-
-        if args.html_coverage_out is not None:
-            cov.html_report(directory=args.html_coverage_out)
-
 
 if __name__ == '__main__':
 
