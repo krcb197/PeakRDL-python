@@ -49,14 +49,8 @@ def build_command_line_parser() -> argparse.ArgumentParser:
     parser.add_argument('--user_template_dir', action='store', type=pathlib.Path,
                            help='directory of user templates to override the default ones')
     checker = parser.add_argument_group('post-generate checks')
-    checker.add_argument('--lint', action='store_true',
-                         help='run pylint on the generated python')
     checker.add_argument('--test', action='store_true',
                          help='run unittests for the created')
-    checker.add_argument('--coverage', action='store_true',
-                         help='run a coverage report on the unittests')
-    checker.add_argument('--html_coverage_out',
-                         help='output director (default: %(default)s)')
     parser.add_argument('--skip_test_case_generation', action='store_true',
                         help='skip the generation of the test cases')
 
@@ -120,22 +114,6 @@ def generate(root:Node, outdir:str,
 
     return modules
 
-def run_lint(root:str, outdir:str) -> None:
-    """
-    Run the lint checks using pylint on a directory
-
-    Args:
-        root: name of the generated package (directory)
-        outdir: location where the package has been written
-
-    Returns:
-
-    """
-    subprocess.run(['pylint', '--rcfile',
-                    os.path.join('tests','pylint.rc'),
-                    os.path.join(outdir, root)],
-                   check=False)
-
 def main_function() -> None:
     """
     Main function for the Command Line tool, this needs to be separated out so that it can be
@@ -165,11 +143,6 @@ def main_function() -> None:
              skip_test_case_generation=args.skip_test_case_generation,
              asyncoutput=args.asyncoutput)
 
-    if args.lint:
-        print('***************************************************************')
-        print('* Lint Checks                                                 *')
-        print('***************************************************************')
-        run_lint(outdir=args.outdir, root=spec.inst_name)
     if args.test:
         print('***************************************************************')
         print('* Unit Test Run                                               *')
