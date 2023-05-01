@@ -7,6 +7,7 @@ import argparse
 import os
 import subprocess
 import unittest.loader
+import warnings
 from typing import List, Optional
 import pathlib
 
@@ -194,4 +195,10 @@ def main_function() -> None:
 
 
 if __name__ == '__main__':
+
+    warnings.warn('The peakpython command line option will be removed in a future release. '
+                  'Command line functionality should be used via the see '
+                  'https://peakrdl-python.readthedocs.io/en/latest/command_line.html',
+                  category=PendingDeprecationWarning)
+
     main_function()
