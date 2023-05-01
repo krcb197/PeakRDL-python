@@ -184,11 +184,17 @@ class RegReadOnly(Reg, ABC):
         generator that produces has all the readable fields within the register
         """
 
-    @abstractmethod
     def read_fields(self) -> Dict['str', Union[bool, Enum, int]]:
         """
         read the register and return a dictionary of the field values
         """
+        return_dict = {}
+        with self.single_read() as reg:
+            for field in reg.readable_fields:
+                return_dict[field.inst_name] = field.read()
+
+        return return_dict
+
 
 
 class RegWriteOnly(Reg, ABC):
@@ -385,6 +391,17 @@ class RegReadWrite(RegReadOnly, RegWriteOnly, ABC):
         the arguments
         """
 
+    def read_fields(self) -> Dict['str', Union[bool, Enum, int]]:
+        """
+        read the register and return a dictionary of the field values
+        """
+        return_dict = {}
+        with self.single_read_modify_write(skip_write=True) as reg:
+            for field in reg.readable_fields:
+                return_dict[field.inst_name] = field.read()
+
+        return return_dict
+
 
 class RegAsyncReadOnly(Reg, ABC):
     """
@@ -486,11 +503,16 @@ class RegAsyncReadOnly(Reg, ABC):
         generator that produces has all the readable fields within the register
         """
 
-    @abstractmethod
-    async def read_fields(self) -> Dict[str, Union[int, Enum, bool]]:
+    async def read_fields(self) -> Dict['str', Union[bool, Enum, int]]:
         """
         asynchronously read the register and return a dictionary of the field values
         """
+        return_dict = {}
+        with self.single_read() as reg:
+            for field in reg.readable_fields:
+                return_dict[field.inst_name] = await field.read()
+
+        return return_dict
 
 
 class RegAsyncWriteOnly(Reg, ABC):
@@ -680,6 +702,17 @@ class RegAsyncReadWrite(RegAsyncReadOnly, RegAsyncWriteOnly, ABC):
             return self.__register_state
 
         return await super().read()
+
+    async def read_fields(self) -> Dict['str', Union[bool, Enum, int]]:
+        """
+        asynchronously read the register and return a dictionary of the field values
+        """
+        return_dict = {}
+        with self.single_read_modify_write(skip_write=True) as reg:
+            for field in reg.readable_fields:
+                return_dict[field.inst_name] = await field.read()
+
+        return return_dict
 
 
 ReadableRegister = Union[RegReadOnly, RegReadWrite]
