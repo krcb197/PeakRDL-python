@@ -153,8 +153,8 @@ def main_function() -> None:
         print('* Unit Test Run                                               *')
         print('***************************************************************')
         if args.coverage:
-            raise NotImplementedError('Support for geneating a coverage report was removed at 0.6.1, '
-                                      'this can be done separately if needed')
+            raise NotImplementedError('Support for geneating a coverage report was removed at '
+                                      '0.6.1, this can be done separately if needed')
         tests = unittest.TestLoader().discover(
             start_dir=os.path.join(args.outdir, spec.inst_name, 'tests'),
             top_level_dir=args.outdir)
