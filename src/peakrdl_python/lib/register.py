@@ -384,12 +384,21 @@ class RegReadWrite(RegReadOnly, RegWriteOnly, ABC):
 
         return super().read()
 
-    @abstractmethod
     def write_fields(self, **kwargs) -> None: # type: ignore[no-untyped-def]
         """
         Do a read-modify-write to the register, updating any field included in
         the arguments
         """
+        if len(kwargs) == 0:
+            raise ValueError('no command args')
+
+        with self.single_read_modify_write() as reg:
+            for field_name, field_value in kwargs.items():
+                if field_name not in reg.systemrdl_python_child_name_map.values():
+                    raise ValueError(f'{field_name} is not a member of the register')
+
+                field = getattr(reg, field_name)
+                field.write(field_value)
 
     def read_fields(self) -> Dict['str', Union[bool, Enum, int]]:
         """
@@ -508,7 +517,7 @@ class RegAsyncReadOnly(Reg, ABC):
         asynchronously read the register and return a dictionary of the field values
         """
         return_dict = {}
-        with self.single_read() as reg:
+        async with self.single_read() as reg:
             for field in reg.readable_fields:
                 return_dict[field.inst_name] = await field.read()
 
@@ -708,11 +717,27 @@ class RegAsyncReadWrite(RegAsyncReadOnly, RegAsyncWriteOnly, ABC):
         asynchronously read the register and return a dictionary of the field values
         """
         return_dict = {}
-        with self.single_read_modify_write(skip_write=True) as reg:
+        async with self.single_read_modify_write(skip_write=True) as reg:
             for field in reg.readable_fields:
                 return_dict[field.inst_name] = await field.read()
 
         return return_dict
+
+    async def write_fields(self, **kwargs) -> None:  # type: ignore[no-untyped-def]
+        """
+        asynchronously read-modify-write to the register, updating any field included in
+        the arguments
+        """
+        if len(kwargs) == 0:
+            raise ValueError('no command args')
+
+        async with self.single_read_modify_write() as reg:
+            for field_name, field_value in kwargs.items():
+                if field_name not in reg.systemrdl_python_child_name_map.values():
+                    raise ValueError(f'{field_name} is not a member of the register')
+
+                field = getattr(reg, field_name)
+                await field.write(field_value)
 
 
 ReadableRegister = Union[RegReadOnly, RegReadWrite]

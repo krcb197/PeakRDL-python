@@ -91,27 +91,8 @@ class {{get_fully_qualified_type_name(node)}}_cls(Reg{% if asyncoutput %}Async{%
         yield self.{{safe_node_name(child_node)}}
         {% endfor %}
 
-    {% if node.has_sw_readable %}
-    {% if asyncoutput %}async {% endif %}def write_fields(self, **kwargs) -> None:  # type: ignore[no-untyped-def]
-        """
-        Do a read-modify-write to the register, updating any field included in
-        the arguments
-        """
-        if len(kwargs) == 0:
-            raise ValueError('no command args')
-
-        {% if asyncoutput %}async {% endif %}with self.single_read_modify_write() as reg:
-        {%- for child_node in get_reg_writable_fields(node) %}
-            if '{{safe_node_name(child_node)}}' in kwargs:
-                {% if asyncoutput %}await {% endif %}self.{{safe_node_name(child_node)}}.write(kwargs['{{safe_node_name(child_node)}}'])
-                kwargs.pop('{{safe_node_name(child_node)}}')
-        {%- endfor %}
-            if len(kwargs) != 0:
-                # left over unhandled arguments
-                raise ValueError('unrecognised arguments in field')
-
-
-    {% else %}
+    {% if not node.has_sw_readable %}
+    {# if the register has no readable components, all the fields must be writen as one #}
     {% if asyncoutput %}async {% endif %}def write_fields(self, {%- for child_node in node.fields() -%} {{safe_node_name(child_node)}} : {%- if 'encode' in child_node.list_properties() %}{{get_fully_qualified_enum_type(child_node.get_property('encode'), top_node.parent, child_node)}}_enumcls{% else %}int{% endif %}{%- if not loop.last -%},{%- endif -%}{%- endfor -%}) -> None: # type: ignore[override]
         """
         Do a write to the register, updating all fields
