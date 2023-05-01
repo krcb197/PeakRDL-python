@@ -2,6 +2,7 @@
 Main Classes for the PeakRDL Python
 """
 import os
+import warnings
 from pathlib import Path
 from shutil import copyfile
 from typing import List, NoReturn, Iterable, Tuple
@@ -121,6 +122,12 @@ class PythonExporter:
             top_block = node.top
         else:
             top_block = node
+
+        # support for autopep8 will be removed from a future release
+        if autoformatoutputs is True:
+            warnings.warn('Autoformating the generated code in the export will be deprecated in a'
+                          'future release. It is recommended this is do outside of peakrdl python',
+                          category=PendingDeprecationWarning)
 
         package_path = os.path.join(path, node.inst_name)
         self._create_empty_package(package_path=package_path,
