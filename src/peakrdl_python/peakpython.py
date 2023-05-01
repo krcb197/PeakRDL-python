@@ -5,7 +5,6 @@ Command Line tool for the PeakRDL Python
 #!/usr/bin/env python3
 import argparse
 import os
-import subprocess
 import unittest.loader
 import warnings
 from typing import List, Optional
