@@ -188,7 +188,7 @@ class RegReadOnly(Reg, ABC):
         """
         read the register and return a dictionary of the field values
         """
-        return_dict = {}
+        return_dict: Dict['str', Union[bool, Enum, int]] = {}
         with self.single_read() as reg:
             for field in reg.readable_fields:
                 return_dict[field.inst_name] = field.read()
@@ -404,7 +404,7 @@ class RegReadWrite(RegReadOnly, RegWriteOnly, ABC):
         """
         read the register and return a dictionary of the field values
         """
-        return_dict = {}
+        return_dict: Dict['str', Union[bool, Enum, int]] = {}
         with self.single_read_modify_write(skip_write=True) as reg:
             for field in reg.readable_fields:
                 return_dict[field.inst_name] = field.read()
@@ -516,7 +516,7 @@ class RegAsyncReadOnly(Reg, ABC):
         """
         asynchronously read the register and return a dictionary of the field values
         """
-        return_dict = {}
+        return_dict: Dict['str', Union[bool, Enum, int]] = {}
         async with self.single_read() as reg:
             for field in reg.readable_fields:
                 return_dict[field.inst_name] = await field.read()
@@ -716,7 +716,7 @@ class RegAsyncReadWrite(RegAsyncReadOnly, RegAsyncWriteOnly, ABC):
         """
         asynchronously read the register and return a dictionary of the field values
         """
-        return_dict = {}
+        return_dict: Dict['str', Union[bool, Enum, int]] = {}
         async with self.single_read_modify_write(skip_write=True) as reg:
             for field in reg.readable_fields:
                 return_dict[field.inst_name] = await field.read()
