@@ -4,13 +4,19 @@ import sys
 import os
 
 from glob import glob
+from typing import Optional, List
+
+from systemrdl import RDLCompiler # type: ignore
+from systemrdl.node import Node, AddrmapNode # type: ignore
+from peakrdl_ipxact import IPXACTImporter # type: ignore
 
 test_case_path = os.path.join('tests', 'testcases')
 
-def compile_rdl(infile:str,
-                incl_search_paths:Optional[List[str]]=None,
-                top:Optional[str]=None,
-                ipxact_files:Optional[List[str]]=None) -> AddrmapNode:
+
+def compile_rdl(infile: str,
+                incl_search_paths: Optional[List[str]] = None,
+                top: Optional[str] = None,
+                ipxact_files: Optional[List[str]] = None) -> AddrmapNode:
     """
     Compile the systemRDL
 
@@ -37,9 +43,10 @@ def compile_rdl(infile:str,
     rdlc.compile_file(infile, incl_search_paths=incl_search_paths)
     return rdlc.elaborate(top_def_name=top).top
 
-def generate(root:Node, outdir:str,
-             autoformatoutputs:bool=True,asyncoutput:bool=False,
-             skip_test_case_generation:bool=False) -> List[str]:
+
+def generate(root: Node, outdir: str,
+             autoformatoutputs: bool = True, asyncoutput: bool = False,
+             skip_test_case_generation: bool = False) -> List[str]:
     """
     Generate a PeakRDL output package from compiled systemRDL
 
@@ -62,6 +69,7 @@ def generate(root:Node, outdir:str,
                                       skip_test_case_generation=skip_test_case_generation)
 
     return modules
+
 
 if __name__ == '__main__':
     if len(sys.argv) == 1:
