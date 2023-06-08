@@ -27,6 +27,7 @@ setup(
                         'python = peakrdl_python.__peakrdl__:Exporter'
                     ]
                     },
+    python_requires='>=3.7, <4',
     install_requires=[
         "systemrdl-compiler>=1.24.0",
         "autopep8",
