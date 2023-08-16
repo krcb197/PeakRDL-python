@@ -41,8 +41,6 @@ class Exporter(ExporterSubcommandPlugin):
         """
         arg_group.add_argument('--async', action='store_true', dest='is_async',
                                help='define accesses to register model as asynchronous')
-        arg_group.add_argument('--autoformat', action='store_true',
-                                help='use autopep8 on generated code')
         arg_group.add_argument('--skip_test_case_generation', action='store_true',
                             help='skip the generation of the test cases')
 
@@ -65,6 +63,5 @@ class Exporter(ExporterSubcommandPlugin):
             top_node,
             options.output,
             options.is_async,
-            autoformatoutputs=options.autoformat,
             skip_test_case_generation=options.skip_test_case_generation
         )

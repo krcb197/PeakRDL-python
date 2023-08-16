@@ -8,7 +8,6 @@ from shutil import copyfile
 from typing import List, NoReturn, Iterable, Tuple
 from glob import glob
 
-import autopep8 # type: ignore
 import jinja2 as jj
 from systemrdl import RDLWalker # type: ignore
 
@@ -98,7 +97,6 @@ class PythonExporter:
 
     def export(self, node: Node, path: str,
                asyncoutput: bool=False,
-               autoformatoutputs: bool=True,
                skip_test_case_generation: bool=False) -> List[str]:
         """
         Generated Python Code and Testbench
@@ -107,8 +105,6 @@ class PythonExporter:
             node (str) : Top-level node to export. Can be the top-level `RootNode` or any
                   internal `AddrmapNode`.
             path (str) : Output package path.
-            autoformatoutputs (bool) : If set to True the code will be run through autopep8 to
-                clean it up. This can slow down large jobs or mask problems
             asyncoutput (bool) : If set this builds a register model with async callbacks
             skip_test_case_generation (bool): skip generation the generation of the test cases
 
@@ -122,12 +118,6 @@ class PythonExporter:
             top_block = node.top
         else:
             top_block = node
-
-        # support for autopep8 will be removed from a future release
-        if autoformatoutputs is True:
-            warnings.warn('Autoformating the generated code in the export will be deprecated in a'
-                          'future release. It is recommended this is do outside of peakrdl python',
-                          category=PendingDeprecationWarning)
 
         package_path = os.path.join(path, node.inst_name)
         self._create_empty_package(package_path=package_path,
@@ -182,13 +172,9 @@ class PythonExporter:
         module_fqfn = os.path.join(package_path,
                                    'reg_model',
                                    top_block.inst_name + '.py')
-        if autoformatoutputs is True:
-            module_code_str = autopep8.fix_code(template.render(context))
-            with open(module_fqfn, "w", encoding='utf-8') as fid:
-                fid.write(module_code_str)
-        else:
-            stream = template.stream(context)
-            stream.dump(module_fqfn, encoding='utf-8')
+
+        stream = template.stream(context)
+        stream.dump(module_fqfn, encoding='utf-8')
 
         if not skip_test_case_generation:
 
@@ -205,13 +191,9 @@ class PythonExporter:
                 'version': __version__
             }
 
-            if autoformatoutputs is True:
-                module_tb_code_str = autopep8.fix_code(template.render(context))
-                with open(module_tb_fqfn, "w", encoding='utf-8') as fid:
-                    fid.write(module_tb_code_str)
-            else:
-                stream = template.stream(context)
-                stream.dump(module_tb_fqfn, encoding='utf-8')
+
+            stream = template.stream(context)
+            stream.dump(module_tb_fqfn, encoding='utf-8')
 
             # make the tests themselves
             template = self.jj_env.get_template("addrmap_tb.py.jinja")

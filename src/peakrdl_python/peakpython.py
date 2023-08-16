@@ -39,8 +39,6 @@ def build_command_line_parser() -> argparse.ArgumentParser:
                              'global addrmap)')
     parser.add_argument('--verbose', '-v', action='count', default=0,
                         help='set logging verbosity')
-    parser.add_argument('--autoformat', action='store_true',
-                        help='use autopep8 on generated code')
     parser.add_argument('--async', action='store_true',
                         help='builds the register model using the async callbacks')
     parser.add_argument('--ipxact', dest='ipxact', nargs='*',
@@ -92,7 +90,6 @@ def compile_rdl(infile:str,
 
 
 def generate(root:Node, outdir:str,
-             autoformatoutputs:bool=True,asyncoutput:bool=False,
              skip_test_case_generation:bool=False) -> List[str]:
     """
     Generate a PeakRDL output package from compiled systemRDL
@@ -100,8 +97,6 @@ def generate(root:Node, outdir:str,
     Args:
         root: node in the systemRDL from which the code should be generated
         outdir: directory to store the result in
-        autoformatoutputs: If set to True the code will be run through autopep8 to
-                clean it up. This can slow down large jobs or mask problems
         asyncoutput: If set to True the code build a register model with async operations to
                 access the harware layer
 
@@ -111,7 +106,6 @@ def generate(root:Node, outdir:str,
     """
     print(f'Info: Generating python for {root.inst_name} in {outdir}')
     modules = PythonExporter().export(root, outdir, # type: ignore[no-untyped-call]
-                                      autoformatoutputs=autoformatoutputs,
                                       asyncoutput=asyncoutput,
                                       skip_test_case_generation=skip_test_case_generation)
 

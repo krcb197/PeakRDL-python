@@ -30,7 +30,6 @@ setup(
     python_requires='>=3.7, <4',
     install_requires=[
         "systemrdl-compiler>=1.24.0",
-        "autopep8",
         "jinja2",
         "asynctest;python_version<'3.8'",
         "peakrdl-ipxact"
