@@ -2,7 +2,6 @@
 Main Classes for the PeakRDL Python
 """
 import os
-import warnings
 from pathlib import Path
 from shutil import copyfile
 from typing import List, NoReturn, Iterable, Tuple
@@ -246,13 +245,8 @@ class PythonExporter:
                     'version': __version__
                 }
 
-                if autoformatoutputs is True:
-                    module_tb_code_str = autopep8.fix_code(template.render(context))
-                    with open(module_tb_fqfn, "w", encoding='utf-8') as fid:
-                        fid.write(module_tb_code_str)
-                else:
-                    stream = template.stream(context)
-                    stream.dump(module_tb_fqfn, encoding='utf-8')
+                stream = template.stream(context)
+                stream.dump(module_tb_fqfn, encoding='utf-8')
 
         return top_block.inst_name
 
