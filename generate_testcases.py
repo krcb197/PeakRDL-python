@@ -46,7 +46,7 @@ def compile_rdl(infile: str,
 
 
 def generate(root: Node, outdir: str,
-             autoformatoutputs: bool = True, asyncoutput: bool = False,
+             asyncoutput: bool = False,
              skip_test_case_generation: bool = False) -> List[str]:
     """
     Generate a PeakRDL output package from compiled systemRDL
@@ -65,7 +65,6 @@ def generate(root: Node, outdir: str,
     """
     print(f'Info: Generating python for {root.inst_name} in {outdir}')
     modules = PythonExporter().export(root, outdir, # type: ignore[no-untyped-call]
-                                      autoformatoutputs=autoformatoutputs,
                                       asyncoutput=asyncoutput,
                                       skip_test_case_generation=skip_test_case_generation)
 
@@ -96,12 +95,9 @@ if __name__ == '__main__':
         else:
             root = compile_rdl(rdl_file)
 
-        for autoformatoutputs, asyncoutput, folder_name in [(False, False, 'raw'),
-                                                            (True, False, 'autopep8'),
-                                                            (False, True, 'raw_async'),
-                                                            (True, True, 'autopep8_async')]:
+        for asyncoutput, folder_name in [(False, 'raw'),
+                                         (True, 'raw_async')]:
             _ = generate(root, os.path.join('testcase_output', folder_name),
-                            autoformatoutputs=False,
                             asyncoutput=asyncoutput)
 
             module_fqfn = os.path.join('testcase_output', folder_name, '__init__.py')

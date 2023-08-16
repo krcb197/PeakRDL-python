@@ -441,3 +441,14 @@ field from the example above
 .. literalinclude :: ../example/overridden_names/over_ridden_names.py
    :language: python
 
+
+Autoformating
+=============
+
+Previous versions of peakrdl-python included the option to run an autoformatter to clean up the
+generated code. This had two issues:
+
+* It created maintenance issues when the autoformatter changed
+* The choice of autoformatter is an individual one, rather than force an autoformatter on people
+  it is better to let people choose their own.
+

@@ -97,8 +97,6 @@ jobs:
         peakrdl python tests/testcases/basic.rdl -o peakrdl_out/raw/
         peakrdl python tests/testcases/simple.xml tests/testcases/multifile.rdl -o peakrdl_out/raw
         python -m unittest discover -s peakrdl_out/raw
-        peakrdl python tests/testcases/basic.rdl -o peakrdl_out/autopep8/ --autoformat
-        python -m unittest discover -s peakrdl_out/autopep8
         peakrdl python tests/testcases/basic.rdl -o peakrdl_out/raw_async/ --async
         python -m unittest discover -s peakrdl_out/raw_async
 

@@ -39,8 +39,6 @@ def build_command_line_parser() -> argparse.ArgumentParser:
                              'global addrmap)')
     parser.add_argument('--verbose', '-v', action='count', default=0,
                         help='set logging verbosity')
-    parser.add_argument('--autoformat', action='store_true',
-                        help='use autopep8 on generated code')
     parser.add_argument('--async', action='store_true',
                         help='builds the register model using the async callbacks')
     parser.add_argument('--ipxact', dest='ipxact', nargs='*',
@@ -48,12 +46,8 @@ def build_command_line_parser() -> argparse.ArgumentParser:
     parser.add_argument('--user_template_dir', action='store', type=pathlib.Path,
                            help='directory of user templates to override the default ones')
     checker = parser.add_argument_group('post-generate checks')
-    checker.add_argument('--lint', action='store_true',
-                         help='run pylint on the generated python (support removed at 0.6.1)')
     checker.add_argument('--test', action='store_true',
                          help='run unittests for the created')
-    checker.add_argument('--coverage', action='store_true',
-                         help='run a coverage report on the unittests (support removed at 0.6.1)')
     parser.add_argument('--skip_test_case_generation', action='store_true',
                         help='skip the generation of the test cases')
 
@@ -92,7 +86,7 @@ def compile_rdl(infile:str,
 
 
 def generate(root:Node, outdir:str,
-             autoformatoutputs:bool=True,asyncoutput:bool=False,
+             asyncoutput:bool=False,
              skip_test_case_generation:bool=False) -> List[str]:
     """
     Generate a PeakRDL output package from compiled systemRDL
@@ -100,8 +94,6 @@ def generate(root:Node, outdir:str,
     Args:
         root: node in the systemRDL from which the code should be generated
         outdir: directory to store the result in
-        autoformatoutputs: If set to True the code will be run through autopep8 to
-                clean it up. This can slow down large jobs or mask problems
         asyncoutput: If set to True the code build a register model with async operations to
                 access the harware layer
 
@@ -111,7 +103,6 @@ def generate(root:Node, outdir:str,
     """
     print(f'Info: Generating python for {root.inst_name} in {outdir}')
     modules = PythonExporter().export(root, outdir, # type: ignore[no-untyped-call]
-                                      autoformatoutputs=autoformatoutputs,
                                       asyncoutput=asyncoutput,
                                       skip_test_case_generation=skip_test_case_generation)
 
@@ -142,19 +133,15 @@ def main_function() -> None:
     print('***************************************************************')
     print('* Generate the Python Package                                 *')
     print('***************************************************************')
-    generate(spec, args.outdir, autoformatoutputs=args.autoformat,
+    generate(spec, args.outdir,
              skip_test_case_generation=args.skip_test_case_generation,
              asyncoutput=args.asyncoutput)
-    if args.lint:
-        raise NotImplementedError('Support for running linting checks was removed at 0.6.1, '
-                                  'pylint can be run seperatly on the generated code if needed')
+
     if args.test:
         print('***************************************************************')
         print('* Unit Test Run                                               *')
         print('***************************************************************')
-        if args.coverage:
-            raise NotImplementedError('Support for geneating a coverage report was removed at '
-                                      '0.6.1, this can be done separately if needed')
+
         tests = unittest.TestLoader().discover(
             start_dir=os.path.join(args.outdir, spec.inst_name, 'tests'),
             top_level_dir=args.outdir)
