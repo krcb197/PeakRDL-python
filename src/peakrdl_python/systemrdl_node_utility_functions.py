@@ -38,7 +38,9 @@ def get_array_dim(node: AddressableNode) -> None:
     Returns the class type name
     """
     assert node.is_array
-    assert len(node.array_dimensions) == 1
+    if len(node.array_dimensions) != 1:
+        raise NotImplementedError('arrays with more than one dimension are not '
+                                  'currently supported, see #106')
     return node.array_dimensions[0]
 
 

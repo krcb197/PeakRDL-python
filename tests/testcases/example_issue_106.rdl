@@ -1,0 +1,137 @@
+// definition of user-defined property
+// this property is used for software header generators
+property sw_type {type = string; component = field; default = "";};
+
+addrmap GPIO #(
+    longint unsigned WIDTH = 32
+){
+    name = "GPIO controller";
+    desc = "GPIO controller with input/output/enable and [pos/neg]edge interrupt support";
+    reg {
+        field {
+            sw = r; hw = w;
+        } DATA [WIDTH];
+    } INPUT;
+    reg {
+        field {
+            sw = rw; hw = r;
+        } DATA [WIDTH] = 0;
+    } OUTPUT;
+    reg {
+        field {
+            sw = rw; hw = r;
+        } DATA [WIDTH] = 0;
+    } ENABLE;
+    reg {
+        field {
+            sw = rw; hw = r;
+        } DATA [WIDTH] = 0;
+    } POSEDGE;
+    reg {
+        field {
+            sw = rw; hw = r;
+        } DATA [WIDTH] = 0;
+    } NEGEDGE;
+    reg {
+        field {
+            sw = r; hw = w;
+            rclr;
+        } DATA [WIDTH];
+    } IRQ_STATUS;
+};
+
+reg float32 {
+    field {} sign [31:31];
+    field {} exponent [30:23];
+    field {} fraction [22:0];
+};
+
+addrmap example_issue_106 {
+    name = "Example";
+    desc = "Example used for SystemRDL toolset testing.";
+
+    default accesswidth = 32;
+
+    reg {
+        name = "Version";
+        desc = "Read only register `ID.MAJOR.MINOR.PATCH`.";
+        default sw = r;
+        default hw = na;
+        field {
+            name = "FPGA ID";
+            sw_type = "uint8_t";
+        } FPGA_ID [31:24] = 8'h01;
+        field {
+            name = "Major version number";
+            sw_type = "uint8_t";
+        } MAJOR [23:16] = 8'h02;
+        field {
+            name = "Minor version number";
+            sw_type = "uint8_t";
+        } MINOR [15:8] = 8'h03;
+        field {
+            name = "Patch number";
+            sw_type = "uint8_t";
+        } PATCH [7:0] = 8'h04;
+    } VERSION;
+
+    GPIO GPIO32;
+    GPIO #(.WIDTH (16)) GPIO16;
+    GPIO GPIO32_1D [4];
+    GPIO GPIO32_2D [3][2];
+
+    reg configuration {
+        name = "Configuration";
+        desc = "Configuration register";
+        field {
+            sw = rw; hw = r;
+            sw_type = "unsigned";
+        } CONF [32-1:0] = 32'd0;
+    } CONF;
+
+    reg status {
+        name = "Status";
+        desc = "Status register";
+        field {
+            sw = r; hw = w;
+            sw_type = "unsigned";
+        } STAT [32-1:0];
+    } STAT;
+
+    reg {
+        name = "Control";
+        desc = "Control register";
+        field {
+            sw = w; hw = r;
+            singlepulse = true;
+        } CTRL [0:0] = 1'b0;
+    } CTRL;
+
+    float32 FLOAT_0D_A;
+    float32 FLOAT_0D_B;
+    float32 FLOAT_1D[4];
+    float32 FLOAT_2D[3][2];
+    float32 FLOAT_3D[2][3][5];
+
+    configuration CONF_A;
+    configuration CONF_B;
+
+    status STAT_A;
+    status STAT_B;
+
+    reg {
+        regwidth = 64;
+        field {
+        } val [48];
+    } reg64_mid;
+    reg {
+        regwidth = 64;
+        field {
+        } val [64];
+    } reg64_max;
+    reg {
+        regwidth = 128;
+        field {
+        } val [112];
+    } reg128_mid;
+};
