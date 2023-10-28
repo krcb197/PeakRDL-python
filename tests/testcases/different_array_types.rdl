@@ -28,6 +28,20 @@ addrmap different_array_types {
     external mem {
         mementries = 2;
         memwidth = 32;
+        sw = rw;
+
+    } mem_read_write2D[2][2];
+
+    external mem {
+        mementries = 2;
+        memwidth = 32;
+        sw = rw;
+
+    } mem_read_write3D[2][2][2];
+
+    external mem {
+        mementries = 2;
+        memwidth = 32;
         sw = r;
 
     } mem_read_only[2];
@@ -35,9 +49,37 @@ addrmap different_array_types {
     external mem {
         mementries = 2;
         memwidth = 32;
+        sw = r;
+
+    } mem_read_only_2D[2][2];
+
+    external mem {
+        mementries = 2;
+        memwidth = 32;
+        sw = r;
+
+    } mem_read_only_3D[2][2][2];
+
+    external mem {
+        mementries = 2;
+        memwidth = 32;
         sw = w;
 
     } mem_write_only[2];
+
+    external mem {
+        mementries = 2;
+        memwidth = 32;
+        sw = w;
+
+    } mem_write_only_2D[2][2];
+
+    external mem {
+        mementries = 2;
+        memwidth = 32;
+        sw = w;
+
+    } mem_write_only_3D[2][2][2];
 
     addrmap {
          reg {
@@ -47,6 +89,22 @@ addrmap different_array_types {
         } register;
     } addr_map_array[2];
 
+    addrmap {
+         reg {
+            default sw = rw;
+            default hw = r;
+            field {} basicfield_a[31:0];
+        } register;
+    } addr_map_array_2D[2][2];
+
+    addrmap {
+         reg {
+            default sw = rw;
+            default hw = r;
+            field {} basicfield_a[31:0];
+        } register;
+    } addr_map_array_3D[2][2][2];
+
     regfile {
          reg {
             default sw = rw;
@@ -54,6 +112,22 @@ addrmap different_array_types {
             field {} basicfield_a[31:0];
         } register;
     } regfile_array[2];
+
+    regfile {
+         reg {
+            default sw = rw;
+            default hw = r;
+            field {} basicfield_a[31:0];
+        } register;
+    } regfile_array_2D[2][2];
+
+    regfile {
+         reg {
+            default sw = rw;
+            default hw = r;
+            field {} basicfield_a[31:0];
+        } register;
+    } regfile_array_3D[2][2][2];
 
     reg {
         default sw = rw;
