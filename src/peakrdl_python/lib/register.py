@@ -762,10 +762,6 @@ class RegReadOnlyArray(NodeArray, ABC):
                          parent=parent, callbacks=callbacks, address=address,
                          stride=stride, dimensions=dimensions)
 
-    def __getitem__(self, item: Union[int, slice]) -> Union[RegReadOnly, Tuple[RegReadOnly, ...]]:
-        # this cast is OK because an explict typing check was done in the __init__
-        return cast(Union[RegReadOnly, Tuple[RegReadOnly, ...]], super().__getitem__(item))
-
 
 class RegWriteOnlyArray(NodeArray, ABC):
     """
@@ -784,11 +780,6 @@ class RegWriteOnlyArray(NodeArray, ABC):
         super().__init__(logger_handle=logger_handle, inst_name=inst_name,
                          parent=parent, callbacks=callbacks, address=address,
                          stride=stride, dimensions=dimensions)
-
-    def __getitem__(self, item: Union[int, slice]) -> \
-            Union[RegWriteOnly, Tuple[RegWriteOnly, ...]]:
-        # this cast is OK because an explict typing check was done in the __init__
-        return cast(Union[RegWriteOnly, Tuple[RegWriteOnly, ...]], super().__getitem__(item))
 
 
 class RegReadWriteArray(RegReadOnlyArray, RegWriteOnlyArray, ABC):
@@ -809,11 +800,6 @@ class RegReadWriteArray(RegReadOnlyArray, RegWriteOnlyArray, ABC):
                          parent=parent, callbacks=callbacks, address=address,
                          stride=stride, dimensions=dimensions)
 
-    def __getitem__(self, item: Union[int, slice]) -> \
-            Union[RegReadWrite, Tuple[RegReadWrite, ...]]:
-        # this cast is OK because an explict typing check was done in the __init__
-        return cast(Union[RegReadWrite, Tuple[RegReadWrite, ...]], super().__getitem__(item))
-
 
 class RegAsyncReadOnlyArray(NodeArray, ABC):
     """
@@ -832,12 +818,6 @@ class RegAsyncReadOnlyArray(NodeArray, ABC):
         super().__init__(logger_handle=logger_handle, inst_name=inst_name,
                          parent=parent, callbacks=callbacks, address=address,
                          stride=stride, dimensions=dimensions)
-
-    def __getitem__(self, item: Union[int, slice]) -> \
-            Union[RegAsyncReadOnly, Tuple[RegAsyncReadOnly, ...]]:
-        # this cast is OK because an explict typing check was done in the __init__
-        return cast(Union[RegAsyncReadOnly, Tuple[RegAsyncReadOnly, ...]],
-                    super().__getitem__(item))
 
 
 class RegAsyncWriteOnlyArray(NodeArray, ABC):
@@ -858,12 +838,6 @@ class RegAsyncWriteOnlyArray(NodeArray, ABC):
                          parent=parent, callbacks=callbacks, address=address,
                          stride=stride, dimensions=dimensions)
 
-    def __getitem__(self, item: Union[int, slice]) -> \
-            Union[RegAsyncWriteOnly, Tuple[RegAsyncWriteOnly, ...]]:
-        # this cast is OK because an explict typing check was done in the __init__
-        return cast(Union[RegAsyncWriteOnly, Tuple[RegAsyncWriteOnly, ...]],
-                    super().__getitem__(item))
-
 
 class RegAsyncReadWriteArray(RegAsyncReadOnlyArray, RegAsyncWriteOnlyArray, ABC):
     """
@@ -882,12 +856,6 @@ class RegAsyncReadWriteArray(RegAsyncReadOnlyArray, RegAsyncWriteOnlyArray, ABC)
         super().__init__(logger_handle=logger_handle, inst_name=inst_name,
                          parent=parent, callbacks=callbacks, address=address,
                          stride=stride, dimensions=dimensions)
-
-    def __getitem__(self, item: Union[int, slice]) -> \
-            Union[RegAsyncReadWrite, Tuple[RegAsyncReadWrite, ...]]:
-        # this cast is OK because an explict typing check was done in the __init__
-        return cast(Union[RegAsyncReadWrite, Tuple[RegAsyncReadWrite, ...]],
-                    super().__getitem__(item))
 
 
 ReadableRegisterArray = Union[RegReadOnlyArray, RegReadWriteArray]

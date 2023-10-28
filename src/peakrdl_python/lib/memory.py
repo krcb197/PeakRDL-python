@@ -595,11 +595,6 @@ class MemoryReadOnlyArray(NodeArray, ABC):
                          parent=parent, callbacks=callbacks, address=address,
                          stride=stride, dimensions=dimensions)
 
-    def __getitem__(self, item: Union[int, slice]) -> \
-            Union[MemoryReadOnly, Tuple[MemoryReadOnly, ...]]:
-        # this cast is OK because an explict typing check was done in the __init__
-        return cast(Union[MemoryReadOnly, Tuple[MemoryReadOnly, ...]], super().__getitem__(item))
-
 
 class MemoryWriteOnlyArray(NodeArray, ABC):
     """
@@ -618,11 +613,6 @@ class MemoryWriteOnlyArray(NodeArray, ABC):
         super().__init__(logger_handle=logger_handle, inst_name=inst_name,
                          parent=parent, callbacks=callbacks, address=address,
                          stride=stride, dimensions=dimensions)
-
-    def __getitem__(self, item: Union[slice, int]) ->\
-            Union[MemoryWriteOnly, Tuple[MemoryWriteOnly, ...]]:
-        # this cast is OK because an explict typing check was done in the __init__
-        return cast(Union[MemoryWriteOnly, Tuple[MemoryWriteOnly, ...]], super().__getitem__(item))
 
 
 class MemoryReadWriteArray(MemoryReadOnlyArray, MemoryWriteOnlyArray, ABC):
@@ -643,11 +633,6 @@ class MemoryReadWriteArray(MemoryReadOnlyArray, MemoryWriteOnlyArray, ABC):
                          parent=parent, callbacks=callbacks, address=address,
                          stride=stride, dimensions=dimensions)
 
-    def __getitem__(self, item: Union[int, slice]) -> \
-            Union[MemoryReadWrite, Tuple[MemoryReadWrite, ...]]:
-        # this cast is OK because an explict typing check was done in the __init__
-        return cast(Union[MemoryReadWrite, Tuple[MemoryReadWrite, ...]], super().__getitem__(item))
-
 
 class MemoryAsyncReadOnlyArray(NodeArray, ABC):
     """
@@ -666,12 +651,6 @@ class MemoryAsyncReadOnlyArray(NodeArray, ABC):
         super().__init__(logger_handle=logger_handle, inst_name=inst_name,
                          parent=parent, callbacks=callbacks, address=address,
                          stride=stride, dimensions=dimensions)
-
-    def __getitem__(self, item: Union[int, slice]) -> \
-            Union[MemoryAsyncReadOnly, Tuple[MemoryAsyncReadOnly, ...]]:
-        # this cast is OK because an explict typing check was done in the __init__
-        return cast(Union[MemoryAsyncReadOnly, Tuple[MemoryAsyncReadOnly, ...]],
-                    super().__getitem__(item))
 
 
 class MemoryAsyncWriteOnlyArray(NodeArray, ABC):
@@ -692,12 +671,6 @@ class MemoryAsyncWriteOnlyArray(NodeArray, ABC):
                          parent=parent, callbacks=callbacks, address=address,
                          stride=stride, dimensions=dimensions)
 
-    def __getitem__(self, item: Union[int, slice]) -> \
-            Union[MemoryAsyncWriteOnly, Tuple[MemoryAsyncWriteOnly, ...]]:
-        # this cast is OK because an explict typing check was done in the __init__
-        return cast(Union[MemoryAsyncWriteOnly, Tuple[MemoryAsyncWriteOnly, ...]],
-                    super().__getitem__(item))
-
 
 class MemoryAsyncReadWriteArray(MemoryAsyncReadOnlyArray, MemoryAsyncWriteOnlyArray, ABC):
     """
@@ -716,9 +689,3 @@ class MemoryAsyncReadWriteArray(MemoryAsyncReadOnlyArray, MemoryAsyncWriteOnlyAr
         super().__init__(logger_handle=logger_handle, inst_name=inst_name,
                          parent=parent, callbacks=callbacks, address=address,
                          stride=stride, dimensions=dimensions)
-
-    def __getitem__(self, item: Union[slice, int]) -> \
-            Union[MemoryAsyncReadWrite, Tuple[MemoryAsyncReadWrite, ...]]:
-        # this cast is OK because an explict typing check was done in the __init__
-        return cast(Union[MemoryAsyncReadWrite, Tuple[MemoryAsyncReadWrite, ...]],
-                    super().__getitem__(item))
