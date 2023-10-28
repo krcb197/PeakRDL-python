@@ -750,7 +750,7 @@ class RegReadOnlyArray(NodeArray, ABC):
     """
     __slots__: List[str] = []
 
-    # pylint: disable-next=too-many-arguments
+    # pylint: disable=too-many-arguments,duplicate-code
     def __init__(self, logger_handle: str, inst_name: str,
                  parent: Union[RegFile, AddressMap, Memory],
                  callbacks: NormalCallbackSet,
@@ -761,6 +761,7 @@ class RegReadOnlyArray(NodeArray, ABC):
         super().__init__(logger_handle=logger_handle, inst_name=inst_name,
                          parent=parent, callbacks=callbacks, address=address,
                          stride=stride, dimensions=dimensions)
+    # pylint: enable=too-many-arguments,duplicate-code
 
 
 class RegWriteOnlyArray(NodeArray, ABC):
@@ -769,7 +770,7 @@ class RegWriteOnlyArray(NodeArray, ABC):
     """
     __slots__: List[str] = []
 
-    # pylint: disable-next=too-many-arguments
+    # pylint: disable=too-many-arguments,duplicate-code
     def __init__(self, logger_handle: str, inst_name: str,
                  parent: Union[RegFile, AddressMap, Memory],
                  callbacks: NormalCallbackSet,
@@ -780,6 +781,7 @@ class RegWriteOnlyArray(NodeArray, ABC):
         super().__init__(logger_handle=logger_handle, inst_name=inst_name,
                          parent=parent, callbacks=callbacks, address=address,
                          stride=stride, dimensions=dimensions)
+    # pylint: enable=too-many-arguments,duplicate-code
 
 
 class RegReadWriteArray(RegReadOnlyArray, RegWriteOnlyArray, ABC):
@@ -788,7 +790,7 @@ class RegReadWriteArray(RegReadOnlyArray, RegWriteOnlyArray, ABC):
     """
     __slots__: List[str] = []
 
-    # pylint: disable-next=too-many-arguments
+    # pylint: disable=too-many-arguments,duplicate-code
     def __init__(self, logger_handle: str, inst_name: str,
                  parent: Union[RegFile, AddressMap, Memory],
                  callbacks: NormalCallbackSet,
@@ -799,6 +801,7 @@ class RegReadWriteArray(RegReadOnlyArray, RegWriteOnlyArray, ABC):
         super().__init__(logger_handle=logger_handle, inst_name=inst_name,
                          parent=parent, callbacks=callbacks, address=address,
                          stride=stride, dimensions=dimensions)
+    # pylint: enable=too-many-arguments,duplicate-code
 
 
 class RegAsyncReadOnlyArray(NodeArray, ABC):
@@ -807,7 +810,7 @@ class RegAsyncReadOnlyArray(NodeArray, ABC):
     """
     __slots__: List[str] = []
 
-    # pylint: disable-next=too-many-arguments
+    # pylint: disable=too-many-arguments,duplicate-code
     def __init__(self, logger_handle: str, inst_name: str,
                  parent: Union[RegFile, AddressMap, Memory],
                  callbacks: AsyncCallbackSet,
@@ -818,6 +821,7 @@ class RegAsyncReadOnlyArray(NodeArray, ABC):
         super().__init__(logger_handle=logger_handle, inst_name=inst_name,
                          parent=parent, callbacks=callbacks, address=address,
                          stride=stride, dimensions=dimensions)
+    # pylint: enable=too-many-arguments,duplicate-code
 
 
 class RegAsyncWriteOnlyArray(NodeArray, ABC):
@@ -826,7 +830,7 @@ class RegAsyncWriteOnlyArray(NodeArray, ABC):
     """
     __slots__: List[str] = []
 
-    # pylint: disable-next=too-many-arguments
+    # pylint: disable=too-many-arguments,duplicate-code
     def __init__(self, logger_handle: str, inst_name: str,
                  parent: Union[RegFile, AddressMap, Memory],
                  callbacks: AsyncCallbackSet,
@@ -837,6 +841,7 @@ class RegAsyncWriteOnlyArray(NodeArray, ABC):
         super().__init__(logger_handle=logger_handle, inst_name=inst_name,
                          parent=parent, callbacks=callbacks, address=address,
                          stride=stride, dimensions=dimensions)
+    # pylint: enable=too-many-arguments,duplicate-code
 
 
 class RegAsyncReadWriteArray(RegAsyncReadOnlyArray, RegAsyncWriteOnlyArray, ABC):
@@ -845,7 +850,7 @@ class RegAsyncReadWriteArray(RegAsyncReadOnlyArray, RegAsyncWriteOnlyArray, ABC)
     """
     __slots__: List[str] = []
 
-    # pylint: disable-next=too-many-arguments
+    # pylint: disable=too-many-arguments,duplicate-code
     def __init__(self, logger_handle: str, inst_name: str,
                  parent: Union[RegFile, AddressMap, Memory],
                  callbacks: AsyncCallbackSet,
@@ -856,6 +861,7 @@ class RegAsyncReadWriteArray(RegAsyncReadOnlyArray, RegAsyncWriteOnlyArray, ABC)
         super().__init__(logger_handle=logger_handle, inst_name=inst_name,
                          parent=parent, callbacks=callbacks, address=address,
                          stride=stride, dimensions=dimensions)
+    # pylint: enable=too-many-arguments,duplicate-code
 
 
 ReadableRegisterArray = Union[RegReadOnlyArray, RegReadWriteArray]
