@@ -95,7 +95,7 @@ class {{get_fully_qualified_type_name(node)}}_array_cls(Memory{% if asyncoutput 
                  callbacks: {% if asyncoutput %}AsyncCallbackSet{% else %}NormalCallbackSet{% endif %},
                  address: int,
                  stride: int,
-                 dimensions: Tuple[int, ...]):
+                 dimensions: Union[Tuple[int, ...], Tuple[int]]):
 
         super().__init__(logger_handle=logger_handle, inst_name=inst_name,
                          parent=parent, callbacks=callbacks, address=address,
