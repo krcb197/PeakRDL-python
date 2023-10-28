@@ -589,7 +589,7 @@ class MemoryReadOnlyArray(NodeArray, ABC):
                  callbacks: NormalCallbackSet,
                  address: int,
                  stride: int,
-                 dimensions: Union[Tuple[int, ...], Tuple[int]]):
+                 dimensions: Tuple[int, ...]):
 
         super().__init__(logger_handle=logger_handle, inst_name=inst_name,
                          parent=parent, callbacks=callbacks, address=address,
@@ -608,7 +608,7 @@ class MemoryWriteOnlyArray(NodeArray, ABC):
                  callbacks: NormalCallbackSet,
                  address: int,
                  stride: int,
-                 dimensions: Union[Tuple[int, ...], Tuple[int]]):
+                 dimensions: Tuple[int, ...]):
 
         super().__init__(logger_handle=logger_handle, inst_name=inst_name,
                          parent=parent, callbacks=callbacks, address=address,
@@ -627,7 +627,7 @@ class MemoryReadWriteArray(MemoryReadOnlyArray, MemoryWriteOnlyArray, ABC):
                  callbacks: NormalCallbackSet,
                  address: int,
                  stride: int,
-                 dimensions: Union[Tuple[int, ...], Tuple[int]]):
+                 dimensions: Tuple[int, ...]):
 
         super().__init__(logger_handle=logger_handle, inst_name=inst_name,
                          parent=parent, callbacks=callbacks, address=address,
@@ -646,7 +646,7 @@ class MemoryAsyncReadOnlyArray(NodeArray, ABC):
                  callbacks: AsyncCallbackSet,
                  address: int,
                  stride: int,
-                 dimensions: Union[Tuple[int, ...], Tuple[int]]):
+                 dimensions: Tuple[int, ...]):
 
         super().__init__(logger_handle=logger_handle, inst_name=inst_name,
                          parent=parent, callbacks=callbacks, address=address,
@@ -665,7 +665,7 @@ class MemoryAsyncWriteOnlyArray(NodeArray, ABC):
                  callbacks: AsyncCallbackSet,
                  address: int,
                  stride: int,
-                 dimensions: Union[Tuple[int, ...], Tuple[int]]):
+                 dimensions: Tuple[int, ...]):
 
         super().__init__(logger_handle=logger_handle, inst_name=inst_name,
                          parent=parent, callbacks=callbacks, address=address,
@@ -684,7 +684,7 @@ class MemoryAsyncReadWriteArray(MemoryAsyncReadOnlyArray, MemoryAsyncWriteOnlyAr
                  callbacks: AsyncCallbackSet,
                  address: int,
                  stride: int,
-                 dimensions: Union[Tuple[int, ...], Tuple[int]]):
+                 dimensions: Tuple[int, ...]):
 
         super().__init__(logger_handle=logger_handle, inst_name=inst_name,
                          parent=parent, callbacks=callbacks, address=address,

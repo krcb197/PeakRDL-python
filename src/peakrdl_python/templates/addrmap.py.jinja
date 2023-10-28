@@ -194,7 +194,7 @@ class {{get_fully_qualified_type_name(node)}}_array_cls(RegFileArray):
                  callbacks: {% if asyncoutput %}AsyncCallbackSet{% else %}NormalCallbackSet{% endif %},
                  address: int,
                  stride: int,
-                 dimensions: Union[Tuple[int, ...], Tuple[int]]):
+                 dimensions: Tuple[int, ...]):
 
         super().__init__(logger_handle=logger_handle, inst_name=inst_name,
                          parent=parent, callbacks=callbacks, address=address,
@@ -300,7 +300,7 @@ class {{get_fully_qualified_type_name(node)}}_array_cls(AddressMapArray):
                  callbacks: {% if asyncoutput %}AsyncCallbackSet{% else %}NormalCallbackSet{% endif %},
                  address: int,
                  stride: int,
-                 dimensions: Tuple[int]):
+                 dimensions: Tuple[int, ...]):
 
         super().__init__(logger_handle=logger_handle, inst_name=inst_name,
                          parent=parent, callbacks=callbacks, address=address,

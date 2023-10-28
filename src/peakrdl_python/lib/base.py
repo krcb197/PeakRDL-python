@@ -133,7 +133,7 @@ class NodeArray(Base, Sequence[Union[NodeArrayElementType, Sequence[NodeArrayEle
                  callbacks: CallbackSet,
                  address: int,
                  stride: int,
-                 dimensions: Union[Tuple[int, ...], Tuple[int]]):
+                 dimensions: Tuple[int, ...]):
 
         super().__init__(logger_handle=logger_handle, inst_name=inst_name, parent=parent)
 
@@ -321,7 +321,7 @@ class AddressMapArray(NodeArray, ABC):
                  callbacks: CallbackSet,
                  address: int,
                  stride: int,
-                 dimensions: Union[Tuple[int, ...], Tuple[int]]):
+                 dimensions: Tuple[int, ...]):
 
         super().__init__(logger_handle=logger_handle, inst_name=inst_name,
                          parent=parent, callbacks=callbacks, address=address,
@@ -378,7 +378,7 @@ class RegFileArray(NodeArray, ABC):
                  callbacks: CallbackSet,
                  address: int,
                  stride: int,
-                 dimensions: Union[Tuple[int, ...], Tuple[int]]):
+                 dimensions: Tuple[int, ...]):
 
         super().__init__(logger_handle=logger_handle, inst_name=inst_name,
                          parent=parent, callbacks=callbacks, address=address,
