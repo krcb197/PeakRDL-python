@@ -750,6 +750,7 @@ class RegReadOnlyArray(NodeArray, ABC):
     """
     __slots__: List[str] = []
 
+    # pylint: disable-next=too-many-arguments
     def __init__(self, logger_handle: str, inst_name: str,
                  parent: Union[RegFile, AddressMap, Memory],
                  callbacks: NormalCallbackSet,
@@ -772,6 +773,7 @@ class RegWriteOnlyArray(NodeArray, ABC):
     """
     __slots__: List[str] = []
 
+    # pylint: disable-next=too-many-arguments
     def __init__(self, logger_handle: str, inst_name: str,
                  parent: Union[RegFile, AddressMap, Memory],
                  callbacks: NormalCallbackSet,
@@ -795,6 +797,7 @@ class RegReadWriteArray(RegReadOnlyArray, RegWriteOnlyArray, ABC):
     """
     __slots__: List[str] = []
 
+    # pylint: disable-next=too-many-arguments
     def __init__(self, logger_handle: str, inst_name: str,
                  parent: Union[RegFile, AddressMap, Memory],
                  callbacks: NormalCallbackSet,
@@ -818,6 +821,7 @@ class RegAsyncReadOnlyArray(NodeArray, ABC):
     """
     __slots__: List[str] = []
 
+    # pylint: disable-next=too-many-arguments
     def __init__(self, logger_handle: str, inst_name: str,
                  parent: Union[RegFile, AddressMap, Memory],
                  callbacks: AsyncCallbackSet,
@@ -842,6 +846,7 @@ class RegAsyncWriteOnlyArray(NodeArray, ABC):
     """
     __slots__: List[str] = []
 
+    # pylint: disable-next=too-many-arguments
     def __init__(self, logger_handle: str, inst_name: str,
                  parent: Union[RegFile, AddressMap, Memory],
                  callbacks: AsyncCallbackSet,
@@ -866,6 +871,7 @@ class RegAsyncReadWriteArray(RegAsyncReadOnlyArray, RegAsyncWriteOnlyArray, ABC)
     """
     __slots__: List[str] = []
 
+    # pylint: disable-next=too-many-arguments
     def __init__(self, logger_handle: str, inst_name: str,
                  parent: Union[RegFile, AddressMap, Memory],
                  callbacks: AsyncCallbackSet,

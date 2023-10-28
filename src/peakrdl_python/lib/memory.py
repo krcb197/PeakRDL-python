@@ -583,12 +583,13 @@ class MemoryReadOnlyArray(NodeArray, ABC):
     """
     __slots__: List[str] = []
 
+    # pylint: disable-next=too-many-arguments
     def __init__(self, logger_handle: str, inst_name: str,
                  parent: AddressMap,
                  callbacks: NormalCallbackSet,
                  address: int,
                  stride: int,
-                 dimensions: List[int]):
+                 dimensions: Tuple[int]):
 
         super().__init__(logger_handle=logger_handle, inst_name=inst_name,
                          parent=parent, callbacks=callbacks, address=address,
@@ -606,12 +607,13 @@ class MemoryWriteOnlyArray(NodeArray, ABC):
     """
     __slots__: List[str] = []
 
+    # pylint: disable-next=too-many-arguments
     def __init__(self, logger_handle: str, inst_name: str,
                  parent: AddressMap,
                  callbacks: NormalCallbackSet,
                  address: int,
                  stride: int,
-                 dimensions: List[int]):
+                 dimensions: Tuple[int]):
 
         super().__init__(logger_handle=logger_handle, inst_name=inst_name,
                          parent=parent, callbacks=callbacks, address=address,
@@ -629,17 +631,17 @@ class MemoryReadWriteArray(MemoryReadOnlyArray, MemoryWriteOnlyArray, ABC):
     """
     __slots__: List[str] = []
 
+    # pylint: disable-next=too-many-arguments
     def __init__(self, logger_handle: str, inst_name: str,
                  parent: AddressMap,
-                 elements: Tuple[MemoryReadWrite, ...]):
-
-        for element in elements:
-            if not isinstance(element, MemoryReadWrite):
-                raise TypeError(
-                    f'All Elements should be of type MemoryReadWrite, found {type(element)}')
+                 callbacks: NormalCallbackSet,
+                 address: int,
+                 stride: int,
+                 dimensions: Tuple[int]):
 
         super().__init__(logger_handle=logger_handle, inst_name=inst_name,
-                         parent=parent, elements=elements)
+                         parent=parent, callbacks=callbacks, address=address,
+                         stride=stride, dimensions=dimensions)
 
     def __getitem__(self, item: Union[int, slice]) -> \
             Union[MemoryReadWrite, Tuple[MemoryReadWrite, ...]]:
@@ -653,12 +655,13 @@ class MemoryAsyncReadOnlyArray(NodeArray, ABC):
     """
     __slots__: List[str] = []
 
+    # pylint: disable-next=too-many-arguments
     def __init__(self, logger_handle: str, inst_name: str,
                  parent: AddressMap,
                  callbacks: AsyncCallbackSet,
                  address: int,
                  stride: int,
-                 dimensions: List[int]):
+                 dimensions: Tuple[int]):
 
         super().__init__(logger_handle=logger_handle, inst_name=inst_name,
                          parent=parent, callbacks=callbacks, address=address,
@@ -677,12 +680,13 @@ class MemoryAsyncWriteOnlyArray(NodeArray, ABC):
     """
     __slots__: List[str] = []
 
+    # pylint: disable-next=too-many-arguments
     def __init__(self, logger_handle: str, inst_name: str,
                  parent: AddressMap,
                  callbacks: AsyncCallbackSet,
                  address: int,
                  stride: int,
-                 dimensions: List[int]):
+                 dimensions: Tuple[int]):
 
         super().__init__(logger_handle=logger_handle, inst_name=inst_name,
                          parent=parent, callbacks=callbacks, address=address,
@@ -701,12 +705,13 @@ class MemoryAsyncReadWriteArray(MemoryAsyncReadOnlyArray, MemoryAsyncWriteOnlyAr
     """
     __slots__: List[str] = []
 
+    # pylint: disable-next=too-many-arguments
     def __init__(self, logger_handle: str, inst_name: str,
                  parent: AddressMap,
                  callbacks: AsyncCallbackSet,
                  address: int,
                  stride: int,
-                 dimensions: List[int]):
+                 dimensions: Tuple[int]):
 
         super().__init__(logger_handle=logger_handle, inst_name=inst_name,
                          parent=parent, callbacks=callbacks, address=address,

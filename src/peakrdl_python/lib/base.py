@@ -121,6 +121,7 @@ class NodeArray(Base, ABC):
     __slots__: List[str] = ['__elements', '__address', '__callbacks',
                             '__stride', '__dimensions']
 
+    # pylint: disable-next=too-many-arguments
     def __init__(self, logger_handle: str,
                  inst_name: str,
                  parent: Node,
@@ -146,28 +147,29 @@ class NodeArray(Base, ABC):
                 raise TypeError(f'dimension should be a int but got {type(dimension)}')
         self.__dimensions = dimensions
 
-        # build element array
         def create_tuple_array(dimensions: Tuple[int], base_address: int,
                                stride: int, inst_name:str):
             """
             provides an N-dimensional tuple with all the register addresses for each node
             """
-            if len(dimensions) == 1:
-                return tuple(self._element_datatype(logger_handle=logger_handle,
-                                                    callbacks=self._callbacks,
-                                                    address=base_address + (index * stride),
-                                                    inst_name=inst_name + '[' + str(index) +']',
-                                                    parent=self.parent)
-                             for index in range(dimensions[0]))
-            else:
+            if len(dimensions) > 1:
                 inner_size = stride
                 for dimension in dimensions[1:]:
                     inner_size *= dimension
                 return tuple(create_tuple_array(dimensions[1:],
                                                 base_address=base_address + (index * inner_size),
                                                 stride=stride,
-                                                inst_name=inst_name + '[' + str(index) +']')
+                                                inst_name=inst_name + '[' + str(index) + ']')
                              for index in range(dimensions[0]))
+
+            return tuple(self._element_datatype(logger_handle=logger_handle,
+                                                callbacks=self._callbacks,
+                                                address=base_address + (index * stride),
+                                                inst_name=inst_name + '[' + str(index) +']',
+                                                parent=self.parent)
+                         for index in range(dimensions[0]))
+
+
         self.__elements = create_tuple_array(dimensions=dimensions, base_address=address,
                                              stride=stride, inst_name=inst_name)
 
@@ -202,6 +204,9 @@ class NodeArray(Base, ABC):
 
     @property
     def dimensions(self) -> Tuple[int, ...]:
+        """
+        Dimensions of the array
+        """
         return self.__dimensions
 
     @property
@@ -215,6 +220,13 @@ class NodeArray(Base, ABC):
         address of the node
         """
         return self.__address
+
+    @property
+    def stride(self) -> int:
+        """
+        address stride of the array
+        """
+        return self.__stride
 
     @property
     def _callbacks(self) -> CallbackSet:
@@ -281,6 +293,7 @@ class AddressMapArray(NodeArray, ABC):
     """
     __slots__: List[str] = []
 
+    # pylint: disable-next=too-many-arguments
     def __init__(self, logger_handle: str, inst_name: str,
                  parent: AddressMap,
                  callbacks: CallbackSet,
@@ -341,6 +354,7 @@ class RegFileArray(NodeArray, ABC):
     """
     __slots__: List[str] = []
 
+    # pylint: disable-next=too-many-arguments
     def __init__(self, logger_handle: str, inst_name: str,
                  parent: Union[AddressMap, RegFile],
                  callbacks: CallbackSet,
