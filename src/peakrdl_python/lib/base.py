@@ -360,7 +360,7 @@ class RegFileArray(NodeArray, ABC):
                  callbacks: CallbackSet,
                  address: int,
                  stride: int,
-                 dimensions: List[int]):
+                 dimensions: Tuple[int, ...]):
 
         super().__init__(logger_handle=logger_handle, inst_name=inst_name,
                          parent=parent, callbacks=callbacks, address=address,

@@ -756,7 +756,7 @@ class RegReadOnlyArray(NodeArray, ABC):
                  callbacks: NormalCallbackSet,
                  address: int,
                  stride: int,
-                 dimensions: Tuple[int]):
+                 dimensions: Tuple[int, ...]):
 
         super().__init__(logger_handle=logger_handle, inst_name=inst_name,
                          parent=parent, callbacks=callbacks, address=address,
@@ -779,7 +779,7 @@ class RegWriteOnlyArray(NodeArray, ABC):
                  callbacks: NormalCallbackSet,
                  address: int,
                  stride: int,
-                 dimensions: Tuple[int]):
+                 dimensions: Tuple[int, ...]):
 
         super().__init__(logger_handle=logger_handle, inst_name=inst_name,
                          parent=parent, callbacks=callbacks, address=address,
@@ -803,7 +803,7 @@ class RegReadWriteArray(RegReadOnlyArray, RegWriteOnlyArray, ABC):
                  callbacks: NormalCallbackSet,
                  address: int,
                  stride: int,
-                 dimensions: Tuple[int]):
+                 dimensions: Tuple[int, ...]):
 
         super().__init__(logger_handle=logger_handle, inst_name=inst_name,
                          parent=parent, callbacks=callbacks, address=address,
@@ -827,7 +827,7 @@ class RegAsyncReadOnlyArray(NodeArray, ABC):
                  callbacks: AsyncCallbackSet,
                  address: int,
                  stride: int,
-                 dimensions: Tuple[int]):
+                 dimensions: Tuple[int, ...]):
 
         super().__init__(logger_handle=logger_handle, inst_name=inst_name,
                          parent=parent, callbacks=callbacks, address=address,
@@ -852,7 +852,7 @@ class RegAsyncWriteOnlyArray(NodeArray, ABC):
                  callbacks: AsyncCallbackSet,
                  address: int,
                  stride: int,
-                 dimensions: Tuple[int]):
+                 dimensions: Tuple[int, ...]):
 
         super().__init__(logger_handle=logger_handle, inst_name=inst_name,
                          parent=parent, callbacks=callbacks, address=address,
@@ -877,7 +877,7 @@ class RegAsyncReadWriteArray(RegAsyncReadOnlyArray, RegAsyncWriteOnlyArray, ABC)
                  callbacks: AsyncCallbackSet,
                  address: int,
                  stride: int,
-                 dimensions: Tuple[int]):
+                 dimensions: Tuple[int, ...]):
 
         super().__init__(logger_handle=logger_handle, inst_name=inst_name,
                          parent=parent, callbacks=callbacks, address=address,
