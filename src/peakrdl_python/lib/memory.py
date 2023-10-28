@@ -6,7 +6,7 @@ from array import array as Array
 from typing import List, Union, Tuple, Iterator, TYPE_CHECKING, cast
 from abc import ABC, abstractmethod
 
-from .base import Node, AddressMap, BaseArray, get_array_typecode
+from .base import Node, AddressMap, NodeArray, get_array_typecode
 
 from .callbacks import CallbackSet, NormalCallbackSet, AsyncCallbackSet
 
@@ -15,6 +15,7 @@ if TYPE_CHECKING:
     from .register import ReadableAsyncRegister, WritableAsyncRegister
 
 # pylint: disable=duplicate-code
+
 
 class Memory(Node, ABC):
     """
@@ -183,7 +184,7 @@ class MemoryReadOnly(Memory, ABC):
 
         Args:
             start_entry: index in the memory to start from, this is not the address
-            number_entries: number of enries to read
+            number_entries: number of entries to read
 
         Returns: data read from memory
 
@@ -208,8 +209,8 @@ class MemoryReadOnly(Memory, ABC):
 
         if read_block_callback is not None:
             # python 3.7 doesn't have the callback defined as protocol so mypy doesn't recognise
-            # the argumaents in the call back functions
-            addr=self.address_lookup(entry=start_entry)
+            # the arguments in the call back functions
+            addr = self.address_lookup(entry=start_entry)
             data_read = \
                 read_block_callback(addr=addr,  # type: ignore[call-arg]
                                     width=self.width,  # type: ignore[call-arg]
@@ -226,10 +227,10 @@ class MemoryReadOnly(Memory, ABC):
             for entry in range(number_entries):
                 entry_address = self.address_lookup(entry=start_entry+entry)
                 # python 3.7 doesn't have the callback defined as protocol so mypy doesn't
-                # recognise the argumaents in the call back functions
-                data_entry = read_callback(addr=entry_address, # type: ignore[call-arg]
-                                           width=self.width, # type: ignore[call-arg]
-                                           accesswidth=self.width) # type: ignore[call-arg]
+                # recognise the arguments in the call back functions
+                data_entry = read_callback(addr=entry_address,  # type: ignore[call-arg]
+                                           width=self.width,  # type: ignore[call-arg]
+                                           accesswidth=self.width)  # type: ignore[call-arg]
 
                 data_read[entry] = data_entry
         else:
@@ -240,8 +241,8 @@ class MemoryReadOnly(Memory, ABC):
         return data_read
 
     @abstractmethod
-    def get_readable_registers(self, unroll: bool = False) -> Iterator[Union['ReadableRegister',
-                                                               Tuple['ReadableRegister', ...]]]:
+    def get_readable_registers(self, unroll: bool = False) -> \
+            Iterator[Union['ReadableRegister', Tuple['ReadableRegister', ...]]]:
         """
         generator that produces all the readable_registers of this node
         """
@@ -316,31 +317,30 @@ class MemoryWriteOnly(Memory, ABC):
 
         if write_block_callback is not None:
             # python 3.7 doesn't have the callback defined as protocol so mypy doesn't recognise
-            # the argumaents in the call back functions
+            # the arguments in the call back functions
             addr = self.address_lookup(entry=start_entry)
-            write_block_callback(addr=addr, # type: ignore[call-arg]
-                                 width=self.width, # type: ignore[call-arg]
-                                 accesswidth=self.width, # type: ignore[call-arg]
-                                 data=data) # type: ignore[call-arg]
-
+            write_block_callback(addr=addr,  # type: ignore[call-arg]
+                                 width=self.width,  # type: ignore[call-arg]
+                                 accesswidth=self.width,  # type: ignore[call-arg]
+                                 data=data)  # type: ignore[call-arg]
 
         elif write_callback is not None:
             # there is not write_block_callback defined so we must used individual write
             for entry_index, entry_data in enumerate(data):
                 entry_address = self.address_lookup(entry=start_entry+entry_index)
                 # python 3.7 doesn't have the callback defined as protocol so mypy doesn't
-                # recognise the argumaents in the call back functions
-                write_callback(addr=entry_address, # type: ignore[call-arg]
-                               width=self.width, # type: ignore[call-arg]
-                               accesswidth=self.width, # type: ignore[call-arg]
-                               data=entry_data) # type: ignore[call-arg]
+                # recognise the arguments in the call back functions
+                write_callback(addr=entry_address,  # type: ignore[call-arg]
+                               width=self.width,  # type: ignore[call-arg]
+                               accesswidth=self.width,  # type: ignore[call-arg]
+                               data=entry_data)  # type: ignore[call-arg]
 
         else:
             raise RuntimeError('No suitable callback')
 
     @abstractmethod
     def get_writable_registers(self, unroll: bool = False) -> \
-            Iterator[Union['WritableRegister',Tuple['WritableRegister', ...]]]:
+            Iterator[Union['WritableRegister', Tuple['WritableRegister', ...]]]:
         """
         generator that produces all the readable_registers of this node
         """
@@ -429,12 +429,12 @@ class MemoryAsyncReadOnly(Memory, ABC):
 
         if read_block_callback is not None:
             # python 3.7 doesn't have the callback defined as protocol so mypy doesn't recognise
-            # the argumaents in the call back functions
+            # the arguments in the call back functions
             addr = self.address_lookup(entry=start_entry)
-            data_read = await read_block_callback(addr=addr, # type: ignore[call-arg]
-                                                  width=self.width, # type: ignore[call-arg]
-                                                  accesswidth=self.width, # type: ignore[call-arg]
-                                                  length=number_entries) # type: ignore[call-arg]
+            data_read = await read_block_callback(addr=addr,  # type: ignore[call-arg]
+                                                  width=self.width,  # type: ignore[call-arg]
+                                                  accesswidth=self.width,  # type: ignore[call-arg]
+                                                  length=number_entries)  # type: ignore[call-arg]
 
             if not isinstance(data_read, Array):
                 raise TypeError('The read block callback is expected to return an array')
@@ -446,10 +446,10 @@ class MemoryAsyncReadOnly(Memory, ABC):
             for entry in range(number_entries):
                 entry_address = self.address_lookup(entry=start_entry+entry)
                 # python 3.7 doesn't have the callback defined as protocol so mypy doesn't
-                # recognise the argumaents in the call back functions
-                data_entry = await read_callback(addr=entry_address, # type: ignore[call-arg]
-                                                 width=self.width, # type: ignore[call-arg]
-                                                 accesswidth=self.width) # type: ignore[call-arg]
+                # recognise the arguments in the call back functions
+                data_entry = await read_callback(addr=entry_address,  # type: ignore[call-arg]
+                                                 width=self.width,  # type: ignore[call-arg]
+                                                 accesswidth=self.width)  # type: ignore[call-arg]
 
                 data_read[entry] = data_entry
 
@@ -459,8 +459,7 @@ class MemoryAsyncReadOnly(Memory, ABC):
         return data_read
 
     @abstractmethod
-    def get_readable_registers(self,
-                               unroll:bool=False) -> \
+    def get_readable_registers(self, unroll: bool = False) -> \
             Iterator[Union['ReadableAsyncRegister', Tuple['ReadableAsyncRegister', ...]]]:
         """
         generator that produces all the readable_registers of this node
@@ -539,29 +538,28 @@ class MemoryAsyncWriteOnly(Memory, ABC):
             # python 3.7 doesn't have the callback defined as protocol so mypy doesn't recognise
             # the argumaents in the call back functions
             addr = self.address_lookup(entry=start_entry)
-            await write_block_callback(addr=addr, # type: ignore[call-arg]
-                                       width=self.width, # type: ignore[call-arg]
-                                       accesswidth=self.width, # type: ignore[call-arg]
-                                       data=data) # type: ignore[call-arg]
+            await write_block_callback(addr=addr,  # type: ignore[call-arg]
+                                       width=self.width,  # type: ignore[call-arg]
+                                       accesswidth=self.width,  # type: ignore[call-arg]
+                                       data=data)  # type: ignore[call-arg]
 
         elif write_callback is not None:
             # there is not write_block_callback defined so we must used individual write
             for entry_index, entry_data in enumerate(data):
                 entry_address = self.address_lookup(entry=start_entry+entry_index)
                 # python 3.7 doesn't have the callback defined as protocol so mypy doesn't
-                # recognise the argumaents in the call back functions
-                await write_callback(addr=entry_address, # type: ignore[call-arg]
-                                     width=self.width, # type: ignore[call-arg]
-                                     accesswidth=self.width, # type: ignore[call-arg]
-                                     data=entry_data) # type: ignore[call-arg]
+                # recognise the arguments in the call back functions
+                await write_callback(addr=entry_address,  # type: ignore[call-arg]
+                                     width=self.width,  # type: ignore[call-arg]
+                                     accesswidth=self.width,  # type: ignore[call-arg]
+                                     data=entry_data)  # type: ignore[call-arg]
 
         else:
             raise RuntimeError('No suitable callback')
 
     @abstractmethod
-    def get_writable_registers(self,
-                               unroll:bool=False) -> Iterator[Union['WritableAsyncRegister',
-                                                         Tuple['WritableAsyncRegister', ...]]]:
+    def get_writable_registers(self, unroll: bool = False) -> \
+            Iterator[Union['WritableAsyncRegister', Tuple['WritableAsyncRegister', ...]]]:
         """
         generator that produces all the readable_registers of this node
         """
@@ -579,7 +577,7 @@ class MemoryAsyncReadWrite(MemoryAsyncReadOnly, MemoryAsyncWriteOnly, ABC):
     __slots__: List[str] = []
 
 
-class MemoryReadOnlyArray(BaseArray, ABC):
+class MemoryReadOnlyArray(NodeArray, ABC):
     """
     base class for a array of read only memories
     """
@@ -587,23 +585,22 @@ class MemoryReadOnlyArray(BaseArray, ABC):
 
     def __init__(self, logger_handle: str, inst_name: str,
                  parent: AddressMap,
-                 elements: Tuple[MemoryReadOnly, ...]):
-
-        for element in elements:
-            if not isinstance(element, MemoryReadOnly):
-                raise TypeError(
-                    f'All Elements should be of type MemoryReadOnly, found {type(element)}')
+                 callbacks: NormalCallbackSet,
+                 address: int,
+                 stride: int,
+                 dimensions: List[int]):
 
         super().__init__(logger_handle=logger_handle, inst_name=inst_name,
-                         parent=parent, elements=elements)
+                         parent=parent, callbacks=callbacks, address=address,
+                         stride=stride, dimensions=dimensions)
 
-    def __getitem__(self, item:Union[int, slice]) -> \
+    def __getitem__(self, item: Union[int, slice]) -> \
             Union[MemoryReadOnly, Tuple[MemoryReadOnly, ...]]:
         # this cast is OK because an explict typing check was done in the __init__
         return cast(Union[MemoryReadOnly, Tuple[MemoryReadOnly, ...]], super().__getitem__(item))
 
 
-class MemoryWriteOnlyArray(BaseArray, ABC):
+class MemoryWriteOnlyArray(NodeArray, ABC):
     """
     base class for a array of write only memories
     """
@@ -611,17 +608,16 @@ class MemoryWriteOnlyArray(BaseArray, ABC):
 
     def __init__(self, logger_handle: str, inst_name: str,
                  parent: AddressMap,
-                 elements: Tuple[MemoryWriteOnly, ...]):
-
-        for element in elements:
-            if not isinstance(element, MemoryWriteOnly):
-                raise TypeError(
-                    f'All Elements should be of type MemoryWriteOnly, found {type(element)}')
+                 callbacks: NormalCallbackSet,
+                 address: int,
+                 stride: int,
+                 dimensions: List[int]):
 
         super().__init__(logger_handle=logger_handle, inst_name=inst_name,
-                         parent=parent, elements=elements)
+                         parent=parent, callbacks=callbacks, address=address,
+                         stride=stride, dimensions=dimensions)
 
-    def __getitem__(self, item:Union[slice, int]) ->\
+    def __getitem__(self, item: Union[slice, int]) ->\
             Union[MemoryWriteOnly, Tuple[MemoryWriteOnly, ...]]:
         # this cast is OK because an explict typing check was done in the __init__
         return cast(Union[MemoryWriteOnly, Tuple[MemoryWriteOnly, ...]], super().__getitem__(item))
@@ -645,13 +641,13 @@ class MemoryReadWriteArray(MemoryReadOnlyArray, MemoryWriteOnlyArray, ABC):
         super().__init__(logger_handle=logger_handle, inst_name=inst_name,
                          parent=parent, elements=elements)
 
-    def __getitem__(self, item:Union[int, slice]) -> \
+    def __getitem__(self, item: Union[int, slice]) -> \
             Union[MemoryReadWrite, Tuple[MemoryReadWrite, ...]]:
         # this cast is OK because an explict typing check was done in the __init__
         return cast(Union[MemoryReadWrite, Tuple[MemoryReadWrite, ...]], super().__getitem__(item))
 
 
-class MemoryAsyncReadOnlyArray(BaseArray, ABC):
+class MemoryAsyncReadOnlyArray(NodeArray, ABC):
     """
     base class for a array of asynchronous read only memories
     """
@@ -659,24 +655,23 @@ class MemoryAsyncReadOnlyArray(BaseArray, ABC):
 
     def __init__(self, logger_handle: str, inst_name: str,
                  parent: AddressMap,
-                 elements: Tuple[MemoryAsyncReadOnly, ...]):
-
-        for element in elements:
-            if not isinstance(element, MemoryAsyncReadOnly):
-                raise TypeError(
-                    f'All Elements should be of type MemoryAsyncReadOnly, found {type(element)}')
+                 callbacks: AsyncCallbackSet,
+                 address: int,
+                 stride: int,
+                 dimensions: List[int]):
 
         super().__init__(logger_handle=logger_handle, inst_name=inst_name,
-                         parent=parent, elements=elements)
+                         parent=parent, callbacks=callbacks, address=address,
+                         stride=stride, dimensions=dimensions)
 
-    def __getitem__(self, item:Union[int, slice]) -> \
+    def __getitem__(self, item: Union[int, slice]) -> \
             Union[MemoryAsyncReadOnly, Tuple[MemoryAsyncReadOnly, ...]]:
         # this cast is OK because an explict typing check was done in the __init__
         return cast(Union[MemoryAsyncReadOnly, Tuple[MemoryAsyncReadOnly, ...]],
                     super().__getitem__(item))
 
 
-class MemoryAsyncWriteOnlyArray(BaseArray, ABC):
+class MemoryAsyncWriteOnlyArray(NodeArray, ABC):
     """
     base class for a array of asynchronous write only memories
     """
@@ -684,17 +679,16 @@ class MemoryAsyncWriteOnlyArray(BaseArray, ABC):
 
     def __init__(self, logger_handle: str, inst_name: str,
                  parent: AddressMap,
-                 elements: Tuple[MemoryAsyncWriteOnly, ...]):
-
-        for element in elements:
-            if not isinstance(element, MemoryAsyncWriteOnly):
-                raise TypeError(
-                    f'All Elements should be of type MemoryAsyncWriteOnly, found {type(element)}')
+                 callbacks: AsyncCallbackSet,
+                 address: int,
+                 stride: int,
+                 dimensions: List[int]):
 
         super().__init__(logger_handle=logger_handle, inst_name=inst_name,
-                         parent=parent, elements=elements)
+                         parent=parent, callbacks=callbacks, address=address,
+                         stride=stride, dimensions=dimensions)
 
-    def __getitem__(self, item:Union[int, slice]) -> \
+    def __getitem__(self, item: Union[int, slice]) -> \
             Union[MemoryAsyncWriteOnly, Tuple[MemoryAsyncWriteOnly, ...]]:
         # this cast is OK because an explict typing check was done in the __init__
         return cast(Union[MemoryAsyncWriteOnly, Tuple[MemoryAsyncWriteOnly, ...]],
@@ -709,15 +703,14 @@ class MemoryAsyncReadWriteArray(MemoryAsyncReadOnlyArray, MemoryAsyncWriteOnlyAr
 
     def __init__(self, logger_handle: str, inst_name: str,
                  parent: AddressMap,
-                 elements: Tuple[MemoryAsyncReadWrite, ...]):
-
-        for element in elements:
-            if not isinstance(element, MemoryAsyncReadWrite):
-                raise TypeError(
-                    f'All Elements should be of type MemoryAsyncReadWrite, found {type(element)}')
+                 callbacks: AsyncCallbackSet,
+                 address: int,
+                 stride: int,
+                 dimensions: List[int]):
 
         super().__init__(logger_handle=logger_handle, inst_name=inst_name,
-                         parent=parent, elements=elements)
+                         parent=parent, callbacks=callbacks, address=address,
+                         stride=stride, dimensions=dimensions)
 
     def __getitem__(self, item: Union[slice, int]) -> \
             Union[MemoryAsyncReadWrite, Tuple[MemoryAsyncReadWrite, ...]]:

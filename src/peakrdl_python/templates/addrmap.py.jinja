@@ -7,6 +7,7 @@ from typing import Optional
 from typing import Union
 from typing import cast
 from typing import Dict
+from typing import Type
 {% if asyncoutput -%}
 from typing import AsyncGenerator
 {% else %}
@@ -17,6 +18,7 @@ import warnings
 
 from contextlib import {% if asyncoutput %}async{% endif %}contextmanager
 
+from ..lib import Node
 from ..lib import AddressMap, RegFile, Memory
 from ..lib  import AddressMapArray, RegFileArray
 {% if asyncoutput -%}
@@ -64,7 +66,7 @@ from ..lib import NormalCallbackSet
         {%- if node.is_array %}
     self.__{{node.inst_name}}:{{get_fully_qualified_type_name(node)}}_array_cls = {{get_fully_qualified_type_name(node)}}_array_cls(address=self.address+{{node.raw_address_offset}},
                                                                                   stride={{node.array_stride}},
-                                                                                  length={{get_array_dim(node)}},
+                                                                                  dimensions=tuple({{node.array_dimensions}}),
                                                                                   logger_handle=logger_handle+'.{{node.inst_name}}',
                                                                                   inst_name='{{node.inst_name}}', parent=self,
                                                                                   callbacks=callbacks)
@@ -90,7 +92,7 @@ from ..lib import NormalCallbackSet
         {%- if node.is_array %}
     self.__{{node.inst_name}}:{{get_fully_qualified_type_name(node)}}_array_cls = {{get_fully_qualified_type_name(node)}}_array_cls(address=self.address+{{node.raw_address_offset}},
                                                                                   stride={{node.array_stride}},
-                                                                                  length={{get_array_dim(node)}},
+                                                                                  dimensions=tuple({{node.array_dimensions}}),
                                                                                   logger_handle=logger_handle+'.{{node.inst_name}}',
                                                                                   inst_name='{{node.inst_name}}', parent=self,
                                                                                   callbacks=callbacks)
@@ -189,17 +191,17 @@ class {{get_fully_qualified_type_name(node)}}_array_cls(RegFileArray):
 
     def __init__(self, logger_handle: str, inst_name: str,
                  parent: Union[AddressMap, RegFile],
+                 callbacks: {% if asyncoutput %}AsyncCallbackSet{% else %}NormalCallbackSet{% endif %},
                  address: int,
-                 length: int,
                  stride: int,
-                 callbacks: {% if asyncoutput %}AsyncCallbackSet{% else %}NormalCallbackSet{% endif %}):
-
-        elements = tuple([{{get_fully_qualified_type_name(node)}}_cls(callbacks=callbacks,address=address+(index * stride),
-                          logger_handle=f'{logger_handle}.{inst_name}[{index:d}]',
-                          inst_name=f'{inst_name}[{index:d}]', parent=parent) for index in range(length)])
+                 dimensions: Tuple[int]):
 
         super().__init__(logger_handle=logger_handle, inst_name=inst_name,
                          parent=parent, elements=elements)
+
+    @property
+    def _element_datatype(self) -> Type[Node]:
+        return {{get_fully_qualified_type_name(node)}}_cls
 
     def __getitem__(self, item:Union[int, slice]) -> Union[{{get_fully_qualified_type_name(node)}}_cls, Tuple[{{get_fully_qualified_type_name(node)}}_cls, ...]]:
         # this cast is OK because an explict typing check was done in the __init__
@@ -298,17 +300,18 @@ class {{get_fully_qualified_type_name(node)}}_array_cls(AddressMapArray):
 
     def __init__(self, logger_handle: str, inst_name: str,
                  parent: AddressMap,
+                 callbacks: {% if asyncoutput %}AsyncCallbackSet{% else %}NormalCallbackSet{% endif %},
                  address: int,
-                 length: int,
                  stride: int,
-                 callbacks: {% if asyncoutput %}AsyncCallbackSet{% else %}NormalCallbackSet{% endif %}):
-
-        elements = tuple([{{get_fully_qualified_type_name(node)}}_cls(callbacks=callbacks,address=address+(index * stride),
-                          logger_handle=f'{logger_handle}.{inst_name}[{index:d}]',
-                          inst_name=f'{inst_name}[{index:d}]', parent=parent) for index in range(length)])
+                 dimensions: Tuple[int]):
 
         super().__init__(logger_handle=logger_handle, inst_name=inst_name,
-                         parent=parent, elements=elements)
+                         parent=parent, callbacks=callbacks, address=address,
+                         stride=stride, dimensions=dimensions)
+
+    @property
+    def _element_datatype(self) -> Type[Node]:
+        return {{get_fully_qualified_type_name(node)}}_cls
 
     def __getitem__(self, item:Union[int, slice]) -> Union[{{get_fully_qualified_type_name(node)}}_cls, Tuple[{{get_fully_qualified_type_name(node)}}_cls, ...]]:
         # this cast is OK because an explict typing check was done in the __init__

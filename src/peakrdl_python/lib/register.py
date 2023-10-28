@@ -9,7 +9,7 @@ from abc import ABC, abstractmethod
 from contextlib import asynccontextmanager, contextmanager
 from array import array as Array
 
-from .base import Node, AddressMap, RegFile, BaseArray, get_array_typecode
+from .base import Node, AddressMap, RegFile, NodeArray, get_array_typecode
 from .memory import Memory
 from .callbacks import CallbackSet, NormalCallbackSet, AsyncCallbackSet
 
@@ -19,10 +19,12 @@ if TYPE_CHECKING:
 
 # pylint: disable=redefined-slots-in-subclass
 
+
 class RegisterWriteVerifyError(Exception):
     """
     Exception that occurs when the read after a write does not match the expected value
     """
+
 
 class Reg(Node, ABC):
     """
@@ -86,6 +88,7 @@ class Reg(Node, ABC):
         Returns: register access width
         """
         return self.__accesswidth
+
 
 class RegReadOnly(Reg, ABC):
     """
@@ -161,19 +164,18 @@ class RegReadOnly(Reg, ABC):
 
         if read_callback is not None:
             # python 3.7 doesn't have the callback defined as protocol so mypy doesn't recognise
-            # the argumaents in the call back functions
-            return read_callback(addr=self.address, # type: ignore[call-arg]
+            # the arguments in the call back functions
+            return read_callback(addr=self.address,  # type: ignore[call-arg]
                                  width=self.width,  # type: ignore[call-arg]
                                  accesswidth=self.accesswidth)  # type: ignore[call-arg]
 
         if read_block_callback is not None:
             # python 3.7 doesn't have the callback defined as protocol so mypy doesn't recognise
-            # the argumaents in the call back functions
-            return read_block_callback(addr=self.address, # type: ignore[call-arg]
-                                       width=self.width, # type: ignore[call-arg]
-                                       accesswidth=self.accesswidth, # type: ignore[call-arg]
-                                       length=1)[0] # type: ignore[call-arg]
-
+            # the arguments in the call back functions
+            return read_block_callback(addr=self.address,  # type: ignore[call-arg]
+                                       width=self.width,  # type: ignore[call-arg]
+                                       accesswidth=self.accesswidth,  # type: ignore[call-arg]
+                                       length=1)[0]  # type: ignore[call-arg]
 
         raise RuntimeError('This function does not have a useable callback')
 
@@ -194,7 +196,6 @@ class RegReadOnly(Reg, ABC):
                 return_dict[field.inst_name] = field.read()
 
         return return_dict
-
 
 
 class RegWriteOnly(Reg, ABC):
@@ -257,20 +258,20 @@ class RegWriteOnly(Reg, ABC):
 
         if single_callback is not None:
             # python 3.7 doesn't have the callback defined as protocol so mypy doesn't recognise
-            # the argumaents in the call back functions
-            single_callback(addr=self.address, # type: ignore[call-arg]
-                            width=self.width, # type: ignore[call-arg]
-                            accesswidth=self.accesswidth, # type: ignore[call-arg]
-                            data=data) # type: ignore[call-arg]
+            # the arguments in the call back functions
+            single_callback(addr=self.address,  # type: ignore[call-arg]
+                            width=self.width,  # type: ignore[call-arg]
+                            accesswidth=self.accesswidth,  # type: ignore[call-arg]
+                            data=data)  # type: ignore[call-arg]
 
         elif block_callback is not None:
             # python 3.7 doesn't have the callback defined as protocol so mypy doesn't recognise
-            # the argumaents in the call back functions
+            # the arguments in the call back functions
             data_as_array = Array(get_array_typecode(self.width), [data])
-            block_callback(addr=self.address, # type: ignore[call-arg]
-                           width=self.width, # type: ignore[call-arg]
-                           accesswidth=self.accesswidth, # type: ignore[call-arg]
-                           data=data_as_array) # type: ignore[call-arg]
+            block_callback(addr=self.address,  # type: ignore[call-arg]
+                           width=self.width,  # type: ignore[call-arg]
+                           accesswidth=self.accesswidth,  # type: ignore[call-arg]
+                           data=data_as_array)  # type: ignore[call-arg]
 
         else:
             raise RuntimeError('This function does not have a useable callback')
@@ -283,7 +284,7 @@ class RegWriteOnly(Reg, ABC):
         """
 
     @abstractmethod
-    def write_fields(self, **kwargs) -> None: # type: ignore[no-untyped-def]
+    def write_fields(self, **kwargs) -> None:  # type: ignore[no-untyped-def]
         """
         Do a write to the register, updating any field included in
         the arguments
@@ -313,13 +314,13 @@ class RegReadWrite(RegReadOnly, RegWriteOnly, ABC):
                          inst_name=inst_name,
                          parent=parent, width=width, accesswidth=accesswidth)
 
-        self.__in_context_manager:bool = False
-        self.__register_state:Optional[int] = None
+        self.__in_context_manager: bool = False
+        self.__register_state: Optional[int] = None
 
     # pylint: enable=too-many-arguments, duplicate-code
 
     @contextmanager
-    def single_read_modify_write(self, verify:bool = False, skip_write: bool = False) -> \
+    def single_read_modify_write(self, verify: bool = False, skip_write: bool = False) -> \
             Generator['RegReadWrite', None, None]:
         """
         Context manager to allow multiple field reads/write to be done with a single set of
@@ -342,8 +343,7 @@ class RegReadWrite(RegReadOnly, RegWriteOnly, ABC):
         # clear the register states at the end of the context manager
         self.__register_state = None
 
-
-    def write(self, data: int, verify:bool = False) -> None: # pylint: disable=arguments-differ
+    def write(self, data: int, verify: bool = False) -> None:  # pylint: disable=arguments-differ
         """
         Writes a value to the register
 
@@ -368,7 +368,8 @@ class RegReadWrite(RegReadOnly, RegWriteOnly, ABC):
             if verify:
                 read_back = self.read()
                 if read_back != data:
-                    raise RegisterWriteVerifyError(f'Readback {read_back:X} after writing {data:X}')
+                    raise RegisterWriteVerifyError(f'Readback {read_back:X} '
+                                                   f'after writing {data:X}')
 
     def read(self) -> int:
         """Read value from the register
@@ -384,7 +385,7 @@ class RegReadWrite(RegReadOnly, RegWriteOnly, ABC):
 
         return super().read()
 
-    def write_fields(self, **kwargs) -> None: # type: ignore[no-untyped-def]
+    def write_fields(self, **kwargs) -> None:  # type: ignore[no-untyped-def]
         """
         Do a read-modify-write to the register, updating any field included in
         the arguments
@@ -486,22 +487,20 @@ class RegAsyncReadOnly(Reg, ABC):
 
         if read_callback is not None:
             # python 3.7 doesn't have the callback defined as protocol so mypy doesn't recognise
-            # the argumaents in the call back functions
+            # the arguments in the call back functions
             return await read_callback(addr=self.address,  # type: ignore[call-arg]
                                        width=self.width,  # type: ignore[call-arg]
                                        accesswidth=self.accesswidth)  # type: ignore[call-arg]
 
         if read_block_callback is not None:
             # python 3.7 doesn't have the callback defined as protocol so mypy doesn't recognise
-            # the argumaents in the call back functions
+            # the arguments in the call back functions
             array_read_result = \
                 await read_block_callback(addr=self.address,  # type: ignore[call-arg]
                                           width=self.width,  # type: ignore[call-arg]
-                                          accesswidth=self.accesswidth, # type: ignore[call-arg]
+                                          accesswidth=self.accesswidth,  # type: ignore[call-arg]
                                           length=1)  # type: ignore[call-arg]
             return array_read_result[0]
-
-
 
         raise RuntimeError('This function does not have a useable callback')
 
@@ -584,24 +583,23 @@ class RegAsyncWriteOnly(Reg, ABC):
 
         if single_callback is not None:
             # python 3.7 doesn't have the callback defined as protocol so mypy doesn't recognise
-            # the argumaents in the call back functions
-            await single_callback(addr=self.address, # type: ignore[call-arg]
-                                  width=self.width, # type: ignore[call-arg]
-                                  accesswidth=self.accesswidth, # type: ignore[call-arg]
-                                  data=data) # type: ignore[call-arg]
+            # the arguments in the call back functions
+            await single_callback(addr=self.address,  # type: ignore[call-arg]
+                                  width=self.width,  # type: ignore[call-arg]
+                                  accesswidth=self.accesswidth,  # type: ignore[call-arg]
+                                  data=data)  # type: ignore[call-arg]
 
         elif block_callback is not None:
             # python 3.7 doesn't have the callback defined as protocol so mypy doesn't recognise
-            # the argumaents in the call back functions
-            data_as_array=Array(get_array_typecode(self.width),[data])
-            await block_callback(addr=self.address, # type: ignore[call-arg]
-                                       width=self.width, # type: ignore[call-arg]
-                                       accesswidth=self.accesswidth, # type: ignore[call-arg]
-                                       data=data_as_array) # type: ignore[call-arg]
+            # the arguments in the call back functions
+            data_as_array = Array(get_array_typecode(self.width), [data])
+            await block_callback(addr=self.address,  # type: ignore[call-arg]
+                                 width=self.width,  # type: ignore[call-arg]
+                                 accesswidth=self.accesswidth,  # type: ignore[call-arg]
+                                 data=data_as_array)  # type: ignore[call-arg]
 
         else:
             raise RuntimeError('This function does not have a useable callback')
-
 
     @property
     @abstractmethod
@@ -611,7 +609,7 @@ class RegAsyncWriteOnly(Reg, ABC):
         """
 
     @abstractmethod
-    async def write_fields(self, **kwargs) -> None: # type: ignore[no-untyped-def]
+    async def write_fields(self, **kwargs) -> None:  # type: ignore[no-untyped-def]
         """
         Do an async write to the register, updating any field included in
         the arguments
@@ -641,13 +639,13 @@ class RegAsyncReadWrite(RegAsyncReadOnly, RegAsyncWriteOnly, ABC):
                          inst_name=inst_name,
                          parent=parent, width=width, accesswidth=accesswidth)
 
-        self.__in_context_manager:bool = False
-        self.__register_state:Optional[int] = None
+        self.__in_context_manager: bool = False
+        self.__register_state: Optional[int] = None
 
     # pylint: enable=too-many-arguments, duplicate-code
 
     @asynccontextmanager
-    async def single_read_modify_write(self, verify:bool = False, skip_write: bool = False) -> \
+    async def single_read_modify_write(self, verify: bool = False, skip_write: bool = False) -> \
         AsyncGenerator['RegAsyncReadWrite', None]:
         """
         Context manager to allow multiple field reads/write to be done with a single set of
@@ -670,8 +668,7 @@ class RegAsyncReadWrite(RegAsyncReadOnly, RegAsyncWriteOnly, ABC):
         # clear the register states at the end of the context manager
         self.__register_state = None
 
-
-    async def write(self, data: int, verify:bool = False) -> None:
+    async def write(self, data: int, verify: bool = False) -> None:
         """
         Writes a value to the register
 
@@ -696,7 +693,8 @@ class RegAsyncReadWrite(RegAsyncReadOnly, RegAsyncWriteOnly, ABC):
             if verify:
                 read_back = await self.read()
                 if read_back != data:
-                    raise RegisterWriteVerifyError(f'Readback {read_back:X} after writing {data:X}')
+                    raise RegisterWriteVerifyError(f'Readback {read_back:X} '
+                                                   f'after writing {data:X}')
 
     async def read(self) -> int:
         """Asynchronously read value from the register
@@ -746,7 +744,7 @@ ReadableAsyncRegister = Union[RegAsyncReadOnly, RegAsyncReadWrite]
 WritableAsyncRegister = Union[RegAsyncWriteOnly, RegAsyncReadWrite]
 
 
-class RegReadOnlyArray(BaseArray, ABC):
+class RegReadOnlyArray(NodeArray, ABC):
     """
     base class for a array of read only registers
     """
@@ -754,22 +752,21 @@ class RegReadOnlyArray(BaseArray, ABC):
 
     def __init__(self, logger_handle: str, inst_name: str,
                  parent: Union[RegFile, AddressMap, Memory],
-                 elements: Tuple[RegReadOnly, ...]):
-
-        for element in elements:
-            if not isinstance(element, RegReadOnly):
-                raise TypeError(f'All Elements should be of type RegReadOnly, '
-                                f'found {type(element)}')
+                 callbacks: NormalCallbackSet,
+                 address: int,
+                 stride: int,
+                 dimensions: Tuple[int]):
 
         super().__init__(logger_handle=logger_handle, inst_name=inst_name,
-                         parent=parent, elements=elements)
+                         parent=parent, callbacks=callbacks, address=address,
+                         stride=stride, dimensions=dimensions)
 
-    def __getitem__(self, item:Union[int , slice]) -> Union[RegReadOnly, Tuple[RegReadOnly, ...]]:
+    def __getitem__(self, item: Union[int, slice]) -> Union[RegReadOnly, Tuple[RegReadOnly, ...]]:
         # this cast is OK because an explict typing check was done in the __init__
         return cast(Union[RegReadOnly, Tuple[RegReadOnly, ...]], super().__getitem__(item))
 
 
-class RegWriteOnlyArray(BaseArray, ABC):
+class RegWriteOnlyArray(NodeArray, ABC):
     """
     base class for a array of write only registers
     """
@@ -777,17 +774,17 @@ class RegWriteOnlyArray(BaseArray, ABC):
 
     def __init__(self, logger_handle: str, inst_name: str,
                  parent: Union[RegFile, AddressMap, Memory],
-                 elements: Tuple[RegWriteOnly, ...]):
-
-        for element in elements:
-            if not isinstance(element, RegWriteOnly):
-                raise TypeError(f'All Elements should be of type RegWriteOnly, '
-                                f'found {type(element)}')
+                 callbacks: NormalCallbackSet,
+                 address: int,
+                 stride: int,
+                 dimensions: Tuple[int]):
 
         super().__init__(logger_handle=logger_handle, inst_name=inst_name,
-                         parent=parent, elements=elements)
+                         parent=parent, callbacks=callbacks, address=address,
+                         stride=stride, dimensions=dimensions)
 
-    def __getitem__(self, item: Union[int, slice]) -> Union[RegWriteOnly, Tuple[RegWriteOnly, ...]]:
+    def __getitem__(self, item: Union[int, slice]) -> \
+            Union[RegWriteOnly, Tuple[RegWriteOnly, ...]]:
         # this cast is OK because an explict typing check was done in the __init__
         return cast(Union[RegWriteOnly, Tuple[RegWriteOnly, ...]], super().__getitem__(item))
 
@@ -800,21 +797,22 @@ class RegReadWriteArray(RegReadOnlyArray, RegWriteOnlyArray, ABC):
 
     def __init__(self, logger_handle: str, inst_name: str,
                  parent: Union[RegFile, AddressMap, Memory],
-                 elements: Tuple[RegReadWrite, ...]):
-
-        for element in elements:
-            if not isinstance(element, RegReadWrite):
-                raise TypeError(f'All Elements should be of type RegReadWrite, '
-                                f'found {type(element)}')
+                 callbacks: NormalCallbackSet,
+                 address: int,
+                 stride: int,
+                 dimensions: Tuple[int]):
 
         super().__init__(logger_handle=logger_handle, inst_name=inst_name,
-                         parent=parent, elements=elements)
+                         parent=parent, callbacks=callbacks, address=address,
+                         stride=stride, dimensions=dimensions)
 
-    def __getitem__(self, item:Union[int, slice]) -> Union[RegReadWrite, Tuple[RegReadWrite, ...]]:
+    def __getitem__(self, item: Union[int, slice]) -> \
+            Union[RegReadWrite, Tuple[RegReadWrite, ...]]:
         # this cast is OK because an explict typing check was done in the __init__
         return cast(Union[RegReadWrite, Tuple[RegReadWrite, ...]], super().__getitem__(item))
 
-class RegAsyncReadOnlyArray(BaseArray, ABC):
+
+class RegAsyncReadOnlyArray(NodeArray, ABC):
     """
     base class for a array of async read only registers
     """
@@ -822,23 +820,23 @@ class RegAsyncReadOnlyArray(BaseArray, ABC):
 
     def __init__(self, logger_handle: str, inst_name: str,
                  parent: Union[RegFile, AddressMap, Memory],
-                 elements: Tuple[RegAsyncReadOnly, ...]):
-
-        for element in elements:
-            if not isinstance(element, RegAsyncReadOnly):
-                raise TypeError(f'All Elements should be of type RegAsyncReadOnly, '
-                                f'found {type(element)}')
+                 callbacks: AsyncCallbackSet,
+                 address: int,
+                 stride: int,
+                 dimensions: Tuple[int]):
 
         super().__init__(logger_handle=logger_handle, inst_name=inst_name,
-                         parent=parent, elements=elements)
+                         parent=parent, callbacks=callbacks, address=address,
+                         stride=stride, dimensions=dimensions)
 
-    def __getitem__(self, item:Union[int, slice]) ->\
+    def __getitem__(self, item: Union[int, slice]) -> \
             Union[RegAsyncReadOnly, Tuple[RegAsyncReadOnly, ...]]:
         # this cast is OK because an explict typing check was done in the __init__
         return cast(Union[RegAsyncReadOnly, Tuple[RegAsyncReadOnly, ...]],
                     super().__getitem__(item))
 
-class RegAsyncWriteOnlyArray(BaseArray, ABC):
+
+class RegAsyncWriteOnlyArray(NodeArray, ABC):
     """
     base class for a array of async write only registers
     """
@@ -846,17 +844,16 @@ class RegAsyncWriteOnlyArray(BaseArray, ABC):
 
     def __init__(self, logger_handle: str, inst_name: str,
                  parent: Union[RegFile, AddressMap, Memory],
-                 elements: Tuple[RegAsyncWriteOnly, ...]):
-
-        for element in elements:
-            if not isinstance(element, RegAsyncWriteOnly):
-                raise TypeError(f'All Elements should be of type RegAsyncWriteOnly, '
-                                f'found {type(element)}')
+                 callbacks: AsyncCallbackSet,
+                 address: int,
+                 stride: int,
+                 dimensions: Tuple[int]):
 
         super().__init__(logger_handle=logger_handle, inst_name=inst_name,
-                         parent=parent, elements=elements)
+                         parent=parent, callbacks=callbacks, address=address,
+                         stride=stride, dimensions=dimensions)
 
-    def __getitem__(self, item:Union[int, slice]) -> \
+    def __getitem__(self, item: Union[int, slice]) -> \
             Union[RegAsyncWriteOnly, Tuple[RegAsyncWriteOnly, ...]]:
         # this cast is OK because an explict typing check was done in the __init__
         return cast(Union[RegAsyncWriteOnly, Tuple[RegAsyncWriteOnly, ...]],
@@ -871,21 +868,21 @@ class RegAsyncReadWriteArray(RegAsyncReadOnlyArray, RegAsyncWriteOnlyArray, ABC)
 
     def __init__(self, logger_handle: str, inst_name: str,
                  parent: Union[RegFile, AddressMap, Memory],
-                 elements: Tuple[RegAsyncReadWrite, ...]):
-
-        for element in elements:
-            if not isinstance(element, RegAsyncReadWrite):
-                raise TypeError(f'All Elements should be of type RegAsyncReadWrite, '
-                                f'found {type(element)}')
+                 callbacks: AsyncCallbackSet,
+                 address: int,
+                 stride: int,
+                 dimensions: Tuple[int]):
 
         super().__init__(logger_handle=logger_handle, inst_name=inst_name,
-                         parent=parent, elements=elements)
+                         parent=parent, callbacks=callbacks, address=address,
+                         stride=stride, dimensions=dimensions)
 
     def __getitem__(self, item: Union[int, slice]) -> \
             Union[RegAsyncReadWrite, Tuple[RegAsyncReadWrite, ...]]:
         # this cast is OK because an explict typing check was done in the __init__
         return cast(Union[RegAsyncReadWrite, Tuple[RegAsyncReadWrite, ...]],
                     super().__getitem__(item))
+
 
 ReadableRegisterArray = Union[RegReadOnlyArray, RegReadWriteArray]
 WritableRegisterArray = Union[RegWriteOnlyArray, RegReadWriteArray]

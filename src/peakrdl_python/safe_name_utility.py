@@ -6,8 +6,8 @@ from typing import List, Union, Type, Callable, Dict
 from dataclasses import dataclass
 
 from systemrdl.node import RegNode  # type: ignore
-from systemrdl.node import FieldNode # type: ignore
-from systemrdl.node import AddrmapNode # type: ignore
+from systemrdl.node import FieldNode  # type: ignore
+from systemrdl.node import AddrmapNode  # type: ignore
 from systemrdl.node import RegfileNode  # type: ignore
 from systemrdl.node import MemNode  # type: ignore
 from systemrdl.node import RootNode  # type: ignore
@@ -26,8 +26,10 @@ from .lib import RegFile
 from .lib import AddressMap
 from .lib.base import Base
 
-def _build_class_method_list(peakrld_python_class:Type[Base]) -> List[str]:
+
+def _build_class_method_list(peakrld_python_class: Type[Base]) -> List[str]:
     return list(filter(lambda x: not x[0] == '_', dir(peakrld_python_class)))
+
 
 # the lists of methods to avoid for all the classes are pre-built to optimise the time taken
 # in the tests
@@ -41,7 +43,7 @@ reg_write_only_method_list = _build_class_method_list(RegWriteOnly)
 reg_read_write_method_list = _build_class_method_list(RegReadWrite)
 
 
-def _python_name_checks(instance_name:str) -> bool:
+def _python_name_checks(instance_name: str) -> bool:
     """
 
     Args:
@@ -103,6 +105,7 @@ def is_safe_field_name(node: FieldNode) -> bool:
 
     return True
 
+
 def is_safe_register_name(node: RegNode) -> bool:
     """
     takes in instance name for a systemRDL node and determines if it safe for use in PeakRDL-Python
@@ -146,6 +149,7 @@ def is_safe_register_name(node: RegNode) -> bool:
 
     return True
 
+
 def is_safe_memory_name(node: MemNode) -> bool:
     """
     takes in instance name for a systemRDL node and determines if it safe for use in PeakRDL-Python
@@ -179,6 +183,7 @@ def is_safe_memory_name(node: MemNode) -> bool:
         return False
 
     return True
+
 
 def is_safe_regfile_name(node: RegfileNode) -> bool:
     """
@@ -214,6 +219,7 @@ def is_safe_regfile_name(node: RegfileNode) -> bool:
 
     return True
 
+
 def is_safe_addrmap_name(node: AddrmapNode) -> bool:
     """
     takes in instance name for a systemRDL node and determines if it safe for use in PeakRDL-Python
@@ -239,10 +245,12 @@ def is_safe_addrmap_name(node: AddrmapNode) -> bool:
 
     return True
 
+
 @dataclass()
 class _NodeProcessingScheme:
-    safe_func : Callable[[Node], bool]
-    prefix : str
+    safe_func: Callable[[Node], bool]
+    prefix: str
+
 
 _node_processing: Dict[Node, _NodeProcessingScheme] = {
     RegNode: _NodeProcessingScheme(is_safe_register_name, 'register'),
@@ -251,16 +259,21 @@ _node_processing: Dict[Node, _NodeProcessingScheme] = {
     AddrmapNode: _NodeProcessingScheme(is_safe_addrmap_name, 'addrmap'),
     MemNode: _NodeProcessingScheme(is_safe_memory_name, 'memory')}
 
+
 def safe_node_name(node: Union[RegNode,
                                FieldNode,
                                RegfileNode,
                                AddrmapNode,
-                               MemNode]) -> str:
+                               MemNode],
+                   multidimensional_array_naming: bool = False) -> str:
     """
     Generate the safe name for a node to avoid name clashes in the generated python
 
     Args:
         node: as node from the compiled systemRDL
+        multidimensional_array_naming: chooses the style of the names of multi-dimensional arrays
+                                       True = node[idx0, idx1]
+                                       False = node[idx0][idx1]
 
     Returns: python name to use
 
@@ -271,12 +284,11 @@ def safe_node_name(node: Union[RegNode,
         node_name = node.get_property('python_inst_name')
     else:
 
-
         node_type = type(node)
 
         node_name = node.inst_name
         if not _node_processing[node_type].safe_func(node):
-            name_pre:str = _node_processing[node_type].prefix
+            name_pre: str = _node_processing[node_type].prefix
             node_name = name_pre + '_' + node_name
 
             # check the proposed name will not clash with name already used by the parent
@@ -290,15 +302,22 @@ def safe_node_name(node: Union[RegNode,
     if not isinstance(node, FieldNode):
         if node.is_array:
             if node.current_idx is not None:
-                node_name += f'[{node.current_idx[0]:d}]'
+                if multidimensional_array_naming is False:
+                    # the format should be node_name[idx0][idx1]
+                    node_name += '[' + ']['.join(str(x) for x in node.current_idx) + ']'
+                else:
+                    # the format should be node_name[idx0,idx1]
+                    node_name += '[' + ','.join(str(x) for x in node.current_idx) + ']'
 
     return node_name
+
 
 def get_python_path_segments(node: Union[RegNode,
                                          FieldNode,
                                          RegfileNode,
                                          AddrmapNode,
-                                         MemNode]) -> List[str]:
+                                         MemNode],
+                             multidimensional_array_naming: bool = False) -> List[str]:
     """
     Behaves similarly to the get_path_segments method of a system RDL node but names are converted
     using the following pattern:
@@ -311,14 +330,14 @@ def get_python_path_segments(node: Union[RegNode,
 
     """
     def node_segment(child_node: Union[RegNode,
-                                         FieldNode,
-                                         RegfileNode,
-                                         AddrmapNode,
-                                         MemNode],
+                                       FieldNode,
+                                       RegfileNode,
+                                       AddrmapNode,
+                                       MemNode],
                      child_list: List[str]) -> List[str]:
         if isinstance(child_node.parent, RootNode):
             return child_list
-        child_node_safe_name = safe_node_name(child_node)
+        child_node_safe_name = safe_node_name(child_node, multidimensional_array_naming)
         child_list.insert(0, child_node_safe_name)
         return node_segment(child_node.parent, child_list=child_list)
 
