@@ -890,6 +890,94 @@ class {{fq_block_name}}_single_access({{top_node.type_name}}_TestCase): # type: 
                 self.dut.{{'.'.join(get_python_path_segments(node))}}.cppkbrgmgeloagvfgjjeiiushygirh = 1 # type: ignore[attr-defined,union-attr]
         {% endfor %}
 
+    {% if block == top_node %}
+    def test_top_traversal_iterators(self) -> None:
+        {% if asyncoutput %}
+        expected_writable_regs: List[WritableAsyncRegister]
+        expected_readable_regs: List[ReadableAsyncRegister]
+        expected_memories:List[Union[MemoryAsyncReadOnly, MemoryAsyncWriteOnly, MemoryAsyncReadWrite]]
+
+        {% else %}
+        expected_writable_regs: List[WritableRegister]
+        expected_readable_regs: List[ReadableRegister]
+        expected_memories:List[Union[MemoryReadOnly, MemoryWriteOnly, MemoryReadWrite]]
+        {% endif %}
+        expected_sections : List[Union[AddressMap, RegFile]]
+
+        # check the readable registers
+        expected_readable_regs = [ {%- for child_node in top_node.children(unroll=True) %}
+                                    {%- if isinstance(child_node, systemrdlRegNode) %}{% if child_node.has_sw_readable %}self.dut.{{'.'.join(get_python_path_segments(child_node))}}, # type: ignore[union-attr,list-item] {% endif %}{% endif %}
+                                    {% endfor %} ]
+        readable_regs = []
+        for readable_reg in self.dut.get_readable_registers(unroll=True):  # type: ignore[union-attr]
+            self.assertIsInstance(readable_reg, (Reg{% if asyncoutput %}Async{% endif %}ReadWrite, Reg{% if asyncoutput %}Async{% endif %}ReadOnly))
+            readable_regs.append(readable_reg)
+        self.assertCountEqual(expected_readable_regs, readable_regs)
+        {# check the rolled case second #}
+        expected_readable_regs = [ {%- for child_node in top_node.children(unroll=False) %}
+                                   {%- if isinstance(child_node, systemrdlRegNode) %}{% if child_node.has_sw_readable %}self.dut.{{'.'.join(get_python_path_segments(child_node))}}, # type: ignore[union-attr,list-item] {% endif %}{% endif %}
+                                   {% endfor %} ]
+        readable_regs = []
+        for readable_reg in self.dut.get_readable_registers(unroll=False):  # type: ignore[union-attr]
+            readable_regs.append(readable_reg)
+        self.assertCountEqual(expected_readable_regs, readable_regs)
+
+        # check the writable registers
+        expected_writable_regs = [ {%- for child_node in top_node.children(unroll=True) %}
+                                   {%- if isinstance(child_node, systemrdlRegNode) %}{% if child_node.has_sw_writable %}self.dut.{{'.'.join(get_python_path_segments(child_node))}}, # type: ignore[union-attr,list-item] {% endif %}{% endif %}
+                                   {% endfor %} ]
+        writable_regs = []
+        for writable_reg in self.dut.get_writable_registers(unroll=True):  # type: ignore[union-attr]
+            self.assertIsInstance(writable_reg, (Reg{% if asyncoutput %}Async{% endif %}ReadWrite, Reg{% if asyncoutput %}Async{% endif %}WriteOnly))
+            writable_regs.append(writable_reg)
+        self.assertCountEqual(expected_writable_regs, writable_regs)
+        {# check the rolled case second #}
+        expected_writable_regs = [ {%- for child_node in top_node.children(unroll=False) %}
+                                   {%- if isinstance(child_node, systemrdlRegNode) %}{% if child_node.has_sw_writable %}self.dut.{{'.'.join(get_python_path_segments(child_node))}}, # type: ignore[union-attr,list-item] {% endif %}{% endif %}
+                                   {% endfor %} ]
+        writable_regs = []
+        for writable_reg in self.dut.get_writable_registers(unroll=False):  # type: ignore[union-attr]
+            writable_regs.append(writable_reg)
+        self.assertCountEqual(expected_writable_regs, writable_regs)
+
+        # check the sections
+        expected_sections = [ {%- for child_node in top_node.children(unroll=True) %}
+                              {%- if isinstance(child_node, (systemrdlAddrmapNode, systemrdlRegfileNode)) %}self.dut.{{'.'.join(get_python_path_segments(child_node))}}, # type: ignore[union-attr,list-item] {% endif %}
+                              {% endfor %} ]
+        sections = []
+        for section in self.dut.get_sections(unroll=True):  # type: ignore[union-attr]
+            self.assertIsInstance(section, (AddressMap, RegFile))
+            sections.append(section)
+        self.assertCountEqual(expected_sections, sections)
+        {# check the rolled case second #}
+        expected_sections = [ {%- for child_node in top_node.children(unroll=False) %}
+                              {%- if isinstance(child_node, (systemrdlAddrmapNode, systemrdlRegfileNode)) %}self.dut.{{'.'.join(get_python_path_segments(child_node))}},  # type: ignore[union-attr,list-item] {% endif %}
+                              {% endfor %} ]
+        sections = []
+        for section in self.dut.get_sections(unroll=False):  # type: ignore[union-attr]
+            sections.append(section)
+        self.assertCountEqual(expected_sections, sections)
+
+        # check the memories
+        expected_memories = [ {%- for child_node in top_node.children(unroll=True) %}
+                              {%- if isinstance(child_node, systemrdlMemNode) %}self.dut.{{'.'.join(get_python_path_segments(child_node))}}, # type: ignore[union-attr,list-item] {% endif %}
+                              {% endfor %} ]
+        memories = []
+        for memory in self.dut.get_memories(unroll=True):  # type: ignore[union-attr]
+            self.assertIsInstance(memory, Memory)
+            memories.append(memory)
+        self.assertCountEqual(expected_memories, memories)
+        {# check the rolled case second #}
+        expected_memories = [ {%- for child_node in top_node.children(unroll=False) %}
+                              {%- if isinstance(child_node, systemrdlMemNode) %}self.dut.{{'.'.join(get_python_path_segments(child_node))}}, # type: ignore[union-attr,list-item] {% endif %}
+                              {% endfor %} ]
+        memories = []
+        for memory in self.dut.get_memories(unroll=False):  # type: ignore[union-attr]
+            memories.append(memory)
+        self.assertCountEqual(expected_memories, memories)
+
+    {% endif %}{# if block == top_block #}
+
     {% macro check_readable_register_iterators(node) %}
         {# check the unrolled case first #}
         expected_readable_regs = [ {%- for child_node in node.children(unroll=True) %}
@@ -897,6 +985,7 @@ class {{fq_block_name}}_single_access({{top_node.type_name}}_TestCase): # type: 
                                     {% endfor %} ]
         readable_regs = []
         for readable_reg in self.dut.{{'.'.join(get_python_path_segments(node))}}.get_readable_registers(unroll=True):  # type: ignore[union-attr]
+            self.assertIsInstance(readable_reg, (Reg{% if asyncoutput %}Async{% endif %}ReadWrite, Reg{% if asyncoutput %}Async{% endif %}ReadOnly))
             readable_regs.append(readable_reg)
         self.assertCountEqual(expected_readable_regs, readable_regs)
         {# check the rolled case second #}
@@ -916,6 +1005,7 @@ class {{fq_block_name}}_single_access({{top_node.type_name}}_TestCase): # type: 
                                    {% endfor %} ]
         writable_regs = []
         for writable_reg in self.dut.{{'.'.join(get_python_path_segments(node))}}.get_writable_registers(unroll=True):  # type: ignore[union-attr]
+            self.assertIsInstance(writable_reg, (Reg{% if asyncoutput %}Async{% endif %}ReadWrite, Reg{% if asyncoutput %}Async{% endif %}WriteOnly))
             writable_regs.append(writable_reg)
         self.assertCountEqual(expected_writable_regs, writable_regs)
         {# check the rolled case second #}
@@ -935,6 +1025,7 @@ class {{fq_block_name}}_single_access({{top_node.type_name}}_TestCase): # type: 
                               {% endfor %} ]
         sections = []
         for section in self.dut.{{'.'.join(get_python_path_segments(node))}}.get_sections(unroll=True):  # type: ignore[union-attr]
+            self.assertIsInstance(section, (AddressMap, RegFile))
             sections.append(section)
         self.assertCountEqual(expected_sections, sections)
         {# check the rolled case second #}
@@ -954,6 +1045,7 @@ class {{fq_block_name}}_single_access({{top_node.type_name}}_TestCase): # type: 
                               {% endfor %} ]
         memories = []
         for memory in self.dut.{{'.'.join(get_python_path_segments(node))}}.get_memories(unroll=True):  # type: ignore[union-attr]
+            self.assertIsInstance(memory, Memory)
             memories.append(memory)
         self.assertCountEqual(expected_memories, memories)
         {# check the rolled case second #}
