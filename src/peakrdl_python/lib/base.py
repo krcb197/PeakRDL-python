@@ -210,10 +210,10 @@ class NodeArray(Base, Sequence[NodeArrayElementType]):
                 return return_data
 
         if isinstance(item, tuple):
-            raise TypeError('attempting a multidimensional arrya access on a single dimension'
+            raise TypeError('attempting a multidimensional array access on a single dimension'
                              ' array')
 
-        if not isinstance(item, (tuple, int)):
+        if not isinstance(item, (slice, int)):
             raise TypeError(f'Array index must either being an int or a slice, got {type(item)}')
 
         return self.__elements[item]
