@@ -123,6 +123,13 @@ jobs:
         # python -m flashing_the_LED
 
         cd ../..
+
+        # build the libraries for the two cases
+        cd example/array_access/
+        peakrdl python array_access.rdl -o .
+        python -m array_access
+
+        cd ../..
   #-------------------------------------------------------------------------------
   build_sdist:
     needs:

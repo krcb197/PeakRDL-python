@@ -392,10 +392,30 @@ worry if they are in an array or not.
 .. literalinclude :: ../example/tranversing_address_map/reseting_registers.py
    :language: python
 
+
+Array Access
+------------
+
+SystemRDL supports multi-dimensional arrays, the following example shows an definition with an 1D and 3D array with various methods to access individual elements of the array and use of the iterators to walk through elements in loops
+
+.. literalinclude :: ../example/array_access/array_access.rdl
+   :language: systemrdl
+
+This systemRDL code can be built using the command line tool as follows (assuming it is stored in
+a file called ``array_access.rdl``:
+
+.. code-block:: bash
+
+    peakrdl python array_access.rdl -o .
+
+.. literalinclude :: ../example/array_access/array_access.py
+   :language: python
+
 Python Safe Names
 =================
 
 The systemRDL structure is converted to a python class structure, there are two concerns:
+
 * if any systemRDL node name is a python keyname
 * if any systemRDL node name clashes with part of the peakrdl_standard types, for example all register nodes have an ``address`` property that would clash with a field of that register called ``address``
 
