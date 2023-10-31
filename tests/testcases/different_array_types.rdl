@@ -7,16 +7,52 @@ addrmap different_array_types {
     } read_write_array[2];
 
     reg {
+        default sw = rw;
+        default hw = r;
+        field {} basicfield_a[31:0];
+    } read_write_array_2D[2][2];
+
+    reg {
+        default sw = rw;
+        default hw = r;
+        field {} basicfield_a[31:0];
+    } read_write_array_3D[2][2][2];
+
+    reg {
         default sw = r;
         default hw = w;
         field {} basicfield_a[31:0];
     } read_only_array[2];
 
     reg {
+        default sw = r;
+        default hw = w;
+        field {} basicfield_a[31:0];
+    } read_only_array_2D[2][2];
+
+    reg {
+        default sw = r;
+        default hw = w;
+        field {} basicfield_a[31:0];
+    } read_only_array_3D[2][2][2];
+
+    reg {
         default sw = w;
         default hw = r;
         field {} basicfield_a[31:0];
     } write_only_array[2];
+
+    reg {
+        default sw = w;
+        default hw = r;
+        field {} basicfield_a[31:0];
+    } write_only_array_2D[2][2];
+
+    reg {
+        default sw = w;
+        default hw = r;
+        field {} basicfield_a[31:0];
+    } write_only_array_3D[2][2][2];
 
     external mem {
         mementries = 2;
