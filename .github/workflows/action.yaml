@@ -124,10 +124,15 @@ jobs:
 
         cd ../..
 
-        # build the libraries for the two cases
+        cd example/optimised_access/
+        peakrdl python optimised_access.rdl -o .
+        python -m demo_optimised_access
+
+        cd ../..
+
         cd example/array_access/
         peakrdl python array_access.rdl -o .
-        python -m array_access
+        python -m demo_array_access
 
         cd ../..
   #-------------------------------------------------------------------------------

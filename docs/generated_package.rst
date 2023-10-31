@@ -268,7 +268,7 @@ methods:
 
 Both demonstrated in the following code example:
 
-.. literalinclude :: ../example/optimised_access/optimised_access.py
+.. literalinclude :: ../example/optimised_access/demo_optimised_access.py
    :language: python
 
 Walking the Structure
@@ -408,7 +408,7 @@ a file called ``array_access.rdl``:
 
     peakrdl python array_access.rdl -o .
 
-.. literalinclude :: ../example/array_access/array_access.py
+.. literalinclude :: ../example/array_access/demo_array_access.py
    :language: python
 
 Python Safe Names
