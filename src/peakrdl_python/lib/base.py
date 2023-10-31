@@ -225,21 +225,31 @@ class NodeArray(Base, Sequence[NodeArrayElementType]):
 
         if len(self.dimensions) == 1:
             for item in self.__elements:
+                if not isinstance(item, self._element_datatype):
+                    raise TypeError(f'Unexpected Item Type {type(item)}')
                 yield item
         else:
             for indices in product(*[range(dim) for dim in self.dimensions]):
-                yield self[indices]
+                item_from_getter = self[indices]
+                if not isinstance(item_from_getter, self._element_datatype):
+                    raise TypeError(f'Unexpected Item Type {type(item_from_getter)}')
+                yield item_from_getter
 
-    def items(self) -> Iterator[Tuple[int, ...], NodeArrayElementType]:
+    def items(self) -> Iterator[Tuple[Tuple[int, ...], NodeArrayElementType]]:
         """
         iterate through all the items in an array but also return the index of the array
         """
         if len(self.dimensions) == 1:
             for index, item in enumerate(self.__elements):
+                if not isinstance(item, self._element_datatype):
+                    raise TypeError(f'Unexpected Item Type {type(item)}')
                 yield ((index, ), item)
         else:
             for indices in product(*[range(dim) for dim in self.dimensions]):
-                yield indices, self[indices]
+                item_from_getter = self[indices]
+                if not isinstance(item_from_getter, self._element_datatype):
+                    raise TypeError(f'Unexpected Item Type {type(item_from_getter)}')
+                yield (indices, item_from_getter)
 
     @property
     def dimensions(self) -> Union[Tuple[int, ...], Tuple[int]]:
