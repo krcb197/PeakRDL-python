@@ -90,6 +90,13 @@ jobs:
 
         python -m unittest discover -s testcase_output
 
+    - name: Test Autoformating
+      run: |
+        python -m pip install black
+        cp testcase_output autoformatted_testcase_output -r
+        black autoformatted_testcase_output --line-length 120
+        python -m unittest discover -s autoformatted_testcase_output
+
     - name: Run PeakRDL Case
       run: |
         python -m pip install peakrdl

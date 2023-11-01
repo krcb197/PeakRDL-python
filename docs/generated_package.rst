@@ -445,10 +445,15 @@ field from the example above
 Autoformating
 =============
 
-Previous versions of peakrdl-python included the option to run an autoformatter to clean up the
-generated code. This had two issues:
+The generated code is not perfect it often has lots of spare black lines, over time this will
+improve but the quickest way to resolve these issue is to include an autoformatter
+post-generation. Previous versions of peakrdl-python included the option to run an autoformatter
+to clean up the generated code. This had two issues:
 
 * It created maintenance issues when the autoformatter changed
 * The choice of autoformatter is an individual one, rather than force an autoformatter on people
   it is better to let people choose their own.
+
+peakrdl-python uses the Black `Black <https://pypi.org/project/black/L>`_ in the CI tests to check
+that the generated code is compatible with an autoformatter.
 
