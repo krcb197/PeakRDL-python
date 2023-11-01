@@ -79,6 +79,9 @@ jobs:
 
         python -m pip install mypy
 
+    - name: Run Unit Tests
+      run: |
+        python -m unittest discover -s tests/unit_tests
 
     - name: Generate testcases
       run: |
