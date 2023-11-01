@@ -17,7 +17,7 @@ from systemrdl.rdltypes import OnReadType, OnWriteType, PropertyReference  # typ
 from systemrdl.rdltypes.user_enum import UserEnumMeta  # type: ignore
 
 from .systemrdl_node_utility_functions import get_reg_readable_fields, get_reg_writable_fields, \
-    get_array_dim, get_table_block, get_dependent_component, \
+    get_table_block, get_dependent_component, \
     get_field_bitmask_hex_string, get_field_inv_bitmask_hex_string, \
     get_field_max_value_hex_string, get_reg_max_value_hex_string, get_fully_qualified_type_name, \
     uses_enum, uses_memory, \
@@ -143,7 +143,6 @@ class PythonExporter:
             'uses_enum' : uses_enum(top_block),
             'uses_memory' : uses_memory(top_block),
             'get_fully_qualified_type_name': self._lookup_type_name,
-            'get_array_dim': get_array_dim,
             'get_dependent_component': get_dependent_component,
             'get_dependent_enum': self._get_dependent_enum,
             'get_enum_values': get_enum_values,

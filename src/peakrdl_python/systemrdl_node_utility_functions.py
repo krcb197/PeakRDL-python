@@ -32,16 +32,6 @@ def get_fully_qualified_type_name(node: Node) -> str:
 
     return scope_path + '_' + inst_type_name
 
-
-def get_array_dim(node: AddressableNode) -> None:
-    """
-    Returns the class type name
-    """
-    assert node.is_array
-    assert len(node.array_dimensions) == 1
-    return node.array_dimensions[0]
-
-
 def get_dependent_component(node: AddressableNode) -> Iterable[Node]:
     """
     iterable of nodes that have a component which is used by a

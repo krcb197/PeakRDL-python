@@ -1,0 +1,9 @@
+addrmap array_access {
+
+    reg reg_a {
+        field { fieldwidth=1; } field_a;
+    };
+
+    reg_a reg_array_1D[2];
+    reg_a reg_array_3D[2][2][2];
+};

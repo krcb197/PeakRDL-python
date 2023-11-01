@@ -79,6 +79,9 @@ jobs:
 
         python -m pip install mypy
 
+    - name: Run Unit Tests
+      run: |
+        python -m unittest discover -s tests/unit_tests
 
     - name: Generate testcases
       run: |
@@ -128,6 +131,18 @@ jobs:
         # this example creates a gui that stays up for ever so needs changing before it can be
         # in the test suite
         # python -m flashing_the_LED
+
+        cd ../..
+
+        cd example/optimised_access/
+        peakrdl python optimised_access.rdl -o .
+        python -m demo_optimised_access
+
+        cd ../..
+
+        cd example/array_access/
+        peakrdl python array_access.rdl -o .
+        python -m demo_array_access
 
         cd ../..
   #-------------------------------------------------------------------------------

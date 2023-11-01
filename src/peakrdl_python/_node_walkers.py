@@ -33,9 +33,9 @@ class OwnedbyAddressMap(RDLListener):
         super().__init__()
 
         self.registers: List[RegNode] = []
-        self.fields: List[RegNode]  = []
-        self.memories: List[RegNode]  = []
-        self.addr_maps: List[AddrmapNode]  = []
+        self.fields: List[RegNode] = []
+        self.memories: List[RegNode] = []
+        self.addr_maps: List[AddrmapNode] = []
         self.reg_files: List[RegfileNode] = []
 
     def enter_Reg(self, node: RegNode) -> Optional[WalkerAction]:
@@ -72,3 +72,34 @@ class OwnedbyAddressMap(RDLListener):
 
         """
         return self.addr_maps + self.reg_files + self.memories + self.registers + self.fields
+
+    @property
+    def addressable_nodes(self) -> List[Union[RegNode, MemNode, AddrmapNode, RegfileNode]]:
+        """
+        All the nodes owned by the address map, including:
+        - address maps
+        - register files
+        - registers
+        - memories
+
+        Returns: list of nodes
+
+        """
+        return self.addr_maps + self.reg_files + self.memories + self.registers
+
+    @property
+    def n_dimesional_array_nodes(self) -> List[Union[RegNode, MemNode, AddrmapNode, RegfileNode]]:
+        """
+        All the nodes owned by the address map which are arrays with more than 1 dimension,
+        including:
+        - address maps
+        - register files
+        - registers
+        - memories
+
+        Returns: list of nodes
+        """
+        def n_dimensional_node(node: Union[RegNode, MemNode, AddrmapNode, RegfileNode]) -> bool:
+            return node.is_array and (len(node.array_dimensions) > 1)
+
+        return list(filter(n_dimensional_node, self.addressable_nodes))

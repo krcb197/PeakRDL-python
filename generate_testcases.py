@@ -9,7 +9,7 @@ from typing import Optional, List
 from systemrdl import RDLCompiler # type: ignore
 from systemrdl.node import Node, AddrmapNode # type: ignore
 from peakrdl_ipxact import IPXACTImporter # type: ignore
-from peakrdl_python import PythonExporter # type: ignore
+from src.peakrdl_python import PythonExporter # type: ignore
 
 test_case_path = os.path.join('tests', 'testcases')
 

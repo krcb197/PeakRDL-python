@@ -2,7 +2,7 @@
         {%- if node.is_array %}
     self.__{{node.inst_name}}:{{get_fully_qualified_type_name(node)}}_array_cls = {{get_fully_qualified_type_name(node)}}_array_cls(address=self.address+{{node.raw_address_offset}},
                                                                                   stride={{node.array_stride}},
-                                                                                  length={{get_array_dim(node)}},
+                                                                                  dimensions=tuple({{node.array_dimensions}}),
                                                                                   logger_handle=logger_handle+'.{{node.inst_name}}',
                                                                                   inst_name='{{node.inst_name}}', parent=self,
                                                                                   callbacks=callbacks)
