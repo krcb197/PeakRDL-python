@@ -199,6 +199,13 @@ class NodeArray(Base, Sequence[NodeArrayElementType]):
     def __getitem__(self, item):  # type: ignore[no-untyped-def]
         if len(self.dimensions) > 1:
             if isinstance(item, tuple):
+
+                if isinstance(item[0], slice):
+                    raise NotImplementedError(
+                        'There is a known issue with slicing on the outer dimension array with '
+                        'more than one dimension, see '
+                        'https://github.com/krcb197/PeakRDL-python/issues/110')
+
                 if len(item) != len(self.dimensions):
                     raise ValueError('When using a multidimensional access, the size must match the'
                                      ' dimensions of the array, array dimensions '
