@@ -30,9 +30,11 @@ Install from `PyPi`_ using pip
 
 .. toctree::
    :hidden:
+   :maxdepth: 2
    :caption: usage
 
    generated_package
+   api_components
    api
    command_line
    customisation
