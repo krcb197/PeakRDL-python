@@ -77,7 +77,6 @@ jobs:
         python -m pip install --upgrade pip
         python -m pip install .
 
-        python -m pip install mypy
 
     - name: Run Unit Tests
       run: |
@@ -85,6 +84,12 @@ jobs:
 
     - name: Generate testcases
       run: |
+
+        # one of the test cases uses IPxact so we need the importer
+        python -m pip install peakrdl-ipxact
+        # the generated code is type checked with mypy so this is needed
+        python -m pip install mypy
+
         # retrieve the example code from the systemRDL compiler
         wget -L https://raw.githubusercontent.com/SystemRDL/systemrdl-compiler/main/examples/accelera-generic_example.rdl -O tests/testcases/accelera-generic_example.rdl
         python generate_testcases.py

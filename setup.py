@@ -27,9 +27,12 @@ setup(
                     ]
                     },
     python_requires='>=3.7, <4',
+    keywords = [
+        "SystmRDL", "PeakRDL", "CSR", "compiler", "tool", "registers", "generator",
+        "IP-XACT",
+    ],
     install_requires=[
         "systemrdl-compiler>=1.24.0",
-        "peakrdl",
         "jinja2",
         "asynctest;python_version<'3.8'",
     ],
