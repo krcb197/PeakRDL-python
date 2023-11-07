@@ -7,6 +7,7 @@ command line program via the PeakRDL suite
 In order to use the PeakRDL Suite it must be installed:
 
 .. code-block:: bash
+
     python -m pip install peakrdl
 
 .. code-block:: bash
