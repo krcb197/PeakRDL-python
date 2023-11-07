@@ -126,10 +126,10 @@ a file called ``chip_with_a_GPIO.rdl``:
 
 .. code-block:: bash
 
-    peakpython chip_with_a_GPIO.rdl --outdir python_output --test
+    peakrdl python chip_with_a_GPIO.rdl -o python_output
+    python -m unittest discover -s python_output
 
-.. tip:: It is always good practice to use the ``--test`` command line argument to run the
-          unittests on the generated code.
+.. tip:: It is always good practice to run the unittests on the generated code.
 
 Once the register abstraction layer has been generated and it can be used. The following example
 does not actually use a device driver. Instead it chip simulator with a a Tkinter GUI,
@@ -181,7 +181,8 @@ a file called ``chip_with_registers.rdl``:
 
 .. code-block:: bash
 
-    peakpython chip_with_registers.rdl --outdir chip_with_registers --test
+   peakrdl python chip_with_registers.rdl -o chip_with_registers
+
 
 Traversing without Unrolling Loops
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
