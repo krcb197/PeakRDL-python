@@ -22,17 +22,16 @@ setup(
                'peakrdl_python.lib'],
     package_data={"peakrdl_python.templates": ["*.py.jinga"]},
     include_package_data = True,
-    entry_points= { 'console_scripts' : ['peakrdl_python=peakrdl_python.peakpython:main_function'],
-                    "peakrdl.exporters": [
+    entry_points= { "peakrdl.exporters": [
                         'python = peakrdl_python.__peakrdl__:Exporter'
                     ]
                     },
     python_requires='>=3.7, <4',
     install_requires=[
         "systemrdl-compiler>=1.24.0",
+        "peakrdl"
         "jinja2",
         "asynctest;python_version<'3.8'",
-        "peakrdl-ipxact"
     ],
     classifiers=[
         "Development Status :: 4 - Beta",
