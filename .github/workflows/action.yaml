@@ -167,7 +167,7 @@ jobs:
           python-version: 3.8
 
       - name: Build sdist
-        run: python3 -m build
+        run: python -m build
 
       - uses: actions/upload-artifact@v3
         with:
