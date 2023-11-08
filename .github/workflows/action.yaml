@@ -151,7 +151,7 @@ jobs:
 
         cd ../..
   #-------------------------------------------------------------------------------
-  build_sdist:
+  build:
     needs:
       - tests
       - lint
@@ -164,9 +164,13 @@ jobs:
       - uses: actions/setup-python@v4
         name: Install Python
         with:
-          python-version: 3.8
+          python-version: "3.11"
 
-      - name: Build sdist
+      - name: Install dependencies
+        run: |
+          python -m pip install -U build
+
+      - name: Build
         run: python -m build
 
       - uses: actions/upload-artifact@v3
@@ -179,7 +183,7 @@ jobs:
   #-------------------------------------------------------------------------------
   deploy:
     needs:
-      - build_sdist
+      - build
 
     runs-on: ubuntu-latest
 
