@@ -167,11 +167,14 @@ jobs:
           python-version: 3.8
 
       - name: Build sdist
-        run: python setup.py sdist
+        run: python3 -m build
 
       - uses: actions/upload-artifact@v3
         with:
-          path: dist/*.tar.gz
+          path: |
+            dist/*.tar.gz
+            dist/*.whl
+          
 
   #-------------------------------------------------------------------------------
   deploy:
