@@ -7,7 +7,7 @@ from typing import Tuple, Optional, Iterator, Union, Dict
 from abc import ABC, abstractmethod
 from itertools import product
 
-from src.peakrdl_python.lib import AddressMap, CallbackSet, Memory, RegFile
+from peakrdl_python.lib import AddressMap, CallbackSet, Memory, RegFile
 
 from .simple_components import RegisterArrayToTest, CallBackTestWrapper
 

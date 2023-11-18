@@ -7,7 +7,7 @@ from typing import List, Iterator, Dict, Type, Any, Union
 from abc import ABC
 import logging
 
-from src.peakrdl_python.lib import RegReadOnlyArray, \
+from peakrdl_python.lib import RegReadOnlyArray, \
     FieldReadOnly, FieldWriteOnly, FieldReadWrite,  \
     RegReadOnly, RegWriteOnly, RegReadWrite, \
     AddressMap, FieldMiscProps, FieldSizeProps, Node, NormalCallbackSet

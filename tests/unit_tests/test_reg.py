@@ -5,7 +5,7 @@ from typing import Tuple, Optional, Iterator, Union, Dict, Type, cast
 from abc import ABC, abstractmethod
 from unittest.mock import patch
 
-from src.peakrdl_python.lib import AddressMap, CallbackSet, Memory, RegFile, Reg
+from peakrdl_python.lib import AddressMap, CallbackSet, Memory, RegFile, Reg
 
 from .simple_components import ReadOnlyRegisterToTest, WriteOnlyRegisterToTest, \
     ReadWriteRegisterToTest, CallBackTestWrapper
