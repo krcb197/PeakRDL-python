@@ -29,7 +29,7 @@ class Memory(Node, ABC):
     __slots__: List[str] = ['__memwidth', '__entries', '__accesswidth']
 
     # pylint: disable=too-many-arguments
-    def __init__(self,
+    def __init__(self, *,
                  address: int,
                  width: int,
                  accesswidth: int,
@@ -370,7 +370,7 @@ class MemoryAsyncReadOnly(Memory, ABC):
     __slots__: List[str] = []
 
     # pylint: disable=too-many-arguments
-    def __init__(self,
+    def __init__(self, *,
                  address: int,
                  width: int,
                  accesswidth: int,
@@ -586,7 +586,8 @@ class MemoryReadOnlyArray(NodeArray, ABC):
     __slots__: List[str] = []
 
     # pylint: disable-next=too-many-arguments
-    def __init__(self, logger_handle: str, inst_name: str,
+    def __init__(self, *,
+                 logger_handle: str, inst_name: str,
                  parent: AddressMap,
                  address: int,
                  stride: int,
@@ -604,7 +605,8 @@ class MemoryWriteOnlyArray(NodeArray, ABC):
     __slots__: List[str] = []
 
     # pylint: disable-next=too-many-arguments
-    def __init__(self, logger_handle: str, inst_name: str,
+    def __init__(self, *,
+                 logger_handle: str, inst_name: str,
                  parent: AddressMap,
                  address: int,
                  stride: int,
@@ -622,7 +624,8 @@ class MemoryReadWriteArray(MemoryReadOnlyArray, MemoryWriteOnlyArray, ABC):
     __slots__: List[str] = []
 
     # pylint: disable-next=too-many-arguments
-    def __init__(self, logger_handle: str, inst_name: str,
+    def __init__(self, *,
+                 logger_handle: str, inst_name: str,
                  parent: AddressMap,
                  address: int,
                  stride: int,
@@ -640,7 +643,8 @@ class MemoryAsyncReadOnlyArray(NodeArray, ABC):
     __slots__: List[str] = []
 
     # pylint: disable-next=too-many-arguments
-    def __init__(self, logger_handle: str, inst_name: str,
+    def __init__(self, *,
+                 logger_handle: str, inst_name: str,
                  parent: AddressMap,
                  address: int,
                  stride: int,
@@ -658,7 +662,8 @@ class MemoryAsyncWriteOnlyArray(NodeArray, ABC):
     __slots__: List[str] = []
 
     # pylint: disable-next=too-many-arguments
-    def __init__(self, logger_handle: str, inst_name: str,
+    def __init__(self, *,
+                 logger_handle: str, inst_name: str,
                  parent: AddressMap,
                  address: int,
                  stride: int,
@@ -676,7 +681,8 @@ class MemoryAsyncReadWriteArray(MemoryAsyncReadOnlyArray, MemoryAsyncWriteOnlyAr
     __slots__: List[str] = []
 
     # pylint: disable-next=too-many-arguments
-    def __init__(self, logger_handle: str, inst_name: str,
+    def __init__(self, *,
+                 logger_handle: str, inst_name: str,
                  parent: AddressMap,
                  address: int,
                  stride: int,

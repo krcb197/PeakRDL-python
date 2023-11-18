@@ -38,7 +38,7 @@ class Reg(Node, ABC):
     __slots__: List[str] = ['__width', '__accesswidth']
 
     # pylint: disable=too-many-arguments,duplicate-code
-    def __init__(self,
+    def __init__(self, *,
                  address: int,
                  width: int,
                  accesswidth: int,
@@ -105,7 +105,7 @@ class RegReadOnly(Reg, ABC):
     __slots__: List[str] = ['__in_context_manager', '__register_state']
 
     # pylint: disable=too-many-arguments, duplicate-code
-    def __init__(self,
+    def __init__(self, *,
                  address: int,
                  width: int,
                  accesswidth: int,
@@ -205,7 +205,7 @@ class RegWriteOnly(Reg, ABC):
     __slots__: List[str] = []
 
     # pylint: disable=too-many-arguments, duplicate-code
-    def __init__(self,
+    def __init__(self, *,
                  address: int,
                  width: int,
                  accesswidth: int,
@@ -299,7 +299,7 @@ class RegReadWrite(RegReadOnly, RegWriteOnly, ABC):
     __slots__: List[str] = ['__in_context_manager', '__register_state']
 
     # pylint: disable=too-many-arguments, duplicate-code
-    def __init__(self,
+    def __init__(self, *,
                  address: int,
                  width: int,
                  accesswidth: int,
@@ -428,7 +428,7 @@ class RegAsyncReadOnly(Reg, ABC):
     __slots__: List[str] = ['__in_context_manager', '__register_state']
 
     # pylint: disable=too-many-arguments, duplicate-code
-    def __init__(self,
+    def __init__(self, *,
                  address: int,
                  width: int,
                  accesswidth: int,
@@ -530,7 +530,7 @@ class RegAsyncWriteOnly(Reg, ABC):
     __slots__: List[str] = []
 
     # pylint: disable=too-many-arguments, duplicate-code
-    def __init__(self,
+    def __init__(self, *,
                  address: int,
                  width: int,
                  accesswidth: int,
@@ -624,7 +624,7 @@ class RegAsyncReadWrite(RegAsyncReadOnly, RegAsyncWriteOnly, ABC):
     __slots__: List[str] = ['__in_context_manager', '__register_state']
 
     # pylint: disable=too-many-arguments, duplicate-code
-    def __init__(self,
+    def __init__(self, *,
                  address: int,
                  width: int,
                  accesswidth: int,
@@ -749,7 +749,8 @@ class RegReadOnlyArray(NodeArray, ABC):
     __slots__: List[str] = []
 
     # pylint: disable=too-many-arguments,duplicate-code
-    def __init__(self, logger_handle: str, inst_name: str,
+    def __init__(self, *,
+                 logger_handle: str, inst_name: str,
                  parent: Union[RegFile, AddressMap, Memory],
                  address: int,
                  stride: int,
@@ -769,7 +770,8 @@ class RegWriteOnlyArray(NodeArray, ABC):
     __slots__: List[str] = []
 
     # pylint: disable=too-many-arguments,duplicate-code
-    def __init__(self, logger_handle: str, inst_name: str,
+    def __init__(self, *,
+                 logger_handle: str, inst_name: str,
                  parent: Union[RegFile, AddressMap, Memory],
                  address: int,
                  stride: int,
@@ -789,7 +791,8 @@ class RegReadWriteArray(NodeArray, ABC):
     __slots__: List[str] = []
 
     # pylint: disable=too-many-arguments,duplicate-code
-    def __init__(self, logger_handle: str, inst_name: str,
+    def __init__(self, *,
+                 logger_handle: str, inst_name: str,
                  parent: Union[RegFile, AddressMap, Memory],
                  address: int,
                  stride: int,
@@ -809,7 +812,8 @@ class RegAsyncReadOnlyArray(NodeArray, ABC):
     __slots__: List[str] = []
 
     # pylint: disable=too-many-arguments,duplicate-code
-    def __init__(self, logger_handle: str, inst_name: str,
+    def __init__(self, *,
+                 logger_handle: str, inst_name: str,
                  parent: Union[RegFile, AddressMap, Memory],
                  address: int,
                  stride: int,
@@ -829,7 +833,8 @@ class RegAsyncWriteOnlyArray(NodeArray, ABC):
     __slots__: List[str] = []
 
     # pylint: disable=too-many-arguments,duplicate-code
-    def __init__(self, logger_handle: str, inst_name: str,
+    def __init__(self, *,
+                 logger_handle: str, inst_name: str,
                  parent: Union[RegFile, AddressMap, Memory],
                  address: int,
                  stride: int,
@@ -849,7 +854,8 @@ class RegAsyncReadWriteArray(NodeArray, ABC):
     __slots__: List[str] = []
 
     # pylint: disable=too-many-arguments,duplicate-code
-    def __init__(self, logger_handle: str, inst_name: str,
+    def __init__(self, *,
+                 logger_handle: str, inst_name: str,
                  parent: Union[RegFile, AddressMap, Memory],
                  address: int,
                  stride: int,

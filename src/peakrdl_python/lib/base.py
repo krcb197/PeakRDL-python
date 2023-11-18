@@ -23,11 +23,22 @@ class Base(ABC):
     """
     __slots__: List[str] = ['__logger', '__inst_name', '__parent']
 
-    def __init__(self, logger_handle: str, inst_name: str, parent: Optional['Node']):
+    def __init__(self, *,
+                 logger_handle: str, inst_name: str, parent: Optional['Node']):
+
+        if not isinstance(logger_handle, str):
+            raise TypeError(f'logger_handle should be str but got {type(logger_handle)}')
+
         self.__logger = logging.getLogger(logger_handle)
         self._logger.debug('creating instance of %s', self.__class__)
 
+        if not isinstance(inst_name, str):
+            raise TypeError(f'inst_name should be str but got {type(inst_name)}')
         self.__inst_name = inst_name
+
+        if parent is not None:
+            if not isinstance(parent, Node):
+                raise TypeError(f'parent should be Node but got {type(parent)}')
         self.__parent = parent
 
     @property
@@ -70,12 +81,15 @@ class Node(Base, ABC):
 
     __slots__ = ['__address']
 
-    def __init__(self,
+    def __init__(self, *,
                  address: int,
                  logger_handle: str,
                  inst_name: str,
                  parent: Optional['Node']):
         super().__init__(logger_handle=logger_handle, inst_name=inst_name, parent=parent)
+
+        if not isinstance(address, int):
+            raise TypeError(f'address should be int but got {type(address)}')
 
         self.__address = address
 
@@ -129,7 +143,7 @@ class NodeArray(Base, Sequence[NodeArrayElementType]):
                             '__stride', '__dimensions' ]
 
     # pylint: disable-next=too-many-arguments
-    def __init__(self, logger_handle: str,
+    def __init__(self, *, logger_handle: str,
                  inst_name: str,
                  parent: Node,
                  address: int,
@@ -369,7 +383,7 @@ class AddressMap(Node, ABC):
 
     __slots__: List[str] = ['__callbacks']
 
-    def __init__(self,
+    def __init__(self, *,
                  callbacks: Optional[CallbackSet],
                  address: int,
                  logger_handle: str,
@@ -433,7 +447,7 @@ class AddressMapArray(NodeArray, ABC):
     __slots__: List[str] = []
 
     # pylint: disable-next=too-many-arguments
-    def __init__(self, logger_handle: str, inst_name: str,
+    def __init__(self, *, logger_handle: str, inst_name: str,
                  parent: AddressMap,
                  address: int,
                  stride: int,
@@ -455,7 +469,7 @@ class RegFile(Node, ABC):
 
     __slots__: List[str] = []
 
-    def __init__(self,
+    def __init__(self, *,
                  address: int,
                  logger_handle: str,
                  inst_name: str,
@@ -494,7 +508,8 @@ class RegFileArray(NodeArray, ABC):
     __slots__: List[str] = []
 
     # pylint: disable-next=too-many-arguments
-    def __init__(self, logger_handle: str, inst_name: str,
+    def __init__(self, *,
+                 logger_handle: str, inst_name: str,
                  parent: Union[AddressMap, RegFile],
                  address: int,
                  stride: int,
