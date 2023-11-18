@@ -36,9 +36,6 @@ if __name__ == '__main__':
     for index, array_item in regmodel.reg_array_1D.items():
         print(f'item[{index[0]}]={array_item.field_a.read():d}')
 
-    # access a entry in the 3D array
-    print(regmodel.reg_array_3D[1][1][1].field_a.read())
-
     # access a entry in the 3D array with other indexing scheme
     print(regmodel.reg_array_3D[1,1,1].field_a.read())
 
