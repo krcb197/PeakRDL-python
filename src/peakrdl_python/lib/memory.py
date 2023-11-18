@@ -8,7 +8,7 @@ from abc import ABC, abstractmethod
 
 from .base import Node, AddressMap, NodeArray, get_array_typecode
 
-from .callbacks import CallbackSet, NormalCallbackSet, AsyncCallbackSet
+from .callbacks import NormalCallbackSet, AsyncCallbackSet
 
 if TYPE_CHECKING:
     from .register import ReadableRegister, WritableRegister
@@ -30,7 +30,6 @@ class Memory(Node, ABC):
 
     # pylint: disable=too-many-arguments
     def __init__(self,
-                 callbacks: CallbackSet,
                  address: int,
                  width: int,
                  accesswidth: int,
@@ -47,8 +46,7 @@ class Memory(Node, ABC):
             width: width of the register in bits
             logger_handle: name to be used logging messages associate with thisobject
         """
-        super().__init__(callbacks=callbacks,
-                         address=address,
+        super().__init__(address=address,
                          logger_handle=logger_handle,
                          inst_name=inst_name,
                          parent=parent)
@@ -151,7 +149,6 @@ class MemoryReadOnly(Memory, ABC):
 
     # pylint: disable=too-many-arguments
     def __init__(self,
-                 callbacks: NormalCallbackSet,
                  address: int,
                  width: int,
                  accesswidth: int,
@@ -160,11 +157,10 @@ class MemoryReadOnly(Memory, ABC):
                  inst_name: str,
                  parent: AddressMap):
 
-        if not isinstance(callbacks, NormalCallbackSet):
-            raise TypeError(f'callback set type is wrong, got {type(callbacks)}')
+        if not isinstance(parent._callbacks, NormalCallbackSet):
+            raise TypeError(f'callback set type is wrong, got {type(parent._callbacks)}')
 
-        super().__init__(callbacks=callbacks,
-                         address=address,
+        super().__init__(address=address,
                          width=width,
                          accesswidth=accesswidth,
                          entries=entries,
@@ -175,8 +171,11 @@ class MemoryReadOnly(Memory, ABC):
     # pylint: enable=too-many-arguments
     @property
     def _callbacks(self) -> NormalCallbackSet:
+        if self.parent is None:
+            raise RuntimeError('Parent must be set')
         # This cast is OK because the type was checked in the __init__
-        return cast(NormalCallbackSet, super()._callbacks)
+        # pylint: disable-next=protected-access
+        return cast(NormalCallbackSet,  self.parent._callbacks)
 
     def read(self, start_entry: int, number_entries: int) -> Array:
         """
@@ -260,7 +259,6 @@ class MemoryWriteOnly(Memory, ABC):
 
     # pylint: disable=too-many-arguments
     def __init__(self,
-                 callbacks: NormalCallbackSet,
                  address: int,
                  width: int,
                  accesswidth: int,
@@ -269,11 +267,10 @@ class MemoryWriteOnly(Memory, ABC):
                  inst_name: str,
                  parent: AddressMap):
 
-        if not isinstance(callbacks, NormalCallbackSet):
-            raise TypeError(f'callback set type is wrong, got {type(callbacks)}')
+        if not isinstance(parent._callbacks, NormalCallbackSet):
+            raise TypeError(f'callback set type is wrong, got {type(parent._callbacks)}')
 
-        super().__init__(callbacks=callbacks,
-                         address=address,
+        super().__init__(address=address,
                          width=width,
                          accesswidth=accesswidth,
                          entries=entries,
@@ -284,8 +281,11 @@ class MemoryWriteOnly(Memory, ABC):
     # pylint: enable=too-many-arguments
     @property
     def _callbacks(self) -> NormalCallbackSet:
+        if self.parent is None:
+            raise RuntimeError('Parent must be set')
         # This cast is OK because the type was checked in the __init__
-        return cast(NormalCallbackSet, super()._callbacks)
+        # pylint: disable-next=protected-access
+        return cast(NormalCallbackSet,  self.parent._callbacks)
 
     def write(self, start_entry: int, data: Array) -> None:
         """
@@ -371,7 +371,6 @@ class MemoryAsyncReadOnly(Memory, ABC):
 
     # pylint: disable=too-many-arguments
     def __init__(self,
-                 callbacks: AsyncCallbackSet,
                  address: int,
                  width: int,
                  accesswidth: int,
@@ -380,11 +379,10 @@ class MemoryAsyncReadOnly(Memory, ABC):
                  inst_name: str,
                  parent: AddressMap):
 
-        if not isinstance(callbacks, AsyncCallbackSet):
-            raise TypeError(f'callback set type is wrong, got {type(callbacks)}')
+        if not isinstance(parent._callbacks, AsyncCallbackSet):
+            raise TypeError(f'callback set type is wrong, got {type(parent._callbacks)}')
 
-        super().__init__(callbacks=callbacks,
-                         address=address,
+        super().__init__(address=address,
                          width=width,
                          accesswidth=accesswidth,
                          entries=entries,
@@ -395,8 +393,11 @@ class MemoryAsyncReadOnly(Memory, ABC):
     # pylint: enable=too-many-arguments
     @property
     def _callbacks(self) -> AsyncCallbackSet:
+        if self.parent is None:
+            raise RuntimeError('Parent must be set')
         # This cast is OK because the type was checked in the __init__
-        return cast(AsyncCallbackSet, super()._callbacks)
+        # pylint: disable-next=protected-access
+        return cast(AsyncCallbackSet,  self.parent._callbacks)
 
     async def read(self, start_entry: int, number_entries: int) -> Array:
         """
@@ -479,7 +480,6 @@ class MemoryAsyncWriteOnly(Memory, ABC):
 
     # pylint: disable=too-many-arguments
     def __init__(self,
-                 callbacks: AsyncCallbackSet,
                  address: int,
                  width: int,
                  accesswidth: int,
@@ -488,11 +488,10 @@ class MemoryAsyncWriteOnly(Memory, ABC):
                  inst_name: str,
                  parent: AddressMap):
 
-        if not isinstance(callbacks, AsyncCallbackSet):
-            raise TypeError(f'callback set type is wrong, got {type(callbacks)}')
+        if not isinstance(parent._callbacks, AsyncCallbackSet):
+            raise TypeError(f'callback set type is wrong, got {type(parent._callbacks)}')
 
-        super().__init__(callbacks=callbacks,
-                         address=address,
+        super().__init__(address=address,
                          width=width,
                          accesswidth=accesswidth,
                          entries=entries,
@@ -503,8 +502,11 @@ class MemoryAsyncWriteOnly(Memory, ABC):
     # pylint: enable=too-many-arguments
     @property
     def _callbacks(self) -> AsyncCallbackSet:
+        if self.parent is None:
+            raise RuntimeError('Parent must be set')
         # This cast is OK because the type was checked in the __init__
-        return cast(AsyncCallbackSet, super()._callbacks)
+        # pylint: disable-next=protected-access
+        return cast(AsyncCallbackSet,  self.parent._callbacks)
 
     async def write(self, start_entry: int, data: Array) -> None:
         """
@@ -586,13 +588,12 @@ class MemoryReadOnlyArray(NodeArray, ABC):
     # pylint: disable-next=too-many-arguments
     def __init__(self, logger_handle: str, inst_name: str,
                  parent: AddressMap,
-                 callbacks: NormalCallbackSet,
                  address: int,
                  stride: int,
                  dimensions: Tuple[int, ...]):
 
         super().__init__(logger_handle=logger_handle, inst_name=inst_name,
-                         parent=parent, callbacks=callbacks, address=address,
+                         parent=parent, address=address,
                          stride=stride, dimensions=dimensions)
 
 
@@ -605,13 +606,12 @@ class MemoryWriteOnlyArray(NodeArray, ABC):
     # pylint: disable-next=too-many-arguments
     def __init__(self, logger_handle: str, inst_name: str,
                  parent: AddressMap,
-                 callbacks: NormalCallbackSet,
                  address: int,
                  stride: int,
                  dimensions: Tuple[int, ...]):
 
         super().__init__(logger_handle=logger_handle, inst_name=inst_name,
-                         parent=parent, callbacks=callbacks, address=address,
+                         parent=parent, address=address,
                          stride=stride, dimensions=dimensions)
 
 
@@ -624,13 +624,12 @@ class MemoryReadWriteArray(MemoryReadOnlyArray, MemoryWriteOnlyArray, ABC):
     # pylint: disable-next=too-many-arguments
     def __init__(self, logger_handle: str, inst_name: str,
                  parent: AddressMap,
-                 callbacks: NormalCallbackSet,
                  address: int,
                  stride: int,
                  dimensions: Tuple[int, ...]):
 
         super().__init__(logger_handle=logger_handle, inst_name=inst_name,
-                         parent=parent, callbacks=callbacks, address=address,
+                         parent=parent, address=address,
                          stride=stride, dimensions=dimensions)
 
 
@@ -643,13 +642,12 @@ class MemoryAsyncReadOnlyArray(NodeArray, ABC):
     # pylint: disable-next=too-many-arguments
     def __init__(self, logger_handle: str, inst_name: str,
                  parent: AddressMap,
-                 callbacks: AsyncCallbackSet,
                  address: int,
                  stride: int,
                  dimensions: Tuple[int, ...]):
 
         super().__init__(logger_handle=logger_handle, inst_name=inst_name,
-                         parent=parent, callbacks=callbacks, address=address,
+                         parent=parent, address=address,
                          stride=stride, dimensions=dimensions)
 
 
@@ -662,13 +660,12 @@ class MemoryAsyncWriteOnlyArray(NodeArray, ABC):
     # pylint: disable-next=too-many-arguments
     def __init__(self, logger_handle: str, inst_name: str,
                  parent: AddressMap,
-                 callbacks: AsyncCallbackSet,
                  address: int,
                  stride: int,
                  dimensions: Tuple[int, ...]):
 
         super().__init__(logger_handle=logger_handle, inst_name=inst_name,
-                         parent=parent, callbacks=callbacks, address=address,
+                         parent=parent, address=address,
                          stride=stride, dimensions=dimensions)
 
 
@@ -681,11 +678,10 @@ class MemoryAsyncReadWriteArray(MemoryAsyncReadOnlyArray, MemoryAsyncWriteOnlyAr
     # pylint: disable-next=too-many-arguments
     def __init__(self, logger_handle: str, inst_name: str,
                  parent: AddressMap,
-                 callbacks: AsyncCallbackSet,
                  address: int,
                  stride: int,
                  dimensions: Tuple[int, ...]):
 
         super().__init__(logger_handle=logger_handle, inst_name=inst_name,
-                         parent=parent, callbacks=callbacks, address=address,
+                         parent=parent, address=address,
                          stride=stride, dimensions=dimensions)

@@ -11,7 +11,7 @@ from array import array as Array
 
 from .base import Node, AddressMap, RegFile, NodeArray, get_array_typecode
 from .memory import Memory
-from .callbacks import CallbackSet, NormalCallbackSet, AsyncCallbackSet
+from .callbacks import NormalCallbackSet, AsyncCallbackSet
 
 if TYPE_CHECKING:
     from .fields import FieldReadOnly, FieldWriteOnly, FieldReadWrite
@@ -39,7 +39,6 @@ class Reg(Node, ABC):
 
     # pylint: disable=too-many-arguments,duplicate-code
     def __init__(self,
-                 callbacks: CallbackSet,
                  address: int,
                  width: int,
                  accesswidth: int,
@@ -47,8 +46,7 @@ class Reg(Node, ABC):
                  inst_name: str,
                  parent: Union[AddressMap, RegFile, Memory]):
 
-        super().__init__(callbacks=callbacks,
-                         address=address,
+        super().__init__(address=address,
                          logger_handle=logger_handle,
                          inst_name=inst_name,
                          parent=parent)
@@ -108,7 +106,6 @@ class RegReadOnly(Reg, ABC):
 
     # pylint: disable=too-many-arguments, duplicate-code
     def __init__(self,
-                 callbacks: NormalCallbackSet,
                  address: int,
                  width: int,
                  accesswidth: int,
@@ -116,11 +113,10 @@ class RegReadOnly(Reg, ABC):
                  inst_name: str,
                  parent: Union[AddressMap, RegFile, Memory]):
 
-        if not isinstance(callbacks, NormalCallbackSet):
-            raise TypeError(f'callback set type is wrong, got {type(callbacks)}')
+        if not isinstance(parent._callbacks, NormalCallbackSet):
+            raise TypeError(f'callback set type is wrong, got {type(parent._callbacks)}')
 
-        super().__init__(callbacks=callbacks,
-                         address=address,
+        super().__init__(address=address,
                          logger_handle=logger_handle,
                          inst_name=inst_name,
                          parent=parent, width=width, accesswidth=accesswidth)
@@ -132,8 +128,11 @@ class RegReadOnly(Reg, ABC):
 
     @property
     def _callbacks(self) -> NormalCallbackSet:
+        if self.parent is None:
+            raise RuntimeError('Parent must be set')
         # This cast is OK because the type was checked in the __init__
-        return cast(NormalCallbackSet, super()._callbacks)
+        # pylint: disable-next=protected-access
+        return cast(NormalCallbackSet, self.parent._callbacks)
 
     @contextmanager
     def single_read(self) -> Generator['RegReadOnly', None, None]:
@@ -207,7 +206,6 @@ class RegWriteOnly(Reg, ABC):
 
     # pylint: disable=too-many-arguments, duplicate-code
     def __init__(self,
-                 callbacks: NormalCallbackSet,
                  address: int,
                  width: int,
                  accesswidth: int,
@@ -215,11 +213,10 @@ class RegWriteOnly(Reg, ABC):
                  inst_name: str,
                  parent: Union[AddressMap, RegFile, Memory]):
 
-        if not isinstance(callbacks, NormalCallbackSet):
-            raise TypeError(f'callback set type is wrong, got {type(callbacks)}')
+        if not isinstance(parent._callbacks, NormalCallbackSet):
+            raise TypeError(f'callback set type is wrong, got {type(parent._callbacks)}')
 
-        super().__init__(callbacks=callbacks,
-                         address=address,
+        super().__init__(address=address,
                          logger_handle=logger_handle,
                          inst_name=inst_name,
                          parent=parent, width=width, accesswidth=accesswidth)
@@ -228,8 +225,11 @@ class RegWriteOnly(Reg, ABC):
 
     @property
     def _callbacks(self) -> NormalCallbackSet:
+        if self.parent is None:
+            raise RuntimeError('Parent must be set')
         # This cast is OK because the type was checked in the __init__
-        return cast(NormalCallbackSet, super()._callbacks)
+        # pylint: disable-next=protected-access
+        return cast(NormalCallbackSet, self.parent._callbacks)
 
     def write(self, data: int) -> None:
         """Writes a value to the register
@@ -300,7 +300,6 @@ class RegReadWrite(RegReadOnly, RegWriteOnly, ABC):
 
     # pylint: disable=too-many-arguments, duplicate-code
     def __init__(self,
-                 callbacks: NormalCallbackSet,
                  address: int,
                  width: int,
                  accesswidth: int,
@@ -308,8 +307,7 @@ class RegReadWrite(RegReadOnly, RegWriteOnly, ABC):
                  inst_name: str,
                  parent: Union[AddressMap, RegFile, Memory]):
 
-        super().__init__(callbacks=callbacks,
-                         address=address,
+        super().__init__(address=address,
                          logger_handle=logger_handle,
                          inst_name=inst_name,
                          parent=parent, width=width, accesswidth=accesswidth)
@@ -431,7 +429,6 @@ class RegAsyncReadOnly(Reg, ABC):
 
     # pylint: disable=too-many-arguments, duplicate-code
     def __init__(self,
-                 callbacks: AsyncCallbackSet,
                  address: int,
                  width: int,
                  accesswidth: int,
@@ -439,11 +436,10 @@ class RegAsyncReadOnly(Reg, ABC):
                  inst_name: str,
                  parent: Union[AddressMap, RegFile, Memory]):
 
-        if not isinstance(callbacks, AsyncCallbackSet):
-            raise TypeError(f'callback set type is wrong, got {type(callbacks)}')
+        if not isinstance(parent._callbacks, AsyncCallbackSet):
+            raise TypeError(f'callback set type is wrong, got {type(parent._callbacks)}')
 
-        super().__init__(callbacks=callbacks,
-                         address=address,
+        super().__init__(address=address,
                          logger_handle=logger_handle,
                          inst_name=inst_name,
                          parent=parent, width=width, accesswidth=accesswidth)
@@ -453,8 +449,11 @@ class RegAsyncReadOnly(Reg, ABC):
 
     @property
     def _callbacks(self) -> AsyncCallbackSet:
+        if self.parent is None:
+            raise RuntimeError('Parent must be set')
         # This cast is OK because the type was checked in the __init__
-        return cast(AsyncCallbackSet, super()._callbacks)
+        # pylint: disable-next=protected-access
+        return cast(AsyncCallbackSet, self.parent._callbacks)
 
     # pylint: enable=too-many-arguments, duplicate-code
 
@@ -532,7 +531,6 @@ class RegAsyncWriteOnly(Reg, ABC):
 
     # pylint: disable=too-many-arguments, duplicate-code
     def __init__(self,
-                 callbacks: AsyncCallbackSet,
                  address: int,
                  width: int,
                  accesswidth: int,
@@ -540,19 +538,21 @@ class RegAsyncWriteOnly(Reg, ABC):
                  inst_name: str,
                  parent: Union[AddressMap, RegFile, Memory]):
 
-        if not isinstance(callbacks, AsyncCallbackSet):
-            raise TypeError(f'callback set type is wrong, got {type(callbacks)}')
+        if not isinstance(parent._callbacks, AsyncCallbackSet):
+            raise TypeError(f'callback set type is wrong, got {type(parent._callbacks)}')
 
-        super().__init__(callbacks=callbacks,
-                         address=address,
+        super().__init__(address=address,
                          logger_handle=logger_handle,
                          inst_name=inst_name,
                          parent=parent, width=width, accesswidth=accesswidth)
 
     @property
     def _callbacks(self) -> AsyncCallbackSet:
+        if self.parent is None:
+            raise RuntimeError('Parent must be set')
         # This cast is OK because the type was checked in the __init__
-        return cast(AsyncCallbackSet, super()._callbacks)
+        # pylint: disable-next=protected-access
+        return cast(AsyncCallbackSet, self.parent._callbacks)
 
     # pylint: enable=too-many-arguments, duplicate-code
 
@@ -625,7 +625,6 @@ class RegAsyncReadWrite(RegAsyncReadOnly, RegAsyncWriteOnly, ABC):
 
     # pylint: disable=too-many-arguments, duplicate-code
     def __init__(self,
-                 callbacks: AsyncCallbackSet,
                  address: int,
                  width: int,
                  accesswidth: int,
@@ -633,8 +632,7 @@ class RegAsyncReadWrite(RegAsyncReadOnly, RegAsyncWriteOnly, ABC):
                  inst_name: str,
                  parent: Union[AddressMap, RegFile, Memory]):
 
-        super().__init__(callbacks=callbacks,
-                         address=address,
+        super().__init__(address=address,
                          logger_handle=logger_handle,
                          inst_name=inst_name,
                          parent=parent, width=width, accesswidth=accesswidth)
@@ -753,14 +751,13 @@ class RegReadOnlyArray(NodeArray, ABC):
     # pylint: disable=too-many-arguments,duplicate-code
     def __init__(self, logger_handle: str, inst_name: str,
                  parent: Union[RegFile, AddressMap, Memory],
-                 callbacks: NormalCallbackSet,
                  address: int,
                  stride: int,
                  dimensions: Tuple[int, ...],
                  elements: Optional[Dict[Tuple[int, ...], RegReadOnly]] = None):
 
         super().__init__(logger_handle=logger_handle, inst_name=inst_name,
-                         parent=parent, callbacks=callbacks, address=address,
+                         parent=parent, address=address,
                          stride=stride, dimensions=dimensions, elements=elements)
     # pylint: enable=too-many-arguments,duplicate-code
 
@@ -774,14 +771,13 @@ class RegWriteOnlyArray(NodeArray, ABC):
     # pylint: disable=too-many-arguments,duplicate-code
     def __init__(self, logger_handle: str, inst_name: str,
                  parent: Union[RegFile, AddressMap, Memory],
-                 callbacks: NormalCallbackSet,
                  address: int,
                  stride: int,
                  dimensions: Tuple[int, ...],
                  elements: Optional[Dict[Tuple[int, ...], RegWriteOnly]] = None):
 
         super().__init__(logger_handle=logger_handle, inst_name=inst_name,
-                         parent=parent, callbacks=callbacks, address=address,
+                         parent=parent, address=address,
                          stride=stride, dimensions=dimensions, elements=elements)
     # pylint: enable=too-many-arguments,duplicate-code
 
@@ -795,14 +791,13 @@ class RegReadWriteArray(NodeArray, ABC):
     # pylint: disable=too-many-arguments,duplicate-code
     def __init__(self, logger_handle: str, inst_name: str,
                  parent: Union[RegFile, AddressMap, Memory],
-                 callbacks: NormalCallbackSet,
                  address: int,
                  stride: int,
                  dimensions: Tuple[int, ...],
                  elements: Optional[Dict[Tuple[int, ...], RegReadWrite]] = None):
 
         super().__init__(logger_handle=logger_handle, inst_name=inst_name,
-                         parent=parent, callbacks=callbacks, address=address,
+                         parent=parent, address=address,
                          stride=stride, dimensions=dimensions, elements=elements)
     # pylint: enable=too-many-arguments,duplicate-code
 
@@ -816,14 +811,13 @@ class RegAsyncReadOnlyArray(NodeArray, ABC):
     # pylint: disable=too-many-arguments,duplicate-code
     def __init__(self, logger_handle: str, inst_name: str,
                  parent: Union[RegFile, AddressMap, Memory],
-                 callbacks: AsyncCallbackSet,
                  address: int,
                  stride: int,
                  dimensions: Tuple[int, ...],
                  elements: Optional[Dict[Tuple[int, ...], RegAsyncReadOnly]] = None):
 
         super().__init__(logger_handle=logger_handle, inst_name=inst_name,
-                         parent=parent, callbacks=callbacks, address=address,
+                         parent=parent, address=address,
                          stride=stride, dimensions=dimensions, elements=elements)
     # pylint: enable=too-many-arguments,duplicate-code
 
@@ -837,14 +831,13 @@ class RegAsyncWriteOnlyArray(NodeArray, ABC):
     # pylint: disable=too-many-arguments,duplicate-code
     def __init__(self, logger_handle: str, inst_name: str,
                  parent: Union[RegFile, AddressMap, Memory],
-                 callbacks: AsyncCallbackSet,
                  address: int,
                  stride: int,
                  dimensions: Tuple[int, ...],
                  elements: Optional[Dict[Tuple[int, ...], RegAsyncReadOnly]] = None):
 
         super().__init__(logger_handle=logger_handle, inst_name=inst_name,
-                         parent=parent, callbacks=callbacks, address=address,
+                         parent=parent, address=address,
                          stride=stride, dimensions=dimensions, elements=elements)
     # pylint: enable=too-many-arguments,duplicate-code
 
@@ -858,14 +851,13 @@ class RegAsyncReadWriteArray(NodeArray, ABC):
     # pylint: disable=too-many-arguments,duplicate-code
     def __init__(self, logger_handle: str, inst_name: str,
                  parent: Union[RegFile, AddressMap, Memory],
-                 callbacks: AsyncCallbackSet,
                  address: int,
                  stride: int,
                  dimensions: Tuple[int, ...],
                  elements: Optional[Dict[Tuple[int, ...], RegAsyncReadOnly]] = None):
 
         super().__init__(logger_handle=logger_handle, inst_name=inst_name,
-                         parent=parent, callbacks=callbacks, address=address,
+                         parent=parent, address=address,
                          stride=stride, dimensions=dimensions, elements=elements)
     # pylint: enable=too-many-arguments,duplicate-code
 

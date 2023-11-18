@@ -20,14 +20,12 @@ class {{get_fully_qualified_type_name(node)}}_cls(Memory{% if asyncoutput %}Asyn
     __slots__ : List[str] = [{%- for child_node in node.children(unroll=False) -%}{%- if isinstance(child_node, systemrdlRegNode) -%}'__{{child_node.inst_name}}'{% if not loop.last %}, {% endif %}{% endif %}{%- endfor %}]
 
     def __init__(self,
-                 callbacks: {% if asyncoutput %}AsyncCallbackSet{% else %}NormalCallbackSet{% endif %},
                  address: int,
                  logger_handle: str,
                  inst_name: str,
                  parent:AddressMap):
 
-        super().__init__(callbacks=callbacks,
-                         address=address,
+        super().__init__(address=address,
                          entries={{node.get_property('mementries')}},
                          {% if 'accesswidth' in node.list_properties() -%}accesswidth={{node.get_property('accesswidth')}}{%- else -%}accesswidth={{node.get_property('memwidth')}}{%- endif -%},
                          width={{node.get_property('memwidth')}},
@@ -92,13 +90,12 @@ class {{get_fully_qualified_type_name(node)}}_array_cls(Memory{% if asyncoutput 
 
     def __init__(self, logger_handle: str, inst_name: str,
                  parent: AddressMap,
-                 callbacks: {% if asyncoutput %}AsyncCallbackSet{% else %}NormalCallbackSet{% endif %},
                  address: int,
                  stride: int,
                  dimensions: Tuple[int, ...]):
 
         super().__init__(logger_handle=logger_handle, inst_name=inst_name,
-                         parent=parent, callbacks=callbacks, address=address,
+                         parent=parent, address=address,
                          stride=stride, dimensions=dimensions)
 
     @property

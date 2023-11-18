@@ -11,7 +11,7 @@ from itertools import product
 from functools import reduce
 from operator import mul
 
-from .callbacks import CallbackSet
+from .callbacks import CallbackSet, NormalCallbackSet, AsyncCallbackSet
 
 if TYPE_CHECKING:
     from .memory import Memory
@@ -23,7 +23,7 @@ class Base(ABC):
     """
     __slots__: List[str] = ['__logger', '__inst_name', '__parent']
 
-    def __init__(self, logger_handle: str, inst_name: str, parent: Optional[Base]):
+    def __init__(self, logger_handle: str, inst_name: str, parent: Optional['Node']):
         self.__logger = logging.getLogger(logger_handle)
         self._logger.debug('creating instance of %s', self.__class__)
 
@@ -42,7 +42,7 @@ class Base(ABC):
         return self.__inst_name
 
     @property
-    def parent(self) -> Optional[Base]:
+    def parent(self) -> Optional['Node']:
         """
         parent of the node or field, or None if it has no parent
         """
@@ -68,18 +68,16 @@ class Node(Base, ABC):
         circumstances however, it is useful for type checking
     """
 
-    __slots__ = ['__address', '__callbacks']
+    __slots__ = ['__address']
 
     def __init__(self,
-                 callbacks: CallbackSet,
                  address: int,
                  logger_handle: str,
                  inst_name: str,
-                 parent: Optional[Base]):
+                 parent: Optional['Node']):
         super().__init__(logger_handle=logger_handle, inst_name=inst_name, parent=parent)
 
         self.__address = address
-        self.__callbacks = callbacks
 
     @property
     def address(self) -> int:
@@ -89,8 +87,9 @@ class Node(Base, ABC):
         return self.__address
 
     @property
+    @abstractmethod
     def _callbacks(self) -> CallbackSet:
-        return self.__callbacks
+        ...
 
     @property
     @abstractmethod
@@ -126,14 +125,13 @@ class NodeArray(Base, Sequence[NodeArrayElementType]):
     """
 
     # pylint: disable=too-few-public-methods
-    __slots__: List[str] = ['__elements', '__address', '__callbacks',
+    __slots__: List[str] = ['__elements', '__address',
                             '__stride', '__dimensions' ]
 
     # pylint: disable-next=too-many-arguments
     def __init__(self, logger_handle: str,
                  inst_name: str,
                  parent: Node,
-                 callbacks: CallbackSet,
                  address: int,
                  stride: int,
                  dimensions: Tuple[int, ...],
@@ -144,7 +142,6 @@ class NodeArray(Base, Sequence[NodeArrayElementType]):
         if not isinstance(address, int):
             raise TypeError(f'address should be a int but got {type(dimensions)}')
         self.__address = address
-        self.__callbacks = callbacks
         if not isinstance(stride, int):
             raise TypeError(f'stride should be a int but got {type(dimensions)}')
         self.__stride = stride
@@ -170,7 +167,6 @@ class NodeArray(Base, Sequence[NodeArrayElementType]):
                 new_elements[indices] = self._element_datatype(
                     logger_handle=logger_handle +
                                   '[' + ','.join([str(item) for item in indices]) + ']',
-                    callbacks=self._callbacks,
                     address=self.__address_calculator(indices),
                     inst_name=inst_name + '[' + ']['.join([str(item) for item in indices]) + ']',
                     parent=self.parent)
@@ -252,7 +248,6 @@ class NodeArray(Base, Sequence[NodeArrayElementType]):
             return self.__class__(logger_handle=self._logger.name,
                                   inst_name=self.inst_name,
                                   parent=self.parent,
-                                  callbacks=self.__callbacks,
                                   address=self.address,
                                   stride=self.stride,
                                   dimensions=self.dimensions,
@@ -306,7 +301,6 @@ class NodeArray(Base, Sequence[NodeArrayElementType]):
             return self.__class__(logger_handle=self._logger.name,
                                   inst_name=self.inst_name,
                                   parent=self.parent,
-                                  callbacks=self.__callbacks,
                                   address=self.address,
                                   stride=self.stride,
                                   dimensions=self.dimensions,
@@ -358,7 +352,10 @@ class NodeArray(Base, Sequence[NodeArrayElementType]):
 
     @property
     def _callbacks(self) -> CallbackSet:
-        return self.__callbacks
+        if self.parent is None:
+            raise RuntimeError('Parent must be set')
+        # pylint: disable-next=protected-access
+        return self.parent._callbacks
 
 
 class AddressMap(Node, ABC):
@@ -370,17 +367,26 @@ class AddressMap(Node, ABC):
         circumstances however, it is useful for type checking
     """
 
-    __slots__: List[str] = []
+    __slots__: List[str] = ['__callbacks']
 
     def __init__(self,
-                 callbacks: CallbackSet,
+                 callbacks: Optional[CallbackSet],
                  address: int,
                  logger_handle: str,
                  inst_name: str,
                  parent: Optional['AddressMap']):
 
-        super().__init__(callbacks=callbacks,
-                         address=address,
+        # only the top-level address map should have callbacks assigned, everything else should
+        # use its parent callback
+        if parent is None:
+            if not isinstance(callbacks, (NormalCallbackSet, AsyncCallbackSet)):
+                raise TypeError(f'callback type wrong, got {type(callbacks)}')
+            self.__callbacks = callbacks
+        else:
+            if not callbacks is None:
+                raise RuntimeError('Callbacks must be None when a parent is set')
+
+        super().__init__(address=address,
                          logger_handle=logger_handle,
                          inst_name=inst_name,
                          parent=parent)
@@ -412,6 +418,13 @@ class AddressMap(Node, ABC):
 
         """
 
+    @property
+    def _callbacks(self) -> CallbackSet:
+        if self.parent is None:
+            return self.__callbacks
+        # pylint: disable-next=protected-access
+        return self.parent._callbacks
+
 
 class AddressMapArray(NodeArray, ABC):
     """
@@ -422,13 +435,12 @@ class AddressMapArray(NodeArray, ABC):
     # pylint: disable-next=too-many-arguments
     def __init__(self, logger_handle: str, inst_name: str,
                  parent: AddressMap,
-                 callbacks: CallbackSet,
                  address: int,
                  stride: int,
                  dimensions: Tuple[int, ...]):
 
         super().__init__(logger_handle=logger_handle, inst_name=inst_name,
-                         parent=parent, callbacks=callbacks, address=address,
+                         parent=parent, address=address,
                          stride=stride, dimensions=dimensions)
 
 
@@ -444,14 +456,12 @@ class RegFile(Node, ABC):
     __slots__: List[str] = []
 
     def __init__(self,
-                 callbacks: CallbackSet,
                  address: int,
                  logger_handle: str,
                  inst_name: str,
                  parent: Union[AddressMap, 'RegFile']):
 
-        super().__init__(callbacks=callbacks,
-                         address=address,
+        super().__init__(address=address,
                          logger_handle=logger_handle,
                          inst_name=inst_name,
                          parent=parent)
@@ -469,6 +479,13 @@ class RegFile(Node, ABC):
 
         """
 
+    @property
+    def _callbacks(self) -> CallbackSet:
+        if self.parent is None:
+            raise RuntimeError('Parent must be set')
+        # pylint: disable-next=protected-access
+        return self.parent._callbacks
+
 
 class RegFileArray(NodeArray, ABC):
     """
@@ -479,13 +496,12 @@ class RegFileArray(NodeArray, ABC):
     # pylint: disable-next=too-many-arguments
     def __init__(self, logger_handle: str, inst_name: str,
                  parent: Union[AddressMap, RegFile],
-                 callbacks: CallbackSet,
                  address: int,
                  stride: int,
                  dimensions: Tuple[int, ...]):
 
         super().__init__(logger_handle=logger_handle, inst_name=inst_name,
-                         parent=parent, callbacks=callbacks, address=address,
+                         parent=parent, address=address,
                          stride=stride, dimensions=dimensions)
 
 

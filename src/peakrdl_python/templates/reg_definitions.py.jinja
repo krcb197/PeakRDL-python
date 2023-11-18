@@ -4,21 +4,20 @@
                                                                                   stride={{node.array_stride}},
                                                                                   dimensions=tuple({{node.array_dimensions}}),
                                                                                   logger_handle=logger_handle+'.{{node.inst_name}}',
-                                                                                  inst_name='{{node.inst_name}}', parent=self,
-                                                                                  callbacks=callbacks)
+                                                                                  inst_name='{{node.inst_name}}', parent=self)
         {%- else %}
             {%- if node.has_sw_readable and node.has_sw_writable %}
-    self.__{{node.inst_name}}:{{get_fully_qualified_type_name(node)}}_cls = {{get_fully_qualified_type_name(node)}}_cls(callbacks=callbacks,
+    self.__{{node.inst_name}}:{{get_fully_qualified_type_name(node)}}_cls = {{get_fully_qualified_type_name(node)}}_cls(
                                                                  address=self.address+{{node.address_offset}},
                                                                  logger_handle=logger_handle+'.{{node.inst_name}}',
                                                                                    inst_name='{{node.inst_name}}', parent=self)
             {%- elif node.has_sw_readable and not node.has_sw_writable %}
-    self.__{{node.inst_name}}:{{get_fully_qualified_type_name(node)}}_cls = {{get_fully_qualified_type_name(node)}}_cls(callbacks=callbacks,
+    self.__{{node.inst_name}}:{{get_fully_qualified_type_name(node)}}_cls = {{get_fully_qualified_type_name(node)}}_cls(
                                                                  address=self.address+{{node.address_offset}},
                                                                  logger_handle=logger_handle+'.{{node.inst_name}}',
                                                                                    inst_name='{{node.inst_name}}', parent=self)
             {%- elif not node.has_sw_readable and node.has_sw_writable %}
-    self.__{{node.inst_name}}:{{get_fully_qualified_type_name(node)}}_cls = {{get_fully_qualified_type_name(node)}}_cls(callbacks=callbacks,
+    self.__{{node.inst_name}}:{{get_fully_qualified_type_name(node)}}_cls = {{get_fully_qualified_type_name(node)}}_cls(
                                                                                  address=self.address+{{node.address_offset}},
                                                                                  logger_handle=logger_handle+'.{{node.inst_name}}',
                                                                                  inst_name='{{node.inst_name}}', parent=self)
