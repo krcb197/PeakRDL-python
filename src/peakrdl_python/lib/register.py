@@ -756,11 +756,12 @@ class RegReadOnlyArray(NodeArray, ABC):
                  callbacks: NormalCallbackSet,
                  address: int,
                  stride: int,
-                 dimensions: Tuple[int, ...]):
+                 dimensions: Tuple[int, ...],
+                 elements: Optional[Dict[Tuple[int, ...], RegReadOnly]] = None):
 
         super().__init__(logger_handle=logger_handle, inst_name=inst_name,
                          parent=parent, callbacks=callbacks, address=address,
-                         stride=stride, dimensions=dimensions)
+                         stride=stride, dimensions=dimensions, elements=elements)
     # pylint: enable=too-many-arguments,duplicate-code
 
 
@@ -776,15 +777,16 @@ class RegWriteOnlyArray(NodeArray, ABC):
                  callbacks: NormalCallbackSet,
                  address: int,
                  stride: int,
-                 dimensions: Tuple[int, ...]):
+                 dimensions: Tuple[int, ...],
+                 elements: Optional[Dict[Tuple[int, ...], RegWriteOnly]] = None):
 
         super().__init__(logger_handle=logger_handle, inst_name=inst_name,
                          parent=parent, callbacks=callbacks, address=address,
-                         stride=stride, dimensions=dimensions)
+                         stride=stride, dimensions=dimensions, elements=elements)
     # pylint: enable=too-many-arguments,duplicate-code
 
 
-class RegReadWriteArray(RegReadOnlyArray, RegWriteOnlyArray, ABC):
+class RegReadWriteArray(NodeArray, ABC):
     """
     base class for a array of read and write registers
     """
@@ -796,11 +798,12 @@ class RegReadWriteArray(RegReadOnlyArray, RegWriteOnlyArray, ABC):
                  callbacks: NormalCallbackSet,
                  address: int,
                  stride: int,
-                 dimensions: Tuple[int, ...]):
+                 dimensions: Tuple[int, ...],
+                 elements: Optional[Dict[Tuple[int, ...], RegReadWrite]] = None):
 
         super().__init__(logger_handle=logger_handle, inst_name=inst_name,
                          parent=parent, callbacks=callbacks, address=address,
-                         stride=stride, dimensions=dimensions)
+                         stride=stride, dimensions=dimensions, elements=elements)
     # pylint: enable=too-many-arguments,duplicate-code
 
 
@@ -816,11 +819,12 @@ class RegAsyncReadOnlyArray(NodeArray, ABC):
                  callbacks: AsyncCallbackSet,
                  address: int,
                  stride: int,
-                 dimensions: Tuple[int, ...]):
+                 dimensions: Tuple[int, ...],
+                 elements: Optional[Dict[Tuple[int, ...], RegAsyncReadOnly]] = None):
 
         super().__init__(logger_handle=logger_handle, inst_name=inst_name,
                          parent=parent, callbacks=callbacks, address=address,
-                         stride=stride, dimensions=dimensions)
+                         stride=stride, dimensions=dimensions, elements=elements)
     # pylint: enable=too-many-arguments,duplicate-code
 
 
@@ -836,15 +840,16 @@ class RegAsyncWriteOnlyArray(NodeArray, ABC):
                  callbacks: AsyncCallbackSet,
                  address: int,
                  stride: int,
-                 dimensions: Tuple[int, ...]):
+                 dimensions: Tuple[int, ...],
+                 elements: Optional[Dict[Tuple[int, ...], RegAsyncReadOnly]] = None):
 
         super().__init__(logger_handle=logger_handle, inst_name=inst_name,
                          parent=parent, callbacks=callbacks, address=address,
-                         stride=stride, dimensions=dimensions)
+                         stride=stride, dimensions=dimensions, elements=elements)
     # pylint: enable=too-many-arguments,duplicate-code
 
 
-class RegAsyncReadWriteArray(RegAsyncReadOnlyArray, RegAsyncWriteOnlyArray, ABC):
+class RegAsyncReadWriteArray(NodeArray, ABC):
     """
     base class for a array of read and write registers
     """
@@ -856,11 +861,12 @@ class RegAsyncReadWriteArray(RegAsyncReadOnlyArray, RegAsyncWriteOnlyArray, ABC)
                  callbacks: AsyncCallbackSet,
                  address: int,
                  stride: int,
-                 dimensions: Tuple[int, ...]):
+                 dimensions: Tuple[int, ...],
+                 elements: Optional[Dict[Tuple[int, ...], RegAsyncReadOnly]] = None):
 
         super().__init__(logger_handle=logger_handle, inst_name=inst_name,
                          parent=parent, callbacks=callbacks, address=address,
-                         stride=stride, dimensions=dimensions)
+                         stride=stride, dimensions=dimensions, elements=elements)
     # pylint: enable=too-many-arguments,duplicate-code
 
 
