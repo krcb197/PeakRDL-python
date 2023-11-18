@@ -390,8 +390,7 @@ class NodeArray(Base, Sequence[NodeArrayElementType]):
         return reduce(mul, self.dimensions, 1) * self.stride
 
 
-
-class BaseAddressMap(Node, ABC):
+class AddressMap(Node, ABC):
     """
     base class of address map wrappers
 
@@ -399,39 +398,8 @@ class BaseAddressMap(Node, ABC):
         It is not expected that this class will be instantiated under normal
         circumstances however, it is useful for type checking
     """
-
     __slots__: List[str] = ['__callbacks']
 
-    def __init__(self, *,
-                 callbacks: Optional[CallbackSet],
-                 address: int,
-                 logger_handle: str,
-                 inst_name: str,
-                 parent: Optional['AddressMap']):
-
-
-
-        super().__init__(address=address,
-                         logger_handle=logger_handle,
-                         inst_name=inst_name,
-                         parent=parent)
-
-    @property
-    def _callbacks(self) -> NormalCallbackSet:
-        if self.parent is None:
-            return self.__callbacks
-        # pylint: disable-next=protected-access
-        return self.parent._callbacks
-
-
-class AddressMap(BaseAddressMap, ABC):
-    """
-    base class of address map wrappers
-
-    Note:
-        It is not expected that this class will be instantiated under normal
-        circumstances however, it is useful for type checking
-    """
     def __init__(self, *,
                  callbacks: Optional[NormalCallbackSet],
                  address: int,
@@ -448,9 +416,10 @@ class AddressMap(BaseAddressMap, ABC):
         else:
             if not callbacks is None:
                 raise RuntimeError('Callbacks must be None when a parent is set')
+            if not isinstance(parent._callbacks, NormalCallbackSet):
+                raise TypeError(f'callback type wrong, got {type(callbacks)}')
 
-        super().__init__(callbacks=callbacks,
-                         address=address,
+        super().__init__(address=address,
                          logger_handle=logger_handle,
                          inst_name=inst_name,
                          parent=parent)
@@ -497,12 +466,15 @@ class AddressMap(BaseAddressMap, ABC):
 
     @property
     def _callbacks(self) -> NormalCallbackSet:
-        return cast(NormalCallbackSet, super()._callbacks)
+        if self.parent is None:
+            return self.__callbacks
+        return cast(NormalCallbackSet, self.parent._callbacks)
 
+    @property
     def size(self) -> int:
         raise NotImplementedError('To go in the next phase')
 
-class AsyncAddressMap(BaseAddressMap, ABC):
+class AsyncAddressMap(Node, ABC):
     """
     base class of address map wrappers
 
@@ -529,9 +501,10 @@ class AsyncAddressMap(BaseAddressMap, ABC):
         else:
             if not callbacks is None:
                 raise RuntimeError('Callbacks must be None when a parent is set')
+            if not isinstance(parent._callbacks, AsyncCallbackSet):
+                raise TypeError(f'callback type wrong, got {type(callbacks)}')
 
-        super().__init__(callbacks=callbacks,
-                         address=address,
+        super().__init__(address=address,
                          logger_handle=logger_handle,
                          inst_name=inst_name,
                          parent=parent)
@@ -578,8 +551,11 @@ class AsyncAddressMap(BaseAddressMap, ABC):
 
     @property
     def _callbacks(self) -> AsyncCallbackSet:
-        return cast(AsyncCallbackSet, super()._callbacks)
+        if self.parent is None:
+            return self.__callbacks
+        return cast(AsyncCallbackSet, self.parent._callbacks)
 
+    @property
     def size(self) -> int:
         raise NotImplementedError('To go in the next phase')
 
@@ -664,6 +640,7 @@ class RegFile(Node, ABC):
         # pylint: disable-next=protected-access
         return cast(NormalCallbackSet, self.parent._callbacks)
 
+    @property
     def size(self) -> int:
         raise NotImplementedError('To go in the next phase')
 
@@ -689,7 +666,7 @@ class AsyncRegFile(Node, ABC):
                          inst_name=inst_name,
                          parent=parent)
 
-        if not isinstance(parent._callbacks, NormalCallbackSet):
+        if not isinstance(parent._callbacks, AsyncCallbackSet):
             raise TypeError(f'parent._callbacks type wrong, got {type(parent._callbacks)}')
 
     @abstractmethod
@@ -706,12 +683,13 @@ class AsyncRegFile(Node, ABC):
         """
 
     @property
-    def _callbacks(self) -> NormalCallbackSet:
+    def _callbacks(self) -> AsyncCallbackSet:
         if self.parent is None:
             raise RuntimeError('Parent must be set')
         # pylint: disable-next=protected-access
-        return cast(NormalCallbackSet, self.parent._callbacks)
+        return cast(AsyncCallbackSet, self.parent._callbacks)
 
+    @property
     def size(self) -> int:
         raise NotImplementedError('To go in the next phase')
 
