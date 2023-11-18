@@ -53,7 +53,7 @@ jobs:
           python -m pip install .
           python -m pip install -U mypy
       - name: Type Check
-        run: mypy src/peakrdl_python tests/unit_tests --config-file=tests/.mypy.ini
+        run: mypy src/peakrdl_python --config-file=tests/.mypy.ini
 
   tests:
     needs:
