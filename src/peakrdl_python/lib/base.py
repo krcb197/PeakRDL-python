@@ -162,40 +162,52 @@ class NodeArray(Base, Sequence[NodeArrayElementType]):
         #    in which case a subset of the elements is presented and a new instance
 
         if elements is not None:
-
-            if not isinstance(elements, dict):
-                raise TypeError(f'elements should be a dictionary but got {type(elements)}')
-
-            for index, item in elements.items():
-                if not isinstance(index, tuple):
-                    raise TypeError(f'element index should be a tuple but got {type(index)}')
-
-                if len(index) != len(self.dimensions):
-                    raise ValueError(f'size of index does not match dimensions {len(dimensions)=},'
-                                     f' {len(index)=}')
-
-                for index_pos, index_item in enumerate(index):
-                    if not isinstance(index_item, int):
-                        raise TypeError(f'element index_item should be a int but got {type(index_item)}')
-
-                    if not 0 <= index_item < self.dimensions[index_pos]:
-                        raise ValueError(f'index outside of range of dimensions')
-
-                if not isinstance(item, self._element_datatype):
-                    raise TypeError(f'elements should be a {self._element_datatype} but got {type(item)}')
-
+            self.__check_init_element(elements)
             self.__elements = elements
         else:
             new_elements: Dict[Tuple[int, ...], NodeArrayElementType] = {}
             for indices in product(*[range(dim) for dim in self.dimensions]):
                 new_elements[indices] = self._element_datatype(
-                    logger_handle=logger_handle + '[' + ','.join([str(item) for item in indices]) + ']',
+                    logger_handle=logger_handle +
+                                  '[' + ','.join([str(item) for item in indices]) + ']',
                     callbacks=self._callbacks,
                     address=self.__address_calculator(indices),
                     inst_name=inst_name + '[' + ']['.join([str(item) for item in indices]) + ']',
                     parent=self.parent)
 
             self.__elements = new_elements
+
+    def __check_init_element(self, elements:Dict[Tuple[int, ...], NodeArrayElementType]) -> None:
+        """
+        Used in the __init__ to check that the elements passed in are valid
+        Args:
+            elements: proposed element of the array
+
+        Returns:
+
+        """
+        if not isinstance(elements, dict):
+            raise TypeError(f'elements should be a dictionary but got {type(elements)}')
+
+        for index, item in elements.items():
+            if not isinstance(index, tuple):
+                raise TypeError(f'element index should be a tuple but got {type(index)}')
+
+            if len(index) != len(self.dimensions):
+                raise ValueError(f'size of index does not match dimensions {len(self.dimensions)=},'
+                                 f' {len(index)=}')
+
+            for index_pos, index_item in enumerate(index):
+                if not isinstance(index_item, int):
+                    raise TypeError(f'element index_item should be a int '
+                                    f'but got {type(index_item)}')
+
+                if not 0 <= index_item < self.dimensions[index_pos]:
+                    raise ValueError('index outside of range of dimensions')
+
+            if not isinstance(item, self._element_datatype):
+                raise TypeError(f'elements should be a {self._element_datatype} '
+                                f'but got {type(item)}')
 
     def __address_calculator(self, indices: Tuple[int, ...]):
         def cal_addr(dimensions: Tuple[int,...], indices: Tuple[int, ...], base_address: int,
@@ -226,65 +238,20 @@ class NodeArray(Base, Sequence[NodeArrayElementType]):
         ...
 
     @overload
-    def __getitem__(self, item: slice) -> Tuple[NodeArrayElementType, ...]:
+    def __getitem__(self, item: slice) -> Sequence[NodeArrayElementType]:
         ...
 
     @overload
-    def __getitem__(self, item: Tuple[int, ...]) -> Tuple[NodeArrayElementType, ...]:
+    def __getitem__(self, item: Tuple[int, ...]) -> NodeArrayElementType:
         ...
 
     @overload
-    def __getitem__(self, item: Tuple[Union[int, slice], ...]) -> Tuple[NodeArrayElementType , ...]:
+    def __getitem__(self, item: Tuple[Union[int, slice], ...]) -> Sequence[NodeArrayElementType]:
         ...
 
     def __getitem__(self, item):  # type: ignore[no-untyped-def]
         if len(self.dimensions) > 1:
-            if isinstance(item, tuple):
-
-                if len(item) != len(self.dimensions):
-                    raise ValueError('When using a multidimensional access, the size must match the'
-                                     ' dimensions of the array, array dimensions '
-                                     f'are {len(self.dimensions)}')
-
-                if all([isinstance(i, int) for i in item]):
-                    # single item access
-                    if item not in self.__elements:
-                        raise IndexError('index[' + ','.join([str(i) for i in item]) + '] not in array')
-                    return self.__elements[item]
-
-                unpack_index_set = []
-                for axis, sub_index in enumerate(item):
-                    if isinstance(sub_index, int):
-                        if not 0 <= sub_index < self.dimensions[axis]:
-                            raise IndexError(f'{sub_index:d} out of range for dimension {axis}')
-                        unpack_index_set.append((sub_index,))
-                        continue
-
-                    if  isinstance(sub_index, slice):
-                        unpack_index_set.append(range(*sub_index.indices(self.dimensions[axis])))
-                        continue
-
-                    raise TypeError(f'unhandle index of {type(sub_index)} in position {axis:d}')
-
-                valid_items = tuple(product(*unpack_index_set))
-                def filter_nd_func(to_filter: Tuple[Tuple[int,...], NodeArrayElementType]) -> bool:
-                    index, _ = to_filter
-                    if index in valid_items:
-                        return True
-                    return False
-
-                return self.__class__(logger_handle=self._logger.name,
-                                      inst_name=self.inst_name,
-                                      parent=self.parent,
-                                      callbacks=self.__callbacks,
-                                      address=self.address,
-                                      stride=self.stride,
-                                      dimensions=self.dimensions,
-                                      elements=dict(filter(filter_nd_func, self.items())))
-
-
-            raise IndexError('attempting a signledimensional array access on a multidimension'
-                             ' array')
+            return self.__getitem_nd(item)
 
         if isinstance(item, tuple):
             raise IndexError('attempting a multidimensional array access on a single dimension'
@@ -314,6 +281,64 @@ class NodeArray(Base, Sequence[NodeArrayElementType]):
             return self.__elements[(item, )]
 
         raise TypeError(f'Array index must either being an int or a slice, got {type(item)}')
+
+    @overload
+    def __getitem_nd(self, item: Tuple[int, ...]) -> NodeArrayElementType:
+        ...
+
+    @overload
+    def __getitem_nd(self, item: Tuple[Union[int, slice], ...]) -> Sequence[NodeArrayElementType]:
+        ...
+
+    def __getitem_nd(self, item): # type: ignore[no-untyped-def]
+
+        if isinstance(item, tuple):
+
+            if len(item) != len(self.dimensions):
+                raise ValueError('When using a multidimensional access, the size must match the'
+                                 ' dimensions of the array, array dimensions '
+                                 f'are {len(self.dimensions)}')
+
+            if all(isinstance(i, int) for i in item):
+                # single item access
+                if item not in self.__elements:
+                    msg = 'index[' + ','.join([str(i) for i in item]) + '] not in array'
+                    raise IndexError(msg)
+                return self.__elements[item]
+
+            unpack_index_set = []
+            for axis, sub_index in enumerate(item):
+                if isinstance(sub_index, int):
+                    if not 0 <= sub_index < self.dimensions[axis]:
+                        raise IndexError(f'{sub_index:d} out of range for dimension {axis}')
+                    unpack_index_set.append((sub_index,))
+                    continue
+
+                if isinstance(sub_index, slice):
+                    unpack_index_set.append(range(*sub_index.indices(self.dimensions[axis])))
+                    continue
+
+                raise TypeError(f'unhandle index of {type(sub_index)} in position {axis:d}')
+
+            valid_items = tuple(product(*unpack_index_set))
+
+            def filter_nd_func(to_filter: Tuple[Tuple[int, ...], NodeArrayElementType]) -> bool:
+                index, _ = to_filter
+                if index in valid_items:
+                    return True
+                return False
+
+            return self.__class__(logger_handle=self._logger.name,
+                                  inst_name=self.inst_name,
+                                  parent=self.parent,
+                                  callbacks=self.__callbacks,
+                                  address=self.address,
+                                  stride=self.stride,
+                                  dimensions=self.dimensions,
+                                  elements=dict(filter(filter_nd_func, self.items())))
+
+        raise IndexError('attempting a signledimensional array access on a multidimension'
+                         ' array')
 
     def __len__(self) -> int:
         return len(self.__elements)

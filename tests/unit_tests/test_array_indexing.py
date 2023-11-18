@@ -2,8 +2,6 @@ import unittest
 from typing import List, Generator, Iterator, Dict, Type, Tuple
 from abc import ABC, abstractmethod
 from contextlib import contextmanager
-from functools import reduce
-from operator import mul
 from itertools import product
 
 from peakrdl_python.lib import RegReadOnlyArray, FieldReadOnly, RegReadOnly, \
