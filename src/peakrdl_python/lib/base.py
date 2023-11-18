@@ -194,8 +194,7 @@ class NodeArray(Base, Sequence[NodeArrayElementType]):
                 raise TypeError(f'element index should be a tuple but got {type(index)}')
 
             if len(index) != len(self.dimensions):
-                raise ValueError(f'size of index does not match dimensions {len(self.dimensions)=},'
-                                 f' {len(index)=}')
+                raise ValueError(f'size of index does not match index length = {len(index)}')
 
             for index_pos, index_item in enumerate(index):
                 if not isinstance(index_item, int):
