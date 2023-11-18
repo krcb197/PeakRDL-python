@@ -90,7 +90,7 @@ TestCaseBase = unittest.TestCase
 class {{top_node.type_name}}_TestCase(TestCaseBase): # type: ignore[valid-type,misc]
 
     def setUp(self) -> None:
-        self.dut = {{top_node.type_name}}_cls({% if asyncoutput %}AsyncCallbackSet{% else %}NormalCallbackSet{% endif %}(read_callback=read_callback,
+        self.dut = {{top_node.type_name}}_cls(callbacks={% if asyncoutput %}AsyncCallbackSet{% else %}NormalCallbackSet{% endif %}(read_callback=read_callback,
                                                           write_callback=write_callback))
 
     @staticmethod
