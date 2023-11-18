@@ -50,8 +50,15 @@ class Reg(Node, ABC):
                          logger_handle=logger_handle,
                          inst_name=inst_name,
                          parent=parent)
-
+        if not isinstance(width, int):
+            raise TypeError(f'width should be int but got {(type(width))}')
+        if width not in (8, 16, 32, 64):
+            raise ValueError(f'currently only support 8, 16, 32 or 64 registers, got {width:d}')
         self.__width = width
+        if not isinstance(accesswidth, int):
+            raise TypeError(f'accesswidth should be int but got {(type(accesswidth))}')
+        if accesswidth not in (8, 16, 32, 64):
+            raise ValueError(f'currently only support 8, 16, 32 or 64 accesswidth, got {width:d}')
         self.__accesswidth = accesswidth
     # pylint: enable=too-many-arguments,duplicate-code
 
@@ -86,6 +93,13 @@ class Reg(Node, ABC):
         Returns: register access width
         """
         return self.__accesswidth
+
+    @property
+    def size(self) -> int:
+        """
+        Total Number of bytes of address the node occupies
+        """
+        return self.__width >> 3
 
 
 class RegReadOnly(Reg, ABC):
@@ -869,6 +883,6 @@ class RegAsyncReadWriteArray(NodeArray, ABC):
 
 
 ReadableRegisterArray = Union[RegReadOnlyArray, RegReadWriteArray]
-WritableRegisterArray = Union[RegWriteOnlyArray, RegReadWriteArray]
+WriteableRegisterArray = Union[RegWriteOnlyArray, RegReadWriteArray]
 ReadableAsyncRegisterArray = Union[RegAsyncReadOnlyArray, RegAsyncReadWriteArray]
-WritableAsyncRegisterArray = Union[RegAsyncWriteOnlyArray, RegAsyncReadWriteArray]
+WriteableAsyncRegisterArray = Union[RegAsyncWriteOnlyArray, RegAsyncReadWriteArray]

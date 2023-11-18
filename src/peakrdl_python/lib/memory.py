@@ -98,11 +98,9 @@ class Memory(Node, ABC):
         return get_array_typecode(self.width)
 
     @property
-    def size_in_bytes(self) -> int:
+    def size(self) -> int:
         """
-        size in bytes
-
-        Returns: memory size
+        Total Number of bytes of address the node occupies
         """
         return self.entries * self.width_in_bytes
 

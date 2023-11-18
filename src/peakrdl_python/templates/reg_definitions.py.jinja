@@ -27,7 +27,7 @@
 {%- endmacro %}
 
 {%- macro child_readable_register_getter(node) %}
-    def get_readable_registers(self, unroll:bool=False) -> Iterator[Union[Readable{% if asyncoutput %}Async{% endif %}Register, Tuple[Readable{% if asyncoutput %}Async{% endif %}Register, ...]]]:
+    def get_readable_registers(self, unroll:bool=False) -> Iterator[Union[Readable{% if asyncoutput %}Async{% endif %}Register, Readable{% if asyncoutput %}Async{% endif %}RegisterArray]]:
         """
         generator that produces all the readable_registers of this node
         """
@@ -37,11 +37,11 @@
                     {% if child_node.is_array %}
         if unroll:
             for child in self.{{safe_node_name(child_node)}}:
-                yield cast(Readable{% if asyncoutput %}Async{% endif %}Register, child)
+                yield child
         else:
-            yield cast(Tuple[Readable{% if asyncoutput %}Async{% endif %}Register, ...], self.{{safe_node_name(child_node)}})
+            yield self.{{safe_node_name(child_node)}}
                     {% else %}
-        yield cast(Readable{% if asyncoutput %}Async{% endif %}Register, self.{{safe_node_name(child_node)}})
+        yield self.{{safe_node_name(child_node)}}
                     {%- endif %}
                 {%- endif -%}
             {%- endif -%}
@@ -52,7 +52,7 @@
 {%- endmacro %}
 
 {%- macro child_writable_register_getter(node) %}
-    def get_writable_registers(self, unroll:bool=False) -> Iterator[Union[Writable{% if asyncoutput %}Async{% endif %}Register, Tuple[Writable{% if asyncoutput %}Async{% endif %}Register, ...]]]:
+    def get_writable_registers(self, unroll:bool=False) -> Iterator[Union[Writable{% if asyncoutput %}Async{% endif %}Register, Writeable{% if asyncoutput %}Async{% endif %}RegisterArray]]:
         """
         generator that produces all the readable_registers of this node
         """

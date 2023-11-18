@@ -16,6 +16,11 @@ from .base import RegFile
 from .base import AddressMapArray
 from .base import RegFileArray
 
+from .base import AsyncAddressMap
+from .base import AsyncRegFile
+from .base import AsyncAddressMapArray
+from .base import AsyncRegFileArray
+
 from .register import Reg
 from .register import RegisterWriteVerifyError
 
@@ -29,8 +34,7 @@ from .register import RegReadOnlyArray
 from .register import RegWriteOnlyArray
 from .register import RegReadWriteArray
 from .register import ReadableRegisterArray
-from .register import WritableRegisterArray
-
+from .register import WriteableRegisterArray
 
 from .register import RegAsyncReadOnly
 from .register import RegAsyncWriteOnly
@@ -41,7 +45,7 @@ from .register import RegAsyncReadOnlyArray
 from .register import RegAsyncWriteOnlyArray
 from .register import RegAsyncReadWriteArray
 from .register import ReadableAsyncRegisterArray
-from .register import WritableAsyncRegisterArray
+from .register import WriteableAsyncRegisterArray
 
 from .fields import FieldSizeProps
 from .fields import FieldMiscProps

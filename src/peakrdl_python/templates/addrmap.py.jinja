@@ -19,9 +19,13 @@ import warnings
 from contextlib import {% if asyncoutput %}async{% endif %}contextmanager
 
 from ..lib import Node
-from ..lib import AddressMap, RegFile, Memory
+from ..lib import Memory
 from ..lib  import AddressMapArray, RegFileArray
 {% if asyncoutput -%}
+from ..lib import AsyncAddressMap
+from ..lib import AsyncRegFile
+from ..lib  import AsyncAddressMapArray
+from ..lib  import AsyncRegFileArray
     {% if uses_memory %}
 from ..lib import MemoryAsyncReadOnly, MemoryAsyncWriteOnly, MemoryAsyncReadWrite
 from ..lib import MemoryAsyncReadOnlyArray, MemoryAsyncWriteOnlyArray, MemoryAsyncReadWriteArray
@@ -31,8 +35,12 @@ from ..lib import RegAsyncReadOnlyArray, RegAsyncWriteOnlyArray, RegAsyncReadWri
 from ..lib import FieldAsyncReadOnly, FieldAsyncWriteOnly, FieldAsyncReadWrite, Field
 {% if uses_enum %}from ..lib import FieldEnumAsyncReadOnly, FieldEnumAsyncWriteOnly, FieldEnumAsyncReadWrite{% endif %}
 from ..lib import ReadableAsyncRegister, WritableAsyncRegister
-from ..lib import ReadableAsyncRegisterArray, WritableAsyncRegisterArray
+from ..lib import ReadableAsyncRegisterArray, WriteableAsyncRegisterArray
 {%- else -%}
+from ..lib import AddressMap
+from ..lib import RegFile
+from ..lib  import AddressMapArray
+from ..lib  import RegFileArray
     {% if uses_memory %}
 from ..lib import MemoryReadOnly, MemoryWriteOnly, MemoryReadWrite
 from ..lib import MemoryReadOnlyArray, MemoryWriteOnlyArray, MemoryReadWriteArray
@@ -42,7 +50,7 @@ from ..lib import RegReadOnlyArray, RegWriteOnlyArray, RegReadWriteArray
 from ..lib import FieldReadOnly, FieldWriteOnly, FieldReadWrite, Field
 {% if uses_enum %}from ..lib import FieldEnumReadOnly, FieldEnumWriteOnly, FieldEnumReadWrite{% endif %}
 from ..lib import ReadableRegister, WritableRegister
-from ..lib import ReadableRegisterArray, WritableRegisterArray
+from ..lib import ReadableRegisterArray, WriteableRegisterArray
 {%- endif %}
 from ..lib import FieldSizeProps, FieldMiscProps
 
@@ -104,7 +112,7 @@ from ..lib import NormalCallbackSet
 {%- endmacro %}
 
 {%- macro regfile_class(node) %}
-class {{get_fully_qualified_type_name(node)}}_cls(RegFile):
+class {{get_fully_qualified_type_name(node)}}_cls({% if asyncoutput %}Async{% endif %}RegFile):
     """
     Class to represent a register file in the register model
 
@@ -119,7 +127,7 @@ class {{get_fully_qualified_type_name(node)}}_cls(RegFile):
                  address: int,
                  logger_handle:str,
                  inst_name:str,
-                 parent:Union[AddressMap,RegFile]):
+                 parent:Union[{% if asyncoutput %}Async{% endif %}AddressMap,{% if asyncoutput %}Async{% endif %}RegFile]):
 
         super().__init__(address=address,
                          logger_handle=logger_handle,
@@ -176,17 +184,17 @@ class {{get_fully_qualified_type_name(node)}}_cls(RegFile):
             }
 
     {{ child_register_getter(node) }}
-    {{ child_getter(node, "get_sections",  "RegFile", systemrdlRegfileNode) }}
+    {{ child_getter(node, "get_sections",  "{% if asyncoutput %}Async{% endif %}RegFile", systemrdlRegfileNode) }}
 
      {%- if node.is_array %}
-class {{get_fully_qualified_type_name(node)}}_array_cls(RegFileArray):
+class {{get_fully_qualified_type_name(node)}}_array_cls({% if asyncoutput %}Async{% endif %}RegFileArray):
     """
     Class to represent a regfile array in the register model
     """
     __slots__: List[str] = []
 
     def __init__(self, logger_handle: str, inst_name: str,
-                 parent: Union[AddressMap, RegFile],
+                 parent: Union[{% if asyncoutput %}Async{% endif %}AddressMap, {% if asyncoutput %}Async{% endif %}RegFile],
                  address: int,
                  stride: int,
                  dimensions: Tuple[int, ...]):
@@ -202,7 +210,7 @@ class {{get_fully_qualified_type_name(node)}}_array_cls(RegFileArray):
 {%- endmacro %}
 
 {%- macro addrmap_class(node) %}
-class {{get_fully_qualified_type_name(node)}}_cls(AddressMap):
+class {{get_fully_qualified_type_name(node)}}_cls({% if asyncoutput %}Async{% endif %}AddressMap):
     """
     Class to represent a address map in the register model
 
@@ -216,7 +224,7 @@ class {{get_fully_qualified_type_name(node)}}_cls(AddressMap):
                  logger_handle:str {%- if node == top_node -%}='reg_model.{{top_node.get_path()}}'{%- endif -%},
                  inst_name:str{%- if node == top_node -%}='{{node.inst_name}}'{%- endif -%},
                  callbacks: Optional[{% if asyncoutput %}AsyncCallbackSet{% else %}NormalCallbackSet{% endif %}]=None,
-                 parent:Optional[AddressMap]=None):
+                 parent:Optional[{% if asyncoutput %}Async{% endif %}AddressMap]=None):
 
         super().__init__(callbacks=callbacks,
                          address=address,
@@ -281,17 +289,21 @@ class {{get_fully_qualified_type_name(node)}}_cls(AddressMap):
 
     {{ child_register_getter(node) }}
     {{ child_getter(node, "get_memories",    "Memory",     systemrdlMemNode) }}
-    {{ child_getter(node, "get_sections", "Union[AddressMap, RegFile]", (systemrdlAddrmapNode, systemrdlRegfileNode)) }}
+    {% if asyncoutput %}
+    {{ child_getter(node, "get_sections", "AsyncAddressMap, AsyncRegFile, AsyncAddressMapArray, AsyncRegFileArray", (systemrdlAddrmapNode, systemrdlRegfileNode)) }}
+    {% else %}
+    {{ child_getter(node, "get_sections", "AddressMap, RegFile, AddressMapArray, RegFileArray", (systemrdlAddrmapNode, systemrdlRegfileNode)) }}
+    {% endif %}
 
     {%- if node.is_array %}
-class {{get_fully_qualified_type_name(node)}}_array_cls(AddressMapArray):
+class {{get_fully_qualified_type_name(node)}}_array_cls({% if asyncoutput %}Async{% endif %}AddressMapArray):
     """
     Class to represent a addrmap array in the register model
     """
     __slots__: List[str] = []
 
     def __init__(self, logger_handle: str, inst_name: str,
-                 parent: AddressMap,
+                 parent: {% if asyncoutput %}Async{% endif %}AddressMap,
                  address: int,
                  stride: int,
                  dimensions: Tuple[int, ...]):
@@ -307,7 +319,7 @@ class {{get_fully_qualified_type_name(node)}}_array_cls(AddressMapArray):
 {%- endmacro %}
 
 {%- macro child_getter(node, getter_name, child_type, child_rdltype) %}
-    def {{getter_name}}(self, unroll:bool=False) -> Iterator[Union[{{child_type}},Tuple[{{child_type}},...]]]:
+    def {{getter_name}}(self, unroll:bool=False) -> Iterator[Union[{{child_type}}]]:
         """
         generator that produces all the {{child_type}} children of this node
         """
@@ -330,11 +342,11 @@ class {{get_fully_qualified_type_name(node)}}_array_cls(AddressMapArray):
                 {% if child_node.is_array %}
         if unroll:
             for child in self.{{property_name}}:
-                yield cast({{child_type}}, child)
+                yield child
         else:
-            yield cast(Tuple[{{child_type}},...], self.{{property_name}})
+            yield self.{{property_name}}
                  {% else %}
-        yield cast({{child_type}}, self.{{property_name}})
+        yield self.{{property_name}}
                 {%- endif %}
             {%- endif -%}
         {% endfor %}
