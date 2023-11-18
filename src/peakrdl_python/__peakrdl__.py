@@ -29,7 +29,7 @@ class Exporter(ExporterSubcommandPlugin):
         "user_template_dir": schema.DirectoryPath(),
     }
 
-    def add_exporter_arguments(self, arg_group: 'argparse.ArgumentParser') -> None:
+    def add_exporter_arguments(self, arg_group: 'argparse._ActionsContainer') -> None:
         """
         Added the arguments to the PeakRDL arguments
 
@@ -42,7 +42,7 @@ class Exporter(ExporterSubcommandPlugin):
         arg_group.add_argument('--async', action='store_true', dest='is_async',
                                help='define accesses to register model as asynchronous')
         arg_group.add_argument('--skip_test_case_generation', action='store_true',
-                            help='skip the generation of the test cases')
+                               help='skip the generation of the test cases')
 
     def do_export(self, top_node: 'AddrmapNode', options: 'argparse.Namespace') -> None:
         """
