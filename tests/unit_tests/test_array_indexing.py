@@ -119,30 +119,9 @@ class ArrayBase(unittest.TestCase, ABC):
     def dut(self) -> RegisterArrayToTest:
         return self.__dut
 
-    def calculate_address(self, indices: Tuple[int, ...]):
-
-        def cal_addr(dimensions: List[int], indices: Tuple[int, ...], base_address: int,
-                              stride: int) -> int:
-            """
-            Calculates the address of an register within an array
-
-            :param dimensions: list of the array dimensions
-            :param indices: list of the array indices (length must match the dimensions)
-            :param base_address: base address of the array
-            :param stride: address stride of of the array
-            :return: address of the register
-            """
-            if len(dimensions) == 1:
-                return (indices[0] * stride) + base_address
-
-            outer_offset = reduce(mul, dimensions[1::], 1) * stride * indices[0]
-            return outer_offset + cal_addr(dimensions=dimensions[1::],
-                                           indices=indices[1::],
-                                           stride=stride,
-                                           base_address=base_address)
-
-        return cal_addr(self.dimensions, base_address=self.base_address,
-                        stride=self.stride, indices=indices)
+    @abstractmethod
+    def calculate_address(self, indices: Tuple[int, ...]) -> int:
+        ...
 
     def setUp(self) -> None:
         self.__dut = RegisterArrayToTest(logger_handle='dut',
@@ -168,6 +147,9 @@ class Test1DArray(ArrayBase):
     def base_address(self) -> int:
         return 0
 
+    def calculate_address(self, indices: Tuple[int, ...]) -> int:
+        return (indices[0] * self.stride) + self.base_address
+
     def test_individual_access(self):
         for index in range(self.dimensions[0]):
             self.assertEqual(self.dut[index].address, self.calculate_address((index,)))
@@ -180,16 +162,28 @@ class Test1DArray(ArrayBase):
             self.assertEqual(full_slice[index].address, self.calculate_address((index,)))
 
         even_slice = self.dut[::2]
-        for index, original_index in enumerate(range(0,self.dimensions[0],2)):
-            self.assertEqual(even_slice[index].address, self.calculate_address((original_index,)))
+        for index in range(self.dimensions[0]):
+            if index % 2 == 0:
+                self.assertEqual(even_slice[index].address, self.calculate_address((index,)))
+            else:
+                with self.assertRaises(IndexError):
+                    _ = even_slice[index]
 
         odd_slice = self.dut[1::2]
-        for index, original_index in enumerate(range(1,self.dimensions[0],2)):
-            self.assertEqual(odd_slice[index].address, self.calculate_address((original_index,)))
+        for index in range(self.dimensions[0]):
+            if index % 2 == 1:
+                self.assertEqual(odd_slice[index].address, self.calculate_address((index,)))
+            else:
+                with self.assertRaises(IndexError):
+                    _ = odd_slice[index]
 
         subset_slice = self.dut[2:-2]
-        for index, original_index in enumerate(range(2,self.dimensions[0]-2)):
-            self.assertEqual(subset_slice[index].address, self.calculate_address((original_index,)))
+        for index in range(self.dimensions[0]):
+            if index in range(2,self.dimensions[0]-2):
+                self.assertEqual(subset_slice[index].address, self.calculate_address((index,)))
+            else:
+                with self.assertRaises(IndexError):
+                    _ = subset_slice[index]
 
 class Test2DArray(ArrayBase):
 
@@ -205,15 +199,22 @@ class Test2DArray(ArrayBase):
     def base_address(self) -> int:
         return 0
 
+    def calculate_address(self, indices: Tuple[int, ...]) -> int:
+        return (indices[0] * self.dimensions[1] * self.stride) + \
+               (indices[1] * self.stride) + self.base_address
+
     def test_individual_access(self):
 
         # do some spot checks
         self.assertEqual(self.dut[0, 0].address, self.calculate_address((0, 0)))
         self.assertEqual(self.dut[1, 1].address, self.calculate_address((1, 1)))
+        self.assertEqual(self.dut[1, 2].address, self.calculate_address((1, 2)))
 
-        # do some spot checks with the other style of addressing
-        self.assertEqual(self.dut[0][0].address, self.calculate_address((0, 0)))
-        self.assertEqual(self.dut[1][2].address, self.calculate_address((1, 2)))
+        with self.assertRaises(IndexError):
+            _ = self.dut[10, 12]
+
+        with self.assertRaises(IndexError):
+            _ = self.dut[1]
 
         # sweep every item
         for index in product(*[range(dim) for dim in self.dimensions]):
@@ -225,13 +226,19 @@ class Test2DArray(ArrayBase):
         for index, entry in enumerate(inner_chunk):
             self.assertEqual(entry.address, self.calculate_address((0, index)))
 
-    # The following test is a corner case of higher order array, see bug 110
-    @unittest.expectedFailure
+        _ = self.dut[0, 12:]
+
     def test_outer_slice_access(self):
 
         outer_chunk = self.dut[:, 0]
         for index, entry in enumerate(outer_chunk):
             self.assertEqual(entry.address, self.calculate_address((index, 0)))
+
+    def test_inner_section(self):
+
+        chunk = self.dut[2:-2, 3:-3]
+        for index, entry in zip(product(range(2,8), range(3,9)), chunk):
+            self.assertEqual(entry.address, self.calculate_address(index))
 
 if __name__ == '__main__':
     unittest.main()

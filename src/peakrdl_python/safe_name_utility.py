@@ -264,16 +264,13 @@ def safe_node_name(node: Union[RegNode,
                                FieldNode,
                                RegfileNode,
                                AddrmapNode,
-                               MemNode],
-                   multidimensional_array_naming: bool = False) -> str:
+                               MemNode]) -> str:
     """
     Generate the safe name for a node to avoid name clashes in the generated python
 
     Args:
         node: as node from the compiled systemRDL
-        multidimensional_array_naming: chooses the style of the names of multi-dimensional arrays
-                                       True = node[idx0, idx1]
-                                       False = node[idx0][idx1]
+
 
     Returns: python name to use
 
@@ -302,12 +299,8 @@ def safe_node_name(node: Union[RegNode,
     if not isinstance(node, FieldNode):
         if node.is_array:
             if node.current_idx is not None:
-                if multidimensional_array_naming is False:
-                    # the format should be node_name[idx0][idx1]
-                    node_name += '[' + ']['.join(str(x) for x in node.current_idx) + ']'
-                else:
-                    # the format should be node_name[idx0,idx1]
-                    node_name += '[' + ','.join(str(x) for x in node.current_idx) + ']'
+                # the format should be node_name[idx0,idx1]
+                node_name += '[' + ','.join(str(x) for x in node.current_idx) + ']'
 
     return node_name
 
@@ -316,8 +309,7 @@ def get_python_path_segments(node: Union[RegNode,
                                          FieldNode,
                                          RegfileNode,
                                          AddrmapNode,
-                                         MemNode],
-                             multidimensional_array_naming: bool = False) -> List[str]:
+                                         MemNode]) -> List[str]:
     """
     Behaves similarly to the get_path_segments method of a system RDL node but names are converted
     using the following pattern:
@@ -337,7 +329,7 @@ def get_python_path_segments(node: Union[RegNode,
                      child_list: List[str]) -> List[str]:
         if isinstance(child_node.parent, RootNode):
             return child_list
-        child_node_safe_name = safe_node_name(child_node, multidimensional_array_naming)
+        child_node_safe_name = safe_node_name(child_node)
         child_list.insert(0, child_node_safe_name)
         return node_segment(child_node.parent, child_list=child_list)
 
