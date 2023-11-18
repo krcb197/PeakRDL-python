@@ -209,7 +209,7 @@ class NodeArray(Base, Sequence[NodeArrayElementType]):
                 raise TypeError(f'elements should be a {self._element_datatype} '
                                 f'but got {type(item)}')
 
-    def __address_calculator(self, indices: Tuple[int, ...]):
+    def __address_calculator(self, indices: Tuple[int, ...]) -> int:
         def cal_addr(dimensions: Tuple[int,...], indices: Tuple[int, ...], base_address: int,
                      stride: int) -> int:
             """
@@ -232,22 +232,6 @@ class NodeArray(Base, Sequence[NodeArrayElementType]):
 
         return cal_addr(self.dimensions, base_address=self.address,
                         stride=self.stride, indices=indices)
-
-    @overload
-    def __getitem__(self, item: int) -> NodeArrayElementType:
-        ...
-
-    @overload
-    def __getitem__(self, item: slice) -> Sequence[NodeArrayElementType]:
-        ...
-
-    @overload
-    def __getitem__(self, item: Tuple[int, ...]) -> NodeArrayElementType:
-        ...
-
-    @overload
-    def __getitem__(self, item: Tuple[Union[int, slice], ...]) -> Sequence[NodeArrayElementType]:
-        ...
 
     def __getitem__(self, item):  # type: ignore[no-untyped-def]
         if len(self.dimensions) > 1:
@@ -281,14 +265,6 @@ class NodeArray(Base, Sequence[NodeArrayElementType]):
             return self.__elements[(item, )]
 
         raise TypeError(f'Array index must either being an int or a slice, got {type(item)}')
-
-    @overload
-    def __getitem_nd(self, item: Tuple[int, ...]) -> NodeArrayElementType:
-        ...
-
-    @overload
-    def __getitem_nd(self, item: Tuple[Union[int, slice], ...]) -> Sequence[NodeArrayElementType]:
-        ...
 
     def __getitem_nd(self, item): # type: ignore[no-untyped-def]
 
