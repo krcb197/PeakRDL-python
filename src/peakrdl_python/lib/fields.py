@@ -9,7 +9,7 @@ from abc import ABC, abstractmethod
 
 from .base import Base
 from .base import swap_msb_lsb_ordering
-from .register import Reg
+from .register import BaseReg
 from .register import RegReadOnly, RegAsyncReadOnly
 from .register import RegReadWrite, RegAsyncReadWrite
 from .register import RegWriteOnly, RegAsyncWriteOnly
@@ -148,7 +148,7 @@ class Field(Base, ABC):
                  '__bitmask', '__msb0', '__lsb0']
 
     def __init__(self, *,
-                 parent_register: Reg, size_props: FieldSizeProps, misc_props: FieldMiscProps,
+                 parent_register: BaseReg, size_props: FieldSizeProps, misc_props: FieldMiscProps,
                  logger_handle: str, inst_name: str):
 
         super().__init__(logger_handle=logger_handle,
@@ -164,8 +164,8 @@ class Field(Base, ABC):
                             f'but got {type(misc_props)}')
         self.__misc_props = misc_props
 
-        if not isinstance(parent_register, Reg):
-            raise TypeError(f'parent_register must be of {type(Reg)} '
+        if not isinstance(parent_register, BaseReg):
+            raise TypeError(f'parent_register must be of {type(BaseReg)} '
                             f'but got {type(parent_register)}')
 
         if self.width > self.register_data_width:
@@ -327,12 +327,12 @@ class Field(Base, ABC):
         return self.__misc_props.is_volatile
 
     @property
-    def __parent_register(self) -> Reg:
+    def __parent_register(self) -> BaseReg:
         """
         parent register the field is placed in
         """
         # this cast is OK because an explict typing check was done in the __init__
-        return cast(Reg, self.parent)
+        return cast(BaseReg, self.parent)
 
 class _FieldReadOnlyFramework(Field, ABC):
     """
@@ -378,12 +378,12 @@ class _FieldReadOnlyFramework(Field, ABC):
         return return_value
 
     @property
-    def __parent_register(self) -> Reg:
+    def __parent_register(self) -> BaseReg:
         """
         parent register the field is placed in
         """
         # this cast is OK because an explict typing check was done in the __init__
-        return cast(Reg, self.parent)
+        return cast(BaseReg, self.parent)
 
 class FieldReadOnly(_FieldReadOnlyFramework, ABC):
     """

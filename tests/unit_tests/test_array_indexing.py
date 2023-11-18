@@ -7,7 +7,9 @@ from typing import Tuple, Optional, Iterator, Union, Dict
 from abc import ABC, abstractmethod
 from itertools import product
 
-from peakrdl_python.lib import AddressMap, CallbackSet, Memory, RegFile
+from peakrdl_python.lib import AddressMap, CallbackSet, Memory, RegFile, \
+    ReadableRegister, ReadableRegisterArray, \
+    WritableRegister, WriteableRegisterArray
 
 from .simple_components import RegisterArrayToTest, CallBackTestWrapper
 
@@ -82,18 +84,26 @@ class ArrayBase(CallBackTestWrapper, ABC):
 
             def get_memories(self, unroll: bool = False) -> \
                     Iterator[Union[Memory, Tuple[Memory, ...]]]:
-                # Empty generator in case there are no children of this type
-                # pylint: disable-next=using-constant-test
-                if False:
-                    yield
+                raise NotImplementedError('Not implemented in the testing')
 
             def get_sections(self, unroll: bool = False) -> \
                     Iterator[Union[Union[AddressMap, RegFile],
                                    Tuple[Union[AddressMap, RegFile], ...]]]:
-                # Empty generator in case there are no children of this type
-                # pylint: disable-next=using-constant-test
-                if False:
-                    yield
+                raise NotImplementedError('Not implemented in the testing')
+
+            def get_writable_registers(self, unroll: bool = False) -> \
+                    Iterator[Union[WritableRegister, WriteableRegisterArray]]:
+                """
+                generator that produces all the readable_registers of this node
+                """
+                raise NotImplementedError('Not implemented in the testing')
+
+            def get_readable_registers(self, unroll: bool = False) -> \
+                    Iterator[Union[ReadableRegister, ReadableRegisterArray]]:
+                """
+                generator that produces all the readable_registers of this node
+                """
+                raise NotImplementedError('Not implemented in the testing')
 
 
 

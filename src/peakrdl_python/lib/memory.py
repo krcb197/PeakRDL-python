@@ -6,7 +6,7 @@ from array import array as Array
 from typing import List, Union, Tuple, Iterator, TYPE_CHECKING, cast
 from abc import ABC, abstractmethod
 
-from .base import Node, AddressMap, NodeArray, get_array_typecode
+from .base import Node, AddressMap, AsyncAddressMap, NodeArray, get_array_typecode
 
 from .callbacks import NormalCallbackSet, AsyncCallbackSet
 
@@ -36,7 +36,7 @@ class Memory(Node, ABC):
                  entries: int,
                  logger_handle: str,
                  inst_name: str,
-                 parent: AddressMap):
+                 parent: Union[AddressMap, AsyncAddressMap]):
         """
         Initialise the class
 
@@ -46,6 +46,9 @@ class Memory(Node, ABC):
             width: width of the register in bits
             logger_handle: name to be used logging messages associate with thisobject
         """
+        if not isinstance(parent, (AddressMap, AsyncAddressMap)):
+            raise TypeError(f'parent should be either AddressMap or AsyncAddressMap got '
+                            f'{type(parent)}')
         super().__init__(address=address,
                          logger_handle=logger_handle,
                          inst_name=inst_name,
@@ -154,6 +157,9 @@ class MemoryReadOnly(Memory, ABC):
                  logger_handle: str,
                  inst_name: str,
                  parent: AddressMap):
+
+        if not isinstance(parent, AddressMap):
+            raise TypeError(f'parent should be either AddressMap got {type(parent)}')
 
         if not isinstance(parent._callbacks, NormalCallbackSet):
             raise TypeError(f'callback set type is wrong, got {type(parent._callbacks)}')
@@ -265,6 +271,9 @@ class MemoryWriteOnly(Memory, ABC):
                  inst_name: str,
                  parent: AddressMap):
 
+        if not isinstance(parent, AddressMap):
+            raise TypeError(f'parent should be either AddressMap got {type(parent)}')
+
         if not isinstance(parent._callbacks, NormalCallbackSet):
             raise TypeError(f'callback set type is wrong, got {type(parent._callbacks)}')
 
@@ -375,7 +384,10 @@ class MemoryAsyncReadOnly(Memory, ABC):
                  entries: int,
                  logger_handle: str,
                  inst_name: str,
-                 parent: AddressMap):
+                 parent: AsyncAddressMap):
+
+        if not isinstance(parent, AsyncAddressMap):
+            raise TypeError(f'parent should be either AsyncAddressMap got {type(parent)}')
 
         if not isinstance(parent._callbacks, AsyncCallbackSet):
             raise TypeError(f'callback set type is wrong, got {type(parent._callbacks)}')
@@ -484,7 +496,10 @@ class MemoryAsyncWriteOnly(Memory, ABC):
                  entries: int,
                  logger_handle: str,
                  inst_name: str,
-                 parent: AddressMap):
+                 parent: AsyncAddressMap):
+
+        if not isinstance(parent, AsyncAddressMap):
+            raise TypeError(f'parent should be either AsyncAddressMap got {type(parent)}')
 
         if not isinstance(parent._callbacks, AsyncCallbackSet):
             raise TypeError(f'callback set type is wrong, got {type(parent._callbacks)}')
@@ -629,6 +644,9 @@ class MemoryReadWriteArray(MemoryReadOnlyArray, MemoryWriteOnlyArray, ABC):
                  stride: int,
                  dimensions: Tuple[int, ...]):
 
+        if not isinstance(parent, AddressMap):
+            raise TypeError(f'parent should be either AddressMap got {type(parent)}')
+
         super().__init__(logger_handle=logger_handle, inst_name=inst_name,
                          parent=parent, address=address,
                          stride=stride, dimensions=dimensions)
@@ -643,10 +661,13 @@ class MemoryAsyncReadOnlyArray(NodeArray, ABC):
     # pylint: disable-next=too-many-arguments
     def __init__(self, *,
                  logger_handle: str, inst_name: str,
-                 parent: AddressMap,
+                 parent: AsyncAddressMap,
                  address: int,
                  stride: int,
                  dimensions: Tuple[int, ...]):
+
+        if not isinstance(parent, AsyncAddressMap):
+            raise TypeError(f'parent should be either AsyncAddressMap got {type(parent)}')
 
         super().__init__(logger_handle=logger_handle, inst_name=inst_name,
                          parent=parent, address=address,
@@ -662,10 +683,13 @@ class MemoryAsyncWriteOnlyArray(NodeArray, ABC):
     # pylint: disable-next=too-many-arguments
     def __init__(self, *,
                  logger_handle: str, inst_name: str,
-                 parent: AddressMap,
+                 parent: AsyncAddressMap,
                  address: int,
                  stride: int,
                  dimensions: Tuple[int, ...]):
+
+        if not isinstance(parent, AsyncAddressMap):
+            raise TypeError(f'parent should be either AsyncAddressMap got {type(parent)}')
 
         super().__init__(logger_handle=logger_handle, inst_name=inst_name,
                          parent=parent, address=address,
@@ -681,10 +705,13 @@ class MemoryAsyncReadWriteArray(MemoryAsyncReadOnlyArray, MemoryAsyncWriteOnlyAr
     # pylint: disable-next=too-many-arguments
     def __init__(self, *,
                  logger_handle: str, inst_name: str,
-                 parent: AddressMap,
+                 parent: AsyncAddressMap,
                  address: int,
                  stride: int,
                  dimensions: Tuple[int, ...]):
+
+        if not isinstance(parent, AsyncAddressMap):
+            raise TypeError(f'parent should be either AsyncAddressMap got {type(parent)}')
 
         super().__init__(logger_handle=logger_handle, inst_name=inst_name,
                          parent=parent, address=address,

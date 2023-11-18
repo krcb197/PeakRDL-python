@@ -456,7 +456,7 @@ class AddressMap(Node, ABC):
         """
         generator that produces all the readable_registers of this node
         """
-    
+
     @abstractmethod
     def get_readable_registers(self, unroll:bool=False) ->\
             Iterator[Union[ReadableRegister, ReadableRegisterArray]]:
@@ -468,6 +468,7 @@ class AddressMap(Node, ABC):
     def _callbacks(self) -> NormalCallbackSet:
         if self.parent is None:
             return self.__callbacks
+        # pylint: disable-next=protected-access
         return cast(NormalCallbackSet, self.parent._callbacks)
 
     @property
@@ -511,7 +512,8 @@ class AsyncAddressMap(Node, ABC):
 
     @abstractmethod
     def get_sections(self, unroll: bool = False) -> \
-            Iterator[Union['AsyncAddressMap', AsyncRegFile, AsyncAddressMapArray, AsyncRegFileArray]]:
+            Iterator[Union['AsyncAddressMap', AsyncRegFile,
+                           AsyncAddressMapArray, AsyncRegFileArray]]:
         """
         generator that produces all the AddressMap and RegFile children of this node
 
@@ -553,6 +555,7 @@ class AsyncAddressMap(Node, ABC):
     def _callbacks(self) -> AsyncCallbackSet:
         if self.parent is None:
             return self.__callbacks
+        # pylint: disable-next=protected-access
         return cast(AsyncCallbackSet, self.parent._callbacks)
 
     @property
