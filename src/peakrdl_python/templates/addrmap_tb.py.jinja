@@ -72,7 +72,7 @@ class {{fq_block_name}}_single_access({{top_node.type_name}}_TestCase): # type: 
         Walk the address map and check the address, size and accesswidth of every memory is
         correct
         """
-        mut: Memory
+        mut: {% if asyncoutput %}Async{% endif %}Memory
         {% for node in owned_elements.memories -%}
         with self.subTest(msg='memory: {{'.'.join(node.get_path_segments())}}'):
             mut = self.dut.{{'.'.join(get_python_path_segments(node))}} # type: ignore[union-attr,assignment]
@@ -894,7 +894,7 @@ class {{fq_block_name}}_single_access({{top_node.type_name}}_TestCase): # type: 
         expected_readable_regs: List[ReadableRegister]
         expected_memories:List[Union[MemoryReadOnly, MemoryWriteOnly, MemoryReadWrite]]
         {% endif %}
-        expected_sections : List[Union[AddressMap, RegFile]]
+        expected_sections : List[Union[{% if asyncoutput %}Async{% endif %}AddressMap, {% if asyncoutput %}Async{% endif %}RegFile]]
 
         # check the readable registers
         expected_readable_regs = [ {%- for child_node in top_node.children(unroll=True) %}
@@ -1068,7 +1068,7 @@ class {{fq_block_name}}_single_access({{top_node.type_name}}_TestCase): # type: 
         expected_readable_regs: List[ReadableRegister]
         expected_memories:List[Union[MemoryReadOnly, MemoryWriteOnly, MemoryReadWrite]]
         {% endif %}
-        expected_sections : List[Union[AddressMap, RegFile]]
+        expected_sections : List[Union[{% if asyncoutput %}Async{% endif %}AddressMap, {% if asyncoutput %}Async{% endif %}RegFile]]
 
         # test all the registers
         {% for node in owned_elements.registers -%}
