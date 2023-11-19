@@ -1344,7 +1344,7 @@ class AsyncRegArray(BaseRegArray, ABC):
             # python 3.7 doesn't have the callback defined as protocol so mypy doesn't recognise
             # the arguments in the call back functions
             data_read = \
-                await read_block_callback(
+                await read_block_callback(  # type: ignore[call-arg]
                     addr=self.address,  # type: ignore[call-arg]
                     width=self.width,  # type: ignore[call-arg]
                     accesswidth=self.accesswidth,  # type: ignore[call-arg]
@@ -1365,7 +1365,7 @@ class AsyncRegArray(BaseRegArray, ABC):
             for entry, address in enumerate(self.__register_address_array):
                 # python 3.7 doesn't have the callback defined as protocol so mypy doesn't
                 # recognise the arguments in the call back functions
-                data_entry = await read_callback(
+                data_entry = await read_callback(  # type: ignore[call-arg]
                     addr=address,  # type: ignore[call-arg]
                     width=self.width,  # type: ignore[call-arg]
                     accesswidth=self.accesswidth)  # type: ignore[call-arg]
