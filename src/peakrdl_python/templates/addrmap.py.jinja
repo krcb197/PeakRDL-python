@@ -27,10 +27,8 @@ from ..lib import AsyncAddressMap
 from ..lib import AsyncRegFile
 from ..lib  import AsyncAddressMapArray
 from ..lib  import AsyncRegFileArray
-    {% if uses_memory %}
 from ..lib import MemoryAsyncReadOnly, MemoryAsyncWriteOnly, MemoryAsyncReadWrite
 from ..lib import MemoryAsyncReadOnlyArray, MemoryAsyncWriteOnlyArray, MemoryAsyncReadWriteArray
-    {% endif %}
 from ..lib import RegAsyncReadOnly, RegAsyncWriteOnly, RegAsyncReadWrite
 from ..lib import RegAsyncReadOnlyArray, RegAsyncWriteOnlyArray, RegAsyncReadWriteArray
 from ..lib import FieldAsyncReadOnly, FieldAsyncWriteOnly, FieldAsyncReadWrite, Field
@@ -44,10 +42,8 @@ from ..lib import AddressMap
 from ..lib import RegFile
 from ..lib  import AddressMapArray
 from ..lib  import RegFileArray
-    {% if uses_memory %}
 from ..lib import MemoryReadOnly, MemoryWriteOnly, MemoryReadWrite
 from ..lib import MemoryReadOnlyArray, MemoryWriteOnlyArray, MemoryReadWriteArray
-    {% endif %}
 from ..lib import RegReadOnly, RegWriteOnly, RegReadWrite
 from ..lib import RegReadOnlyArray, RegWriteOnlyArray, RegReadWriteArray
 from ..lib import FieldReadOnly, FieldWriteOnly, FieldReadWrite, Field
