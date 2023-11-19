@@ -401,7 +401,7 @@ class MemoryAsyncReadOnly(BaseMemory, ABC):
                  inst_name: str,
                  parent: Union[AsyncAddressMap, 'AsyncMemoryArray']):
 
-        if not isinstance(parent, (AddressMap, MemoryAsyncWriteOnlyArray,
+        if not isinstance(parent, (AsyncAddressMap, MemoryAsyncWriteOnlyArray,
                                    MemoryAsyncReadOnlyArray, MemoryAsyncReadWriteArray)):
             raise TypeError('parent should be either AddressMap or Memory Array '
                             f'got {type(parent)}')
@@ -518,7 +518,7 @@ class MemoryAsyncWriteOnly(BaseMemory, ABC):
                  inst_name: str,
                  parent: Union[AsyncAddressMap, 'AsyncMemoryArray']):
 
-        if not isinstance(parent, (AddressMap, MemoryAsyncWriteOnlyArray,
+        if not isinstance(parent, (AsyncAddressMap, MemoryAsyncWriteOnlyArray,
                                    MemoryAsyncReadOnlyArray, MemoryAsyncReadWriteArray)):
             raise TypeError('parent should be either AddressMap or Memory Array '
                             f'got {type(parent)}')
