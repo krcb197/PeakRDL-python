@@ -491,7 +491,7 @@ class AsyncAddressMap(Node, ABC):
                  address: int,
                  logger_handle: str,
                  inst_name: str,
-                 parent: Optional['AddressMap']):
+                 parent: Optional['AsyncAddressMap']):
 
         # only the top-level address map should have callbacks assigned, everything else should
         # use its parent callback
@@ -663,7 +663,7 @@ class AsyncRegFile(Node, ABC):
                  address: int,
                  logger_handle: str,
                  inst_name: str,
-                 parent: Union[AddressMap, 'RegFile']):
+                 parent: Union[AsyncAddressMap, 'AsyncRegFile']):
         super().__init__(address=address,
                          logger_handle=logger_handle,
                          inst_name=inst_name,
@@ -723,7 +723,7 @@ class AsyncRegFileArray(NodeArray, ABC):
     # pylint: disable-next=too-many-arguments
     def __init__(self, *,
                  logger_handle: str, inst_name: str,
-                 parent: Union[AddressMap, RegFile],
+                 parent: Union[AsyncAddressMap, AsyncRegFile],
                  address: int,
                  stride: int,
                  dimensions: Tuple[int, ...]):
