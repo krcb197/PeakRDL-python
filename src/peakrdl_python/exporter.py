@@ -207,12 +207,17 @@ class PythonExporter:
                 # top block, including the top_block itself
                 RDLWalker(unroll=True).walk(block, owned_elements, skip_top=True)
 
-                rolled_owned_reg_array = list(block.registers(unroll=False))
+                # The code that generates the tests for the register array context managers needs
+                # the arrays rolled up but parents within the address map e.g. a regfile unrolled
+                # I have not found a way to do this with the Walker as the unroll seems to be a
+                # global setting, the following code works but it is not elegant
+                rolled_owned_reg_array: List[RegNode] = list(block.registers(unroll=False))
                 for regfile in owned_elements.reg_files:
                     rolled_owned_reg_array += list(regfile.registers(unroll=False))
                 for memory in owned_elements.memories:
                     rolled_owned_reg_array += list(memory.registers(unroll=False))
-                rolled_owned_reg_array = filter(lambda x: x.is_array, rolled_owned_reg_array)
+                def is_reg_array(item: RegNode) -> bool:
+                    return item.is_array
 
                 fq_block_name = '_'.join(block.get_path_segments(array_suffix = '_{index:d}_'))
 
@@ -225,7 +230,7 @@ class PythonExporter:
                     'block' : block,
                     'fq_block_name' : fq_block_name,
                     'owned_elements': owned_elements,
-                    'rolled_owned_reg_array' : rolled_owned_reg_array,
+                    'rolled_owned_reg_array' : filter(is_reg_array, rolled_owned_reg_array),
                     'systemrdlFieldNode': FieldNode,
                     'systemrdlSignalNode': SignalNode,
                     'systemrdlRegNode': RegNode,
