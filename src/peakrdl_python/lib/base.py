@@ -14,7 +14,7 @@ from operator import mul
 from .callbacks import CallbackSet, NormalCallbackSet, AsyncCallbackSet
 
 if TYPE_CHECKING:
-    from .memory import Memory
+    from .memory import Memory, MemoryArray, AsyncMemory, AsyncMemoryArray
     from .register import WritableRegister, ReadableRegister
     from .register import ReadableAsyncRegister, WritableAsyncRegister
     from .register import ReadableRegisterArray, WriteableRegisterArray
@@ -439,7 +439,7 @@ class AddressMap(Node, ABC):
 
     @abstractmethod
     def get_memories(self, unroll: bool = False) -> \
-            Iterator[Union['Memory', Tuple['Memory', ...]]]:
+            Iterator[Union['Memory', 'MemoryArray']]:
         """
         generator that produces all the Memory children of this node
 
@@ -532,7 +532,7 @@ class AsyncAddressMap(Node, ABC):
 
     @abstractmethod
     def get_memories(self, unroll: bool = False) -> \
-            Iterator[Union['Memory', Tuple['Memory', ...]]]:
+            Iterator[Union['AsyncMemory', 'AsyncMemoryArray']]:
         """
         generator that produces all the Memory children of this node
 

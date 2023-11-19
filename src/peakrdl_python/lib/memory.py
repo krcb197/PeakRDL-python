@@ -19,7 +19,7 @@ if TYPE_CHECKING:
 # pylint: disable=duplicate-code
 
 
-class Memory(Node, ABC):
+class BaseMemory(Node, ABC):
     """
     base class of memory wrappers
 
@@ -139,7 +139,7 @@ class Memory(Node, ABC):
         return self.__accesswidth
 
 
-class MemoryReadOnly(Memory, ABC):
+class MemoryReadOnly(BaseMemory, ABC):
     """
     base class of memory wrappers
 
@@ -256,7 +256,7 @@ class MemoryReadOnly(Memory, ABC):
         """
 
 
-class MemoryWriteOnly(Memory, ABC):
+class MemoryWriteOnly(BaseMemory, ABC):
     """
     base class of memory wrappers
 
@@ -373,7 +373,7 @@ class MemoryReadWrite(MemoryReadOnly, MemoryWriteOnly, ABC):
     __slots__: List[str] = []
 
 
-class MemoryAsyncReadOnly(Memory, ABC):
+class MemoryAsyncReadOnly(BaseMemory, ABC):
     """
     base class of memory wrappers
 
@@ -488,7 +488,7 @@ class MemoryAsyncReadOnly(Memory, ABC):
         """
 
 
-class MemoryAsyncWriteOnly(Memory, ABC):
+class MemoryAsyncWriteOnly(BaseMemory, ABC):
     """
     base class of memory wrappers
 
@@ -730,3 +730,13 @@ class MemoryAsyncReadWriteArray(MemoryAsyncReadOnlyArray, MemoryAsyncWriteOnlyAr
         super().__init__(logger_handle=logger_handle, inst_name=inst_name,
                          parent=parent, address=address,
                          stride=stride, dimensions=dimensions)
+
+ReadableMemory = Union[MemoryReadOnly, MemoryReadWrite]
+WritableMemory = Union[MemoryWriteOnly, MemoryReadWrite]
+Memory = Union[MemoryReadOnly, MemoryWriteOnly, MemoryReadWrite]
+ReadableAsyncMemory = Union[MemoryAsyncReadOnly, MemoryAsyncReadWrite]
+WritableAsyncMemory = Union[MemoryAsyncWriteOnly, MemoryAsyncReadWrite]
+AsyncMemory = Union[MemoryAsyncReadOnly, MemoryAsyncWriteOnly, MemoryAsyncReadWrite]
+MemoryArray = Union[MemoryReadOnlyArray, MemoryWriteOnlyArray, MemoryReadWriteArray]
+AsyncMemoryArray = Union[MemoryAsyncReadOnlyArray, MemoryAsyncWriteOnlyArray,
+                         MemoryAsyncReadWriteArray]

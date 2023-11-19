@@ -11,7 +11,9 @@ from array import array as Array
 
 from .base import Node, AddressMap, RegFile, NodeArray, get_array_typecode
 from .base import AsyncAddressMap, AsyncRegFile
-from .memory import Memory
+from .memory import  MemoryReadOnly, MemoryWriteOnly, MemoryReadWrite, \
+    MemoryAsyncReadOnly, MemoryAsyncWriteOnly, MemoryAsyncReadWrite, BaseMemory, \
+    Memory, AsyncMemory, ReadableAsyncMemory, WritableAsyncMemory, ReadableMemory, WritableMemory
 from .callbacks import NormalCallbackSet, AsyncCallbackSet
 
 if TYPE_CHECKING:
@@ -45,7 +47,7 @@ class BaseReg(Node, ABC):
                  accesswidth: int,
                  logger_handle: str,
                  inst_name: str,
-                 parent: Union[AddressMap, AsyncAddressMap, RegFile, AsyncRegFile, Memory]):
+                 parent: Union[AddressMap, AsyncAddressMap, RegFile, AsyncRegFile, BaseMemory]):
 
         super().__init__(address=address,
                          logger_handle=logger_handle,
@@ -122,7 +124,8 @@ class Reg(BaseReg, ABC):
                  inst_name: str,
                  parent: Union[AddressMap, RegFile, Memory]):
 
-        if not isinstance(parent, (AddressMap, RegFile, Memory)):
+        if not isinstance(parent, (AddressMap, RegFile,
+                                   MemoryReadOnly, MemoryWriteOnly, MemoryReadWrite)):
             raise TypeError(f'bad parent type got: {type(parent)}')
 
         if not isinstance(parent._callbacks, NormalCallbackSet):
@@ -157,9 +160,11 @@ class AsyncReg(BaseReg, ABC):
                  accesswidth: int,
                  logger_handle: str,
                  inst_name: str,
-                 parent: Union[AsyncAddressMap, AsyncRegFile, Memory]):
+                 parent: Union[AsyncAddressMap, AsyncRegFile, AsyncMemory]):
 
-        if not isinstance(parent, (AsyncAddressMap, AsyncRegFile, Memory)):
+        if not isinstance(parent, (AsyncAddressMap, AsyncRegFile,
+                                   MemoryAsyncReadOnly, MemoryAsyncWriteOnly,
+                                   MemoryAsyncReadWrite)):
             raise TypeError(f'bad parent type got: {type(parent)}')
 
         if not isinstance(parent._callbacks, AsyncCallbackSet):
@@ -200,7 +205,7 @@ class RegReadOnly(Reg, ABC):
                  accesswidth: int,
                  logger_handle: str,
                  inst_name: str,
-                 parent: Union[AddressMap, RegFile, Memory]):
+                 parent: Union[AddressMap, RegFile, ReadableMemory]):
 
         super().__init__(address=address,
                          logger_handle=logger_handle,
@@ -282,6 +287,21 @@ class RegWriteOnly(Reg, ABC):
 
     __slots__: List[str] = []
 
+    # pylint: disable=too-many-arguments, duplicate-code, useless-parent-delegation
+    def __init__(self, *,
+                 address: int,
+                 width: int,
+                 accesswidth: int,
+                 logger_handle: str,
+                 inst_name: str,
+                 parent: Union[AddressMap, RegFile, WritableMemory]):
+
+        super().__init__(address=address,
+                         logger_handle=logger_handle,
+                         inst_name=inst_name,
+                         parent=parent, width=width, accesswidth=accesswidth)
+    # pylint: enable=too-many-arguments, duplicate-code
+
     def write(self, data: int) -> None:
         """Writes a value to the register
 
@@ -356,7 +376,7 @@ class RegReadWrite(RegReadOnly, RegWriteOnly, ABC):
                  accesswidth: int,
                  logger_handle: str,
                  inst_name: str,
-                 parent: Union[AddressMap, RegFile, Memory]):
+                 parent: Union[AddressMap, RegFile, MemoryReadWrite]):
 
         super().__init__(address=address,
                          logger_handle=logger_handle,
@@ -485,7 +505,7 @@ class RegAsyncReadOnly(AsyncReg, ABC):
                  accesswidth: int,
                  logger_handle: str,
                  inst_name: str,
-                 parent: Union[AsyncAddressMap, AsyncRegFile, Memory]):
+                 parent: Union[AsyncAddressMap, AsyncRegFile, ReadableAsyncMemory]):
 
 
         super().__init__(address=address,
@@ -569,6 +589,22 @@ class RegAsyncWriteOnly(AsyncReg, ABC):
 
     __slots__: List[str] = []
 
+    # pylint: disable=too-many-arguments, duplicate-code, useless-parent-delegation
+    def __init__(self, *,
+                 address: int,
+                 width: int,
+                 accesswidth: int,
+                 logger_handle: str,
+                 inst_name: str,
+                 parent: Union[AsyncAddressMap, AsyncRegFile, WritableAsyncMemory]):
+
+
+        super().__init__(address=address,
+                         logger_handle=logger_handle,
+                         inst_name=inst_name,
+                         parent=parent, width=width, accesswidth=accesswidth)
+    # pylint: enable=too-many-arguments, duplicate-code
+
     async def write(self, data: int) -> None:
         """Asynchronously writes a value to the register
 
@@ -643,7 +679,7 @@ class RegAsyncReadWrite(RegAsyncReadOnly, RegAsyncWriteOnly, ABC):
                  accesswidth: int,
                  logger_handle: str,
                  inst_name: str,
-                 parent: Union[AsyncAddressMap, AsyncRegFile, Memory]):
+                 parent: Union[AsyncAddressMap, AsyncRegFile, MemoryAsyncReadWrite]):
 
         super().__init__(address=address,
                          logger_handle=logger_handle,
@@ -770,8 +806,9 @@ class RegReadOnlyArray(NodeArray, ABC):
                  dimensions: Tuple[int, ...],
                  elements: Optional[Dict[Tuple[int, ...], RegReadOnly]] = None):
 
-        if not isinstance(parent, (RegFile, AddressMap, Memory)):
-            raise TypeError('parent should be either RegFile, AddressMap, Memory '
+        if not isinstance(parent, (RegFile, AddressMap, MemoryReadOnly, MemoryReadWrite)):
+            raise TypeError('parent should be either RegFile, AddressMap, '
+                            'MemoryReadOnly, MemoryReadWrite '
                             f'got {type(parent)}')
 
         super().__init__(logger_handle=logger_handle, inst_name=inst_name,
@@ -795,8 +832,9 @@ class RegWriteOnlyArray(NodeArray, ABC):
                  dimensions: Tuple[int, ...],
                  elements: Optional[Dict[Tuple[int, ...], RegWriteOnly]] = None):
 
-        if not isinstance(parent, (RegFile, AddressMap, Memory)):
-            raise TypeError('parent should be either RegFile, AddressMap, Memory '
+        if not isinstance(parent, (RegFile, AddressMap, MemoryWriteOnly, MemoryReadWrite)):
+            raise TypeError('parent should be either RegFile, AddressMap, MemoryWriteOnly, '
+                            'MemoryReadWrite '
                             f'got {type(parent)}')
 
         super().__init__(logger_handle=logger_handle, inst_name=inst_name,
@@ -820,8 +858,8 @@ class RegReadWriteArray(NodeArray, ABC):
                  dimensions: Tuple[int, ...],
                  elements: Optional[Dict[Tuple[int, ...], RegReadWrite]] = None):
 
-        if not isinstance(parent, (RegFile, AddressMap, Memory)):
-            raise TypeError('parent should be either RegFile, AddressMap, Memory '
+        if not isinstance(parent, (RegFile, AddressMap, MemoryReadWrite)):
+            raise TypeError('parent should be either RegFile, AddressMap, MemoryReadWrite '
                             f'got {type(parent)}')
 
         super().__init__(logger_handle=logger_handle, inst_name=inst_name,
@@ -845,8 +883,10 @@ class RegAsyncReadOnlyArray(NodeArray, ABC):
                  dimensions: Tuple[int, ...],
                  elements: Optional[Dict[Tuple[int, ...], RegAsyncReadOnly]] = None):
 
-        if not isinstance(parent, (AsyncRegFile, AsyncAddressMap, Memory)):
-            raise TypeError('parent should be either AsyncRegFile, AsyncAddressMap, Memory '
+        if not isinstance(parent, (AsyncRegFile, AsyncAddressMap,
+                                   MemoryAsyncReadOnly, MemoryAsyncReadWrite)):
+            raise TypeError('parent should be either AsyncRegFile, AsyncAddressMap, '
+                            'MemoryAsyncReadOnly, MemoryAsyncReadWrite '
                             f'got {type(parent)}')
 
         super().__init__(logger_handle=logger_handle, inst_name=inst_name,
@@ -870,8 +910,10 @@ class RegAsyncWriteOnlyArray(NodeArray, ABC):
                  dimensions: Tuple[int, ...],
                  elements: Optional[Dict[Tuple[int, ...], RegAsyncReadOnly]] = None):
 
-        if not isinstance(parent, (AsyncRegFile, AsyncAddressMap, Memory)):
-            raise TypeError('parent should be either AsyncRegFile, AsyncAddressMap, Memory '
+        if not isinstance(parent, (AsyncRegFile, AsyncAddressMap,
+                                   MemoryAsyncWriteOnly, MemoryAsyncReadWrite)):
+            raise TypeError('parent should be either AsyncRegFile, AsyncAddressMap, '
+                            'MemoryAsyncWriteOnly, MemoryAsyncReadWrite '
                             f'got {type(parent)}')
 
         super().__init__(logger_handle=logger_handle, inst_name=inst_name,
@@ -895,8 +937,9 @@ class RegAsyncReadWriteArray(NodeArray, ABC):
                  dimensions: Tuple[int, ...],
                  elements: Optional[Dict[Tuple[int, ...], RegAsyncReadOnly]] = None):
 
-        if not isinstance(parent, (AsyncRegFile, AsyncAddressMap, Memory)):
-            raise TypeError('parent should be either AsyncRegFile, AsyncAddressMap, Memory '
+        if not isinstance(parent, (AsyncRegFile, AsyncAddressMap, MemoryAsyncReadWrite)):
+            raise TypeError('parent should be either AsyncRegFile, AsyncAddressMap, '
+                            'MemoryAsyncReadWrite '
                             f'got {type(parent)}')
 
         super().__init__(logger_handle=logger_handle, inst_name=inst_name,
