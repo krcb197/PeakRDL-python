@@ -637,7 +637,7 @@ class RegFile(Node, ABC):
 
     @abstractmethod
     def get_sections(self, unroll: bool = False) -> \
-            Iterator[Union['RegFile', Tuple['RegFile', ...]]]:
+            Iterator[Union['RegFile','RegFileArray']]:
         """
         generator that produces all the RegFile children of this node
 
@@ -707,7 +707,7 @@ class AsyncRegFile(Node, ABC):
 
     @abstractmethod
     def get_sections(self, unroll: bool = False) -> \
-            Iterator[Union['AsyncRegFile', Tuple['AsyncRegFile', ...]]]:
+            Iterator[Union['AsyncRegFile','AsyncRegFileArray']]:
         """
         generator that produces all the RegFile children of this node
 
