@@ -247,7 +247,7 @@ class MemoryReadOnly(Memory, ABC):
 
     @abstractmethod
     def get_readable_registers(self, unroll: bool = False) -> \
-            Iterator[Union[ReadableRegister, ReadableRegisterArray]]:
+            Iterator[Union['ReadableRegister', 'ReadableRegisterArray']]:
         """
         generator that produces all the readable_registers of this node
 
@@ -352,7 +352,7 @@ class MemoryWriteOnly(Memory, ABC):
 
     @abstractmethod
     def get_writable_registers(self, unroll: bool = False) -> \
-            Iterator[Union[WritableRegister, WriteableRegisterArray]]:
+            Iterator[Union['WritableRegister', 'WriteableRegisterArray']]:
         """
         generator that produces all the readable_registers of this node
 
@@ -479,7 +479,7 @@ class MemoryAsyncReadOnly(Memory, ABC):
 
     @abstractmethod
     def get_readable_registers(self, unroll: bool = False) -> \
-            Iterator[Union[ReadableAsyncRegister, ReadableAsyncRegisterArray]]:
+            Iterator[Union['ReadableAsyncRegister', 'ReadableAsyncRegisterArray']]:
         """
         generator that produces all the readable_registers of this node
 
@@ -585,7 +585,7 @@ class MemoryAsyncWriteOnly(Memory, ABC):
 
     @abstractmethod
     def get_writable_registers(self, unroll: bool = False) -> \
-            Iterator[Union[WritableAsyncRegister, WriteableAsyncRegisterArray]]:
+            Iterator[Union['WritableAsyncRegister', 'WriteableAsyncRegisterArray']]:
         """
         generator that produces all the readable_registers of this node
 
