@@ -12,7 +12,9 @@ from .callbacks import NormalCallbackSet, AsyncCallbackSet
 
 if TYPE_CHECKING:
     from .register import ReadableRegister, WritableRegister
+    from .register import ReadableRegisterArray, WriteableRegisterArray
     from .register import ReadableAsyncRegister, WritableAsyncRegister
+    from .register import ReadableAsyncRegisterArray, WriteableAsyncRegisterArray
 
 # pylint: disable=duplicate-code
 
@@ -245,9 +247,12 @@ class MemoryReadOnly(Memory, ABC):
 
     @abstractmethod
     def get_readable_registers(self, unroll: bool = False) -> \
-            Iterator[Union['ReadableRegister', Tuple['ReadableRegister', ...]]]:
+            Iterator[Union[ReadableRegister, ReadableRegisterArray]]:
         """
         generator that produces all the readable_registers of this node
+
+        Args:
+            unroll: Whether to unroll child array or not
         """
 
 
@@ -347,9 +352,12 @@ class MemoryWriteOnly(Memory, ABC):
 
     @abstractmethod
     def get_writable_registers(self, unroll: bool = False) -> \
-            Iterator[Union['WritableRegister', Tuple['WritableRegister', ...]]]:
+            Iterator[Union[WritableRegister, WriteableRegisterArray]]:
         """
         generator that produces all the readable_registers of this node
+
+        Args:
+            unroll: Whether to unroll child array or not
         """
 
 
@@ -471,9 +479,12 @@ class MemoryAsyncReadOnly(Memory, ABC):
 
     @abstractmethod
     def get_readable_registers(self, unroll: bool = False) -> \
-            Iterator[Union['ReadableAsyncRegister', Tuple['ReadableAsyncRegister', ...]]]:
+            Iterator[Union[ReadableAsyncRegister, ReadableAsyncRegisterArray]]:
         """
         generator that produces all the readable_registers of this node
+
+        Args:
+            unroll: Whether to unroll child array or not
         """
 
 
@@ -574,9 +585,12 @@ class MemoryAsyncWriteOnly(Memory, ABC):
 
     @abstractmethod
     def get_writable_registers(self, unroll: bool = False) -> \
-            Iterator[Union['WritableAsyncRegister', Tuple['WritableAsyncRegister', ...]]]:
+            Iterator[Union[WritableAsyncRegister, WriteableAsyncRegisterArray]]:
         """
         generator that produces all the readable_registers of this node
+
+        Args:
+            unroll: Whether to unroll child array or not
         """
 
 

@@ -455,6 +455,9 @@ class AddressMap(Node, ABC):
             Iterator[Union[WritableRegister, WriteableRegisterArray]]:
         """
         generator that produces all the readable_registers of this node
+
+        Args:
+            unroll: Whether to unroll child array or not
         """
 
     @abstractmethod
@@ -462,6 +465,9 @@ class AddressMap(Node, ABC):
             Iterator[Union[ReadableRegister, ReadableRegisterArray]]:
         """
         generator that produces all the readable_registers of this node
+
+        Args:
+            unroll: Whether to unroll child array or not
         """
 
     @property
@@ -542,6 +548,9 @@ class AsyncAddressMap(Node, ABC):
             Iterator[Union[WritableAsyncRegister, WriteableAsyncRegisterArray]]:
         """
         generator that produces all the readable_registers of this node
+
+        Args:
+            unroll: Whether to unroll child array or not
         """
 
     @abstractmethod
@@ -549,6 +558,9 @@ class AsyncAddressMap(Node, ABC):
             Iterator[Union[ReadableAsyncRegister, ReadableAsyncRegisterArray]]:
         """
         generator that produces all the readable_registers of this node
+
+        Args:
+            unroll: Whether to unroll child array or not
         """
 
     @property
@@ -636,6 +648,27 @@ class RegFile(Node, ABC):
 
         """
 
+    @abstractmethod
+    def get_writable_registers(self, unroll:bool=False) -> \
+            Iterator[Union[WritableRegister, WriteableRegisterArray]]:
+        """
+        generator that produces all the readable_registers of this node
+
+        Args:
+            unroll: Whether to unroll child array or not
+
+        """
+
+    @abstractmethod
+    def get_readable_registers(self, unroll:bool=False) ->\
+            Iterator[Union[ReadableRegister, ReadableRegisterArray]]:
+        """
+        generator that produces all the readable_registers of this node
+
+        Args:
+            unroll: Whether to unroll child array or not
+        """
+
     @property
     def _callbacks(self) -> NormalCallbackSet:
         if self.parent is None:
@@ -683,6 +716,26 @@ class AsyncRegFile(Node, ABC):
 
         Returns:
 
+        """
+
+    @abstractmethod
+    def get_writable_registers(self, unroll: bool = False) -> \
+            Iterator[Union[WritableAsyncRegister, WriteableAsyncRegisterArray]]:
+        """
+        generator that produces all the readable_registers of this node
+
+        Args:
+            unroll: Whether to unroll child array or not
+        """
+
+    @abstractmethod
+    def get_readable_registers(self, unroll: bool = False) -> \
+            Iterator[Union[ReadableAsyncRegister, ReadableAsyncRegisterArray]]:
+        """
+        generator that produces all the readable_registers of this node
+
+        Args:
+            unroll: Whether to unroll child array or not
         """
 
     @property
