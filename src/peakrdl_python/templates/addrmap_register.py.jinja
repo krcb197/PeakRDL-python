@@ -19,7 +19,7 @@ class {{get_fully_qualified_type_name(node)}}_cls(Reg{% if asyncoutput %}Async{%
                  address: int,
                  logger_handle: str,
                  inst_name: str,
-                 parent: Union[{% if asyncoutput %}Async{% endif %}AddressMap,{% if asyncoutput %}Async{% endif %}RegFile,Memory]):
+                 parent: Union[{% if asyncoutput %}Async{% endif %}AddressMap,{% if asyncoutput %}Async{% endif %}RegFile,{% if asyncoutput %}Async{% endif %}Memory]):
 
         super().__init__(address=address,
                          {% if 'accesswidth' in node.list_properties() -%}accesswidth={{node.get_property('accesswidth')}}{%- else -%}accesswidth={{node.size*8}}{%- endif -%},

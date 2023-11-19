@@ -65,7 +65,6 @@ from .fields import FieldEnumAsyncReadOnly
 from .fields import FieldEnumAsyncWriteOnly
 from .fields import FieldEnumAsyncReadWrite
 
-from .memory import Memory
 from .memory import MemoryReadOnly
 from .memory import MemoryWriteOnly
 from .memory import MemoryReadWrite
@@ -78,6 +77,14 @@ from .memory import MemoryAsyncReadWrite
 from .memory import MemoryAsyncReadOnlyArray
 from .memory import MemoryAsyncWriteOnlyArray
 from .memory import MemoryAsyncReadWriteArray
+from .memory import ReadableMemory
+from .memory import WritableMemory
+from .memory import Memory
+from .memory import ReadableAsyncMemory
+from .memory import WritableAsyncMemory
+from .memory import AsyncMemory
+from .memory import MemoryArray
+from .memory import AsyncMemoryArray
 
 from .base import get_array_typecode
 from .base import Node
