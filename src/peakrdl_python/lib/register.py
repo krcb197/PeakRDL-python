@@ -194,7 +194,7 @@ class AsyncReg(BaseReg, ABC):
 BaseRegArrayElementType= TypeVar('BaseRegArrayElementType', bound=BaseReg)
 
 
-class BaseRegArray(NodeArray, ABC):
+class BaseRegArray(NodeArray[BaseRegArrayElementType], ABC):
     """
     base class of register array wrappers (async and non-async)
 
@@ -254,7 +254,7 @@ class BaseRegArray(NodeArray, ABC):
         """
         return self.__accesswidth
 
-    def _build_element(self, indices: Tuple[int, ...]) -> BaseReg:
+    def _build_element(self, indices: Tuple[int, ...]) -> BaseRegArrayElementType:
 
         return self._element_datatype(
             logger_handle=self._build_element_logger_handle(indices=indices),
