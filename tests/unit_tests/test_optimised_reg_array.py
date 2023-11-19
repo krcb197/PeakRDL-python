@@ -9,7 +9,7 @@ from unittest.mock import patch
 from array import array as Array
 
 # pylint: disable-next=unused-wildcard-import, wildcard-import
-from src.peakrdl_python.lib import *
+from peakrdl_python.lib import *
 
 from .simple_components import ReadWriteRegisterArrayToTest, ReadOnlyRegisterArrayToTest, \
     WriteOnlyRegisterArrayToTest, CallBackTestWrapper
@@ -20,9 +20,10 @@ class ArrayBase(CallBackTestWrapper, ABC):
     """
     Base of the Array indexing tests
     """
+    # pylint: disable=duplicate-code
     @property
     @abstractmethod
-    def RegisterArrayType(self):
+    def RegisterArrayType(self):  # pylint: disable=invalid-name
         """
         type of register array to test
         """
@@ -158,7 +159,7 @@ class Test1DArrayReadWrite(ArrayBase):
         """
         return cast(ReadWriteRegisterArrayToTest, super().dut)
 
-
+    # pylint: disable=duplicate-code
     @property
     def dimensions(self) -> Tuple[int, ...]:
         return (10,)
@@ -173,6 +174,8 @@ class Test1DArrayReadWrite(ArrayBase):
 
     def calculate_address(self, indices: Tuple[int, ...]) -> int:
         return (indices[0] * self.stride) + self.base_address
+
+    # pylint: enable=duplicate-code
 
     def test_block_context_manager(self):
         """
@@ -249,7 +252,7 @@ class Test1DArrayReadOnly(ArrayBase):
         """
         return cast(ReadOnlyRegisterArrayToTest, super().dut)
 
-
+    # pylint: disable=duplicate-code
     @property
     def dimensions(self) -> Tuple[int, ...]:
         return (10,)
@@ -265,6 +268,8 @@ class Test1DArrayReadOnly(ArrayBase):
     def calculate_address(self, indices: Tuple[int, ...]) -> int:
         return (indices[0] * self.stride) + self.base_address
 
+    # pylint: enable=duplicate-code
+
     def test_block_context_manager(self):
         """
         test the context manager that will perform a single block read, modify write with
@@ -276,7 +281,6 @@ class Test1DArrayReadOnly(ArrayBase):
                           return_value=Array('L', [x+9 for x in range(10)])) as read_patch, \
                 patch.object(self.callbacks, 'write_block_callback') as write_patch:
 
-            follow_along_array = Array('L', [0 for x in range(10)])
             with self.dut.single_read() as dut_context:
                 for idx, item in enumerate(dut_context):
                     self.assertEqual(item.read(), idx+9)
@@ -308,7 +312,7 @@ class Test1DArrayWriteOnly(ArrayBase):
         """
         return cast(WriteOnlyRegisterArrayToTest, super().dut)
 
-
+    # pylint: disable=duplicate-code
     @property
     def dimensions(self) -> Tuple[int, ...]:
         return (10,)
@@ -323,6 +327,8 @@ class Test1DArrayWriteOnly(ArrayBase):
 
     def calculate_address(self, indices: Tuple[int, ...]) -> int:
         return (indices[0] * self.stride) + self.base_address
+
+    # pylint: enable=duplicate-code
 
     def test_block_context_manager(self):
         """

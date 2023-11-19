@@ -7,7 +7,8 @@ from typing import Tuple, Optional, Iterator, Union, Dict
 from abc import ABC, abstractmethod
 from itertools import product
 
-from src.peakrdl_python.lib import *
+# pylint: disable-next=unused-wildcard-import, wildcard-import
+from peakrdl_python.lib import *
 
 from .simple_components import ReadOnlyRegisterArrayToTest, CallBackTestWrapper
 

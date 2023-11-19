@@ -5,7 +5,8 @@ from typing import Tuple, Optional, Iterator, Union, Dict, Type, cast
 from abc import ABC, abstractmethod
 from unittest.mock import patch
 
-from src.peakrdl_python.lib import *
+# pylint: disable-next=unused-wildcard-import,wildcard-import
+from peakrdl_python.lib import *
 
 from .simple_components import ReadOnlyRegisterToTest, WriteOnlyRegisterToTest, \
     ReadWriteRegisterToTest, CallBackTestWrapper

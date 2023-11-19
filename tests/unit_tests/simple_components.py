@@ -9,7 +9,7 @@ import logging
 from array import array as Array
 
 # pylint: disable-next=unused-wildcard-import, wildcard-import
-from src.peakrdl_python.lib import *
+from peakrdl_python.lib import *
 
 # pylint: disable=logging-not-lazy,logging-fstring-interpolation
 
@@ -162,7 +162,7 @@ class ReadWriteRegisterToTest(RegReadWrite):
     """
     __slots__: List[str] = ['__field']
 
-    # pylint: disable=duplicate-code
+    # pylint: disable=duplicate-code,too-many-arguments
     class FieldToTest(FieldReadWrite):
         """
         Class to represent a register field in the register model
