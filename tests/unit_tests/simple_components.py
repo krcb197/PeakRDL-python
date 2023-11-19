@@ -6,11 +6,10 @@ from unittest.mock import NonCallableMagicMock
 from typing import List, Iterator, Dict, Type, Any, Union
 from abc import ABC
 import logging
+from array import array as Array
 
-from peakrdl_python.lib import RegReadOnlyArray, \
-    FieldReadOnly, FieldWriteOnly, FieldReadWrite,  \
-    RegReadOnly, RegWriteOnly, RegReadWrite, \
-    AddressMap, FieldMiscProps, FieldSizeProps, Node, NormalCallbackSet
+# pylint: disable-next=unused-wildcard-import, wildcard-import
+from src.peakrdl_python.lib import *
 
 # pylint: disable=logging-not-lazy,logging-fstring-interpolation
 
@@ -26,15 +25,17 @@ class ReadOnlyRegisterToTest(RegReadOnly):
         """
         __slots__: List[str] = []
 
-    # pylint: disable=duplicate-code
+    # pylint: disable=duplicate-code,too-many-arguments
     def __init__(self,
                  address: int,
+                 accesswidth:int,
+                 width:int,
                  logger_handle: str,
                  inst_name: str,
                  parent: AddressMap):
         super().__init__(address=address,
-                         accesswidth=32,
-                         width=32,
+                         accesswidth=accesswidth,
+                         width=width,
                          logger_handle=logger_handle,
                          inst_name=inst_name,
                          parent=parent)
@@ -88,7 +89,7 @@ class WriteOnlyRegisterToTest(RegWriteOnly):
     """
     __slots__: List[str] = ['__field']
 
-    # pylint: disable=duplicate-code
+    # pylint: disable=duplicate-code,too-many-arguments
     class FieldToTest(FieldWriteOnly):
         """
         Class to represent a register field in the register model
@@ -97,12 +98,14 @@ class WriteOnlyRegisterToTest(RegWriteOnly):
 
     def __init__(self,
                  address: int,
+                 accesswidth: int,
+                 width: int,
                  logger_handle: str,
                  inst_name: str,
                  parent: AddressMap):
         super().__init__(address=address,
-                         accesswidth=32,
-                         width=32,
+                         accesswidth=accesswidth,
+                         width=width,
                          logger_handle=logger_handle,
                          inst_name=inst_name,
                          parent=parent)
@@ -168,12 +171,14 @@ class ReadWriteRegisterToTest(RegReadWrite):
 
     def __init__(self,
                  address: int,
+                 accesswidth: int,
+                 width: int,
                  logger_handle: str,
                  inst_name: str,
                  parent: AddressMap):
         super().__init__(address=address,
-                         accesswidth=32,
-                         width=32,
+                         accesswidth=accesswidth,
+                         width=width,
                          logger_handle=logger_handle,
                          inst_name=inst_name,
                          parent=parent)
@@ -231,7 +236,7 @@ class ReadWriteRegisterToTest(RegReadWrite):
             'field': 'field',
         }
 
-class RegisterArrayToTest(RegReadOnlyArray):
+class ReadOnlyRegisterArrayToTest(RegReadOnlyArray):
     """
     Class to represent a register array in the register model
     """
@@ -240,6 +245,26 @@ class RegisterArrayToTest(RegReadOnlyArray):
     @property
     def _element_datatype(self) -> Type[Node]:
         return ReadOnlyRegisterToTest
+
+class WriteOnlyRegisterArrayToTest(RegWriteOnlyArray):
+    """
+    Class to represent a register array in the register model
+    """
+    __slots__: List[str] = []
+
+    @property
+    def _element_datatype(self) -> Type[Node]:
+        return WriteOnlyRegisterToTest
+
+class ReadWriteRegisterArrayToTest(RegReadWriteArray):
+    """
+    Class to represent a register array in the register model
+    """
+    __slots__: List[str] = []
+
+    @property
+    def _element_datatype(self) -> Type[Node]:
+        return ReadWriteRegisterToTest
 
 
 class CallBackTestWrapper(unittest.TestCase, ABC):
@@ -286,11 +311,62 @@ class CallBackTestWrapper(unittest.TestCase, ABC):
         assert isinstance(data, int)
         self.logger.info(f'write data:{data:X} to address:0x{addr:X}')
 
+    def read_block_addr_space(self, addr: int, width: int, accesswidth: int, length: int) -> Array:
+        """
+        Callback to simulate the operation of the package
+
+        Args:
+            addr: Address to write to
+            width: Width of the register in bits
+            accesswidth: Minimum access width of the register in bits
+            length: number of width entries
+
+        Returns:
+
+        """
+        assert isinstance(addr, int)
+        assert isinstance(width, int)
+        assert isinstance(accesswidth, int)
+        assert isinstance(length, int)
+
+        if width == 32:
+            typecode = 'L'
+        elif width == 64:
+            typecode = 'Q'
+        elif width == 16:
+            typecode = 'I'
+        elif width == 8:
+            typecode = 'B'
+        else:
+            raise ValueError('unhandled memory width')
+
+        return Array(typecode, [0 for x in range(length)])
+
+    def write_block_addr_space(self, addr: int, width: int, accesswidth: int, data: Array) -> None:
+        """
+        Callback to simulate the operation of the package
+
+        Args:
+            addr: Address to write to
+            width: Width of the register in bits
+            accesswidth: Minimum access width of the register in bits
+            data: value to be written to the register
+
+        Returns:
+
+        """
+        assert isinstance(addr, int)
+        assert isinstance(width, int)
+        assert isinstance(accesswidth, int)
+        assert isinstance(data, Array)
+
     def setUp(self) -> None:
         # the callbacks need to a faked magic mock so that the methods can be patched in tests
         mocked_callback_set = NonCallableMagicMock(spec=NormalCallbackSet)
-        attrs = {'read_callback': self.read_addr_space,
-                 'write_callback':self.write_addr_space}
+        attrs = {'read_callback': None,
+                 'write_callback': None,
+                 'read_block_callback': None,
+                 'write_block_callback': None}
         mocked_callback_set.configure_mock(**attrs)
         self.callbacks = mocked_callback_set
         self.logger = logging.Logger('test case')

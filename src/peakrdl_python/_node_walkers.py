@@ -103,3 +103,15 @@ class OwnedbyAddressMap(RDLListener):
             return node.is_array and (len(node.array_dimensions) > 1)
 
         return list(filter(n_dimensional_node, self.addressable_nodes))
+
+    @property
+    def reg_array_nodes(self) -> List[RegNode]:
+        """
+        All the register arrays owned by the address map
+
+        Returns: list of nodes
+        """
+        def is_array(node: Union[RegNode]) -> bool:
+            return node.is_array
+
+        return list(filter(is_array, self.registers))

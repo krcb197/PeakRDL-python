@@ -28,7 +28,7 @@ class Base(ABC):
     __slots__: List[str] = ['__logger', '__inst_name', '__parent']
 
     def __init__(self, *,
-                 logger_handle: str, inst_name: str, parent: Optional['Node']):
+                 logger_handle: str, inst_name: str, parent: Optional[Union['Node', 'NodeArray']]):
 
         if not isinstance(logger_handle, str):
             raise TypeError(f'logger_handle should be str but got {type(logger_handle)}')
@@ -41,8 +41,8 @@ class Base(ABC):
         self.__inst_name = inst_name
 
         if parent is not None:
-            if not isinstance(parent, Node):
-                raise TypeError(f'parent should be Node but got {type(parent)}')
+            if not isinstance(parent, (Node, NodeArray)):
+                raise TypeError(f'parent should be Node or Node Array but got {type(parent)}')
         self.__parent = parent
 
     @property
@@ -57,7 +57,7 @@ class Base(ABC):
         return self.__inst_name
 
     @property
-    def parent(self) -> Optional['Node']:
+    def parent(self) -> Optional[Union['Node', 'NodeArray']]:
         """
         parent of the node or field, or None if it has no parent
         """
@@ -69,6 +69,12 @@ class Base(ABC):
         The full hierarchical systemRDL name of the instance
         """
         if self.parent is not None:
+            if isinstance(self.parent, NodeArray):
+                if self.parent.parent is None:
+                    raise RuntimeError('A node array must have a parent it can not be the '
+                                       'top level')
+                return self.parent.parent.full_inst_name + "." + self.inst_name
+
             return self.parent.full_inst_name + "." + self.inst_name
 
         return self.inst_name
@@ -89,7 +95,7 @@ class Node(Base, ABC):
                  address: int,
                  logger_handle: str,
                  inst_name: str,
-                 parent: Optional['Node']):
+                 parent: Optional[Union['Node', 'NodeArray']]):
         super().__init__(logger_handle=logger_handle, inst_name=inst_name, parent=parent)
 
         if not isinstance(address, int):
@@ -189,14 +195,39 @@ class NodeArray(Base, Sequence[NodeArrayElementType]):
         else:
             new_elements: Dict[Tuple[int, ...], NodeArrayElementType] = {}
             for indices in product(*[range(dim) for dim in self.dimensions]):
-                new_elements[indices] = self._element_datatype(
-                    logger_handle=logger_handle +
-                                  '[' + ','.join([str(item) for item in indices]) + ']',
-                    address=self.__address_calculator(indices),
-                    inst_name=inst_name + '[' + ']['.join([str(item) for item in indices]) + ']',
-                    parent=self.parent)
+                new_elements[indices] = self._build_element(indices=indices)
 
             self.__elements = new_elements
+
+    def _build_element(self, indices: Tuple[int, ...]) -> NodeArrayElementType:
+
+        return self._element_datatype(
+                    logger_handle=self._build_element_logger_handle(indices=indices),
+                    address=self._address_calculator(indices),
+                    inst_name=self._build_element_inst_name(indices=indices),
+                    parent=self)
+
+    def _build_element_logger_handle(self, indices: Tuple[int, ...]) -> str:
+        """
+        Build the logger handle for an element in the array
+
+        Args:
+            indices: element index
+
+        Returns:
+        """
+        return self._logger.name + '[' + ','.join([str(item) for item in indices]) + ']'
+
+    def _build_element_inst_name(self, indices: Tuple[int, ...]) -> str:
+        """
+        Build the logger handle for an element in the array
+
+        Args:
+            indices: element index
+
+        Returns:
+        """
+        return self.inst_name + '[' + ']['.join([str(item) for item in indices]) + ']'
 
     def __check_init_element(self, elements:Dict[Tuple[int, ...], NodeArrayElementType]) -> None:
         """
@@ -229,7 +260,7 @@ class NodeArray(Base, Sequence[NodeArrayElementType]):
                 raise TypeError(f'elements should be a {self._element_datatype} '
                                 f'but got {type(item)}')
 
-    def __address_calculator(self, indices: Tuple[int, ...]) -> int:
+    def _address_calculator(self, indices: Tuple[int, ...]) -> int:
         def cal_addr(dimensions: Tuple[int,...], indices: Tuple[int, ...], base_address: int,
                      stride: int) -> int:
             """
@@ -253,6 +284,18 @@ class NodeArray(Base, Sequence[NodeArrayElementType]):
         return cal_addr(self.dimensions, base_address=self.address,
                         stride=self.stride, indices=indices)
 
+    def _sub_instance(self, elements: Dict[Tuple[int, ...], NodeArrayElementType]) -> \
+            NodeArray[NodeArrayElementType]:
+        if not isinstance(self.parent, Node):
+            raise RuntimeError('Parent of a Node Array must be Node')
+        return self.__class__(logger_handle=self._logger.name,
+                              inst_name=self.inst_name,
+                              parent=self.parent,
+                              address=self.address,
+                              stride=self.stride,
+                              dimensions=self.dimensions,
+                              elements=elements)
+
     def __getitem__(self, item):  # type: ignore[no-untyped-def]
         if len(self.dimensions) > 1:
             return self.__getitem_nd(item)
@@ -270,13 +313,7 @@ class NodeArray(Base, Sequence[NodeArrayElementType]):
                     return True
                 return False
 
-            return self.__class__(logger_handle=self._logger.name,
-                                  inst_name=self.inst_name,
-                                  parent=self.parent,
-                                  address=self.address,
-                                  stride=self.stride,
-                                  dimensions=self.dimensions,
-                                  elements=dict(filter(filter_1d_func, self.items())))
+            return self._sub_instance(elements=dict(filter(filter_1d_func, self.items())))
 
         if isinstance(item, int):
             if (item, ) not in self.__elements:
@@ -323,15 +360,9 @@ class NodeArray(Base, Sequence[NodeArrayElementType]):
                     return True
                 return False
 
-            return self.__class__(logger_handle=self._logger.name,
-                                  inst_name=self.inst_name,
-                                  parent=self.parent,
-                                  address=self.address,
-                                  stride=self.stride,
-                                  dimensions=self.dimensions,
-                                  elements=dict(filter(filter_nd_func, self.items())))
+            return self._sub_instance(elements=dict(filter(filter_nd_func, self.items())))
 
-        raise IndexError('attempting a signledimensional array access on a multidimension'
+        raise IndexError('attempting a single dimensional array access on a multidimension'
                          ' array')
 
     def __len__(self) -> int:

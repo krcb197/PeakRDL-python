@@ -5,9 +5,7 @@ from typing import Tuple, Optional, Iterator, Union, Dict, Type, cast
 from abc import ABC, abstractmethod
 from unittest.mock import patch
 
-from peakrdl_python.lib import AddressMap, CallbackSet, Memory, RegFile, Reg, \
-    ReadableRegister, ReadableRegisterArray, \
-    WritableRegister, WriteableRegisterArray
+from src.peakrdl_python.lib import *
 
 from .simple_components import ReadOnlyRegisterToTest, WriteOnlyRegisterToTest, \
     ReadWriteRegisterToTest, CallBackTestWrapper
@@ -59,6 +57,8 @@ class RegTestBase(CallBackTestWrapper, ABC):
                 self.__dut = reg_type(logger_handle='dut',
                                       inst_name='dut',
                                       parent=self,
+                                      width=32,
+                                      accesswidth=32,
                                       address=address)
 
             def get_memories(self, unroll: bool = False) -> \

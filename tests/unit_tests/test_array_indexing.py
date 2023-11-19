@@ -7,11 +7,9 @@ from typing import Tuple, Optional, Iterator, Union, Dict
 from abc import ABC, abstractmethod
 from itertools import product
 
-from peakrdl_python.lib import AddressMap, CallbackSet, Memory, RegFile, \
-    ReadableRegister, ReadableRegisterArray, \
-    WritableRegister, WriteableRegisterArray
+from src.peakrdl_python.lib import *
 
-from .simple_components import RegisterArrayToTest, CallBackTestWrapper
+from .simple_components import ReadOnlyRegisterArrayToTest, CallBackTestWrapper
 
 # pylint: disable=logging-not-lazy,logging-fstring-interpolation
 
@@ -42,7 +40,7 @@ class ArrayBase(CallBackTestWrapper, ABC):
         """
 
     @property
-    def dut(self) -> RegisterArrayToTest:
+    def dut(self) -> ReadOnlyRegisterArrayToTest:
         """
         Register Array under test
         """
@@ -75,12 +73,14 @@ class ArrayBase(CallBackTestWrapper, ABC):
                 super().__init__(callbacks=callbacks, address=address, logger_handle=logger_handle,
                                  inst_name=inst_name, parent=None )
 
-                self.__dut = RegisterArrayToTest(logger_handle='dut',
-                                                 inst_name='dut',
-                                                 parent=self,
-                                                 address=address,
-                                                 stride=dut_stride,
-                                                 dimensions=dut_dimensions)
+                self.__dut = ReadOnlyRegisterArrayToTest(logger_handle='dut',
+                                                         inst_name='dut',
+                                                         parent=self,
+                                                         address=address,
+                                                         width=32,
+                                                         accesswidth=32,
+                                                         stride=dut_stride,
+                                                         dimensions=dut_dimensions)
 
             def get_memories(self, unroll: bool = False) -> \
                     Iterator[Union[Memory, Tuple[Memory, ...]]]:
@@ -117,7 +117,7 @@ class ArrayBase(CallBackTestWrapper, ABC):
             # pylint: enable=duplicate-code
 
             @property
-            def dut(self) -> RegisterArrayToTest:
+            def dut(self) -> ReadOnlyRegisterArrayToTest:
                 """
                 Register Array under Test
                 """

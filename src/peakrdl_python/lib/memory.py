@@ -38,7 +38,7 @@ class BaseMemory(Node, ABC):
                  entries: int,
                  logger_handle: str,
                  inst_name: str,
-                 parent: Union[AddressMap, AsyncAddressMap]):
+                 parent: Union[AddressMap, AsyncAddressMap, 'MemoryArray', 'AsyncMemoryArray']):
         """
         Initialise the class
 
@@ -48,7 +48,10 @@ class BaseMemory(Node, ABC):
             width: width of the register in bits
             logger_handle: name to be used logging messages associate with thisobject
         """
-        if not isinstance(parent, (AddressMap, AsyncAddressMap)):
+        if not isinstance(parent, (AddressMap, AsyncAddressMap, MemoryAsyncWriteOnlyArray,
+                                   MemoryAsyncReadOnlyArray, MemoryAsyncReadWriteArray,
+                                   MemoryWriteOnlyArray,MemoryReadOnlyArray,
+                                   MemoryReadWriteArray)):
             raise TypeError(f'parent should be either AddressMap or AsyncAddressMap got '
                             f'{type(parent)}')
         super().__init__(address=address,
@@ -158,10 +161,12 @@ class MemoryReadOnly(BaseMemory, ABC):
                  entries: int,
                  logger_handle: str,
                  inst_name: str,
-                 parent: AddressMap):
+                 parent: Union[AddressMap, 'MemoryArray']):
 
-        if not isinstance(parent, AddressMap):
-            raise TypeError(f'parent should be either AddressMap got {type(parent)}')
+        if not isinstance(parent, (AddressMap, MemoryWriteOnlyArray,
+                                   MemoryReadOnlyArray, MemoryReadWriteArray)):
+            raise TypeError('parent should be either AddressMap or Memory Array '
+                            f'got {type(parent)}')
 
         if not isinstance(parent._callbacks, NormalCallbackSet):
             raise TypeError(f'callback set type is wrong, got {type(parent._callbacks)}')
@@ -274,10 +279,12 @@ class MemoryWriteOnly(BaseMemory, ABC):
                  entries: int,
                  logger_handle: str,
                  inst_name: str,
-                 parent: AddressMap):
+                 parent: Union[AddressMap, 'MemoryArray']):
 
-        if not isinstance(parent, AddressMap):
-            raise TypeError(f'parent should be either AddressMap got {type(parent)}')
+        if not isinstance(parent, (AddressMap, MemoryWriteOnlyArray,
+                                   MemoryReadOnlyArray, MemoryReadWriteArray)):
+            raise TypeError('parent should be either AddressMap or Memory Array '
+                            f'got {type(parent)}')
 
         if not isinstance(parent._callbacks, NormalCallbackSet):
             raise TypeError(f'callback set type is wrong, got {type(parent._callbacks)}')
@@ -392,10 +399,12 @@ class MemoryAsyncReadOnly(BaseMemory, ABC):
                  entries: int,
                  logger_handle: str,
                  inst_name: str,
-                 parent: AsyncAddressMap):
+                 parent: Union[AsyncAddressMap, 'AsyncMemoryArray']):
 
-        if not isinstance(parent, AsyncAddressMap):
-            raise TypeError(f'parent should be either AsyncAddressMap got {type(parent)}')
+        if not isinstance(parent, (AddressMap, MemoryAsyncWriteOnlyArray,
+                                   MemoryAsyncReadOnlyArray, MemoryAsyncReadWriteArray)):
+            raise TypeError('parent should be either AddressMap or Memory Array '
+                            f'got {type(parent)}')
 
         if not isinstance(parent._callbacks, AsyncCallbackSet):
             raise TypeError(f'callback set type is wrong, got {type(parent._callbacks)}')
@@ -507,11 +516,12 @@ class MemoryAsyncWriteOnly(BaseMemory, ABC):
                  entries: int,
                  logger_handle: str,
                  inst_name: str,
-                 parent: AsyncAddressMap):
+                 parent: Union[AsyncAddressMap, 'AsyncMemoryArray']):
 
-        if not isinstance(parent, AsyncAddressMap):
-            raise TypeError(f'parent should be either AsyncAddressMap got {type(parent)}')
-
+        if not isinstance(parent, (AddressMap, MemoryAsyncWriteOnlyArray,
+                                   MemoryAsyncReadOnlyArray, MemoryAsyncReadWriteArray)):
+            raise TypeError('parent should be either AddressMap or Memory Array '
+                            f'got {type(parent)}')
         if not isinstance(parent._callbacks, AsyncCallbackSet):
             raise TypeError(f'callback set type is wrong, got {type(parent._callbacks)}')
 
@@ -562,7 +572,7 @@ class MemoryAsyncWriteOnly(BaseMemory, ABC):
 
         if write_block_callback is not None:
             # python 3.7 doesn't have the callback defined as protocol so mypy doesn't recognise
-            # the argumaents in the call back functions
+            # the arguments in the call back functions
             addr = self.address_lookup(entry=start_entry)
             await write_block_callback(addr=addr,  # type: ignore[call-arg]
                                        width=self.width,  # type: ignore[call-arg]

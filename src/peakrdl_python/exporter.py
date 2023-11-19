@@ -207,6 +207,11 @@ class PythonExporter:
                 # top block, including the top_block itself
                 RDLWalker(unroll=True).walk(block, owned_elements, skip_top=True)
 
+                owned_rolled_elements = OwnedbyAddressMap()
+                # running the walker populated the blocks with all the address maps in within the
+                # top block, including the top_block itself
+                RDLWalker(unroll=False).walk(block, owned_rolled_elements, skip_top=True)
+
                 fq_block_name = '_'.join(block.get_path_segments(array_suffix = '_{index:d}_'))
 
                 module_tb_fqfn = os.path.join(package_path,
@@ -218,6 +223,7 @@ class PythonExporter:
                     'block' : block,
                     'fq_block_name' : fq_block_name,
                     'owned_elements': owned_elements,
+                    'owned_rolled_elements': owned_rolled_elements,
                     'systemrdlFieldNode': FieldNode,
                     'systemrdlSignalNode': SignalNode,
                     'systemrdlRegNode': RegNode,
