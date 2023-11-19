@@ -86,32 +86,3 @@ class OwnedbyAddressMap(RDLListener):
 
         """
         return self.addr_maps + self.reg_files + self.memories + self.registers
-
-    @property
-    def n_dimesional_array_nodes(self) -> List[Union[RegNode, MemNode, AddrmapNode, RegfileNode]]:
-        """
-        All the nodes owned by the address map which are arrays with more than 1 dimension,
-        including:
-        - address maps
-        - register files
-        - registers
-        - memories
-
-        Returns: list of nodes
-        """
-        def n_dimensional_node(node: Union[RegNode, MemNode, AddrmapNode, RegfileNode]) -> bool:
-            return node.is_array and (len(node.array_dimensions) > 1)
-
-        return list(filter(n_dimensional_node, self.addressable_nodes))
-
-    @property
-    def reg_array_nodes(self) -> List[RegNode]:
-        """
-        All the register arrays owned by the address map
-
-        Returns: list of nodes
-        """
-        def is_array(node: Union[RegNode]) -> bool:
-            return node.is_array
-
-        return list(filter(is_array, self.registers))

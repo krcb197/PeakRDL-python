@@ -1259,7 +1259,7 @@ class {{fq_block_name}}_block_access({{top_node.type_name}}_TestCase_BlockAccess
         """
         Walk the register map and check that register map context managers work correctly
         """
-        {% for node in owned_rolled_elements.reg_array_nodes %}
+        {% for node in rolled_owned_reg_array %}
         # test context manager to register:
         # {{'.'.join(node.get_path_segments())}}
         # size {{node.size}}
