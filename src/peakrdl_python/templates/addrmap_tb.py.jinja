@@ -24,15 +24,23 @@ from ..lib import RegisterWriteVerifyError
 from ..reg_model.{{top_node.type_name}} import {{top_node.type_name}}_cls
 {% if asyncoutput %}
 from ..lib import FieldAsyncReadOnly, FieldAsyncWriteOnly, FieldAsyncReadWrite
-from ..lib import WritableAsyncRegister, ReadableAsyncRegister, RegAsyncReadWrite, RegAsyncReadOnly, RegAsyncWriteOnly
+from ..lib import WritableAsyncRegister, ReadableAsyncRegister
+from ..lib import RegAsyncReadWrite, RegAsyncReadOnly, RegAsyncWriteOnly
+from ..lib import RegAsyncReadWriteArray, RegAsyncReadOnlyArray, RegAsyncWriteOnlyArray
 from ..lib import MemoryAsyncReadOnly, MemoryAsyncWriteOnly, MemoryAsyncReadWrite
+from ..lib import MemoryAsyncReadOnlyArray, MemoryAsyncWriteOnlyArray, MemoryAsyncReadWriteArray
 from ..lib import AsyncAddressMap, AsyncRegFile
+from ..lib import AsyncAddressMapArray, AsyncRegFileArray
 from ..lib import AsyncMemory
 {% else %}
 from ..lib import FieldReadOnly, FieldWriteOnly, FieldReadWrite
-from ..lib import WritableRegister, ReadableRegister, RegReadWrite, RegReadOnly, RegWriteOnly
+from ..lib import WritableRegister, ReadableRegister
+from ..lib import RegReadWrite, RegReadOnly, RegWriteOnly
+from ..lib import RegReadWriteArray, RegReadOnlyArray, RegWriteOnlyArray
 from ..lib import MemoryReadOnly, MemoryWriteOnly, MemoryReadWrite
+from ..lib import MemoryReadOnlyArray, MemoryWriteOnlyArray, MemoryReadWriteArray
 from ..lib import AddressMap, RegFile
+from ..lib import AddressMapArray, RegFileArray
 from ..lib import Memory
 {% endif %}
 
@@ -76,7 +84,8 @@ class {{fq_block_name}}_single_access({{top_node.type_name}}_TestCase): # type: 
         {% for node in owned_elements.memories -%}
         with self.subTest(msg='memory: {{'.'.join(node.get_path_segments())}}'):
             mut = self.dut.{{'.'.join(get_python_path_segments(node))}} # type: ignore[union-attr,assignment]
-            self.assertIsInstance(mut, {% if asyncoutput %}Async{% endif %}Memory)
+
+            self.assertIsInstance(mut, (Memory{% if asyncoutput %}Async{% endif %}ReadOnly, Memory{% if asyncoutput %}Async{% endif %}WriteOnly, Memory{% if asyncoutput %}Async{% endif %}ReadWrite))
             self.assertEqual(mut.address, {{node.absolute_address}})
             self.assertEqual(mut.width, {{node.get_property('memwidth')}})
             self.assertEqual(mut.entries, {{node.get_property('mementries')}})
@@ -956,7 +965,7 @@ class {{fq_block_name}}_single_access({{top_node.type_name}}_TestCase): # type: 
                               {% endfor %} ]
         memories = []
         for memory in self.dut.get_memories(unroll=True):  # type: ignore[union-attr]
-            self.assertIsInstance(memory, {% if asyncoutput %}Async{% endif %}Memory)
+            self.assertIsInstance(memory, (Memory{% if asyncoutput %}Async{% endif %}ReadOnly, Memory{% if asyncoutput %}Async{% endif %}WriteOnly, Memory{% if asyncoutput %}Async{% endif %}ReadWrite))
             memories.append(memory)
         self.assertCountEqual(expected_memories, memories)
         {# check the rolled case second #}
@@ -965,6 +974,7 @@ class {{fq_block_name}}_single_access({{top_node.type_name}}_TestCase): # type: 
                               {% endfor %} ]
         memories = []
         for memory in self.dut.get_memories(unroll=False):  # type: ignore[union-attr]
+            self.assertIsInstance(memory, (Memory{% if asyncoutput %}Async{% endif %}ReadOnly, Memory{% if asyncoutput %}Async{% endif %}WriteOnly, Memory{% if asyncoutput %}Async{% endif %}ReadWrite, Memory{% if asyncoutput %}Async{% endif %}ReadOnlyArray, Memory{% if asyncoutput %}Async{% endif %}WriteOnlyArray, Memory{% if asyncoutput %}Async{% endif %}ReadWriteArray))
             memories.append(memory)
         self.assertCountEqual(expected_memories, memories)
 
@@ -986,6 +996,7 @@ class {{fq_block_name}}_single_access({{top_node.type_name}}_TestCase): # type: 
                                    {% endfor %} ]
         readable_regs = []
         for readable_reg in self.dut.{{'.'.join(get_python_path_segments(node))}}.get_readable_registers(unroll=False):  # type: ignore[union-attr]
+            self.assertIsInstance(readable_reg, (Reg{% if asyncoutput %}Async{% endif %}ReadWrite, Reg{% if asyncoutput %}Async{% endif %}ReadOnly, Reg{% if asyncoutput %}Async{% endif %}ReadWriteArray, Reg{% if asyncoutput %}Async{% endif %}ReadOnlyArray))
             readable_regs.append(readable_reg)
         self.assertCountEqual(expected_readable_regs, readable_regs)
     {% endmacro %}
@@ -1006,6 +1017,7 @@ class {{fq_block_name}}_single_access({{top_node.type_name}}_TestCase): # type: 
                                    {% endfor %} ]
         writable_regs = []
         for writable_reg in self.dut.{{'.'.join(get_python_path_segments(node))}}.get_writable_registers(unroll=False):  # type: ignore[union-attr]
+            self.assertIsInstance(writable_reg, (Reg{% if asyncoutput %}Async{% endif %}ReadWrite, Reg{% if asyncoutput %}Async{% endif %}WriteOnly, Reg{% if asyncoutput %}Async{% endif %}ReadWriteArray, Reg{% if asyncoutput %}Async{% endif %}WriteOnlyArray))
             writable_regs.append(writable_reg)
         self.assertCountEqual(expected_writable_regs, writable_regs)
     {% endmacro %}
@@ -1026,6 +1038,7 @@ class {{fq_block_name}}_single_access({{top_node.type_name}}_TestCase): # type: 
                               {% endfor %} ]
         sections = []
         for section in self.dut.{{'.'.join(get_python_path_segments(node))}}.get_sections(unroll=False):  # type: ignore[union-attr]
+            self.assertIsInstance(section, ({% if asyncoutput %}Async{% endif %}AddressMap, {% if asyncoutput %}Async{% endif %}RegFile, {% if asyncoutput %}Async{% endif %}AddressMapArray, {% if asyncoutput %}Async{% endif %}RegFileArray))
             sections.append(section)
         self.assertCountEqual(expected_sections, sections)
     {% endmacro %}
@@ -1037,7 +1050,7 @@ class {{fq_block_name}}_single_access({{top_node.type_name}}_TestCase): # type: 
                               {% endfor %} ]
         memories = []
         for memory in self.dut.{{'.'.join(get_python_path_segments(node))}}.get_memories(unroll=True):  # type: ignore[union-attr]
-            self.assertIsInstance(memory, {% if asyncoutput %}Async{% endif %}Memory)
+            self.assertIsInstance(memory, (Memory{% if asyncoutput %}Async{% endif %}ReadOnly, Memory{% if asyncoutput %}Async{% endif %}WriteOnly, Memory{% if asyncoutput %}Async{% endif %}ReadWrite))
             memories.append(memory)
         self.assertCountEqual(expected_memories, memories)
         {# check the rolled case second #}
@@ -1046,6 +1059,7 @@ class {{fq_block_name}}_single_access({{top_node.type_name}}_TestCase): # type: 
                               {% endfor %} ]
         memories = []
         for memory in self.dut.{{'.'.join(get_python_path_segments(node))}}.get_memories(unroll=False):  # type: ignore[union-attr]
+            self.assertIsInstance(memory, (Memory{% if asyncoutput %}Async{% endif %}ReadOnly, Memory{% if asyncoutput %}Async{% endif %}WriteOnly, Memory{% if asyncoutput %}Async{% endif %}ReadWrite, Memory{% if asyncoutput %}Async{% endif %}ReadOnlyArray, Memory{% if asyncoutput %}Async{% endif %}WriteOnlyArray, Memory{% if asyncoutput %}Async{% endif %}ReadWriteArray))
             memories.append(memory)
         self.assertCountEqual(expected_memories, memories)
     {% endmacro %}

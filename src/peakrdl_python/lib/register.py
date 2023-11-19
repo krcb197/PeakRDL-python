@@ -800,7 +800,7 @@ class RegReadOnlyArray(NodeArray, ABC):
     # pylint: disable=too-many-arguments,duplicate-code
     def __init__(self, *,
                  logger_handle: str, inst_name: str,
-                 parent: Union[RegFile, AddressMap, Memory],
+                 parent: Union[RegFile, AddressMap, ReadableMemory],
                  address: int,
                  stride: int,
                  dimensions: Tuple[int, ...],
@@ -826,7 +826,7 @@ class RegWriteOnlyArray(NodeArray, ABC):
     # pylint: disable=too-many-arguments,duplicate-code
     def __init__(self, *,
                  logger_handle: str, inst_name: str,
-                 parent: Union[RegFile, AddressMap, Memory],
+                 parent: Union[RegFile, AddressMap, WritableMemory],
                  address: int,
                  stride: int,
                  dimensions: Tuple[int, ...],
@@ -852,7 +852,7 @@ class RegReadWriteArray(NodeArray, ABC):
     # pylint: disable=too-many-arguments,duplicate-code
     def __init__(self, *,
                  logger_handle: str, inst_name: str,
-                 parent: Union[RegFile, AddressMap, Memory],
+                 parent: Union[RegFile, AddressMap, MemoryReadWrite],
                  address: int,
                  stride: int,
                  dimensions: Tuple[int, ...],
@@ -877,7 +877,7 @@ class RegAsyncReadOnlyArray(NodeArray, ABC):
     # pylint: disable=too-many-arguments,duplicate-code
     def __init__(self, *,
                  logger_handle: str, inst_name: str,
-                 parent: Union[AsyncRegFile, AsyncAddressMap, Memory],
+                 parent: Union[AsyncRegFile, AsyncAddressMap, ReadableAsyncMemory],
                  address: int,
                  stride: int,
                  dimensions: Tuple[int, ...],
@@ -904,11 +904,11 @@ class RegAsyncWriteOnlyArray(NodeArray, ABC):
     # pylint: disable=too-many-arguments,duplicate-code
     def __init__(self, *,
                  logger_handle: str, inst_name: str,
-                 parent: Union[RegFile, AddressMap, Memory],
+                 parent: Union[AsyncRegFile, AsyncAddressMap, WritableAsyncMemory],
                  address: int,
                  stride: int,
                  dimensions: Tuple[int, ...],
-                 elements: Optional[Dict[Tuple[int, ...], RegAsyncReadOnly]] = None):
+                 elements: Optional[Dict[Tuple[int, ...], RegAsyncWriteOnly]] = None):
 
         if not isinstance(parent, (AsyncRegFile, AsyncAddressMap,
                                    MemoryAsyncWriteOnly, MemoryAsyncReadWrite)):
@@ -931,11 +931,11 @@ class RegAsyncReadWriteArray(NodeArray, ABC):
     # pylint: disable=too-many-arguments,duplicate-code
     def __init__(self, *,
                  logger_handle: str, inst_name: str,
-                 parent: Union[RegFile, AddressMap, Memory],
+                 parent: Union[AsyncRegFile, AsyncAddressMap, MemoryAsyncReadWrite],
                  address: int,
                  stride: int,
                  dimensions: Tuple[int, ...],
-                 elements: Optional[Dict[Tuple[int, ...], RegAsyncReadOnly]] = None):
+                 elements: Optional[Dict[Tuple[int, ...], RegAsyncReadWrite]] = None):
 
         if not isinstance(parent, (AsyncRegFile, AsyncAddressMap, MemoryAsyncReadWrite)):
             raise TypeError('parent should be either AsyncRegFile, AsyncAddressMap, '

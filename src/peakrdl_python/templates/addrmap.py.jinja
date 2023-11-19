@@ -36,6 +36,7 @@ from ..lib import RegAsyncReadOnlyArray, RegAsyncWriteOnlyArray, RegAsyncReadWri
 from ..lib import FieldAsyncReadOnly, FieldAsyncWriteOnly, FieldAsyncReadWrite, Field
 {% if uses_enum %}from ..lib import FieldEnumAsyncReadOnly, FieldEnumAsyncWriteOnly, FieldEnumAsyncReadWrite{% endif %}
 from ..lib import ReadableAsyncRegister, WritableAsyncRegister
+from ..lib import ReadableAsyncMemory, WritableAsyncMemory
 from ..lib import ReadableAsyncRegisterArray, WriteableAsyncRegisterArray
 {%- else -%}
 from ..lib import Memory, MemoryArray
@@ -52,6 +53,7 @@ from ..lib import RegReadOnlyArray, RegWriteOnlyArray, RegReadWriteArray
 from ..lib import FieldReadOnly, FieldWriteOnly, FieldReadWrite, Field
 {% if uses_enum %}from ..lib import FieldEnumReadOnly, FieldEnumWriteOnly, FieldEnumReadWrite{% endif %}
 from ..lib import ReadableRegister, WritableRegister
+from ..lib import ReadableMemory, WritableMemory
 from ..lib import ReadableRegisterArray, WriteableRegisterArray
 {%- endif %}
 from ..lib import FieldSizeProps, FieldMiscProps
