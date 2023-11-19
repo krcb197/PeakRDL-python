@@ -485,7 +485,7 @@ class RegAsyncReadOnly(AsyncReg, ABC):
                  accesswidth: int,
                  logger_handle: str,
                  inst_name: str,
-                 parent: Union[AddressMap, RegFile, Memory]):
+                 parent: Union[AsyncAddressMap, AsyncRegFile, Memory]):
 
 
         super().__init__(address=address,
