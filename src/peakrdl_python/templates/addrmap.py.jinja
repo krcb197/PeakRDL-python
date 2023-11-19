@@ -296,10 +296,11 @@ class {{get_fully_qualified_type_name(node)}}_cls({% if asyncoutput %}Async{% en
     {{ child_register_getter(node) }}
     {% if asyncoutput %}
     {{ child_getter(node, "get_sections", "AsyncAddressMap, AsyncRegFile, AsyncAddressMapArray, AsyncRegFileArray", (systemrdlAddrmapNode, systemrdlRegfileNode)) }}
-    {{ child_getter(node, "get_memories",    "Memory, MemoryArray",     systemrdlMemNode) }}
+    {{ child_getter(node, "get_memories",    "AsyncMemory, AsyncMemoryArray",     systemrdlMemNode) }}
     {% else %}
     {{ child_getter(node, "get_sections", "AddressMap, RegFile, AddressMapArray, RegFileArray", (systemrdlAddrmapNode, systemrdlRegfileNode)) }}
-    {{ child_getter(node, "get_memories",    "AsyncMemory, AsyncMemoryArray",     systemrdlMemNode) }}
+    {{ child_getter(node, "get_memories",    "Memory, MemoryArray",     systemrdlMemNode) }}
+
     {% endif %}
 
     {%- if node.is_array %}
