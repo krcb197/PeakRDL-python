@@ -55,8 +55,9 @@ class BaseReg(Node, ABC):
                          parent=parent)
         if not isinstance(width, int):
             raise TypeError(f'width should be int but got {(type(width))}')
-        if width not in (8, 16, 32, 64):
-            raise ValueError(f'currently only support 8, 16, 32 or 64 registers, got {width:d}')
+        if width not in (8, 16, 32, 64, 128, 256, 512, 1024, 2048):
+            raise ValueError('currently only support 8, 16, 32, 64, 128, 256, 512, 1024 or 2048 '
+                             f'width registers, got {width:d}')
         self.__width = width
         if not isinstance(accesswidth, int):
             raise TypeError(f'accesswidth should be int but got {(type(accesswidth))}')
