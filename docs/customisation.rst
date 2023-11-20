@@ -46,7 +46,7 @@ The path to the folder of alternative templates must be ``PythonExporter`` is in
     rdlc.compile_file('basic.rdl')
     spec = rdlc.elaborate(top_def_name='basic').top
 
-    # generate the python package register abstraction layer
+    # generate the python package register access layer
     exporter = PythonExporter(user_template_dir='my_company_headers')
     exporter.export(node=spec, path='generated_code')
 
