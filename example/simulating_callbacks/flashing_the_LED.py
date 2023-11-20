@@ -94,7 +94,7 @@ class ChipSim:
             self.LED.itemconfig(self.LED_inner, fill='black')
 
 # these two methods can be put in the simulator Tkinter event queue to perform register writes on
-# the register abstraction layer (in turn causing the state of the simulator to change)
+# the register access layer (in turn causing the state of the simulator to change)
 
 def turn_LED_on(chip: mychip_cls, sim_kt_root):
 
@@ -114,7 +114,7 @@ def turn_LED_off(chip: mychip_cls, sim_kt_root):
 if __name__ == '__main__':
 
     # make an instance of the chip simulator and then locally defined the callbacks that will be
-    # used to by the register abstraction model
+    # used to by the register access model
     chip_simulator = ChipSim()
 
     def read_call_back(addr: int, width: int, accesswidth: int):

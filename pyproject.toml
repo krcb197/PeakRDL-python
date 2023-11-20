@@ -16,7 +16,7 @@ dependencies = [
 authors = [
     {name="Keith Brady"},
 ]
-description = "Generate python wrapper for a register model compiled SystemRDL input"
+description = "Generate Python Register Access Layer (RAL) from SystemRDL"
 readme = "README.md"
 license = {file = "LICENSE"}
 keywords = [
