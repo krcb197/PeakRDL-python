@@ -141,8 +141,34 @@ simulator.
 .. literalinclude :: ../example/simulating_callbacks/flashing_the_LED.py
    :language: python
 
+Enumerated Fields
+-----------------
+
+TBC
+
+Array Access
+------------
+
+SystemRDL supports multi-dimensional arrays, the following example shows an definition with an 1D and 3D array with various methods to access individual elements of the array and use of the iterators to walk through elements in loops
+
+.. literalinclude :: ../example/array_access/array_access.rdl
+   :language: systemrdl
+
+This systemRDL code can be built using the command line tool as follows (assuming it is stored in
+a file called ``array_access.rdl``:
+
+.. code-block:: bash
+
+    peakrdl python array_access.rdl -o .
+
+.. literalinclude :: ../example/array_access/demo_array_access.py
+   :language: python
+
 Optimised Access
 ----------------
+
+Working with individual registers
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Each time the ``read`` or ``write`` method for a register field is accessed the hardware is read
 and or written (a write to a field will normally require a preceding read). When accessing multiple
@@ -162,6 +188,23 @@ methods:
 Both demonstrated in the following code example:
 
 .. literalinclude :: ../example/optimised_access/demo_optimised_access.py
+   :language: python
+
+Working with registers arrays
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+In many systems it is more efficient to read and write in block operations rather than using
+individual register access.
+
+Consider the following example of an GPIO block with 8 GPIO pins (configured in a 8 registers):
+
+.. literalinclude :: ../example/optimised_access/optimised_array_access.rdl
+   :language: systemrdl
+
+In order to configure all the GPIOs a range of operations are shown with the use of the context
+managers to make more efficent operations
+
+.. literalinclude :: ../example/optimised_access/demo_optimised_array_access.py
    :language: python
 
 Walking the Structure
@@ -284,25 +327,6 @@ this case the loops are unrolled to conveniently access all the register without
 worry if they are in an array or not.
 
 .. literalinclude :: ../example/tranversing_address_map/reseting_registers.py
-   :language: python
-
-
-Array Access
-------------
-
-SystemRDL supports multi-dimensional arrays, the following example shows an definition with an 1D and 3D array with various methods to access individual elements of the array and use of the iterators to walk through elements in loops
-
-.. literalinclude :: ../example/array_access/array_access.rdl
-   :language: systemrdl
-
-This systemRDL code can be built using the command line tool as follows (assuming it is stored in
-a file called ``array_access.rdl``:
-
-.. code-block:: bash
-
-    peakrdl python array_access.rdl -o .
-
-.. literalinclude :: ../example/array_access/demo_array_access.py
    :language: python
 
 Python Safe Names
