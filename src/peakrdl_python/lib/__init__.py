@@ -52,16 +52,16 @@ from .register import RegReadWriteArray
 from .register import ReadableRegisterArray
 from .register import WriteableRegisterArray
 
-from .register import RegAsyncReadOnly
-from .register import RegAsyncWriteOnly
-from .register import RegAsyncReadWrite
-from .register import ReadableAsyncRegister
-from .register import WritableAsyncRegister
-from .register import RegAsyncReadOnlyArray
-from .register import RegAsyncWriteOnlyArray
-from .register import RegAsyncReadWriteArray
-from .register import ReadableAsyncRegisterArray
-from .register import WriteableAsyncRegisterArray
+from .async_register import RegAsyncReadOnly
+from .async_register import RegAsyncWriteOnly
+from .async_register import RegAsyncReadWrite
+from .async_register import ReadableAsyncRegister
+from .async_register import WritableAsyncRegister
+from .async_register import RegAsyncReadOnlyArray
+from .async_register import RegAsyncWriteOnlyArray
+from .async_register import RegAsyncReadWriteArray
+from .async_register import ReadableAsyncRegisterArray
+from .async_register import WriteableAsyncRegisterArray
 
 from .fields import FieldSizeProps
 from .fields import FieldMiscProps

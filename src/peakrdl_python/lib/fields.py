@@ -26,11 +26,16 @@ from abc import ABC, abstractmethod
 from .base import Base
 from .base import swap_msb_lsb_ordering
 from .register import BaseReg
-from .register import RegReadOnly, RegAsyncReadOnly
-from .register import RegReadWrite, RegAsyncReadWrite
-from .register import RegWriteOnly, RegAsyncWriteOnly
-from .register import ReadableRegister, ReadableAsyncRegister
-from .register import WritableRegister, WritableAsyncRegister
+from .register import RegReadOnly
+from .async_register import RegAsyncReadOnly
+from .register import RegReadWrite
+from .async_register import RegAsyncReadWrite
+from .register import RegWriteOnly
+from .async_register import RegAsyncWriteOnly
+from .register import ReadableRegister
+from .async_register import ReadableAsyncRegister
+from .register import WritableRegister
+from .async_register import WritableAsyncRegister
 
 
 class FieldSizeProps:

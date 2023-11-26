@@ -30,8 +30,8 @@ from .callbacks import NormalCallbackSet, AsyncCallbackSet
 if TYPE_CHECKING:
     from .register import ReadableRegister, WritableRegister
     from .register import ReadableRegisterArray, WriteableRegisterArray
-    from .register import ReadableAsyncRegister, WritableAsyncRegister
-    from .register import ReadableAsyncRegisterArray, WriteableAsyncRegisterArray
+    from .async_register import ReadableAsyncRegister, WritableAsyncRegister
+    from .async_register import ReadableAsyncRegisterArray, WriteableAsyncRegisterArray
 
 # pylint: disable=duplicate-code
 

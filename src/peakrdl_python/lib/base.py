@@ -32,9 +32,9 @@ from .callbacks import CallbackSet, NormalCallbackSet, AsyncCallbackSet
 if TYPE_CHECKING:
     from .memory import Memory, MemoryArray, AsyncMemory, AsyncMemoryArray
     from .register import WritableRegister, ReadableRegister
-    from .register import ReadableAsyncRegister, WritableAsyncRegister
+    from .async_register import ReadableAsyncRegister, WritableAsyncRegister
     from .register import ReadableRegisterArray, WriteableRegisterArray
-    from .register import ReadableAsyncRegisterArray, WriteableAsyncRegisterArray
+    from .async_register import ReadableAsyncRegisterArray, WriteableAsyncRegisterArray
 
 
 class Base(ABC):
