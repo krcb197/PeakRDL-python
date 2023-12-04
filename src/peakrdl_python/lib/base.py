@@ -23,9 +23,10 @@ import logging
 from typing import Dict, List, Optional, Tuple, Union, Iterator, TYPE_CHECKING, Type, TypeVar,\
     Sequence, cast
 from abc import ABC, abstractmethod
-from itertools import product
+from itertools import product, chain
 from functools import reduce
 from operator import mul
+import sys
 
 from .callbacks import CallbackSet, NormalCallbackSet, AsyncCallbackSet
 
@@ -472,10 +473,23 @@ class Section(BaseSection, ABC):
         Args:
             unroll: Whether to unroll child array or not
         """
-        def is_writable(item: Union[Reg, RegArray]) -> bool:
-            return item._is_writeable
+        # pylint: disable=no-else-return,import-outside-toplevel
+        if sys.version_info >= (3, 10):
+            # type guarding was introduced in python 3.10
+            from typing import TypeGuard
 
-        return filter(is_writable, self.get_registers(unroll=unroll))
+            def is_writable(item: Union[Reg, RegArray]) -> \
+                    TypeGuard[Union[WritableRegister, WriteableRegisterArray]]:
+                # pylint: disable-next=protected-access
+                return item._is_writeable
+
+            return filter(is_writable, self.get_registers(unroll=unroll))
+        else:
+            def is_writable(item: Union[Reg, RegArray]) -> bool:
+                # pylint: disable-next=protected-access
+                return item._is_writeable
+
+            return filter(is_writable, self.get_registers(unroll=unroll))
 
     def get_readable_registers(self, unroll:bool=False) ->\
             Iterator[Union[ReadableRegister, ReadableRegisterArray]]:
@@ -485,10 +499,23 @@ class Section(BaseSection, ABC):
         Args:
             unroll: Whether to unroll child array or not
         """
-        def is_readable(item: Union[Reg, RegArray]) -> bool:
-            return item._is_readable
+        # pylint: disable=no-else-return,import-outside-toplevel
+        if sys.version_info >= (3, 10):
+            # type guarding was introduced in python 3.10
+            from typing import TypeGuard
 
-        return filter(is_readable, self.get_registers(unroll=unroll))
+            def is_readable(item: Union[Reg, RegArray]) ->\
+                    TypeGuard[Union[ReadableRegister, ReadableRegisterArray]]:
+                # pylint: disable-next=protected-access
+                return item._is_readable
+
+            return filter(is_readable, self.get_registers(unroll=unroll))
+        else:
+            def is_readable(item: Union[Reg, RegArray]) -> bool:
+                # pylint: disable-next=protected-access
+                return item._is_readable
+
+            return filter(is_readable, self.get_registers(unroll=unroll))
 
     @abstractmethod
     def get_registers(self, unroll: bool = False) -> \
@@ -581,20 +608,12 @@ class AddressMap(Section, ABC):
 
         highest_start_address = self.address
         size = 0
-        for section in self.get_sections(unroll=True):
-            if section.address > highest_start_address:
-                highest_start_address = section.address
-                size = section.address - self.address + size
-
-        for memory in self.get_memories(unroll=True):
-            if memory.address > highest_start_address:
-                highest_start_address = memory.address
-                size = memory.address - self.address + size
-
-        for register in self.get_registers(unroll=True):
-            if register.address > highest_start_address:
-                highest_start_address = register.address
-                size = memory.address - self.address + size
+        for item in chain( self.get_sections(unroll=True),
+                           self.get_memories(unroll=True),
+                           self.get_registers(unroll=True)):
+            if item.address > highest_start_address:
+                highest_start_address = item.address
+                size = item.address - self.address + size
 
         self.__size = size
         return size
@@ -624,10 +643,23 @@ class AsyncSection(BaseSection, ABC):
         Args:
             unroll: Whether to unroll child array or not
         """
-        def is_writable(item: Union[Reg, RegArray]) -> bool:
-            return
+        # pylint: disable=no-else-return,import-outside-toplevel
+        if sys.version_info >= (3, 10):
+            # type guarding was introduced in python 3.10
+            from typing import TypeGuard
 
-        return filter(is_writable, self.get_registers(unroll=unroll))
+            def is_writable(item: Union[AsyncReg, AsyncRegArray]) -> \
+                    TypeGuard[Union[WritableAsyncRegister, WriteableAsyncRegisterArray]]:
+                # pylint: disable-next=protected-access
+                return item._is_writeable
+
+            return filter(is_writable, self.get_registers(unroll=unroll))
+        else:
+            def is_writable(item: Union[AsyncReg, AsyncRegArray]) -> bool:
+                # pylint: disable-next=protected-access
+                return item._is_writeable
+
+            return filter(is_writable, self.get_registers(unroll=unroll))
 
 
     def get_readable_registers(self, unroll: bool = False) -> \
@@ -638,10 +670,24 @@ class AsyncSection(BaseSection, ABC):
         Args:
             unroll: Whether to unroll child array or not
         """
-        def is_readable(item: Union[Reg, RegArray]) -> bool:
-            return
+        # pylint: disable=no-else-return,import-outside-toplevel
+        if sys.version_info >= (3, 10):
+            # type guarding was introduced in python 3.10
+            from typing import TypeGuard
 
-        return filter(is_readable, self.get_registers(unroll=unroll))
+            def is_readable(item: Union[AsyncReg, AsyncRegArray]) -> \
+                    TypeGuard[Union[ReadableAsyncRegister, ReadableAsyncRegisterArray]]:
+                # pylint: disable-next=protected-access
+                return item._is_readable
+
+            return filter(is_readable, self.get_registers(unroll=unroll))
+        else:
+            def is_readable(item: Union[AsyncReg, AsyncRegArray]) -> bool:
+                # pylint: disable-next=protected-access
+                return item._is_readable
+
+            return filter(is_readable, self.get_registers(unroll=unroll))
+
 
     @abstractmethod
     def get_registers(self, unroll: bool = False) -> \
@@ -719,6 +765,13 @@ class AsyncAddressMap(AsyncSection, ABC):
         Returns:
 
         """
+
+    @property
+    def _callbacks(self) -> AsyncCallbackSet:
+        if self.parent is None:
+            return self.__callbacks
+        # pylint: disable-next=protected-access
+        return cast(AsyncCallbackSet, self.parent._callbacks)
 
 
 class AddressMapArray(NodeArray, ABC):
@@ -805,7 +858,24 @@ class RegFile(Section, ABC):
 
     @property
     def size(self) -> int:
-        raise NotImplementedError('To go in the next phase')
+        """
+        Total Number of bytes of address the node occupies
+        """
+
+        # in the future, once support for python 3.7 is dropped this can become a cached_property
+        # which was introduced at python 3.8, until that time the caching is managed internally
+        if self.__size is not None:
+            return self.__size
+
+        highest_start_address = self.address
+        size = 0
+        for item in chain(self.get_sections(unroll=True), self.get_registers(unroll=True)):
+            if item.address > highest_start_address:
+                highest_start_address = item.address
+                size = item.address - self.address + size
+
+        self.__size = size
+        return size
 
 
 class AsyncRegFile(AsyncSection, ABC):

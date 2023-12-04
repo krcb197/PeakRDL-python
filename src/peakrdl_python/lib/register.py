@@ -647,10 +647,12 @@ class RegReadOnly(Reg, ABC):
 
     @property
     def _is_readable(self) -> bool:
+        # pylint: disable=duplicate-code
         return True
 
     @property
     def _is_writeable(self) -> bool:
+        # pylint: disable=duplicate-code
         return False
 
 
@@ -731,10 +733,12 @@ class RegWriteOnly(Reg, ABC):
 
     @property
     def _is_readable(self) -> bool:
+        # pylint: disable=duplicate-code
         return False
 
     @property
     def _is_writeable(self) -> bool:
+        # pylint: disable=duplicate-code
         return True
 
 
@@ -859,10 +863,12 @@ class RegReadWrite(RegReadOnly, RegWriteOnly, ABC):
 
     @property
     def _is_readable(self) -> bool:
+        # pylint: disable=duplicate-code
         return True
 
     @property
     def _is_writeable(self) -> bool:
+        # pylint: disable=duplicate-code
         return True
 
 ReadableRegister = Union[RegReadOnly, RegReadWrite]
@@ -917,10 +923,12 @@ class RegReadOnlyArray(RegArray, ABC):
 
     @property
     def _is_readable(self) -> bool:
+        # pylint: disable=duplicate-code
         return True
 
     @property
     def _is_writeable(self) -> bool:
+        # pylint: disable=duplicate-code
         return False
 
 class RegWriteOnlyArray(RegArray, ABC):
@@ -972,10 +980,12 @@ class RegWriteOnlyArray(RegArray, ABC):
 
     @property
     def _is_readable(self) -> bool:
+        # pylint: disable=duplicate-code
         return False
 
     @property
     def _is_writeable(self) -> bool:
+        # pylint: disable=duplicate-code
         return True
 
 
@@ -1030,10 +1040,12 @@ class RegReadWriteArray(RegArray, ABC):
 
     @property
     def _is_readable(self) -> bool:
+        # pylint: disable=duplicate-code
         return True
 
     @property
     def _is_writeable(self) -> bool:
+        # pylint: disable=duplicate-code
         return True
 
 ReadableRegisterArray = Union[RegReadOnlyArray, RegReadWriteArray]
