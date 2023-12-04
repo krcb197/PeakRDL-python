@@ -916,6 +916,12 @@ class AsyncRegFile(AsyncSection, ABC):
     def get_children(self, unroll: bool = False) -> Iterator[Union[Node, NodeArray]]:
         return chain(self.get_registers(unroll=unroll), self.get_sections(unroll=unroll))
 
+    @property
+    def _callbacks(self) -> AsyncCallbackSet:
+        if self.parent is None:
+            raise RuntimeError('Parent must be set')
+        # pylint: disable-next=protected-access
+        return cast(NormalCallbackSet, self.parent._callbacks)
 
 
 class RegFileArray(NodeArray, ABC):
