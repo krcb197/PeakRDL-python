@@ -30,6 +30,12 @@ import sys
 
 from .callbacks import CallbackSet, NormalCallbackSet, AsyncCallbackSet
 
+if sys.version_info >= (3, 10):
+    # type guarding was introduced in python 3.10
+    from typing import TypeGuard
+else:
+    from typing_extensions import TypeGuard
+
 if TYPE_CHECKING:
     from .memory import Memory, MemoryArray, AsyncMemory, AsyncMemoryArray
     from .register import Reg, RegArray
@@ -510,23 +516,12 @@ class Section(BaseSection, ABC):
         Args:
             unroll: Whether to unroll child array or not
         """
-        # pylint: disable=no-else-return,import-outside-toplevel
-        if sys.version_info >= (3, 10):
-            # type guarding was introduced in python 3.10
-            from typing import TypeGuard
+        def is_writable(item: Union[Reg, RegArray]) -> \
+                TypeGuard[Union[WritableRegister, WriteableRegisterArray]]:
+            # pylint: disable-next=protected-access
+            return item._is_writeable
 
-            def is_writable(item: Union[Reg, RegArray]) -> \
-                    TypeGuard[Union[WritableRegister, WriteableRegisterArray]]:
-                # pylint: disable-next=protected-access
-                return item._is_writeable
-
-            return filter(is_writable, self.get_registers(unroll=unroll))
-        else:
-            def is_writable(item: Union[Reg, RegArray]) -> bool:
-                # pylint: disable-next=protected-access
-                return item._is_writeable
-
-            return filter(is_writable, self.get_registers(unroll=unroll))
+        return filter(is_writable, self.get_registers(unroll=unroll))
 
     def get_readable_registers(self, unroll:bool=False) ->\
             Iterator[Union[ReadableRegister, ReadableRegisterArray]]:
@@ -536,23 +531,12 @@ class Section(BaseSection, ABC):
         Args:
             unroll: Whether to unroll child array or not
         """
-        # pylint: disable=no-else-return,import-outside-toplevel
-        if sys.version_info >= (3, 10):
-            # type guarding was introduced in python 3.10
-            from typing import TypeGuard
+        def is_readable(item: Union[Reg, RegArray]) ->\
+                TypeGuard[Union[ReadableRegister, ReadableRegisterArray]]:
+            # pylint: disable-next=protected-access
+            return item._is_readable
 
-            def is_readable(item: Union[Reg, RegArray]) ->\
-                    TypeGuard[Union[ReadableRegister, ReadableRegisterArray]]:
-                # pylint: disable-next=protected-access
-                return item._is_readable
-
-            return filter(is_readable, self.get_registers(unroll=unroll))
-        else:
-            def is_readable(item: Union[Reg, RegArray]) -> bool:
-                # pylint: disable-next=protected-access
-                return item._is_readable
-
-            return filter(is_readable, self.get_registers(unroll=unroll))
+        return filter(is_readable, self.get_registers(unroll=unroll))
 
     @abstractmethod
     def get_registers(self, unroll: bool = False) -> \
@@ -661,24 +645,12 @@ class AsyncSection(BaseSection, ABC):
         Args:
             unroll: Whether to unroll child array or not
         """
-        # pylint: disable=no-else-return,import-outside-toplevel
-        if sys.version_info >= (3, 10):
-            # type guarding was introduced in python 3.10
-            from typing import TypeGuard
+        def is_writable(item: Union[AsyncReg, AsyncRegArray]) -> \
+                TypeGuard[Union[WritableAsyncRegister, WriteableAsyncRegisterArray]]:
+            # pylint: disable-next=protected-access
+            return item._is_writeable
 
-            def is_writable(item: Union[AsyncReg, AsyncRegArray]) -> \
-                    TypeGuard[Union[WritableAsyncRegister, WriteableAsyncRegisterArray]]:
-                # pylint: disable-next=protected-access
-                return item._is_writeable
-
-            return filter(is_writable, self.get_registers(unroll=unroll))
-        else:
-            def is_writable(item: Union[AsyncReg, AsyncRegArray]) -> bool:
-                # pylint: disable-next=protected-access
-                return item._is_writeable
-
-            return filter(is_writable, self.get_registers(unroll=unroll))
-
+        return filter(is_writable, self.get_registers(unroll=unroll))
 
     def get_readable_registers(self, unroll: bool = False) -> \
             Iterator[Union[ReadableAsyncRegister, ReadableAsyncRegisterArray]]:
@@ -688,23 +660,13 @@ class AsyncSection(BaseSection, ABC):
         Args:
             unroll: Whether to unroll child array or not
         """
-        # pylint: disable=no-else-return,import-outside-toplevel
-        if sys.version_info >= (3, 10):
-            # type guarding was introduced in python 3.10
-            from typing import TypeGuard
+        def is_readable(item: Union[AsyncReg, AsyncRegArray]) -> \
+                TypeGuard[Union[ReadableAsyncRegister, ReadableAsyncRegisterArray]]:
+            # pylint: disable-next=protected-access
+            return item._is_readable
 
-            def is_readable(item: Union[AsyncReg, AsyncRegArray]) -> \
-                    TypeGuard[Union[ReadableAsyncRegister, ReadableAsyncRegisterArray]]:
-                # pylint: disable-next=protected-access
-                return item._is_readable
+        return filter(is_readable, self.get_registers(unroll=unroll))
 
-            return filter(is_readable, self.get_registers(unroll=unroll))
-        else:
-            def is_readable(item: Union[AsyncReg, AsyncRegArray]) -> bool:
-                # pylint: disable-next=protected-access
-                return item._is_readable
-
-            return filter(is_readable, self.get_registers(unroll=unroll))
 
     @abstractmethod
     def get_registers(self, unroll: bool = False) -> \
