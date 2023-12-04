@@ -448,13 +448,48 @@ class BaseSection(Node, ABC):
         It is not expected that this class will be instantiated under normal
         circumstances however, it is useful for type checking
     """
+    __slots__: List[str] = ['__size']
+
+    def __init__(self, *,
+                 address: int,
+                 logger_handle: str,
+                 inst_name: str,
+                 parent: Optional['BaseSection']):
+
+        self.__size: Optional[int] = None
+
+        super().__init__(address=address, logger_handle=logger_handle,
+                         inst_name=inst_name, parent=parent)
+
+    @abstractmethod
+    def get_children(self, unroll:bool=False) -> Iterator[Union[Node, NodeArray]]:
+        """
+        generator that produces all the readable_registers of this node
+
+        Args:
+            unroll: Whether to unroll child array or not
+        """
 
     @property
-    @abstractmethod
     def size(self) -> int:
         """
         Total Number of bytes of address the node occupies
         """
+
+        # in the future, once support for python 3.7 is dropped this can become a cached_property
+        # which was introduced at python 3.8, until that time the caching is managed internally
+        if self.__size is not None:
+            return self.__size
+
+        highest_start_address = self.address
+        size = 0
+        for item in self.get_children(unroll=True):
+            if item.address > highest_start_address:
+                highest_start_address = item.address
+                size = item.address - self.address + size
+
+        self.__size = size
+        return size
 
 class Section(BaseSection, ABC):
     """
@@ -464,6 +499,7 @@ class Section(BaseSection, ABC):
         It is not expected that this class will be instantiated under normal
         circumstances however, it is useful for type checking
     """
+    __slots__: List[str] = []
 
     def get_writable_registers(self, unroll:bool=False) -> \
             Iterator[Union[WritableRegister, WriteableRegisterArray]]:
@@ -541,7 +577,7 @@ class AddressMap(Section, ABC):
         It is not expected that this class will be instantiated under normal
         circumstances however, it is useful for type checking
     """
-    __slots__: List[str] = ['__size']
+    __slots__: List[str] = ['__callbacks']
 
     def __init__(self, *,
                  callbacks: Optional[NormalCallbackSet],
@@ -549,8 +585,6 @@ class AddressMap(Section, ABC):
                  logger_handle: str,
                  inst_name: str,
                  parent: Optional['AddressMap']):
-
-        self.__size: Optional[int] = None
 
         # only the top-level address map should have callbacks assigned, everything else should
         # use its parent callback
@@ -595,28 +629,10 @@ class AddressMap(Section, ABC):
 
         """
 
-    @property
-    def size(self) -> int:
-        """
-        Total Number of bytes of address the node occupies
-        """
-
-        # in the future, once support for python 3.7 is dropped this can become a cached_property
-        # which was introduced at python 3.8, until that time the caching is managed internally
-        if self.__size is not None:
-            return self.__size
-
-        highest_start_address = self.address
-        size = 0
-        for item in chain( self.get_sections(unroll=True),
-                           self.get_memories(unroll=True),
-                           self.get_registers(unroll=True)):
-            if item.address > highest_start_address:
-                highest_start_address = item.address
-                size = item.address - self.address + size
-
-        self.__size = size
-        return size
+    def get_children(self, unroll: bool = False) -> Iterator[Union[Node, NodeArray]]:
+        return chain(self.get_registers(unroll=unroll),
+                     self.get_sections(unroll=unroll),
+                     self.get_memories(unroll=unroll))
 
     @property
     def _callbacks(self) -> NormalCallbackSet:
@@ -634,6 +650,7 @@ class AsyncSection(BaseSection, ABC):
         It is not expected that this class will be instantiated under normal
         circumstances however, it is useful for type checking
     """
+    __slots__: List[str] = []
 
     def get_writable_registers(self, unroll: bool = False) -> \
             Iterator[Union[WritableAsyncRegister, WriteableAsyncRegisterArray]]:
@@ -734,9 +751,7 @@ class AsyncAddressMap(AsyncSection, ABC):
             if not isinstance(parent._callbacks, AsyncCallbackSet):
                 raise TypeError(f'callback type wrong, got {type(callbacks)}')
 
-        super().__init__(address=address,
-                         logger_handle=logger_handle,
-                         inst_name=inst_name,
+        super().__init__(address=address, logger_handle=logger_handle, inst_name=inst_name,
                          parent=parent)
 
     @abstractmethod
@@ -773,6 +788,10 @@ class AsyncAddressMap(AsyncSection, ABC):
         # pylint: disable-next=protected-access
         return cast(AsyncCallbackSet, self.parent._callbacks)
 
+    def get_children(self, unroll: bool = False) -> Iterator[Union[Node, NodeArray]]:
+        return chain(self.get_registers(unroll=unroll), self.get_sections(unroll=unroll),
+                     self.get_memories(unroll=unroll))
+
 
 class AddressMapArray(NodeArray, ABC):
     """
@@ -788,8 +807,7 @@ class AddressMapArray(NodeArray, ABC):
                  dimensions: Tuple[int, ...]):
 
         super().__init__(logger_handle=logger_handle, inst_name=inst_name,
-                         parent=parent, address=address,
-                         stride=stride, dimensions=dimensions)
+                         parent=parent, address=address, stride=stride, dimensions=dimensions)
 
 class AsyncAddressMapArray(NodeArray, ABC):
     """
@@ -818,15 +836,13 @@ class RegFile(Section, ABC):
         circumstances however, it is useful for type checking
     """
 
-    __slots__: List[str] = ['__size']
+    __slots__: List[str] = []
 
     def __init__(self, *,
                  address: int,
                  logger_handle: str,
                  inst_name: str,
                  parent: Union[AddressMap, 'RegFile']):
-
-        self.__size: Optional[int] = None
 
         if not isinstance(parent._callbacks, NormalCallbackSet):
             raise TypeError(f'parent._callbacks type wrong, got {type(parent._callbacks)}')
@@ -856,26 +872,8 @@ class RegFile(Section, ABC):
         # pylint: disable-next=protected-access
         return cast(NormalCallbackSet, self.parent._callbacks)
 
-    @property
-    def size(self) -> int:
-        """
-        Total Number of bytes of address the node occupies
-        """
-
-        # in the future, once support for python 3.7 is dropped this can become a cached_property
-        # which was introduced at python 3.8, until that time the caching is managed internally
-        if self.__size is not None:
-            return self.__size
-
-        highest_start_address = self.address
-        size = 0
-        for item in chain(self.get_sections(unroll=True), self.get_registers(unroll=True)):
-            if item.address > highest_start_address:
-                highest_start_address = item.address
-                size = item.address - self.address + size
-
-        self.__size = size
-        return size
+    def get_children(self, unroll: bool = False) -> Iterator[Union[Node, NodeArray]]:
+        return chain(self.get_registers(unroll=unroll), self.get_sections(unroll=unroll))
 
 
 class AsyncRegFile(AsyncSection, ABC):
@@ -914,6 +912,9 @@ class AsyncRegFile(AsyncSection, ABC):
         Returns:
 
         """
+
+    def get_children(self, unroll: bool = False) -> Iterator[Union[Node, NodeArray]]:
+        return chain(self.get_registers(unroll=unroll), self.get_sections(unroll=unroll))
 
 
 
