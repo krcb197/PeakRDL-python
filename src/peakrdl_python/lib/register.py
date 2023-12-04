@@ -142,6 +142,17 @@ class BaseReg(Node, ABC):
         """
         return self.__width >> 3
 
+
+    @property
+    @abstractmethod
+    def _is_readable(self) -> bool:
+        ...
+
+    @property
+    @abstractmethod
+    def _is_writeable(self) -> bool:
+        ...
+
 class Reg(BaseReg, ABC):
     """
         base class of non-async register wrappers
@@ -274,6 +285,16 @@ class BaseRegArray(NodeArray[BaseRegArrayElementType], ABC):
     @property
     @abstractmethod
     def _element_datatype(self) -> Type[BaseRegArrayElementType]:
+        ...
+
+    @property
+    @abstractmethod
+    def _is_readable(self) -> bool:
+        ...
+
+    @property
+    @abstractmethod
+    def _is_writeable(self) -> bool:
         ...
 
 
@@ -624,6 +645,14 @@ class RegReadOnly(Reg, ABC):
 
         return return_dict
 
+    @property
+    def _is_readable(self) -> bool:
+        return True
+
+    @property
+    def _is_writeable(self) -> bool:
+        return False
+
 
 class RegWriteOnly(Reg, ABC):
     """
@@ -699,6 +728,14 @@ class RegWriteOnly(Reg, ABC):
         Do a write to the register, updating any field included in
         the arguments
         """
+
+    @property
+    def _is_readable(self) -> bool:
+        return False
+
+    @property
+    def _is_writeable(self) -> bool:
+        return True
 
 
 class RegReadWrite(RegReadOnly, RegWriteOnly, ABC):
@@ -820,6 +857,14 @@ class RegReadWrite(RegReadOnly, RegWriteOnly, ABC):
 
         return return_dict
 
+    @property
+    def _is_readable(self) -> bool:
+        return True
+
+    @property
+    def _is_writeable(self) -> bool:
+        return True
+
 ReadableRegister = Union[RegReadOnly, RegReadWrite]
 WritableRegister = Union[RegWriteOnly, RegReadWrite]
 
@@ -870,6 +915,14 @@ class RegReadOnlyArray(RegArray, ABC):
                                  skip_initial_read=False) as reg_array:
             yield reg_array
 
+    @property
+    def _is_readable(self) -> bool:
+        return True
+
+    @property
+    def _is_writeable(self) -> bool:
+        return False
+
 class RegWriteOnlyArray(RegArray, ABC):
     """
     base class for a array of write only registers
@@ -916,6 +969,14 @@ class RegWriteOnlyArray(RegArray, ABC):
         with self._cached_access(verify=False, skip_write=False,
                                   skip_initial_read=True) as reg_array:
             yield reg_array
+
+    @property
+    def _is_readable(self) -> bool:
+        return False
+
+    @property
+    def _is_writeable(self) -> bool:
+        return True
 
 
 class RegReadWriteArray(RegArray, ABC):
@@ -966,6 +1027,14 @@ class RegReadWriteArray(RegArray, ABC):
         with self._cached_access(verify=verify, skip_write=skip_write,
                                   skip_initial_read=False) as reg_array:
             yield reg_array
+
+    @property
+    def _is_readable(self) -> bool:
+        return True
+
+    @property
+    def _is_writeable(self) -> bool:
+        return True
 
 ReadableRegisterArray = Union[RegReadOnlyArray, RegReadWriteArray]
 WriteableRegisterArray = Union[RegWriteOnlyArray, RegReadWriteArray]

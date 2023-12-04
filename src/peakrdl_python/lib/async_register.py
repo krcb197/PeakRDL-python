@@ -188,6 +188,14 @@ class RegAsyncReadOnly(AsyncReg, ABC):
 
         return return_dict
 
+    @property
+    def _is_readable(self) -> bool:
+        return True
+
+    @property
+    def _is_writeable(self) -> bool:
+        return False
+
 
 class RegAsyncWriteOnly(AsyncReg, ABC):
     """
@@ -269,6 +277,14 @@ class RegAsyncWriteOnly(AsyncReg, ABC):
         Do an async write to the register, updating any field included in
         the arguments
         """
+
+    @property
+    def _is_readable(self) -> bool:
+        return False
+
+    @property
+    def _is_writeable(self) -> bool:
+        return True
 
 
 class RegAsyncReadWrite(RegAsyncReadOnly, RegAsyncWriteOnly, ABC):
@@ -391,6 +407,14 @@ class RegAsyncReadWrite(RegAsyncReadOnly, RegAsyncWriteOnly, ABC):
 
                 field = getattr(reg, field_name)
                 await field.write(field_value)
+
+    @property
+    def _is_readable(self) -> bool:
+        return True
+
+    @property
+    def _is_writeable(self) -> bool:
+        return True
 
 
 ReadableAsyncRegister = Union[RegAsyncReadOnly, RegAsyncReadWrite]
@@ -690,6 +714,14 @@ class RegAsyncReadOnlyArray(AsyncRegArray, ABC):
                                  skip_initial_read=False) as reg_array:
             yield reg_array
 
+    @property
+    def _is_readable(self) -> bool:
+        return True
+
+    @property
+    def _is_writeable(self) -> bool:
+        return False
+
 
 class RegAsyncWriteOnlyArray(AsyncRegArray, ABC):
     """
@@ -736,6 +768,14 @@ class RegAsyncWriteOnlyArray(AsyncRegArray, ABC):
                                  skip_initial_read=True) as reg_array:
             yield reg_array
 
+    @property
+    def _is_readable(self) -> bool:
+        return False
+
+    @property
+    def _is_writeable(self) -> bool:
+        return True
+
 
 class RegAsyncReadWriteArray(AsyncRegArray, ABC):
     """
@@ -781,6 +821,14 @@ class RegAsyncReadWriteArray(AsyncRegArray, ABC):
         async with self._cached_access(verify=verify, skip_write=skip_write,
                                   skip_initial_read=False) as reg_array:
             yield reg_array
+
+    @property
+    def _is_readable(self) -> bool:
+        return True
+
+    @property
+    def _is_writeable(self) -> bool:
+        return True
 
 
 ReadableAsyncRegisterArray = Union[RegAsyncReadOnlyArray, RegAsyncReadWriteArray]

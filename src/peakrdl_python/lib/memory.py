@@ -28,8 +28,10 @@ from .base import Node, AddressMap, AsyncAddressMap, NodeArray, get_array_typeco
 from .callbacks import NormalCallbackSet, AsyncCallbackSet
 
 if TYPE_CHECKING:
+    from .register import Reg, RegArray
     from .register import ReadableRegister, WritableRegister
     from .register import ReadableRegisterArray, WriteableRegisterArray
+    from .async_register import AsyncReg, AsyncRegArray
     from .async_register import ReadableAsyncRegister, WritableAsyncRegister
     from .async_register import ReadableAsyncRegisterArray, WriteableAsyncRegisterArray
 
@@ -159,7 +161,59 @@ class BaseMemory(Node, ABC):
         return self.__accesswidth
 
 
-class MemoryReadOnly(BaseMemory, ABC):
+class Memory(BaseMemory, ABC):
+    """
+    base class of non_async memory wrappers
+
+    Note:
+        It is not expected that this class will be instantiated under normal
+        circumstances however, it is useful for type checking
+    """
+    __slots__: List[str] = []
+
+    # pylint: disable=too-many-arguments
+    def __init__(self, *,
+                 address: int,
+                 width: int,
+                 accesswidth: int,
+                 entries: int,
+                 logger_handle: str,
+                 inst_name: str,
+                 parent: Union[AddressMap, 'MemoryArray']):
+        """
+        Initialise the class
+
+        Args:
+            callbacks: set of callback to be used for accessing the hardware or simulator
+            address: address of the register
+            width: width of the register in bits
+            logger_handle: name to be used logging messages associate with thisobject
+        """
+        if not isinstance(parent, (AddressMap,
+                                   MemoryWriteOnlyArray, MemoryReadOnlyArray,
+                                   MemoryReadWriteArray)):
+            raise TypeError(f'parent should be either AddressMap or Memory Array got '
+                            f'{type(parent)}')
+        super().__init__(address=address,
+                         logger_handle=logger_handle,
+                         inst_name=inst_name,
+                         width=width,
+                         accesswidth=accesswidth,
+                         entries=entries,
+                         parent=parent)
+
+    @abstractmethod
+    def get_registers(self, unroll: bool = False) -> \
+            Iterator[Union['Reg', 'RegArray']]:
+        """
+        generator that produces all the readable_registers of this node
+
+        Args:
+            unroll: Whether to unroll child array or not
+        """
+
+
+class MemoryReadOnly(Memory, ABC):
     """
     base class of memory wrappers
 
@@ -267,7 +321,6 @@ class MemoryReadOnly(BaseMemory, ABC):
 
         return data_read
 
-    @abstractmethod
     def get_readable_registers(self, unroll: bool = False) -> \
             Iterator[Union['ReadableRegister', 'ReadableRegisterArray']]:
         """
@@ -276,9 +329,13 @@ class MemoryReadOnly(BaseMemory, ABC):
         Args:
             unroll: Whether to unroll child array or not
         """
+        def is_readable(item: Union['Reg', 'RegArray']) -> bool:
+            return item._is_readable
+
+        return filter(is_readable, self.get_registers(unroll=unroll))
 
 
-class MemoryWriteOnly(BaseMemory, ABC):
+class MemoryWriteOnly(Memory, ABC):
     """
     base class of memory wrappers
 
@@ -374,7 +431,6 @@ class MemoryWriteOnly(BaseMemory, ABC):
         else:
             raise RuntimeError('No suitable callback')
 
-    @abstractmethod
     def get_writable_registers(self, unroll: bool = False) -> \
             Iterator[Union['WritableRegister', 'WriteableRegisterArray']]:
         """
@@ -383,6 +439,10 @@ class MemoryWriteOnly(BaseMemory, ABC):
         Args:
             unroll: Whether to unroll child array or not
         """
+        def is_writable(item: Union['Reg', 'RegArray']) -> bool:
+            return item._is_writeable
+
+        return filter(is_writable, self.get_registers(unroll=unroll))
 
 
 class MemoryReadWrite(MemoryReadOnly, MemoryWriteOnly, ABC):
@@ -397,7 +457,59 @@ class MemoryReadWrite(MemoryReadOnly, MemoryWriteOnly, ABC):
     __slots__: List[str] = []
 
 
-class MemoryAsyncReadOnly(BaseMemory, ABC):
+class AsyncMemory(BaseMemory, ABC):
+    """
+    base class of non_async memory wrappers
+
+    Note:
+        It is not expected that this class will be instantiated under normal
+        circumstances however, it is useful for type checking
+    """
+    __slots__: List[str] = []
+
+    # pylint: disable=too-many-arguments
+    def __init__(self, *,
+                 address: int,
+                 width: int,
+                 accesswidth: int,
+                 entries: int,
+                 logger_handle: str,
+                 inst_name: str,
+                 parent: Union[AsyncAddressMap, 'AsyncMemoryArray']):
+        """
+        Initialise the class
+
+        Args:
+            callbacks: set of callback to be used for accessing the hardware or simulator
+            address: address of the register
+            width: width of the register in bits
+            logger_handle: name to be used logging messages associate with thisobject
+        """
+        if not isinstance(parent, (AsyncAddressMap,
+                                   MemoryAsyncWriteOnlyArray, MemoryAsyncReadOnlyArray,
+                                   MemoryAsyncReadWriteArray)):
+            raise TypeError(f'parent should be either AddressMap or Memory Array got '
+                            f'{type(parent)}')
+        super().__init__(address=address,
+                         logger_handle=logger_handle,
+                         inst_name=inst_name,
+                         width=width,
+                         accesswidth=accesswidth,
+                         entries=entries,
+                         parent=parent)
+
+    @abstractmethod
+    def get_registers(self, unroll: bool = False) -> \
+            Iterator[Union['AsyncReg', 'AsyncRegArray']]:
+        """
+        generator that produces all the readable_registers of this node
+
+        Args:
+            unroll: Whether to unroll child array or not
+        """
+
+
+class MemoryAsyncReadOnly(AsyncMemory, ABC):
     """
     base class of memory wrappers
 
@@ -503,7 +615,6 @@ class MemoryAsyncReadOnly(BaseMemory, ABC):
 
         return data_read
 
-    @abstractmethod
     def get_readable_registers(self, unroll: bool = False) -> \
             Iterator[Union['ReadableAsyncRegister', 'ReadableAsyncRegisterArray']]:
         """
@@ -512,9 +623,13 @@ class MemoryAsyncReadOnly(BaseMemory, ABC):
         Args:
             unroll: Whether to unroll child array or not
         """
+        def is_readable(item: Union[AsyncReg, AsyncRegArray]) -> bool:
+            return item._is_readable
+
+        return filter(is_readable, self.get_registers(unroll=unroll))
 
 
-class MemoryAsyncWriteOnly(BaseMemory, ABC):
+class MemoryAsyncWriteOnly(AsyncMemory, ABC):
     """
     base class of memory wrappers
 
@@ -610,7 +725,6 @@ class MemoryAsyncWriteOnly(BaseMemory, ABC):
         else:
             raise RuntimeError('No suitable callback')
 
-    @abstractmethod
     def get_writable_registers(self, unroll: bool = False) -> \
             Iterator[Union['WritableAsyncRegister', 'WriteableAsyncRegisterArray']]:
         """
@@ -619,6 +733,10 @@ class MemoryAsyncWriteOnly(BaseMemory, ABC):
         Args:
             unroll: Whether to unroll child array or not
         """
+        def is_writable(item: Union[AsyncReg, AsyncRegArray]) -> bool:
+            return item._is_writeable
+
+        return filter(is_writable, self.get_registers(unroll=unroll))
 
 
 class MemoryAsyncReadWrite(MemoryAsyncReadOnly, MemoryAsyncWriteOnly, ABC):
@@ -760,10 +878,8 @@ class MemoryAsyncReadWriteArray(MemoryAsyncReadOnlyArray, MemoryAsyncWriteOnlyAr
 
 ReadableMemory = Union[MemoryReadOnly, MemoryReadWrite]
 WritableMemory = Union[MemoryWriteOnly, MemoryReadWrite]
-Memory = Union[MemoryReadOnly, MemoryWriteOnly, MemoryReadWrite]
 ReadableAsyncMemory = Union[MemoryAsyncReadOnly, MemoryAsyncReadWrite]
 WritableAsyncMemory = Union[MemoryAsyncWriteOnly, MemoryAsyncReadWrite]
-AsyncMemory = Union[MemoryAsyncReadOnly, MemoryAsyncWriteOnly, MemoryAsyncReadWrite]
 MemoryArray = Union[MemoryReadOnlyArray, MemoryWriteOnlyArray, MemoryReadWriteArray]
 AsyncMemoryArray = Union[MemoryAsyncReadOnlyArray, MemoryAsyncWriteOnlyArray,
                          MemoryAsyncReadWriteArray]

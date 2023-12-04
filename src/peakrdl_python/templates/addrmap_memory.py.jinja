@@ -17,8 +17,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #}
 
 {% from 'reg_definitions.py.jinja' import register_class_attributes with context %}
-{% from 'reg_definitions.py.jinja' import child_writable_register_getter with context %}
-{% from 'reg_definitions.py.jinja' import child_readable_register_getter with context %}
+{% from 'reg_definitions.py.jinja' import child_register_getter with context %}
 
 {%- macro memory_class(node) %}
     {%- if node.is_sw_readable and node.is_sw_writable %}
@@ -69,13 +68,7 @@ class {{get_fully_qualified_type_name(node)}}_cls(Memory{% if asyncoutput %}Asyn
             {%- endif %}
         {% endfor %}
 
-    {% if node.is_sw_readable %}
-    {{ child_readable_register_getter(node) }}
-    {% endif %}
-
-    {% if node.is_sw_writable %}
-    {{ child_writable_register_getter(node) }}
-    {% endif %}
+    {{ child_register_getter(node) }}
 
     @property
     def systemrdl_python_child_name_map(self) -> Dict[str, str]:

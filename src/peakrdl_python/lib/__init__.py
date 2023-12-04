@@ -38,6 +38,7 @@ from .base import AsyncAddressMapArray
 from .base import AsyncRegFileArray
 
 from .register import Reg
+from .register import RegArray
 from .register import RegisterWriteVerifyError
 
 from .register import RegReadOnly
@@ -52,6 +53,8 @@ from .register import RegReadWriteArray
 from .register import ReadableRegisterArray
 from .register import WriteableRegisterArray
 
+from .async_register import AsyncReg
+from .async_register import AsyncRegArray
 from .async_register import RegAsyncReadOnly
 from .async_register import RegAsyncWriteOnly
 from .async_register import RegAsyncReadWrite

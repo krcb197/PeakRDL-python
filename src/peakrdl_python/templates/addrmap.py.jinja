@@ -61,6 +61,7 @@ from ..lib  import AddressMapArray
 from ..lib  import RegFileArray
 from ..lib import MemoryReadOnly, MemoryWriteOnly, MemoryReadWrite
 from ..lib import MemoryReadOnlyArray, MemoryWriteOnlyArray, MemoryReadWriteArray
+from ..lib import Reg, RegArray
 from ..lib import RegReadOnly, RegWriteOnly, RegReadWrite
 from ..lib import RegReadOnlyArray, RegWriteOnlyArray, RegReadWriteArray
 from ..lib import FieldReadOnly, FieldWriteOnly, FieldReadWrite, Field
@@ -201,6 +202,7 @@ class {{get_fully_qualified_type_name(node)}}_cls({% if asyncoutput %}Async{% en
             }
 
     {{ child_register_getter(node) }}
+
         {% if asyncoutput %}
     {{ child_getter(node, "get_sections", "AsyncRegFile, AsyncRegFileArray", systemrdlRegfileNode) }}
     {% else %}

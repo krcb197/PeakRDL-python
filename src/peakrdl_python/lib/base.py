@@ -31,7 +31,9 @@ from .callbacks import CallbackSet, NormalCallbackSet, AsyncCallbackSet
 
 if TYPE_CHECKING:
     from .memory import Memory, MemoryArray, AsyncMemory, AsyncMemoryArray
+    from .register import Reg, RegArray
     from .register import WritableRegister, ReadableRegister
+    from .async_register import AsyncReg, AsyncRegArray
     from .async_register import ReadableAsyncRegister, WritableAsyncRegister
     from .register import ReadableRegisterArray, WriteableRegisterArray
     from .async_register import ReadableAsyncRegisterArray, WriteableAsyncRegisterArray
@@ -437,7 +439,74 @@ class NodeArray(Base, Sequence[NodeArrayElementType]):
         return reduce(mul, self.dimensions, 1) * self.stride
 
 
-class AddressMap(Node, ABC):
+class BaseSection(Node, ABC):
+    """
+    base class of non-async and sync sections (AddressMaps and RegFile)
+
+    Note:
+        It is not expected that this class will be instantiated under normal
+        circumstances however, it is useful for type checking
+    """
+
+    @property
+    @abstractmethod
+    def size(self) -> int:
+        """
+        Total Number of bytes of address the node occupies
+        """
+
+class Section(BaseSection, ABC):
+    """
+    base class of non-async sections (AddressMaps and RegFile)
+
+    Note:
+        It is not expected that this class will be instantiated under normal
+        circumstances however, it is useful for type checking
+    """
+
+    def get_writable_registers(self, unroll:bool=False) -> \
+            Iterator[Union[WritableRegister, WriteableRegisterArray]]:
+        """
+        generator that produces all the readable_registers of this node
+
+        Args:
+            unroll: Whether to unroll child array or not
+        """
+        def is_writable(item: Union[Reg, RegArray]) -> bool:
+            return item._is_writeable
+
+        return filter(is_writable, self.get_registers(unroll=unroll))
+
+    def get_readable_registers(self, unroll:bool=False) ->\
+            Iterator[Union[ReadableRegister, ReadableRegisterArray]]:
+        """
+        generator that produces all the readable_registers of this node
+
+        Args:
+            unroll: Whether to unroll child array or not
+        """
+        def is_readable(item: Union[Reg, RegArray]) -> bool:
+            return item._is_readable
+
+        return filter(is_readable, self.get_registers(unroll=unroll))
+
+    @abstractmethod
+    def get_registers(self, unroll: bool = False) -> \
+            Iterator[Union[Reg, RegArray]]:
+        """
+        generator that produces all the readable_registers of this node
+
+        Args:
+            unroll: Whether to unroll child array or not
+        """
+
+    @property
+    @abstractmethod
+    def _callbacks(self) -> NormalCallbackSet:
+        ...
+
+
+class AddressMap(Section, ABC):
     """
     base class of address map wrappers
 
@@ -445,7 +514,7 @@ class AddressMap(Node, ABC):
         It is not expected that this class will be instantiated under normal
         circumstances however, it is useful for type checking
     """
-    __slots__: List[str] = ['__callbacks']
+    __slots__: List[str] = ['__size']
 
     def __init__(self, *,
                  callbacks: Optional[NormalCallbackSet],
@@ -453,6 +522,8 @@ class AddressMap(Node, ABC):
                  logger_handle: str,
                  inst_name: str,
                  parent: Optional['AddressMap']):
+
+        self.__size: Optional[int] = None
 
         # only the top-level address map should have callbacks assigned, everything else should
         # use its parent callback
@@ -497,25 +568,36 @@ class AddressMap(Node, ABC):
 
         """
 
-    @abstractmethod
-    def get_writable_registers(self, unroll:bool=False) -> \
-            Iterator[Union[WritableRegister, WriteableRegisterArray]]:
+    @property
+    def size(self) -> int:
         """
-        generator that produces all the readable_registers of this node
-
-        Args:
-            unroll: Whether to unroll child array or not
+        Total Number of bytes of address the node occupies
         """
 
-    @abstractmethod
-    def get_readable_registers(self, unroll:bool=False) ->\
-            Iterator[Union[ReadableRegister, ReadableRegisterArray]]:
-        """
-        generator that produces all the readable_registers of this node
+        # in the future, once support for python 3.7 is dropped this can become a cached_property
+        # which was introduced at python 3.8, until that time the caching is managed internally
+        if self.__size is not None:
+            return self.__size
 
-        Args:
-            unroll: Whether to unroll child array or not
-        """
+        highest_start_address = self.address
+        size = 0
+        for section in self.get_sections(unroll=True):
+            if section.address > highest_start_address:
+                highest_start_address = section.address
+                size = section.address - self.address + size
+
+        for memory in self.get_memories(unroll=True):
+            if memory.address > highest_start_address:
+                highest_start_address = memory.address
+                size = memory.address - self.address + size
+
+        for register in self.get_registers(unroll=True):
+            if register.address > highest_start_address:
+                highest_start_address = register.address
+                size = memory.address - self.address + size
+
+        self.__size = size
+        return size
 
     @property
     def _callbacks(self) -> NormalCallbackSet:
@@ -524,11 +606,59 @@ class AddressMap(Node, ABC):
         # pylint: disable-next=protected-access
         return cast(NormalCallbackSet, self.parent._callbacks)
 
-    @property
-    def size(self) -> int:
-        raise NotImplementedError('To go in the next phase')
 
-class AsyncAddressMap(Node, ABC):
+class AsyncSection(BaseSection, ABC):
+    """
+    base class of async sections (AddressMaps and RegFile)
+
+    Note:
+        It is not expected that this class will be instantiated under normal
+        circumstances however, it is useful for type checking
+    """
+
+    def get_writable_registers(self, unroll: bool = False) -> \
+            Iterator[Union[WritableAsyncRegister, WriteableAsyncRegisterArray]]:
+        """
+        generator that produces all the readable_registers of this node
+
+        Args:
+            unroll: Whether to unroll child array or not
+        """
+        def is_writable(item: Union[Reg, RegArray]) -> bool:
+            return
+
+        return filter(is_writable, self.get_registers(unroll=unroll))
+
+
+    def get_readable_registers(self, unroll: bool = False) -> \
+            Iterator[Union[ReadableAsyncRegister, ReadableAsyncRegisterArray]]:
+        """
+        generator that produces all the readable_registers of this node
+
+        Args:
+            unroll: Whether to unroll child array or not
+        """
+        def is_readable(item: Union[Reg, RegArray]) -> bool:
+            return
+
+        return filter(is_readable, self.get_registers(unroll=unroll))
+
+    @abstractmethod
+    def get_registers(self, unroll: bool = False) -> \
+            Iterator[Union[AsyncReg, AsyncRegArray]]:
+        """
+        generator that produces all the readable_registers of this node
+
+        Args:
+            unroll: Whether to unroll child array or not
+        """
+
+    @property
+    @abstractmethod
+    def _callbacks(self) -> AsyncCallbackSet:
+        ...
+
+class AsyncAddressMap(AsyncSection, ABC):
     """
     base class of address map wrappers
 
@@ -590,37 +720,6 @@ class AsyncAddressMap(Node, ABC):
 
         """
 
-    @abstractmethod
-    def get_writable_registers(self, unroll: bool = False) -> \
-            Iterator[Union[WritableAsyncRegister, WriteableAsyncRegisterArray]]:
-        """
-        generator that produces all the readable_registers of this node
-
-        Args:
-            unroll: Whether to unroll child array or not
-        """
-
-    @abstractmethod
-    def get_readable_registers(self, unroll: bool = False) -> \
-            Iterator[Union[ReadableAsyncRegister, ReadableAsyncRegisterArray]]:
-        """
-        generator that produces all the readable_registers of this node
-
-        Args:
-            unroll: Whether to unroll child array or not
-        """
-
-    @property
-    def _callbacks(self) -> AsyncCallbackSet:
-        if self.parent is None:
-            return self.__callbacks
-        # pylint: disable-next=protected-access
-        return cast(AsyncCallbackSet, self.parent._callbacks)
-
-    @property
-    def size(self) -> int:
-        raise NotImplementedError('To go in the next phase')
-
 
 class AddressMapArray(NodeArray, ABC):
     """
@@ -657,7 +756,7 @@ class AsyncAddressMapArray(NodeArray, ABC):
                          stride=stride, dimensions=dimensions)
 
 
-class RegFile(Node, ABC):
+class RegFile(Section, ABC):
     """
     base class of register file wrappers
 
@@ -666,7 +765,7 @@ class RegFile(Node, ABC):
         circumstances however, it is useful for type checking
     """
 
-    __slots__: List[str] = []
+    __slots__: List[str] = ['__size']
 
     def __init__(self, *,
                  address: int,
@@ -674,13 +773,15 @@ class RegFile(Node, ABC):
                  inst_name: str,
                  parent: Union[AddressMap, 'RegFile']):
 
+        self.__size: Optional[int] = None
+
+        if not isinstance(parent._callbacks, NormalCallbackSet):
+            raise TypeError(f'parent._callbacks type wrong, got {type(parent._callbacks)}')
+
         super().__init__(address=address,
                          logger_handle=logger_handle,
                          inst_name=inst_name,
                          parent=parent)
-
-        if not isinstance(parent._callbacks, NormalCallbackSet):
-            raise TypeError(f'parent._callbacks type wrong, got {type(parent._callbacks)}')
 
     @abstractmethod
     def get_sections(self, unroll: bool = False) -> \
@@ -695,27 +796,6 @@ class RegFile(Node, ABC):
 
         """
 
-    @abstractmethod
-    def get_writable_registers(self, unroll:bool=False) -> \
-            Iterator[Union[WritableRegister, WriteableRegisterArray]]:
-        """
-        generator that produces all the readable_registers of this node
-
-        Args:
-            unroll: Whether to unroll child array or not
-
-        """
-
-    @abstractmethod
-    def get_readable_registers(self, unroll:bool=False) ->\
-            Iterator[Union[ReadableRegister, ReadableRegisterArray]]:
-        """
-        generator that produces all the readable_registers of this node
-
-        Args:
-            unroll: Whether to unroll child array or not
-        """
-
     @property
     def _callbacks(self) -> NormalCallbackSet:
         if self.parent is None:
@@ -728,7 +808,7 @@ class RegFile(Node, ABC):
         raise NotImplementedError('To go in the next phase')
 
 
-class AsyncRegFile(Node, ABC):
+class AsyncRegFile(AsyncSection, ABC):
     """
     base class of register file wrappers
 
@@ -765,36 +845,7 @@ class AsyncRegFile(Node, ABC):
 
         """
 
-    @abstractmethod
-    def get_writable_registers(self, unroll: bool = False) -> \
-            Iterator[Union[WritableAsyncRegister, WriteableAsyncRegisterArray]]:
-        """
-        generator that produces all the readable_registers of this node
 
-        Args:
-            unroll: Whether to unroll child array or not
-        """
-
-    @abstractmethod
-    def get_readable_registers(self, unroll: bool = False) -> \
-            Iterator[Union[ReadableAsyncRegister, ReadableAsyncRegisterArray]]:
-        """
-        generator that produces all the readable_registers of this node
-
-        Args:
-            unroll: Whether to unroll child array or not
-        """
-
-    @property
-    def _callbacks(self) -> AsyncCallbackSet:
-        if self.parent is None:
-            raise RuntimeError('Parent must be set')
-        # pylint: disable-next=protected-access
-        return cast(AsyncCallbackSet, self.parent._callbacks)
-
-    @property
-    def size(self) -> int:
-        raise NotImplementedError('To go in the next phase')
 
 class RegFileArray(NodeArray, ABC):
     """
