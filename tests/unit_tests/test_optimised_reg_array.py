@@ -102,21 +102,12 @@ class ArrayBase(CallBackTestWrapper, ABC):
                                    Tuple[Union[AddressMap, RegFile], ...]]]:
                 raise NotImplementedError('Not implemented in the testing')
 
-            def get_writable_registers(self, unroll: bool = False) -> \
-                    Iterator[Union[WritableRegister, WriteableRegisterArray]]:
+            def get_registers(self, unroll: bool = False) -> \
+                    Iterator[Union[Reg, RegArray]]:
                 """
                 generator that produces all the readable_registers of this node
                 """
                 raise NotImplementedError('Not implemented in the testing')
-
-            def get_readable_registers(self, unroll: bool = False) -> \
-                    Iterator[Union[ReadableRegister, ReadableRegisterArray]]:
-                """
-                generator that produces all the readable_registers of this node
-                """
-                raise NotImplementedError('Not implemented in the testing')
-
-
 
             @property
             def systemrdl_python_child_name_map(self) -> Dict[str, str]:

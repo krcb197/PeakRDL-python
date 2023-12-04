@@ -1048,5 +1048,6 @@ class RegReadWriteArray(RegArray, ABC):
         # pylint: disable=duplicate-code
         return True
 
+
 ReadableRegisterArray = Union[RegReadOnlyArray, RegReadWriteArray]
 WriteableRegisterArray = Union[RegWriteOnlyArray, RegReadWriteArray]
