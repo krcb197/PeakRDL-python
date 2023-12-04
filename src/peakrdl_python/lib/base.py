@@ -491,6 +491,7 @@ class BaseSection(Node, ABC):
         self.__size = size
         return size
 
+
 class Section(BaseSection, ABC):
     """
     base class of non-async sections (AddressMaps and RegFile)
@@ -704,7 +705,6 @@ class AsyncSection(BaseSection, ABC):
                 return item._is_readable
 
             return filter(is_readable, self.get_registers(unroll=unroll))
-
 
     @abstractmethod
     def get_registers(self, unroll: bool = False) -> \
@@ -921,7 +921,7 @@ class AsyncRegFile(AsyncSection, ABC):
         if self.parent is None:
             raise RuntimeError('Parent must be set')
         # pylint: disable-next=protected-access
-        return cast(NormalCallbackSet, self.parent._callbacks)
+        return cast(AsyncCallbackSet, self.parent._callbacks)
 
 
 class RegFileArray(NodeArray, ABC):
@@ -942,6 +942,7 @@ class RegFileArray(NodeArray, ABC):
                          parent=parent, address=address,
                          stride=stride, dimensions=dimensions)
 
+
 class AsyncRegFileArray(NodeArray, ABC):
     """
     base class for a array of register files
@@ -959,44 +960,3 @@ class AsyncRegFileArray(NodeArray, ABC):
         super().__init__(logger_handle=logger_handle, inst_name=inst_name,
                          parent=parent, address=address,
                          stride=stride, dimensions=dimensions)
-
-
-def swap_msb_lsb_ordering(width: int, value: int) -> int:
-    """
-    swaps the msb/lsb on a integer
-
-    Returns:
-        swapped value
-    """
-    value_to_return = 0
-    for bit_positions in zip(range(0, width), range(width-1, -1, -1)):
-        bit_value = (value >> bit_positions[0]) & 0x1
-        value_to_return |= bit_value << bit_positions[1]
-
-    return value_to_return
-
-
-def get_array_typecode(width: int) -> str:
-    """
-        python array typecode
-
-        Args:
-            width: in bits
-
-        Returns:
-            string to pass into the array generator
-
-        """
-    if width == 32:
-        return 'L'
-
-    if width == 64:
-        return 'Q'
-
-    if width == 16:
-        return 'I'
-
-    if width == 8:
-        return 'B'
-
-    raise ValueError(f'unhandled width {width:d}')

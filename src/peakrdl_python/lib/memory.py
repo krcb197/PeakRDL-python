@@ -24,7 +24,8 @@ from typing import List, Union, Tuple, Iterator, TYPE_CHECKING, cast
 from abc import ABC, abstractmethod
 import sys
 
-from .base import Node, AddressMap, AsyncAddressMap, NodeArray, get_array_typecode
+from .base import Node, AddressMap, AsyncAddressMap, NodeArray
+from .utility_functions import get_array_typecode
 
 from .callbacks import NormalCallbackSet, AsyncCallbackSet
 

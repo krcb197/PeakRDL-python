@@ -27,7 +27,8 @@ from contextlib import contextmanager
 from array import array as Array
 import sys
 
-from .base import Node, AddressMap, RegFile, NodeArray, get_array_typecode
+from .base import Node, AddressMap, RegFile, NodeArray
+from .utility_functions import get_array_typecode
 from .base import AsyncAddressMap, AsyncRegFile
 from .memory import  MemoryReadOnly, MemoryWriteOnly, MemoryReadWrite, \
     BaseMemory, Memory, ReadableMemory, WritableMemory

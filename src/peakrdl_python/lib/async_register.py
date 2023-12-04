@@ -27,7 +27,7 @@ from contextlib import asynccontextmanager
 from array import array as Array
 import sys
 
-from .base import get_array_typecode
+from .utility_functions import get_array_typecode
 from .base import AsyncAddressMap, AsyncRegFile
 from .register import BaseReg, BaseRegArray, RegisterWriteVerifyError
 from .memory import  MemoryAsyncReadOnly, MemoryAsyncWriteOnly, MemoryAsyncReadWrite, \

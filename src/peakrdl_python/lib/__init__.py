@@ -105,5 +105,5 @@ from .memory import AsyncMemory
 from .memory import MemoryArray
 from .memory import AsyncMemoryArray
 
-from .base import get_array_typecode
+from .utility_functions import get_array_typecode
 from .base import Node

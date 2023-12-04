@@ -24,7 +24,7 @@ from typing import List, cast, Optional
 from abc import ABC, abstractmethod
 
 from .base import Base
-from .base import swap_msb_lsb_ordering
+from .utility_functions import swap_msb_lsb_ordering
 from .register import BaseReg
 from .register import RegReadOnly
 from .async_register import RegAsyncReadOnly
