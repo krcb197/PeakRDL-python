@@ -16,7 +16,7 @@ Example
 =======
 
 The following example shows the compiling an SystemRDL file and then generating
-the python register abstraction layer using PeakRDL Python.
+the python register access layer using PeakRDL Python.
 
 .. code-block:: python
 
@@ -28,7 +28,7 @@ the python register abstraction layer using PeakRDL Python.
     rdlc.compile_file('basic.rdl')
     spec = rdlc.elaborate(top_def_name='basic').top
 
-    # generate the python package register abstraction layer
+    # generate the python package register access layer
     exporter = PythonExporter()
     exporter.export(node=spec, path='generated_code')
 

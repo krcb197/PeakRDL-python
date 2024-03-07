@@ -1,0 +1,17 @@
+addrmap optimised_array_access {
+
+    enum gpio_direction_enc {
+			gpio_in = 0;
+			gpio_out = 1;
+		};
+
+    reg {
+        default sw = rw;
+        default hw = r;
+
+        field { encode = gpio_direction_enc; fieldwidth=1; } gpio_direction;
+        field { fieldwidth=2; } gpio_drive_str;
+        field { fieldwidth=1; } gpio_pullup;
+
+    } gpio_register[8];
+};

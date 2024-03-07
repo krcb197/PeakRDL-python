@@ -1,0 +1,23 @@
+addrmap sizes_registers_array {
+
+    alignment = 4;
+
+    reg {
+        regwidth = 32;
+        accesswidth=32;
+        field { fieldwidth = 1; } field_a;
+    } reg_32_32_128[4] @0 += 16;
+
+    reg {
+        regwidth = 32;
+        accesswidth=32;
+        field { fieldwidth = 1; } field_a;
+    } reg_32_32[4];
+
+    reg {
+        regwidth = 64;
+        accesswidth=32;
+        field { fieldwidth = 1; } field_a;
+    } reg_64_32[4];
+
+};
