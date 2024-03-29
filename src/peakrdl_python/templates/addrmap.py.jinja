@@ -152,13 +152,16 @@ class {{get_fully_qualified_type_name(node)}}_cls({% if asyncoutput %}Async{% en
         super().__init__(address=address,
                          logger_handle=logger_handle,
                          inst_name=inst_name,
-                         size={{node.size}},
                          parent=parent)
 
         # instance of objects within the class
         {% for child_node in node.children(unroll=False) -%}
             {{ regfile_or_addr_instance(child_node) | indent }}
         {% endfor %}
+
+    @property
+    def size(self) -> int:
+        return {{node.size}}
 
     # properties for Register and RegisterFiles
     {%- for child_node in node.children(unroll=False) %}
@@ -256,12 +259,15 @@ class {{get_fully_qualified_type_name(node)}}_cls({% if asyncoutput %}Async{% en
                          address=address,
                          logger_handle=logger_handle,
                          inst_name=inst_name,
-                         size={{node.size}},
                          parent=parent)
 
         {% for child_node in node.children(unroll=False) -%}
             {{ regfile_or_addr_instance(child_node) | indent }}
         {% endfor %}
+
+    @property
+    def size(self) -> int:
+        return {{node.size}}
 
         {%- for child_node in node.children(unroll=False) -%}
             {%- if isinstance(child_node, systemrdlRegNode) or isinstance(child_node, systemrdlRegfileNode) or isinstance(child_node, systemrdlAddrmapNode) or isinstance(child_node, systemrdlMemNode) %}

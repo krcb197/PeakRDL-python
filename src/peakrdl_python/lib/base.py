@@ -451,21 +451,16 @@ class BaseSection(Node, ABC):
         It is not expected that this class will be instantiated under normal
         circumstances however, it is useful for type checking
     """
-    __slots__: List[str] = ['__size']
+    __slots__: List[str] = []
 
     def __init__(self, *,
                  address: int,
                  logger_handle: str,
                  inst_name: str,
-                 size: int,
                  parent: Optional['BaseSection']):
 
         super().__init__(address=address, logger_handle=logger_handle,
                          inst_name=inst_name, parent=parent)
-
-        if not isinstance(size, int):
-            raise TypeError(f'size type wrong, got {type(size)}')
-        self.__size = size
 
     @abstractmethod
     def get_children(self, unroll:bool=False) -> Iterator[Union[Node, NodeArray]]:
@@ -476,12 +471,6 @@ class BaseSection(Node, ABC):
             unroll: Whether to unroll child array or not
         """
 
-    @property
-    def size(self) -> int:
-        """
-        Total Number of bytes of address the node occupies
-        """
-        return self.__size
 
 
 class Section(BaseSection, ABC):
@@ -555,7 +544,6 @@ class AddressMap(Section, ABC):
                  address: int,
                  logger_handle: str,
                  inst_name: str,
-                 size: int,
                  parent: Optional['AddressMap']):
 
         # only the top-level address map should have callbacks assigned, everything else should
@@ -573,7 +561,6 @@ class AddressMap(Section, ABC):
         super().__init__(address=address,
                          logger_handle=logger_handle,
                          inst_name=inst_name,
-                         size=size,
                          parent=parent)
 
     @abstractmethod
@@ -687,7 +674,6 @@ class AsyncAddressMap(AsyncSection, ABC):
                  address: int,
                  logger_handle: str,
                  inst_name: str,
-                 size: int,
                  parent: Optional['AsyncAddressMap']):
 
         # only the top-level address map should have callbacks assigned, everything else should
@@ -796,7 +782,6 @@ class RegFile(Section, ABC):
                  address: int,
                  logger_handle: str,
                  inst_name: str,
-                 size: int,
                  parent: Union[AddressMap, 'RegFile']):
 
         if not isinstance(parent._callbacks, NormalCallbackSet):
@@ -805,7 +790,6 @@ class RegFile(Section, ABC):
         super().__init__(address=address,
                          logger_handle=logger_handle,
                          inst_name=inst_name,
-                         size=size,
                          parent=parent)
 
     @abstractmethod
@@ -847,7 +831,6 @@ class AsyncRegFile(AsyncSection, ABC):
                  address: int,
                  logger_handle: str,
                  inst_name: str,
-                 size: int,
                  parent: Union[AsyncAddressMap, 'AsyncRegFile']):
         super().__init__(address=address,
                          logger_handle=logger_handle,
