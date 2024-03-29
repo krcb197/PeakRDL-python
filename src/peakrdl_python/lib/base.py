@@ -453,19 +453,6 @@ class BaseSection(Node, ABC):
     """
     __slots__: List[str] = []
 
-    def __init__(self, *,
-                 address: int,
-                 logger_handle: str,
-                 inst_name: str,
-                 parent: Optional['BaseSection']):
-
-        if parent is not None:
-            if not isinstance(parent, BaseSection):
-                raise TypeError(f'parent type wrong, got {type(parent)}')
-
-        super().__init__(address=address, logger_handle=logger_handle,
-                         inst_name=inst_name, parent=parent)
-
     @abstractmethod
     def get_children(self, unroll:bool=False) -> Iterator[Union[Node, NodeArray]]:
         """
