@@ -33,4 +33,6 @@ addrmap addr_map {
     child_addr_map_type_a child_a;
     child_addr_map_type_b child_b[2];
     child_addr_map_type_c child_c;
+    child_addr_map_type_b child_b_offset[2] += 48;
+
 };

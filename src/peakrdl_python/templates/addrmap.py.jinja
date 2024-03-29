@@ -125,7 +125,8 @@ from ..lib import NormalCallbackSet
     self.__{{node.inst_name}}:{{get_fully_qualified_type_name(node)}}_cls = {{get_fully_qualified_type_name(node)}}_cls(
                                                                             address=self.address+{{node.address_offset}},
                                                                             logger_handle=logger_handle+'.{{node.inst_name}}',
-                                                                            inst_name='{{node.inst_name}}', parent=self)
+                                                                            inst_name='{{node.inst_name}}',
+                                                                            parent=self)
         {%- endif %}
     {%- endif %}
 {%- endmacro %}
@@ -151,6 +152,7 @@ class {{get_fully_qualified_type_name(node)}}_cls({% if asyncoutput %}Async{% en
         super().__init__(address=address,
                          logger_handle=logger_handle,
                          inst_name=inst_name,
+                         size={{node.size}},
                          parent=parent)
 
         # instance of objects within the class
@@ -254,6 +256,7 @@ class {{get_fully_qualified_type_name(node)}}_cls({% if asyncoutput %}Async{% en
                          address=address,
                          logger_handle=logger_handle,
                          inst_name=inst_name,
+                         size={{node.size}},
                          parent=parent)
 
         {% for child_node in node.children(unroll=False) -%}
