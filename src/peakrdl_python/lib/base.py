@@ -394,16 +394,13 @@ class NodeArray(Base, Sequence[NodeArrayElementType]):
         return len(self.__elements)
 
     def __iter__(self) -> Iterator[NodeArrayElementType]:
-
-        for item in self.__elements.values():
-            yield item
+        yield from self.__elements.values()
 
     def items(self) -> Iterator[Tuple[Tuple[int, ...], NodeArrayElementType]]:
         """
         iterate through all the items in an array but also return the index of the array
         """
-        for index, item in self.__elements.items():
-            yield  index, item
+        yield from self.__elements.items()
 
     @property
     def dimensions(self) -> Union[Tuple[int, ...], Tuple[int]]:
