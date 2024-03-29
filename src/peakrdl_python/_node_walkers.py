@@ -25,7 +25,7 @@ from systemrdl.node import RegNode, MemNode, FieldNode, AddrmapNode, RegfileNode
 
 class AddressMaps(RDLListener):
     """
-    class intended to be used as part of the walker/listener protocol to find all the desendent
+    class intended to be used as part of the walker/listener protocol to find all the descendant
     address maps
     """
     def __init__(self) -> None:

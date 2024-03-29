@@ -487,9 +487,12 @@ class BaseSection(Node, ABC):
         highest_start_address = self.address
         size = 0
         for item in self.get_children(unroll=True):
+            if item.address == highest_start_address:
+                # this handles the case that the section only has one entry
+                size = item.size
             if item.address > highest_start_address:
                 highest_start_address = item.address
-                size = item.address - self.address + size
+                size = item.address - self.address + item.size
 
         self.__size = size
         return size

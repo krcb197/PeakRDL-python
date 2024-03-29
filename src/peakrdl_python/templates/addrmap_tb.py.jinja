@@ -81,6 +81,25 @@ class {{fq_block_name}}_single_access({{top_node.type_name}}_TestCase): # type: 
             self.assertEqual(self.dut.{{'.'.join(get_python_path_segments(node))}}.full_inst_name, '{{'.'.join(node.get_path_segments())}}')  # type: ignore[union-attr]
         {% endfor %}
 
+    def test_sizes(self) -> None:
+        """
+        Check that the sizes all match
+        """
+        {% for node in owned_elements.addressable_nodes -%}
+        with self.subTest(msg='node: {{'.'.join(node.get_path_segments())}}'):
+            self.assertEqual(self.dut.{{'.'.join(get_python_path_segments(node))}}.size, {{node.size}}) # type: ignore[union-attr]
+        {% endfor %}
+
+        # check the size of the address map itself
+        {% if block == top_node %}
+        with self.subTest(msg='node: {{'.'.join(block.get_path_segments())}}'):
+            self.assertEqual(self.dut.size, {{block.size}}) # type: ignore[union-attr]
+        {% else %}
+        with self.subTest(msg='node: {{'.'.join(block.get_path_segments())}}'):
+            self.assertEqual(self.dut.{{'.'.join(get_python_path_segments(block))}}.size, {{block.size}}) # type: ignore[union-attr]
+        {% endif %}
+
+
     def test_register_properties(self)  -> None:
         """
         Walk the address map and check the address, size and accesswidth of every register is
@@ -90,6 +109,7 @@ class {{fq_block_name}}_single_access({{top_node.type_name}}_TestCase): # type: 
         with self.subTest(msg='register: {{'.'.join(node.get_path_segments())}}'):
             self.assertEqual(self.dut.{{'.'.join(get_python_path_segments(node))}}.address, {{node.absolute_address}}) # type: ignore[union-attr]
             self.assertEqual(self.dut.{{'.'.join(get_python_path_segments(node))}}.width, {{node.size * 8}}) # type: ignore[union-attr]
+            self.assertEqual(self.dut.{{'.'.join(get_python_path_segments(node))}}.size, {{node.size}}) # type: ignore[union-attr]
             {% if 'accesswidth' in node.list_properties() -%}self.assertEqual(self.dut.{{'.'.join(get_python_path_segments(node))}}.accesswidth, {{node.get_property('accesswidth')}}){%- else -%} self.assertEqual(self.dut.{{'.'.join(get_python_path_segments(node))}}.accesswidth, self.dut.{{'.'.join(get_python_path_segments(node))}}.accesswidth){%- endif %} # type: ignore[union-attr]
         {% endfor %}
 
