@@ -154,7 +154,7 @@ jobs:
 
         cd example/enumerated_fields/
         peakrdl python enumerated_fields.rdl -o .
-        python -m demo_enumerated_fields.py
+        python -m demo_enumerated_fields
 
 
         cd ../..
