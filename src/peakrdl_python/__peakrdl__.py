@@ -43,6 +43,15 @@ class Exporter(ExporterSubcommandPlugin):
                                help='define accesses to register model as asynchronous')
         arg_group.add_argument('--skip_test_case_generation', action='store_true',
                                help='skip the generation of the test cases')
+        arg_group.add_argument('--suppress_cleanup', action='store_true', dest='suppress_cleanup',
+                               help='by default peakrdl_python deletes all existing python .py '
+                                    'files found in the directory where the package will be'
+                                    ' generated. This is normally useful if the user is '
+                                    'generating over the top of an existing package and prevents '
+                                    'problems when the strucutre of the register map changes. '
+                                    'However, if additional python files are added by the user '
+                                    '(not recommended) this cleanup will need to be suppressed '
+                                    'and managed by the user')
 
     def do_export(self, top_node: 'AddrmapNode', options: 'argparse.Namespace') -> None:
         """
@@ -57,11 +66,12 @@ class Exporter(ExporterSubcommandPlugin):
         """
         templates = self.cfg['user_template_dir']
         peakrdl_exporter = \
-            PythonExporter(user_template_dir=templates) # type: ignore[no-untyped-call]
+            PythonExporter(user_template_dir=templates)  # type: ignore[no-untyped-call]
 
         peakrdl_exporter.export(
             top_node,
             options.output,
             options.is_async,
-            skip_test_case_generation=options.skip_test_case_generation
+            skip_test_case_generation=options.skip_test_case_generation,
+            delete_existing_package_content=not options.suppress_cleanup
         )

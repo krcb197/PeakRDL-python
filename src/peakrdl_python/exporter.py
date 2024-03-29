@@ -3,9 +3,8 @@ Main Classes for the PeakRDL Python
 """
 import os
 from pathlib import Path
-from shutil import copyfile
+from shutil import copy
 from typing import List, NoReturn, Iterable, Tuple
-from glob import glob
 
 import jinja2 as jj
 from systemrdl import RDLWalker # type: ignore
@@ -38,6 +37,117 @@ class PythonExportTemplateError(Exception):
     """
     Exception for hading errors in the templating
     """
+
+class _PythonPackage:
+    """
+    Class to represent a python package
+    """
+    def __init__(self, path: Path):
+        self._path = path
+
+    @property
+    def path(self) -> Path:
+        return self._path
+
+    def child_package(self, name: str) -> '_PythonPackage':
+        """
+        provide a child package within the current package
+
+        Args:
+            name: name of child package
+
+        Returns:
+            None
+
+        """
+        return _PythonPackage(path=self.path / name)
+
+    def child_module_path(self, name: str) -> Path:
+        """
+        return a child module within the package
+
+        Args:
+            name: name of module
+
+        Returns:
+            None
+
+        """
+        return Path(self.path) / name
+
+    @property
+    def _init_path(self) -> Path:
+        return self.child_module_path('__init__.py')
+
+    def _make_empty_init_file(self) -> None:
+        with self._init_path.open('w', encoding='utf-8') as fid:
+            fid.write('pass\n')
+
+    def create_empty_package(self, cleanup: bool) -> None:
+        """
+        make the package folder (if it does not already exist), populate the __init__.py and
+        optionally remove any existing python files
+
+        Args:
+            cleanup (bool) : delete any existing python files in the package
+
+        Returns:
+            None
+        """
+        if self.path.exists():
+            if cleanup:
+                for file in self.path.glob('*.py'):
+                    os.remove(file.resolve())
+        else:
+            self.path.mkdir(parents=True, exist_ok=False)
+        self._make_empty_init_file()
+
+
+class _Package(_PythonPackage):
+    """
+    Class to define the package being generated
+
+    Args:
+        include_tests (bool): include the tests package
+    """
+    def __init__(self, path:str, package_name: str, include_tests: bool):
+        super().__init__(Path(path) / package_name)
+        self.reg_model = self.child_package('reg_model')
+        self._include_tests = include_tests
+        if include_tests:
+            self.tests = self.child_package('tests')
+        self.lib = self.child_package('lib')
+
+
+    def create_empty_package(self, cleanup: bool) -> None:
+        """
+        create the directories and __init__.py files associated with the exported package
+
+        Args:
+            package_path: directory for the package output
+            cleanup (bool): delete existing python files
+
+        Returns:
+            None
+
+        """
+
+        # make the folder for this package and populate the empty __init__.py
+        super().create_empty_package(cleanup=cleanup)
+        # make all the child packages folders and their __init__.py
+        self.reg_model.create_empty_package(cleanup=cleanup)
+        if self._include_tests:
+            self.tests.create_empty_package(cleanup=cleanup)
+        self.lib.create_empty_package(cleanup=cleanup)
+
+        # copy all the python source code that is part of the library which comes as part of the
+        # peakrdl-python to the lib direction of the generated package
+        template_package = Path(__file__).parent / 'lib'
+        files_in_package = template_package.glob('*.py')
+
+        for file_in_package in files_in_package:
+            copy(src=file_in_package, dst=self.lib.path)
+
 
 class PythonExporter:
     """
@@ -96,7 +206,8 @@ class PythonExporter:
 
     def export(self, node: Node, path: str,
                asyncoutput: bool=False,
-               skip_test_case_generation: bool=False) -> List[str]:
+               skip_test_case_generation: bool=False,
+               delete_existing_package_content: bool = True) -> List[str]:
         """
         Generated Python Code and Testbench
 
@@ -106,6 +217,9 @@ class PythonExporter:
             path (str) : Output package path.
             asyncoutput (bool) : If set this builds a register model with async callbacks
             skip_test_case_generation (bool): skip generation the generation of the test cases
+            delete_existing_package_content (bool): delete any python files in the package
+                                                    location, normally left over from previous
+                                                    operations
 
         Returns:
             List[str] : modules that have been exported:
@@ -118,9 +232,10 @@ class PythonExporter:
         else:
             top_block = node
 
-        package_path = os.path.join(path, node.inst_name)
-        self._create_empty_package(package_path=package_path,
-                                   skip_test_case_generation=skip_test_case_generation)
+        package = _Package(path=path,
+                           package_name=node.inst_name,
+                           include_tests=not skip_test_case_generation)
+        package.create_empty_package(cleanup=delete_existing_package_content)
 
         self._build_node_type_table(top_block)
 
@@ -167,21 +282,19 @@ class PythonExporter:
         context.update(self.user_template_context)
 
         template = self.jj_env.get_template("addrmap.py.jinja")
-        module_fqfn = os.path.join(package_path,
-                                   'reg_model',
-                                   top_block.inst_name + '.py')
+        module_path = package.reg_model.child_module_path(top_block.inst_name + '.py')
 
-        stream = template.stream(context)
-        stream.dump(module_fqfn, encoding='utf-8')
+        with module_path.open('w', encoding='utf-8') as fp:
+            stream = template.stream(context)
+            stream.dump(fp)
 
         if not skip_test_case_generation:
 
             # make the top level base class for all the other test, this is what instantes
             # the register model
             template = self.jj_env.get_template("baseclass_tb.py.jinja")
-            module_tb_fqfn = os.path.join(package_path,
-                                          'tests',
-                                          '_' + top_block.inst_name + '_test_base.py')
+            module_tb_path = package.tests.child_module_path(
+                '_' + top_block.inst_name + '_test_base.py')
 
             context = {
                 'top_node': top_block,
@@ -189,9 +302,9 @@ class PythonExporter:
                 'version': __version__
             }
 
-
-            stream = template.stream(context)
-            stream.dump(module_tb_fqfn, encoding='utf-8')
+            with module_tb_path.open('w', encoding='utf-8') as fp:
+                stream = template.stream(context)
+                stream.dump(fp)
 
             # make the tests themselves
             template = self.jj_env.get_template("addrmap_tb.py.jinja")
@@ -208,10 +321,7 @@ class PythonExporter:
                 RDLWalker(unroll=True).walk(block, owned_elements, skip_top=True)
 
                 fq_block_name = '_'.join(block.get_path_segments(array_suffix = '_{index:d}_'))
-
-                module_tb_fqfn = os.path.join(package_path,
-                                              'tests',
-                                              'test_' + fq_block_name + '.py')
+                module_tb_path = package.tests.child_module_path('test_' + fq_block_name + '.py')
 
                 context = {
                     'top_node': top_block,
@@ -244,8 +354,9 @@ class PythonExporter:
                     'version': __version__
                 }
 
-                stream = template.stream(context)
-                stream.dump(module_tb_fqfn, encoding='utf-8')
+                with module_tb_path.open('w', encoding='utf-8') as fp:
+                    stream = template.stream(context)
+                    stream.dump(fp)
 
         return top_block.inst_name
 
@@ -291,49 +402,6 @@ class PythonExporter:
             else:
                 self.node_type_name[child_inst] = cand_type_name
 
-    @staticmethod
-    def _create_empty_package(package_path:str,
-                              skip_test_case_generation: bool) -> None:
-        """
-        create the directories and __init__.py files associated with the exported package
-
-        Args:
-            package_path: directory for the package output
-            skip_test_case_generation: skip the generation of the test folders
-
-        Returns:
-            None
-
-        """
-
-        Path(package_path).mkdir(parents=True, exist_ok=True)
-        Path(os.path.join(package_path, 'reg_model')).mkdir(parents=True, exist_ok=True)
-        if not skip_test_case_generation:
-            Path(os.path.join(package_path, 'tests')).mkdir(parents=True, exist_ok=True)
-        Path(os.path.join(package_path, 'lib')).mkdir(parents=True, exist_ok=True)
-
-        module_fqfn = os.path.join(package_path, 'reg_model', '__init__.py')
-        with open(module_fqfn, 'w', encoding='utf-8') as fid:
-            fid.write('pass\n')
-        if not skip_test_case_generation:
-            module_fqfn = os.path.join(package_path, 'tests', '__init__.py')
-            with open(module_fqfn, 'w', encoding='utf-8') as fid:
-                fid.write('pass\n')
-        module_fqfn = os.path.join(package_path, '__init__.py')
-        with open(module_fqfn, 'w', encoding='utf-8') as fid:
-            fid.write('pass\n')
-
-        template_package = os.path.join(os.path.dirname(__file__),
-                                        'lib')
-        files_in_package = glob(os.path.join(template_package,'*.py'))
-
-        for file_in_package in files_in_package:
-            filename = os.path.basename(file_in_package)
-            copyfile(src=os.path.join(template_package,
-                                      filename),
-                     dst=os.path.join(package_path,
-                                      'lib',
-                                      filename))
 
     def _raise_template_error(self, message: str) -> NoReturn:
         """
