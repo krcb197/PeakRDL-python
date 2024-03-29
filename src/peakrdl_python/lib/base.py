@@ -457,12 +457,15 @@ class BaseSection(Node, ABC):
                  address: int,
                  logger_handle: str,
                  inst_name: str,
+                 size: int,
                  parent: Optional['BaseSection']):
-
-        self.__size: Optional[int] = None
 
         super().__init__(address=address, logger_handle=logger_handle,
                          inst_name=inst_name, parent=parent)
+
+        if not isinstance(size, int):
+            raise TypeError(f'size type wrong, got {type(size)}')
+        self.__size = size
 
     @abstractmethod
     def get_children(self, unroll:bool=False) -> Iterator[Union[Node, NodeArray]]:
@@ -478,24 +481,7 @@ class BaseSection(Node, ABC):
         """
         Total Number of bytes of address the node occupies
         """
-
-        # in the future, once support for python 3.7 is dropped this can become a cached_property
-        # which was introduced at python 3.8, until that time the caching is managed internally
-        if self.__size is not None:
-            return self.__size
-
-        highest_start_address = self.address
-        size = 0
-        for item in self.get_children(unroll=True):
-            if item.address == highest_start_address:
-                # this handles the case that the section only has one entry
-                size = item.size
-            if item.address > highest_start_address:
-                highest_start_address = item.address
-                size = item.address - self.address + item.size
-
-        self.__size = size
-        return size
+        return self.__size
 
 
 class Section(BaseSection, ABC):
@@ -569,6 +555,7 @@ class AddressMap(Section, ABC):
                  address: int,
                  logger_handle: str,
                  inst_name: str,
+                 size: int,
                  parent: Optional['AddressMap']):
 
         # only the top-level address map should have callbacks assigned, everything else should
@@ -586,6 +573,7 @@ class AddressMap(Section, ABC):
         super().__init__(address=address,
                          logger_handle=logger_handle,
                          inst_name=inst_name,
+                         size=size,
                          parent=parent)
 
     @abstractmethod
@@ -699,6 +687,7 @@ class AsyncAddressMap(AsyncSection, ABC):
                  address: int,
                  logger_handle: str,
                  inst_name: str,
+                 size: int,
                  parent: Optional['AsyncAddressMap']):
 
         # only the top-level address map should have callbacks assigned, everything else should
@@ -713,7 +702,10 @@ class AsyncAddressMap(AsyncSection, ABC):
             if not isinstance(parent._callbacks, AsyncCallbackSet):
                 raise TypeError(f'callback type wrong, got {type(callbacks)}')
 
-        super().__init__(address=address, logger_handle=logger_handle, inst_name=inst_name,
+        super().__init__(address=address,
+                         logger_handle=logger_handle,
+                         inst_name=inst_name,
+                         size=size,
                          parent=parent)
 
     @abstractmethod
@@ -804,6 +796,7 @@ class RegFile(Section, ABC):
                  address: int,
                  logger_handle: str,
                  inst_name: str,
+                 size: int,
                  parent: Union[AddressMap, 'RegFile']):
 
         if not isinstance(parent._callbacks, NormalCallbackSet):
@@ -812,6 +805,7 @@ class RegFile(Section, ABC):
         super().__init__(address=address,
                          logger_handle=logger_handle,
                          inst_name=inst_name,
+                         size=size,
                          parent=parent)
 
     @abstractmethod
@@ -853,10 +847,12 @@ class AsyncRegFile(AsyncSection, ABC):
                  address: int,
                  logger_handle: str,
                  inst_name: str,
+                 size: int,
                  parent: Union[AsyncAddressMap, 'AsyncRegFile']):
         super().__init__(address=address,
                          logger_handle=logger_handle,
                          inst_name=inst_name,
+                         size=size,
                          parent=parent)
 
         if not isinstance(parent._callbacks, AsyncCallbackSet):
