@@ -1,0 +1,14 @@
+addrmap counter_properties {
+
+    signal {signalwidth=1; sync; activehigh; } counter_incr;
+
+    reg {
+        default sw = rw;
+        default hw = r;
+        field {
+            counter;
+            incrvalue = 2;
+            incr = counter_incr;
+        } basic_counter[3:0];
+    } register_with_counter;
+};
