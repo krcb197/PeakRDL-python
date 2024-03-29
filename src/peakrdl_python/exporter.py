@@ -47,6 +47,9 @@ class _PythonPackage:
 
     @property
     def path(self) -> Path:
+        """
+        path of the package
+        """
         return self._path
 
     def child_package(self, name: str) -> '_PythonPackage':
