@@ -1,3 +1,21 @@
+{#
+peakrdl-python is a tool to generate Python Register Access Layer (RAL) from SystemRDL
+Copyright (C) 2021 - 2023
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <https://www.gnu.org/licenses/>.
+#}
+
 {% include "header.py.jinja" with context %}
 {% if uses_enum %}from enum import EnumMeta, IntEnum, unique{% endif %}
 from typing import Tuple
@@ -5,7 +23,6 @@ from typing import Iterator
 from typing import List
 from typing import Optional
 from typing import Union
-from typing import cast
 from typing import Dict
 from typing import Type
 {% if asyncoutput -%}
@@ -19,30 +36,40 @@ import warnings
 from contextlib import {% if asyncoutput %}async{% endif %}contextmanager
 
 from ..lib import Node
-from ..lib import AddressMap, RegFile, Memory
+
 from ..lib  import AddressMapArray, RegFileArray
 {% if asyncoutput -%}
-    {% if uses_memory %}
+from ..lib import AsyncMemory, AsyncMemoryArray
+from ..lib import AsyncAddressMap
+from ..lib import AsyncRegFile
+from ..lib  import AsyncAddressMapArray
+from ..lib  import AsyncRegFileArray
 from ..lib import MemoryAsyncReadOnly, MemoryAsyncWriteOnly, MemoryAsyncReadWrite
 from ..lib import MemoryAsyncReadOnlyArray, MemoryAsyncWriteOnlyArray, MemoryAsyncReadWriteArray
-    {% endif %}
+from ..lib import AsyncReg, AsyncRegArray
 from ..lib import RegAsyncReadOnly, RegAsyncWriteOnly, RegAsyncReadWrite
 from ..lib import RegAsyncReadOnlyArray, RegAsyncWriteOnlyArray, RegAsyncReadWriteArray
 from ..lib import FieldAsyncReadOnly, FieldAsyncWriteOnly, FieldAsyncReadWrite, Field
 {% if uses_enum %}from ..lib import FieldEnumAsyncReadOnly, FieldEnumAsyncWriteOnly, FieldEnumAsyncReadWrite{% endif %}
 from ..lib import ReadableAsyncRegister, WritableAsyncRegister
-from ..lib import ReadableAsyncRegisterArray, WritableAsyncRegisterArray
+from ..lib import ReadableAsyncMemory, WritableAsyncMemory
+from ..lib import ReadableAsyncRegisterArray, WriteableAsyncRegisterArray
 {%- else -%}
-    {% if uses_memory %}
+from ..lib import Memory, MemoryArray
+from ..lib import AddressMap
+from ..lib import RegFile
+from ..lib  import AddressMapArray
+from ..lib  import RegFileArray
 from ..lib import MemoryReadOnly, MemoryWriteOnly, MemoryReadWrite
 from ..lib import MemoryReadOnlyArray, MemoryWriteOnlyArray, MemoryReadWriteArray
-    {% endif %}
+from ..lib import Reg, RegArray
 from ..lib import RegReadOnly, RegWriteOnly, RegReadWrite
 from ..lib import RegReadOnlyArray, RegWriteOnlyArray, RegReadWriteArray
 from ..lib import FieldReadOnly, FieldWriteOnly, FieldReadWrite, Field
 {% if uses_enum %}from ..lib import FieldEnumReadOnly, FieldEnumWriteOnly, FieldEnumReadWrite{% endif %}
 from ..lib import ReadableRegister, WritableRegister
-from ..lib import ReadableRegisterArray, WritableRegisterArray
+from ..lib import ReadableMemory, WritableMemory
+from ..lib import ReadableRegisterArray, WriteableRegisterArray
 {%- endif %}
 from ..lib import FieldSizeProps, FieldMiscProps
 
@@ -68,21 +95,20 @@ from ..lib import NormalCallbackSet
                                                                                   stride={{node.array_stride}},
                                                                                   dimensions=tuple({{node.array_dimensions}}),
                                                                                   logger_handle=logger_handle+'.{{node.inst_name}}',
-                                                                                  inst_name='{{node.inst_name}}', parent=self,
-                                                                                  callbacks=callbacks)
+                                                                                  inst_name='{{node.inst_name}}', parent=self)
         {%- else %}
             {%- if node.is_sw_readable and node.is_sw_writable %}
-    self.__{{node.inst_name}}:{{get_fully_qualified_type_name(node)}}_cls = {{get_fully_qualified_type_name(node)}}_cls(callbacks=callbacks,
+    self.__{{node.inst_name}}:{{get_fully_qualified_type_name(node)}}_cls = {{get_fully_qualified_type_name(node)}}_cls(
                                                                  address=self.address+{{node.address_offset}},
                                                                  logger_handle=logger_handle+'.{{node.inst_name}}',
                                                                                    inst_name='{{node.inst_name}}', parent=self)
             {%- elif node.is_sw_readable and not node.is_sw_writable %}
-    self.__{{node.inst_name}}:{{get_fully_qualified_type_name(node)}}_cls = {{get_fully_qualified_type_name(node)}}_cls(callbacks=callbacks,
+    self.__{{node.inst_name}}:{{get_fully_qualified_type_name(node)}}_cls = {{get_fully_qualified_type_name(node)}}_cls(
                                                                  address=self.address+{{node.address_offset}},
                                                                  logger_handle=logger_handle+'.{{node.inst_name}}',
                                                                                    inst_name='{{node.inst_name}}', parent=self)
             {%- elif not node.is_sw_readable and node.is_sw_writable %}
-    self.__{{node.inst_name}}:{{get_fully_qualified_type_name(node)}}_cls = {{get_fully_qualified_type_name(node)}}_cls(callbacks=callbacks,
+    self.__{{node.inst_name}}:{{get_fully_qualified_type_name(node)}}_cls = {{get_fully_qualified_type_name(node)}}_cls(
                                                                              address=self.address+{{node.address_offset}},
                                                                              logger_handle=logger_handle+'.{{node.inst_name}}',
                                                                              inst_name='{{node.inst_name}}', parent=self)
@@ -94,19 +120,19 @@ from ..lib import NormalCallbackSet
                                                                                   stride={{node.array_stride}},
                                                                                   dimensions=tuple({{node.array_dimensions}}),
                                                                                   logger_handle=logger_handle+'.{{node.inst_name}}',
-                                                                                  inst_name='{{node.inst_name}}', parent=self,
-                                                                                  callbacks=callbacks)
+                                                                                  inst_name='{{node.inst_name}}', parent=self)
         {%- else -%}
-    self.__{{node.inst_name}}:{{get_fully_qualified_type_name(node)}}_cls = {{get_fully_qualified_type_name(node)}}_cls(callbacks=callbacks,
+    self.__{{node.inst_name}}:{{get_fully_qualified_type_name(node)}}_cls = {{get_fully_qualified_type_name(node)}}_cls(
                                                                             address=self.address+{{node.address_offset}},
                                                                             logger_handle=logger_handle+'.{{node.inst_name}}',
-                                                                            inst_name='{{node.inst_name}}', parent=self)
+                                                                            inst_name='{{node.inst_name}}',
+                                                                            parent=self)
         {%- endif %}
     {%- endif %}
 {%- endmacro %}
 
 {%- macro regfile_class(node) %}
-class {{get_fully_qualified_type_name(node)}}_cls(RegFile):
+class {{get_fully_qualified_type_name(node)}}_cls({% if asyncoutput %}Async{% endif %}RegFile):
     """
     Class to represent a register file in the register model
 
@@ -118,14 +144,12 @@ class {{get_fully_qualified_type_name(node)}}_cls(RegFile):
     {% if asyncoutput %}AsyncCallbackSet{% else %}NormalCallbackSet{% endif %}
 
     def __init__(self,
-                 callbacks: {% if asyncoutput %}AsyncCallbackSet{% else %}NormalCallbackSet{% endif %},
                  address: int,
                  logger_handle:str,
                  inst_name:str,
-                 parent:Union[AddressMap,RegFile]):
+                 parent:Union[{% if asyncoutput %}Async{% endif %}AddressMap,{% if asyncoutput %}Async{% endif %}RegFile]):
 
-        super().__init__(callbacks=callbacks,
-                         address=address,
+        super().__init__(address=address,
                          logger_handle=logger_handle,
                          inst_name=inst_name,
                          parent=parent)
@@ -134,6 +158,10 @@ class {{get_fully_qualified_type_name(node)}}_cls(RegFile):
         {% for child_node in node.children(unroll=False) -%}
             {{ regfile_or_addr_instance(child_node) | indent }}
         {% endfor %}
+
+    @property
+    def size(self) -> int:
+        return {{node.size}}
 
     # properties for Register and RegisterFiles
     {%- for child_node in node.children(unroll=False) %}
@@ -180,24 +208,28 @@ class {{get_fully_qualified_type_name(node)}}_cls(RegFile):
             }
 
     {{ child_register_getter(node) }}
-    {{ child_getter(node, "get_sections",  "RegFile", systemrdlRegfileNode) }}
+
+        {% if asyncoutput %}
+    {{ child_getter(node, "get_sections", "AsyncRegFile, AsyncRegFileArray", systemrdlRegfileNode) }}
+    {% else %}
+    {{ child_getter(node, "get_sections", "RegFile, RegFileArray", systemrdlRegfileNode) }}
+    {% endif %}
 
      {%- if node.is_array %}
-class {{get_fully_qualified_type_name(node)}}_array_cls(RegFileArray):
+class {{get_fully_qualified_type_name(node)}}_array_cls({% if asyncoutput %}Async{% endif %}RegFileArray):
     """
     Class to represent a regfile array in the register model
     """
     __slots__: List[str] = []
 
     def __init__(self, logger_handle: str, inst_name: str,
-                 parent: Union[AddressMap, RegFile],
-                 callbacks: {% if asyncoutput %}AsyncCallbackSet{% else %}NormalCallbackSet{% endif %},
+                 parent: Union[{% if asyncoutput %}Async{% endif %}AddressMap, {% if asyncoutput %}Async{% endif %}RegFile],
                  address: int,
                  stride: int,
                  dimensions: Tuple[int, ...]):
 
         super().__init__(logger_handle=logger_handle, inst_name=inst_name,
-                         parent=parent, callbacks=callbacks, address=address,
+                         parent=parent, address=address,
                          stride=stride, dimensions=dimensions)
 
     @property
@@ -207,7 +239,7 @@ class {{get_fully_qualified_type_name(node)}}_array_cls(RegFileArray):
 {%- endmacro %}
 
 {%- macro addrmap_class(node) %}
-class {{get_fully_qualified_type_name(node)}}_cls(AddressMap):
+class {{get_fully_qualified_type_name(node)}}_cls({% if asyncoutput %}Async{% endif %}AddressMap):
     """
     Class to represent a address map in the register model
 
@@ -216,12 +248,12 @@ class {{get_fully_qualified_type_name(node)}}_cls(AddressMap):
 
     __slots__ : List[str] = [{%- for child_node in node.children(unroll=False) -%}{%- if isinstance(child_node, systemrdlRegNode) or isinstance(child_node, systemrdlRegfileNode) or isinstance(child_node, systemrdlAddrmapNode) or isinstance(child_node, systemrdlMemNode) -%}'__{{child_node.inst_name}}'{% if not loop.last %}, {% endif %}{% endif %}{%- endfor %}]
 
-    def __init__(self,
-                 callbacks: {% if asyncoutput %}AsyncCallbackSet{% else %}NormalCallbackSet{% endif %},
+    def __init__(self, *,
                  address:int {%- if node == top_node -%}={{top_node.absolute_address}}{%- endif -%},
                  logger_handle:str {%- if node == top_node -%}='reg_model.{{top_node.get_path()}}'{%- endif -%},
                  inst_name:str{%- if node == top_node -%}='{{node.inst_name}}'{%- endif -%},
-                 parent:Optional[AddressMap]=None):
+                 callbacks: Optional[{% if asyncoutput %}AsyncCallbackSet{% else %}NormalCallbackSet{% endif %}]=None,
+                 parent:Optional[{% if asyncoutput %}Async{% endif %}AddressMap]=None):
 
         super().__init__(callbacks=callbacks,
                          address=address,
@@ -232,6 +264,10 @@ class {{get_fully_qualified_type_name(node)}}_cls(AddressMap):
         {% for child_node in node.children(unroll=False) -%}
             {{ regfile_or_addr_instance(child_node) | indent }}
         {% endfor %}
+
+    @property
+    def size(self) -> int:
+        return {{node.size}}
 
         {%- for child_node in node.children(unroll=False) -%}
             {%- if isinstance(child_node, systemrdlRegNode) or isinstance(child_node, systemrdlRegfileNode) or isinstance(child_node, systemrdlAddrmapNode) or isinstance(child_node, systemrdlMemNode) %}
@@ -285,25 +321,30 @@ class {{get_fully_qualified_type_name(node)}}_cls(AddressMap):
             }
 
     {{ child_register_getter(node) }}
-    {{ child_getter(node, "get_memories",    "Memory",     systemrdlMemNode) }}
-    {{ child_getter(node, "get_sections", "Union[AddressMap, RegFile]", (systemrdlAddrmapNode, systemrdlRegfileNode)) }}
+    {% if asyncoutput %}
+    {{ child_getter(node, "get_sections", "AsyncAddressMap, AsyncRegFile, AsyncAddressMapArray, AsyncRegFileArray", (systemrdlAddrmapNode, systemrdlRegfileNode)) }}
+    {{ child_getter(node, "get_memories",    "AsyncMemory, AsyncMemoryArray",     systemrdlMemNode) }}
+    {% else %}
+    {{ child_getter(node, "get_sections", "AddressMap, RegFile, AddressMapArray, RegFileArray", (systemrdlAddrmapNode, systemrdlRegfileNode)) }}
+    {{ child_getter(node, "get_memories",    "Memory, MemoryArray",     systemrdlMemNode) }}
+
+    {% endif %}
 
     {%- if node.is_array %}
-class {{get_fully_qualified_type_name(node)}}_array_cls(AddressMapArray):
+class {{get_fully_qualified_type_name(node)}}_array_cls({% if asyncoutput %}Async{% endif %}AddressMapArray):
     """
     Class to represent a addrmap array in the register model
     """
     __slots__: List[str] = []
 
     def __init__(self, logger_handle: str, inst_name: str,
-                 parent: AddressMap,
-                 callbacks: {% if asyncoutput %}AsyncCallbackSet{% else %}NormalCallbackSet{% endif %},
+                 parent: {% if asyncoutput %}Async{% endif %}AddressMap,
                  address: int,
                  stride: int,
                  dimensions: Tuple[int, ...]):
 
         super().__init__(logger_handle=logger_handle, inst_name=inst_name,
-                         parent=parent, callbacks=callbacks, address=address,
+                         parent=parent, address=address,
                          stride=stride, dimensions=dimensions)
 
     @property
@@ -313,7 +354,7 @@ class {{get_fully_qualified_type_name(node)}}_array_cls(AddressMapArray):
 {%- endmacro %}
 
 {%- macro child_getter(node, getter_name, child_type, child_rdltype) %}
-    def {{getter_name}}(self, unroll:bool=False) -> Iterator[Union[{{child_type}},Tuple[{{child_type}},...]]]:
+    def {{getter_name}}(self, unroll:bool=False) -> Iterator[Union[{{child_type}}]]:
         """
         generator that produces all the {{child_type}} children of this node
         """
@@ -336,11 +377,11 @@ class {{get_fully_qualified_type_name(node)}}_array_cls(AddressMapArray):
                 {% if child_node.is_array %}
         if unroll:
             for child in self.{{property_name}}:
-                yield cast({{child_type}}, child)
+                yield child
         else:
-            yield cast(Tuple[{{child_type}},...], self.{{property_name}})
+            yield self.{{property_name}}
                  {% else %}
-        yield cast({{child_type}}, self.{{property_name}})
+        yield self.{{property_name}}
                 {%- endif %}
             {%- endif -%}
         {% endfor %}

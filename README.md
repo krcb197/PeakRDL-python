@@ -3,10 +3,10 @@
 [![Documentation Status](https://readthedocs.org/projects/peakrdl-python/badge/?version=latest)](https://peakrdl-python.readthedocs.io/en/latest/?badge=latest)
 [![Downloads](https://static.pepy.tech/badge/peakrdl-python)](https://pepy.tech/project/peakrdl-python)
 
-# PeakRDL-python
-Generate Python wrapper for a register model compiled SystemRDL input
+# peakrdl-python
+Generate Python Register Access Layer (RAL) from SystemRDL
 
 ## Documentation
-See the [PeakRDL Python Documentation](https://peakrdl-python.readthedocs.io/) for more details
+See the [peakrdl-python Documentation](https://peakrdl-python.readthedocs.io/) for more details
 
 

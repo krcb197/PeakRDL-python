@@ -1,4 +1,20 @@
 """
+peakrdl-python is a tool to generate Python Register Access Layer (RAL) from SystemRDL
+Copyright (C) 2021 - 2023
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
 Node walkers to be used in the generated of the output code
 """
 from typing import Optional, List, Union, Iterator
@@ -9,7 +25,7 @@ from systemrdl.node import RegNode, MemNode, FieldNode, AddrmapNode, RegfileNode
 
 class AddressMaps(RDLListener):
     """
-    class intended to be used as part of the walker/listener protocol to find all the desendent
+    class intended to be used as part of the walker/listener protocol to find all the descendant
     address maps
     """
     def __init__(self) -> None:
@@ -86,20 +102,3 @@ class OwnedbyAddressMap(RDLListener):
 
         """
         return self.addr_maps + self.reg_files + self.memories + self.registers
-
-    @property
-    def n_dimesional_array_nodes(self) -> List[Union[RegNode, MemNode, AddrmapNode, RegfileNode]]:
-        """
-        All the nodes owned by the address map which are arrays with more than 1 dimension,
-        including:
-        - address maps
-        - register files
-        - registers
-        - memories
-
-        Returns: list of nodes
-        """
-        def n_dimensional_node(node: Union[RegNode, MemNode, AddrmapNode, RegfileNode]) -> bool:
-            return node.is_array and (len(node.array_dimensions) > 1)
-
-        return list(filter(n_dimensional_node, self.addressable_nodes))

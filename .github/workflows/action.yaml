@@ -36,6 +36,7 @@ jobs:
           python -m pip install -U pylint
 
       - name: Run Lint
+        #run: pylint --rcfile tests/pylint.rc src/peakrdl_python tests/unit_tests
         run: pylint --rcfile tests/pylint.rc src/peakrdl_python
 
   mypy:
@@ -59,6 +60,7 @@ jobs:
     needs:
       - mypy
       - lint
+
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -77,10 +79,9 @@ jobs:
         python -m pip install --upgrade pip
         python -m pip install .
 
-
     - name: Run Unit Tests
       run: |
-        python -m unittest discover -s tests/unit_tests
+        python -m unittest discover -s tests/unit_tests -t .
 
     - name: Generate testcases
       run: |
@@ -148,6 +149,21 @@ jobs:
         cd example/array_access/
         peakrdl python array_access.rdl -o .
         python -m demo_array_access
+
+        cd ../..
+
+        cd example/enumerated_fields/
+        peakrdl python enumerated_fields.rdl -o .
+        python -m demo_enumerated_fields
+
+
+        cd ../..
+
+        cd example/why_ral/
+        peakrdl python gpio.rdl -o .
+        python -m without_ral
+        python -m with_ral
+        python -m with_hal
 
         cd ../..
   #-------------------------------------------------------------------------------

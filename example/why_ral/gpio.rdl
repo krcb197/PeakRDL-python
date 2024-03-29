@@ -1,0 +1,46 @@
+addrmap gpio {
+
+    enum gpio_direction_enc {
+			gpio_in = 0 { desc = "Pin as in direction"; };
+			gpio_out = 1 { desc = "Pin as out direction"; };
+		};
+
+    field gpio_direction { encode = gpio_direction_enc;
+                           fieldwidth=1;
+                           reset=gpio_direction_enc::gpio_in; };
+    field gpio_data { fieldwidth=1; reset=0; };
+
+    reg {
+        default sw = rw;
+        default hw = r;
+        name = "Direction";
+        desc = "Sets the direction of each GPIO Pin";
+
+        gpio_direction gpio_7_dir[7:7];
+        gpio_direction gpio_6_dir[6:6];
+        gpio_direction gpio_5_dir[5:5];
+        gpio_direction gpio_4_dir[4:4];
+        gpio_direction gpio_3_dir[3:3];
+        gpio_direction gpio_2_dir[2:2];
+        gpio_direction gpio_1_dir[1:1];
+        gpio_direction gpio_0_dir[0:0];
+
+    } dir @ 0x100;
+
+    reg {
+        default sw = rw;
+        default hw = r;
+        name = "Data Out";
+        desc = "Sets the state of the GPIO configured as out";
+
+        gpio_data gpio_7_out[7:7];
+        gpio_data gpio_6_out[6:6];
+        gpio_data gpio_5_out[5:5];
+        gpio_data gpio_4_out[4:4];
+        gpio_data gpio_3_out[3:3];
+        gpio_data gpio_2_out[2:2];
+        gpio_data gpio_1_out[1:1];
+        gpio_data gpio_0_out[0:0];
+
+    } data_out @ 0x104;
+};
