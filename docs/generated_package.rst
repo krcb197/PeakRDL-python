@@ -162,7 +162,7 @@ The following example shows the usage of the enumeration
    enumerated class is needed. This can be retrieved from the field itself with the ``enum_cls``
    property
 
-.. literalinclude :: ../example/enumerated_fields/enumerated_fields.py
+.. literalinclude :: ../example/enumerated_fields/demo_enumerated_fields.py
    :language: python
 
 Array Access
