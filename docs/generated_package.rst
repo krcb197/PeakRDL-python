@@ -142,7 +142,28 @@ simulator.
 Enumerated Fields
 -----------------
 
-TBC
+Enumerations are a good practice to implicitly encode that have special meanings which can not be
+easily understood from the field name. The SystemRDL enumerations are implemented using python
+
+.. literalinclude :: ../example/enumerated_fields/enumerated_fields.rdl
+   :language: systemrdl
+
+This systemRDL code can be built using the command line tool as follows (assuming it is stored in
+a file called ``enumerated_fields.rdl``):
+
+.. code-block:: bash
+
+    peakrdl python enumerated_fields.rdl -o .
+
+The following example shows the usage of the enumeration
+
+.. note::
+   In order to set the value of an enumerated field, using the ``write()`` method. The correct
+   enumerated class is needed. This can be retrieved from the field itself with the ``enum_cls``
+   property
+
+.. literalinclude :: ../example/enumerated_fields/enumerated_fields.py
+   :language: python
 
 Array Access
 ------------
@@ -153,7 +174,7 @@ SystemRDL supports multi-dimensional arrays, the following example shows an defi
    :language: systemrdl
 
 This systemRDL code can be built using the command line tool as follows (assuming it is stored in
-a file called ``array_access.rdl``:
+a file called ``array_access.rdl``):
 
 .. code-block:: bash
 
@@ -218,7 +239,7 @@ structures
    :language: systemrdl
 
 This systemRDL code can be built using the command line tool as follows (assuming it is stored in
-a file called ``chip_with_registers.rdl``:
+a file called ``chip_with_registers.rdl``):
 
 .. code-block:: bash
 

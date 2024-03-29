@@ -1,0 +1,35 @@
+addrmap enumerated_fields {
+
+	enum gpio_direction_enc {
+			gpio_in = 0 { desc = "Pin as in direction"; };
+			gpio_out = 1 { desc = "Pin as out direction"; };
+		};
+
+    field gpio_direction { encode = gpio_direction_enc;
+                           fieldwidth=1;
+                           reset=gpio_direction_enc::gpio_in; };
+
+    enum gpio_strength_enc {
+			strength_8mA = 0 { desc = "8mA drive strength"; };
+			strength_12mA = 1 { desc = "12mA drive strength"; };
+			strength_16mA = 2 { desc = "16mA drive strength"; };
+			strength_20mA = 3 { desc = "20mA drive strength"; };
+		};
+
+    field gpio_strength { encode = gpio_strength_enc;
+                          fieldwidth=2;
+                          reset=gpio_strength_enc::strength_8mA; };
+
+    reg {
+        <% for( $i = 0; $i < 8; $i += 1 ) { %>
+        gpio_direction gpio_<%=$i%>;
+        <% } %>
+    } gpio_dir;
+
+    reg {
+        <% for( $i = 0; $i < 8; $i += 1 ) { %>
+        gpio_strength gpio_<%=$i%>;
+        <% } %>
+    } gpio_strength;
+
+};
