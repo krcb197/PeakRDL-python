@@ -459,6 +459,10 @@ class BaseSection(Node, ABC):
                  inst_name: str,
                  parent: Optional['BaseSection']):
 
+        if parent is not None:
+            if not isinstance(parent, BaseSection):
+                raise TypeError(f'parent type wrong, got {type(parent)}')
+
         super().__init__(address=address, logger_handle=logger_handle,
                          inst_name=inst_name, parent=parent)
 
@@ -691,7 +695,6 @@ class AsyncAddressMap(AsyncSection, ABC):
         super().__init__(address=address,
                          logger_handle=logger_handle,
                          inst_name=inst_name,
-                         size=size,
                          parent=parent)
 
     @abstractmethod
@@ -835,7 +838,6 @@ class AsyncRegFile(AsyncSection, ABC):
         super().__init__(address=address,
                          logger_handle=logger_handle,
                          inst_name=inst_name,
-                         size=size,
                          parent=parent)
 
         if not isinstance(parent._callbacks, AsyncCallbackSet):
