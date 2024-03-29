@@ -125,6 +125,10 @@ class ArrayBase(CallBackTestWrapper, ABC):
                 """
                 return self.__dut
 
+            @property
+            def size(self) -> int:
+                return self.dut.size
+
         super().setUp()
         self.__dut_warpper = DUTWrapper(callbacks=self.callbacks, address=self.base_address,
                                         logger_handle='dut_wrapper', inst_name='dut_wrapper',

@@ -92,6 +92,10 @@ class RegTestBase(CallBackTestWrapper, ABC):
                 """
                 return self.__dut
 
+            @property
+            def size(self) -> int:
+                return self.dut.size
+
         super().setUp()
         self.dut_wrapper = DUTWrapper(callbacks=self.callbacks, address=self.address,
                                       logger_handle='dut_wrapper', inst_name='dut_wrapper',
