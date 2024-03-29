@@ -151,6 +151,20 @@ jobs:
         python -m demo_array_access
 
         cd ../..
+
+        cd example/enumerated_fields/
+        peakrdl python enumerated_fields.rdl -o .
+        python -m enumerated_fields
+
+        cd ../..
+
+        cd example/why_ral/
+        peakrdl python gpio.rdl -o .
+        python -m without_ral
+        python -m with_ral
+        python -m with_hal
+
+        cd ../..
   #-------------------------------------------------------------------------------
   build:
     needs:
