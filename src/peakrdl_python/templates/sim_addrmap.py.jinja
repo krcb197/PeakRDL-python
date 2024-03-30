@@ -1,0 +1,16 @@
+
+from ..sim_lib.register import Register
+from ..sim_lib.simulator import Simulator
+
+class {{top_node.inst_name}}_simulator_cls(Simulator):
+
+    def _build_register_dict(self):
+    {%- for node in top_node.descendants(unroll=True) -%}
+    {% if isinstance(node, systemrdlRegNode) %}
+        self._register_dict[{{node.absolute_address}}] = Register(width={{node.size*8}}, full_inst_name='{{'.'.join(node.get_path_segments())}}')
+    {% endif %}
+    {% endfor %}
+
+if __name__ == '__main__':
+    pass
+

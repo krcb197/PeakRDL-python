@@ -1,0 +1,16 @@
+{% if asyncoutput %}
+from .lib import AsyncCallbackSet
+{% else %}
+from .lib import NormalCallbackSet
+{% endif %}
+
+from .reg_model.{{top_node.inst_name}} import {{top_node.inst_name}}_cls
+from .sim.{{top_node.inst_name}} import {{top_node.inst_name}}_simulator_cls
+
+if __name__ == '__main__':
+
+    sim = {{top_node.inst_name}}_simulator_cls()
+
+    # create an instance of the class
+    reg_model = {{top_node.inst_name}}_cls(callbacks=NormalCallbackSet(read_callback=sim.read,
+                                                                       write_callback=sim.write))

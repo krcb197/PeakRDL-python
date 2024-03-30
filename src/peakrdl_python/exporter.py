@@ -122,6 +122,35 @@ class _PythonPackage:
         self._make_empty_init_file()
 
 
+class _CopiedPythonPackage(_PythonPackage):
+    """
+    Class to represent a python package, which is copied from another
+    """
+    def __init__(self, path: Path, ref_package: _PythonPackage):
+        self._path = path
+        self._ref_package = ref_package
+
+    def create_empty_package(self, cleanup: bool) -> None:
+        """
+        make the package folder (if it does not already exist), populate the __init__.py and
+        optionally remove any existing python files
+
+        Args:
+            cleanup (bool) : delete any existing python files in the package
+
+        Returns:
+            None
+        """
+        super().create_empty_package(cleanup=cleanup)
+
+        # copy all the python source code that is part of the library which comes as part of the
+        # peakrdl-python to the lib direction of the generated package
+        files_in_package = self._ref_package.path.glob('*.py')
+
+        for file_in_package in files_in_package:
+            copy(src=file_in_package, dst=self.path)
+
+
 class _Package(_PythonPackage):
     """
     Class to define the package being generated
@@ -129,13 +158,33 @@ class _Package(_PythonPackage):
     Args:
         include_tests (bool): include the tests package
     """
+    template_lib_package = _PythonPackage(Path(__file__).parent / 'lib')
+    template_sim_lib_package = _PythonPackage(Path(__file__).parent / 'sim_lib')
+
     def __init__(self, path:str, package_name: str, include_tests: bool):
         super().__init__(Path(path) / package_name)
+
+        self.lib = self.child_ref_package('lib', self.template_lib_package)
         self.reg_model = self.child_package('reg_model')
         self._include_tests = include_tests
         if include_tests:
             self.tests = self.child_package('tests')
-        self.lib = self.child_package('lib')
+
+        self.sim_lib = self.child_ref_package('sim_lib', self.template_sim_lib_package)
+        self.sim = self.child_package('sim')
+
+    def child_ref_package(self, name: str, ref_package:_PythonPackage) -> '_CopiedPythonPackage':
+        """
+        provide a child package within the current package
+
+        Args:
+            name: name of child package
+
+        Returns:
+            None
+
+        """
+        return _CopiedPythonPackage(path=self.path / name, ref_package=ref_package)
 
 
     def create_empty_package(self, cleanup: bool) -> None:
@@ -158,14 +207,8 @@ class _Package(_PythonPackage):
         if self._include_tests:
             self.tests.create_empty_package(cleanup=cleanup)
         self.lib.create_empty_package(cleanup=cleanup)
-
-        # copy all the python source code that is part of the library which comes as part of the
-        # peakrdl-python to the lib direction of the generated package
-        template_package = Path(__file__).parent / 'lib'
-        files_in_package = template_package.glob('*.py')
-
-        for file_in_package in files_in_package:
-            copy(src=file_in_package, dst=self.lib.path)
+        self.sim_lib.create_empty_package(cleanup=cleanup)
+        self.sim.create_empty_package(cleanup=cleanup)
 
 
 class PythonExporter:
@@ -302,6 +345,29 @@ class PythonExporter:
 
         template = self.jj_env.get_template("addrmap.py.jinja")
         module_path = package.reg_model.child_module_path(top_block.inst_name + '.py')
+
+        with module_path.open('w', encoding='utf-8') as fp:
+            stream = template.stream(context)
+            stream.dump(fp)
+
+        context = {
+            'top_node': top_block,
+            'systemrdlRegNode': RegNode,
+            'isinstance': isinstance,
+            'asyncoutput': asyncoutput,
+            }
+
+        context.update(self.user_template_context)
+
+        template = self.jj_env.get_template("sim_addrmap.py.jinja")
+        module_path = package.sim.child_module_path(top_block.inst_name + '.py')
+
+        with module_path.open('w', encoding='utf-8') as fp:
+            stream = template.stream(context)
+            stream.dump(fp)
+
+        template = self.jj_env.get_template("example.py.jinja")
+        module_path = package.child_module_path('example.py')
 
         with module_path.open('w', encoding='utf-8') as fp:
             stream = template.stream(context)
