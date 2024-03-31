@@ -1,5 +1,6 @@
 
 from ..sim_lib.register import Register
+from ..sim_lib.memory import Memory
 from ..sim_lib.simulator import Simulator
 
 class {{top_node.inst_name}}_simulator_cls(Simulator):
@@ -8,6 +9,7 @@ class {{top_node.inst_name}}_simulator_cls(Simulator):
     {%- for node in top_node.descendants(unroll=True) -%}
     {% if isinstance(node, systemrdlRegNode) %}
         self._register_dict[{{node.absolute_address}}] = Register(width={{node.size*8}}, full_inst_name='{{'.'.join(node.get_path_segments())}}')
+    {% if isinstance(node, systemrdlRegNode) %}
     {% endif %}
     {% endfor %}
 

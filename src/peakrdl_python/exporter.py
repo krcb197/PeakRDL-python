@@ -353,6 +353,7 @@ class PythonExporter:
         context = {
             'top_node': top_block,
             'systemrdlRegNode': RegNode,
+            'systemrdlMemNode': MemNode,
             'isinstance': isinstance,
             'asyncoutput': asyncoutput,
             }
