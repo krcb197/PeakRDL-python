@@ -63,7 +63,6 @@ CommandLineParser.add_argument('--coverage_report', action='store_true', dest='c
 CommandLineParser.add_argument('--coverage_report_path', dest='coverage_report_path',
                                type=pathlib.Path,
                                default='generate_and_test_coverage')
-
 CommandLineParser.add_argument('--suppress_cleanup', action='store_true', dest='suppress_cleanup',
                                help='by default peakrdl_python deletes all existing python .py '
                                     'files found in the directory where the package will be'
