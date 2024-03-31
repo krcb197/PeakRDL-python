@@ -151,6 +151,7 @@ attempts to set the output state.
    :caption: developer notes
 
    design_decisions
+   design_tools
 
 .. toctree::
    :hidden:

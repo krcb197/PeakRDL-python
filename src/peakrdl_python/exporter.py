@@ -294,6 +294,8 @@ class PythonExporter:
         else:
             top_block = node
 
+        if not isinstance(path, str):
+            raise TypeError(f'path should be a str but got {type(path)}')
         package = _Package(path=path,
                            package_name=node.inst_name,
                            include_tests=not skip_test_case_generation)
