@@ -39,46 +39,20 @@ from ..lib import NormalCallbackSet
 
 
 from ..reg_model.{{top_node.type_name}} import {{top_node.type_name}}_cls
-
-
-# dummy functions to support the test cases, note that these are not used as
-# they get patched
-{% if asyncoutput %}async {% endif %}def read_addr_space(addr: int, width: int, accesswidth: int) -> int:
-    assert isinstance(addr, int)
-    assert isinstance(width, int)
-    assert isinstance(accesswidth, int)
-    {% if asyncoutput %}await asyncio.sleep(1) {% endif %}
-    return 0
-
-{% if asyncoutput %}async {% endif %}def write_addr_space(addr: int, width: int, accesswidth: int,  data: int) -> None:
-    assert isinstance(addr, int)
-    assert isinstance(width, int)
-    assert isinstance(accesswidth, int)
-    assert isinstance(data, int)
-    {% if asyncoutput %}await asyncio.sleep(1) {% endif %}
+{% if asyncoutput %}
+from ..sim_lib.dummy_callbacks import async_dummy_read as read_addr_space
+from ..sim_lib.dummy_callbacks import async_dummy_write as write_addr_space
+from ..sim_lib.dummy_callbacks import async_dummy_read_block as read_block_addr_space
+from ..sim_lib.dummy_callbacks import async_dummy_write_block as write_block_addr_space
+{% else %}
+from ..sim_lib.dummy_callbacks import dummy_read as read_addr_space
+from ..sim_lib.dummy_callbacks import dummy_write as write_addr_space
+from ..sim_lib.dummy_callbacks import dummy_read_block as read_block_addr_space
+from ..sim_lib.dummy_callbacks import dummy_write_block as write_block_addr_space
+{% endif %}
 
 {% if asyncoutput %}async {% endif %}def read_callback(addr: int, width: int, accesswidth: int) -> int:
     return {% if asyncoutput %}await {% endif %}read_addr_space(addr=addr, width=width, accesswidth=accesswidth)
-
-{% if asyncoutput %}async {%endif %}def read_block_addr_space(addr: int, width: int, accesswidth: int, length:int) -> Array:
-    assert isinstance(addr, int)
-    assert isinstance(width, int)
-    assert isinstance(accesswidth, int)
-    assert isinstance(length, int)
-
-    if width == 32:
-        typecode = 'L'
-    elif width == 64:
-        typecode = 'Q'
-    elif width == 16:
-        typecode = 'I'
-    elif width == 8:
-        typecode = 'B'
-    else:
-        raise ValueError('unhandled memory width')
-
-    {% if asyncoutput %}await asyncio.sleep(1) {% endif %}
-    return Array(typecode, [0 for x in range(length)])
 
 {% if asyncoutput %}async {%endif %}def read_block_callback(addr: int, width: int, accesswidth: int, length: int) -> Array:
     return {% if asyncoutput %}await {% endif %}read_block_addr_space(addr=addr, width=width, accesswidth=accesswidth, length=length)
@@ -86,15 +60,9 @@ from ..reg_model.{{top_node.type_name}} import {{top_node.type_name}}_cls
 {% if asyncoutput %}async {%endif %}def write_callback(addr: int, width: int, accesswidth: int,  data: int) -> None:
     {% if asyncoutput %}await {% endif %}write_addr_space(addr=addr, width=width, accesswidth=accesswidth, data=data)
 
-{% if asyncoutput %}async {%endif %}def write_block_addr_space(addr: int, width: int, accesswidth: int,  data: Array) -> None:
-    assert isinstance(addr, int)
-    assert isinstance(width, int)
-    assert isinstance(accesswidth, int)
-    assert isinstance(data, Array)
-    {% if asyncoutput %}await asyncio.sleep(1) {% endif %}
-
 {% if asyncoutput %}async {%endif %}def write_block_callback(addr: int, width: int, accesswidth: int,  data: Array) -> None:
     {% if asyncoutput %}await {% endif %}write_block_addr_space(addr=addr, width=width, accesswidth=accesswidth, data=data)
+
 
 {% if asyncoutput %}
 if sys.version_info < (3, 8):

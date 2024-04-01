@@ -137,9 +137,10 @@ class BaseSimulator(ABC):
         # catch all for other addresses
         return 0
 
-    def _write(self, addr: int, data: int,
+    def _write(self, addr: int,
                width: int,  # pylint: disable=unused-argument
-               accesswidth: int) -> None:  # pylint: disable=unused-argument
+               accesswidth: int,  # pylint: disable=unused-argument
+               data: int) -> None:
         """
         function to simulate a device write, this needs to match the protocol for the callbacks
         """
@@ -213,13 +214,11 @@ class Simulator(BaseSimulator, ABC):
         """
         return self._read(addr, width, accesswidth)
 
-    def write(self, addr: int, data: int,
-              width: int,
-              accesswidth: int) -> None:
+    def write(self, addr: int, width: int, accesswidth: int, data: int) -> None:
         """
         function to simulate a device write, this needs to match the protocol for the callbacks
         """
-        return self._write(addr, data, width, accesswidth)
+        return self._write(addr, width, accesswidth, data)
 
     def read_block(self, addr: int, width: int, accesswidth: int, length: int) -> Array:
         """
@@ -257,14 +256,12 @@ class AsyncSimulator(BaseSimulator, ABC):
         await asyncio.sleep(0)
         return self._read(addr, width, accesswidth)
 
-    async def write(self, addr: int, data: int,
-                    width: int,
-                    accesswidth: int) -> None:
+    async def write(self, addr: int, width: int, accesswidth: int, data: int) -> None:
         """
         function to simulate a device write, this needs to match the protocol for the callbacks
         """
         await asyncio.sleep(0)
-        return self._write(addr, data, width, accesswidth)
+        return self._write(addr, width, accesswidth, data)
 
     async def read_block(self, addr: int, width: int, accesswidth: int, length: int) -> Array:
         """
