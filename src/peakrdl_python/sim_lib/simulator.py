@@ -70,6 +70,7 @@ class BaseSimulator(ABC):
     Base class of a simple simulate that can be used to test and debug peakrdl-python generated
     register access layer (RAL)
     """
+    # pylint: disable=too-few-public-methods
 
     def __init__(self, address: int):
         self._registers: dict[int, Union[MemoryRegister, Register]] = {}
@@ -197,7 +198,12 @@ class BaseSimulator(ABC):
         end_address = start_address + (length * address_increment)
         return range(start_address, end_address, address_increment)
 
+
 class Simulator(BaseSimulator, ABC):
+    """
+    Base class of a simple simulator that uses non-async callbacks that can be used to test and
+    debug peakrdl-python generated register access layer (RAL)
+    """
 
     def read(self, addr: int,
              width: int, # pylint: disable=unused-argument
@@ -237,6 +243,10 @@ class Simulator(BaseSimulator, ABC):
 
 
 class AsyncSimulator(BaseSimulator, ABC):
+    """
+    Base class of a simple simulator that uses async callbacks that can be used to test and
+    debug peakrdl-python generated register access layer (RAL)
+    """
 
     async def read(self, addr: int,
                    width: int,  # pylint: disable=unused-argument
