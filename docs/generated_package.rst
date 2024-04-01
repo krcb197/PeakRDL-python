@@ -9,7 +9,10 @@ will be based on the top level address map name with the package was generated
 
 | ``<root_name>``
 | ├── ``lib``
+| ├── ``sim_lib``
 | ├── ``reg_model``
+| │ └── ``<root_name>.py``
+| ├── ``sim``
 | │ └── ``<root_name>.py``
 | └── ``tests``
 |   └── ``test_<root_name>.py``
@@ -413,4 +416,14 @@ to clean up the generated code. This had two issues:
 
 peakrdl-python uses the Black `Black <https://pypi.org/project/black/L>`_ in the CI tests to check
 that the generated code is compatible with an autoformatter.
+
+
+Simulator
+=========
+
+PeakRDL Python also generates an simulator
+
+.. warning:: The PeakRDL Python simulator is not intended to replace an RTL simulation of the
+             design. It does not simulate the hardware, it is intended as a simple tool for
+             development and testing of the python wrappers or code that uses them.
 
