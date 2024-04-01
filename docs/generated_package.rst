@@ -60,7 +60,7 @@ access layer package so that it can be used from the console:
         Args:
             addr: Address to write to
             width: Width of the register in bits
-            accesswidth: Minimium access width of the register in bits
+            accesswidth: Minimum access width of the register in bits
 
         Returns:
             value inputted by the used
@@ -72,8 +72,8 @@ access layer package so that it can be used from the console:
 
     def write_addr_space(addr: int, width: int, accesswidth: int, data: int) -> None:
         """
-        Callback to simulate the operation of the package, everytime the read is called, it will
-        request the user input the value to be read back.
+        Callback to simulate the operation of the package, everytime the write is called, it will
+        print out the result.
 
         Args:
             addr: Address to write to
