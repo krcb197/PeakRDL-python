@@ -116,6 +116,24 @@ class BaseSimulator(ABC):
 
         return None
 
+    def memory_for_address_with_exception(self, address: int) -> MemoryEntry:
+        """
+        Find a memory entry for a given address
+
+        Args:
+            address: byte address
+
+        Returns:
+            matching memory entry
+
+        """
+
+        memory_entry = self.memory_for_address(address=address)
+        if memory_entry is None:
+            raise RuntimeError(f'Memory not found at address 0x{address:X}')
+
+        return memory_entry
+
     def _read(self, addr: int,
              width: int, # pylint: disable=unused-argument
              accesswidth: int) -> int: # pylint: disable=unused-argument

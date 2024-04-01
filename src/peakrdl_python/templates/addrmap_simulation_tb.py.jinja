@@ -43,36 +43,34 @@ class {{fq_block_name}}_single_access({{top_node.type_name}}_SimTestCase): # typ
         """
         Walk the register map and check every register can be read and written to correctly
         """
-        rut: Reg
         {% for node in owned_elements.registers -%}
         # test access operations (read and/or write) to register:
         # {{'.'.join(node.get_path_segments())}}
         with self.subTest(msg='register: {{'.'.join(node.get_path_segments())}}'):
-            rut=self.dut.{{'.'.join(get_python_path_segments(node))}} # type: ignore[union-attr,assignment]
 
             {% if node.has_sw_readable -%}
             # test reading back 1 (the unpatched version returns 0 so this confirms the patch works)
-            self.assertEqual({% if asyncoutput %}await {%endif %}rut.read(), 0)
+            self.assertEqual({% if asyncoutput %}await {%endif %}self.dut.{{'.'.join(get_python_path_segments(node))}}.read(), 0)
             {% endif %}
 
             {% if node.has_sw_writable -%}
             # test the write with high value
-            {% if asyncoutput %}await {%endif %}rut.write({{get_reg_max_value_hex_string(node)}})
+            {% if asyncoutput %}await {%endif %}self.dut.{{'.'.join(get_python_path_segments(node))}}.write({{get_reg_max_value_hex_string(node)}})
                 {%- if node.has_sw_readable %}
-            self.assertEqual({% if asyncoutput %}await {%endif %}rut.read(), {{get_reg_max_value_hex_string(node)}})
+            self.assertEqual({% if asyncoutput %}await {%endif %}self.dut.{{'.'.join(get_python_path_segments(node))}}.read(), {{get_reg_max_value_hex_string(node)}})
                 {% endif %}
 
             # test the write of a low value
-            {% if asyncoutput %}await {%endif %}rut.write(0)
+            {% if asyncoutput %}await {%endif %}self.dut.{{'.'.join(get_python_path_segments(node))}}.write(0)
                 {%- if node.has_sw_readable %}
-            self.assertEqual({% if asyncoutput %}await {%endif %}rut.read(), 0)
+            self.assertEqual({% if asyncoutput %}await {%endif %}self.dut.{{'.'.join(get_python_path_segments(node))}}.read(), 0)
                 {% endif %}
 
             # test the write of a random
             random_value = random.randrange(0, {{get_reg_max_value_hex_string(node)}}+1)
-            {% if asyncoutput %}await {%endif %}rut.write(random_value)  # type: ignore[union-attr]
+            {% if asyncoutput %}await {%endif %}self.dut.{{'.'.join(get_python_path_segments(node))}}.write(random_value)  # type: ignore[union-attr]
                 {%- if node.has_sw_readable %}
-            self.assertEqual({% if asyncoutput %}await {%endif %}rut.read(), random_value)
+            self.assertEqual({% if asyncoutput %}await {%endif %}self.dut.{{'.'.join(get_python_path_segments(node))}}.read(), random_value)
                 {% endif %}
 
             {% endif %}

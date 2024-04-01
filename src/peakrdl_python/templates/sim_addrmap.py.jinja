@@ -29,15 +29,13 @@ from ..sim_lib.simulator import AsyncSimulator as Simulator
 from ..sim_lib.simulator import Simulator
 {%- endif %}
 
-from ..lib import Reg
-
 class {{top_node.inst_name}}_simulator_cls(Simulator):
 
     def _build_registers(self) -> Dict[int, Union[MemoryRegister, Register]]:
         return {
         {%- for node in top_node.descendants(unroll=True) -%}
             {% if isinstance(node, systemrdlRegNode) %}
-            {{node.absolute_address}} : {% if isinstance(node.parent, systemrdlMemNode) %}MemoryRegister(memory=self.memory_for_address({{node.absolute_address}}).memory,memory_address_offset={{node.address_offset}},{% else %}Register({% endif %}width={{node.size*8}}, full_inst_name='{{'.'.join(node.get_path_segments())}}'),
+            {{node.absolute_address}} : {% if isinstance(node.parent, systemrdlMemNode) %}MemoryRegister(memory=self.memory_for_address_with_exception({{node.absolute_address}}).memory,memory_address_offset={{node.address_offset}},{% else %}Register({% endif %}width={{node.size*8}}, full_inst_name='{{'.'.join(node.get_path_segments())}}'),
             {%- endif %}
         {%- endfor %}
         }
