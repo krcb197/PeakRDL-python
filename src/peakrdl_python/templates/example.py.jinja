@@ -9,7 +9,7 @@ from .sim.{{top_node.inst_name}} import {{top_node.inst_name}}_simulator_cls
 
 if __name__ == '__main__':
 
-    sim = {{top_node.inst_name}}_simulator_cls()
+    sim = {{top_node.inst_name}}_simulator_cls(address=1)
 
     # create an instance of the class
     reg_model = {{top_node.inst_name}}_cls(callbacks=NormalCallbackSet(read_callback=sim.read,

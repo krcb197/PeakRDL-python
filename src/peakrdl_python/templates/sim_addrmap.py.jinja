@@ -18,7 +18,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 {% include "header.py.jinja" with context %}
 
-from typing import Union
+from typing import Union, List, Dict
 
 from ..sim_lib.register import Register, MemoryRegister
 from ..sim_lib.memory import Memory
@@ -29,10 +29,12 @@ from ..sim_lib.simulator import AsyncSimulator as Simulator
 from ..sim_lib.simulator import Simulator
 {%- endif %}
 
+from ..lib import Reg
+
 class {{top_node.inst_name}}_simulator_cls(Simulator):
 
-    def _build_registers(self):
-        self._registers:dict[int, Union[MemoryRegister,Register]] = {
+    def _build_registers(self) -> Dict[int, Union[MemoryRegister, Register]]:
+        return {
         {%- for node in top_node.descendants(unroll=True) -%}
             {% if isinstance(node, systemrdlRegNode) %}
             {{node.absolute_address}} : {% if isinstance(node.parent, systemrdlMemNode) %}MemoryRegister(memory=self.memory_for_address({{node.absolute_address}}).memory,memory_address_offset={{node.address_offset}},{% else %}Register({% endif %}width={{node.size*8}}, full_inst_name='{{'.'.join(node.get_path_segments())}}'),
@@ -40,8 +42,8 @@ class {{top_node.inst_name}}_simulator_cls(Simulator):
         {%- endfor %}
         }
 
-    def _build_memories(self) -> None:
-        self._memories:list[MemoryEntry] = [
+    def _build_memories(self) -> list[MemoryEntry]:
+        return [
         {%- for node in top_node.descendants(unroll=True) -%}
             {% if isinstance(node, systemrdlMemNode) %}
             MemoryEntry(start_address={{node.absolute_address}},
