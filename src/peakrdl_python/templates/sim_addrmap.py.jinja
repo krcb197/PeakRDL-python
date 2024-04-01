@@ -40,7 +40,7 @@ class {{top_node.inst_name}}_simulator_cls(Simulator):
         {%- endfor %}
         }
 
-    def _build_memories(self) -> list[MemoryEntry]:
+    def _build_memories(self) -> List[MemoryEntry]:
         return [
         {%- for node in top_node.descendants(unroll=True) -%}
             {% if isinstance(node, systemrdlMemNode) %}
