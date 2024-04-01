@@ -120,46 +120,6 @@ def build_logging_cong(logfilepath:str):
         }
     }
 
-# dummy functions to demonstrate the class
-def read_addr_space(addr: int, width: int, accesswidth: int) -> int:
-    """
-    Callback to simulate the operation of the package, everytime the read is called, it will
-    request the user input the value to be read back.
-
-    Args:
-        addr: Address to write to
-        width: Width of the register in bits
-        accesswidth: Minimum access width of the register in bits
-
-    Returns:
-        value inputted by the used
-    """
-    assert isinstance(addr, int)
-    assert isinstance(width, int)
-    assert isinstance(accesswidth, int)
-    return int(0)
-
-
-def write_addr_space(addr: int, width: int, accesswidth: int, data: int) -> None:
-    """
-    Callback to simulate the operation of the package, everytime the read is called, it will
-    request the user input the value to be read back.
-
-    Args:
-        addr: Address to write to
-        width: Width of the register in bits
-        accesswidth: Minimum access width of the register in bits
-        data: value to be written to the register
-
-    Returns:
-        None
-    """
-    assert isinstance(addr, int)
-    assert isinstance(width, int)
-    assert isinstance(accesswidth, int)
-    assert isinstance(data, int)
-    print('write data:0x%X to address:0x%X' % (data, addr))
-
 if __name__ == '__main__':
 
     CommandLineArgs = CommandLineParser.parse_args()
@@ -207,6 +167,9 @@ if __name__ == '__main__':
         reg_model_module = __import__( 'generate_and_test_output.' +
             CommandLineArgs.root_node + '.reg_model.' + CommandLineArgs.root_node,
             globals(), locals(), [reg_model_class_name], 0)
+        sim_module = __import__( 'generate_and_test_output.' +
+            CommandLineArgs.root_node + '.sim.' + CommandLineArgs.root_node,
+            globals(), locals(), [sim_class_name], 0)
         peakrdl_python_package = __import__('generate_and_test_output.' + CommandLineArgs.root_node + '.lib',
                                             globals(), locals(), ['CallbackSet'], 0)
 
@@ -216,9 +179,10 @@ if __name__ == '__main__':
         else:
             callbackset_cls = getattr(peakrdl_python_package, 'NormalCallbackSet')
 
-
-        dut = dut_cls(callbacks=callbackset_cls(read_callback=read_addr_space,
-                                                write_callback=write_addr_space))
+        sim_cls = getattr(sim_module, sim_class_name)
+        sim = sim_cls(address=0)
+        dut = dut_cls(callbacks=callbackset_cls(read_callback=sim.read,
+                                                write_callback=sim.write))
 
         test_suite = TestSuite()
         test_suite.addTests(TestLoader().discover(
@@ -231,6 +195,6 @@ if __name__ == '__main__':
             cov.stop()
             cov.html_report(directory=str(CommandLineArgs.coverage_report_path / CommandLineArgs.root_node))
 
-
+        sim.memory_for_address(64)
 
 
