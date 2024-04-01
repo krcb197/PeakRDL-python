@@ -57,3 +57,4 @@ __pycache__/
 /example/overridden_names/over_ridden_names/
 /example/simulating_callbacks/mychip/
 /example/tranversing_address_map/chip_with_registers/
+/generate_and_test_output/

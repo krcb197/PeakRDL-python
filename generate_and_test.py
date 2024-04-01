@@ -52,8 +52,6 @@ CommandLineParser.add_argument('--output', dest='output_path',
                                default='.')
 CommandLineParser.add_argument('--ipxact', dest='ipxact', nargs='*',
                                type=str)
-CommandLineParser.add_argument('--autoformat', action='store_true',
-                               help='use autopep8 on generated code')
 CommandLineParser.add_argument('--async', action='store_true', dest='asyncoutput',
                                help='use async callback register model')
 CommandLineParser.add_argument('--export_only', action='store_true',

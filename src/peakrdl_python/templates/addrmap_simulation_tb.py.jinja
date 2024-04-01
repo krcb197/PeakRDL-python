@@ -1,0 +1,207 @@
+{#
+peakrdl-python is a tool to generate Python Register Access Layer (RAL) from SystemRDL
+Copyright (C) 2021 - 2023
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <https://www.gnu.org/licenses/>.
+#}
+
+{% include "header_tb.py.jinja" with context %}
+
+from array import array as Array
+from typing import List, Union, Dict
+{% if asyncoutput %}
+import sys
+import asyncio
+if sys.version_info < (3, 8):
+    import asynctest  # type: ignore[import]
+    from asynctest.mock import patch, call  # type: ignore[import]
+else:
+    import unittest
+    from unittest.mock import patch, call
+{% else %}
+import unittest
+{% endif %}
+import random
+
+from ._{{top_node.inst_name}}_sim_test_base import {{top_node.type_name}}_SimTestCase, {{top_node.type_name}}_SimTestCase_BlockAccess
+from ._{{top_node.inst_name}}_sim_test_base import __name__ as base_name
+
+class {{fq_block_name}}_single_access({{top_node.type_name}}_SimTestCase): # type: ignore[valid-type,misc]
+
+    {% if asyncoutput %}async {% endif %}def test_register_read_and_write(self) -> None:
+        """
+        Walk the register map and check every register can be read and written to correctly
+        """
+        rut: Reg
+        {% for node in owned_elements.registers -%}
+        # test access operations (read and/or write) to register:
+        # {{'.'.join(node.get_path_segments())}}
+        with self.subTest(msg='register: {{'.'.join(node.get_path_segments())}}'):
+            rut=self.dut.{{'.'.join(get_python_path_segments(node))}} # type: ignore[union-attr,assignment]
+
+            {% if node.has_sw_readable -%}
+            # test reading back 1 (the unpatched version returns 0 so this confirms the patch works)
+            self.assertEqual({% if asyncoutput %}await {%endif %}rut.read(), 0)
+            {% endif %}
+
+            {% if node.has_sw_writable -%}
+            # test the write with high value
+            {% if asyncoutput %}await {%endif %}rut.write({{get_reg_max_value_hex_string(node)}})
+                {%- if node.has_sw_readable %}
+            self.assertEqual({% if asyncoutput %}await {%endif %}rut.read(), {{get_reg_max_value_hex_string(node)}})
+                {% endif %}
+
+            # test the write of a low value
+            {% if asyncoutput %}await {%endif %}rut.write(0)
+                {%- if node.has_sw_readable %}
+            self.assertEqual({% if asyncoutput %}await {%endif %}rut.read(), 0)
+                {% endif %}
+
+            # test the write of a random
+            random_value = random.randrange(0, {{get_reg_max_value_hex_string(node)}}+1)
+            {% if asyncoutput %}await {%endif %}rut.write(random_value)  # type: ignore[union-attr]
+                {%- if node.has_sw_readable %}
+            self.assertEqual({% if asyncoutput %}await {%endif %}rut.read(), random_value)
+                {% endif %}
+
+            {% endif %}
+
+        {% endfor %}
+
+    {% if uses_memory %}
+    {% if asyncoutput %}async {% endif %}def test_memory_read_and_write(self) -> None:
+        """
+        Walk the register map and check every register can be read and written to correctly
+        """
+        {% for node in owned_elements.memories -%}
+
+        # test access operations (read and/or write) to register:
+        # {{'.'.join(node.get_path_segments())}}
+        with self.subTest(msg='memory: {{'.'.join(node.get_path_segments())}}'):
+
+            {% if node.is_sw_readable -%}
+            # checks single unit accesses at the first entry, the last entry and a random entry in
+            # in each case check a 0, max value and random value being read
+            for entry in [0, random.randint(0,{{node.get_property('mementries')-1}}), {{node.get_property('mementries')-1}}]:
+                self.assertEqual({% if asyncoutput %}await {%endif %}self.dut.{{'.'.join(get_python_path_segments(node))}}.read(start_entry=entry, number_entries=1), # type: ignore[union-attr]
+                                                         Array('{{get_array_typecode(node.get_property('memwidth'))}}', [0]))
+
+            # check a multi-entry read, if the memory is small do the entire memory, however, if
+            # it is large limit the number of entries to 10
+            entries_to_test = {% if node.get_property('mementries') > 10 %}10{% else %}{{node.get_property('mementries')}}{% endif %}
+
+            self.assertEqual({% if asyncoutput %}await {%endif %}self.dut.{{'.'.join(get_python_path_segments(node))}}.read(start_entry=0, number_entries=entries_to_test), # type: ignore[union-attr]
+                             Array('{{get_array_typecode(node.get_property('memwidth'))}}', [0 for _ in range(entries_to_test)]))
+            {% endif %}
+
+            {% if node.is_sw_writable -%}
+            # checks single unit accesses at the first entry, the last entry and a random entry in
+            # in each case check a 0, max value and random value being read
+            for entry in [0, random.randint(0,{{node.get_property('mementries')-1}}), {{node.get_property('mementries')-1}}]:
+                for value in [0, random.randint(0,{{get_memory_max_entry_value_hex_string(node)}}), {{get_memory_max_entry_value_hex_string(node)}}]:
+                    {% if asyncoutput %}await {%endif %}self.dut.{{'.'.join(get_python_path_segments(node))}}.write(start_entry=entry, data=Array('{{get_array_typecode(node.get_property('memwidth'))}}', [value])) # type: ignore[union-attr]
+                    {% if node.is_sw_readable -%}
+                    self.assertEqual({% if asyncoutput %}await {%endif %}self.dut.{{'.'.join(get_python_path_segments(node))}}.read(start_entry=entry, number_entries=1), # type: ignore[union-attr]
+                                     Array('{{get_array_typecode(node.get_property('memwidth'))}}', [value]))
+                    {% endif %}
+
+            # check a multi-entry read, if the memory is small do the entire memory, however, if
+            # it is large limit the number of entries to 10
+            entries_to_test = {% if node.get_property('mementries') > 10 %}10{% else %}{{node.get_property('mementries')}}{% endif %}
+            random_data = Array('{{get_array_typecode(node.get_property('memwidth'))}}',
+                                [random.randint(0,{{get_memory_max_entry_value_hex_string(node)}}) for x in range(entries_to_test)])
+            {% if asyncoutput %}await {%endif %}self.dut.{{'.'.join(get_python_path_segments(node))}}.write(start_entry=0, data=random_data) # type: ignore[union-attr]
+            {% if node.is_sw_readable -%}
+            self.assertEqual({% if asyncoutput %}await {%endif %}self.dut.{{'.'.join(get_python_path_segments(node))}}.read(start_entry=0, number_entries=entries_to_test), # type: ignore[union-attr]
+                             random_data)
+            {% endif %}
+            {%- endif %}
+
+        {%- endfor %}
+    {%- endif %}
+
+
+
+class {{fq_block_name}}_block_access({{top_node.type_name}}_SimTestCase_BlockAccess): # type: ignore[valid-type,misc]
+    """
+    tests for all the block access methods
+    """
+
+    {% if uses_memory %}
+    {% if asyncoutput %}async {% endif %}def test_memory_read_and_write(self) -> None:
+        """
+        Walk the register map and check every register can be read and written to correctly
+        """
+        {% for node in owned_elements.memories -%}
+
+        # test access operations (read and/or write) to register:
+        # {{'.'.join(node.get_path_segments())}}
+
+        {% if node.is_sw_readable -%}
+        # checks single unit accesses at the first entry, the last entry and a random entry in
+        # in each case check a 0, max value and random value being read
+        for entry in [0, random.randint(0,{{node.get_property('mementries')-1}}), {{node.get_property('mementries')-1}}]:
+
+            self.assertEqual({% if asyncoutput %}await {%endif %}self.dut.{{'.'.join(get_python_path_segments(node))}}.read(start_entry=entry, number_entries=1), # type: ignore[union-attr]
+                                                     Array('{{get_array_typecode(node.get_property('memwidth'))}}', [0]))
+
+        # check a multi-entry read, if the memory is small do the entire memory, however, if
+        # it is large limit the number of entries to 10
+        entries_to_test = {% if node.get_property('mementries') > 10 %}10{% else %}{{node.get_property('mementries')}}{% endif %}
+
+        self.assertEqual({% if asyncoutput %}await {%endif %}self.dut.{{'.'.join(get_python_path_segments(node))}}.read(start_entry=0, # type: ignore[union-attr]
+                                      number_entries=entries_to_test),
+                                      Array('{{get_array_typecode(node.get_property('memwidth'))}}', [0 for _ in range(entries_to_test)]))
+        {% endif %}
+
+        {% if node.is_sw_writable -%}
+        # checks single unit accesses at the first entry, the last entry and a random entry in
+        # in each case check a 0, max value and random value being read
+        for entry in [0, random.randint(0,{{node.get_property('mementries')-1}}), {{node.get_property('mementries')-1}}]:
+            for value in [0, random.randint(0,{{get_memory_max_entry_value_hex_string(node)}}), {{get_memory_max_entry_value_hex_string(node)}}]:
+                {% if asyncoutput %}await {%endif %}self.dut.{{'.'.join(get_python_path_segments(node))}}.write(start_entry=entry, data=Array('{{get_array_typecode(node.get_property('memwidth'))}}', [value])) # type: ignore[union-attr]
+                {% if node.is_sw_readable -%}
+                self.assertEqual({% if asyncoutput %}await {%endif %}self.dut.{{'.'.join(get_python_path_segments(node))}}.read(start_entry=entry, number_entries=1), # type: ignore[union-attr]
+                                 Array('{{get_array_typecode(node.get_property('memwidth'))}}', [value]))
+                {% endif %}
+
+        # check a multi-entry read, if the memory is small do the entire memory, however, if
+        # it is large limit the number of entries to 10
+        entries_to_test = {% if node.get_property('mementries') > 10 %}10{% else %}{{node.get_property('mementries')}}{% endif %}
+        random_data = Array('{{get_array_typecode(node.get_property('memwidth'))}}',
+                            [random.randint(0,{{get_memory_max_entry_value_hex_string(node)}}) for x in range(entries_to_test)])
+        {% if asyncoutput %}await {%endif %}self.dut.{{'.'.join(get_python_path_segments(node))}}.write(start_entry=0, data=random_data) # type: ignore[union-attr]
+        {% if node.is_sw_readable -%}
+        self.assertEqual({% if asyncoutput %}await {%endif %}self.dut.{{'.'.join(get_python_path_segments(node))}}.read(start_entry=0, number_entries=entries_to_test), # type: ignore[union-attr]
+                         random_data)
+        {% endif %}
+
+        {%- endif %}
+
+        {%- endfor %}
+    {%- endif %}
+
+if __name__ == '__main__':
+{% if asyncoutput %}
+    if sys.version_info < (3, 8):
+        asynctest.main()
+    else:
+        unittest.main()
+{% else %}
+    unittest.main()
+{% endif %}
+
+
+
+
