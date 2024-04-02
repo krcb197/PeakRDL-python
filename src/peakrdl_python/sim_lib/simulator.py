@@ -215,7 +215,16 @@ class BaseSimulator(ABC):
         end_address = start_address + (length * address_increment)
         return range(start_address, end_address, address_increment)
 
-    def node_by_full_name(self, name):
+    def node_by_full_name(self, name: str) -> Union[Memory, MemoryRegister, Register]:
+        """
+        Find a node in the simulator by its fully qualified name
+
+        Args:
+            name: fully qualified node name
+
+        Returns: Node
+
+        """
 
         for mem in self._memories:
             if mem.memory.full_inst_name == name:
