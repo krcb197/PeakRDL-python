@@ -161,16 +161,21 @@ class _Package(_PythonPackage):
     template_lib_package = _PythonPackage(Path(__file__).parent / 'lib')
     template_sim_lib_package = _PythonPackage(Path(__file__).parent / 'sim_lib')
 
-    def __init__(self, path:str, package_name: str, include_tests: bool):
+    def __init__(self, path:str, package_name: str, include_tests: bool, include_libraries: bool):
         super().__init__(Path(path) / package_name)
 
-        self.lib = self.child_ref_package('lib', self.template_lib_package)
-        self.reg_model = self.child_package('reg_model')
         self._include_tests = include_tests
+        self._include_libraries = include_libraries
+
+        if include_libraries:
+            self.lib = self.child_ref_package('lib', self.template_lib_package)
+        self.reg_model = self.child_package('reg_model')
+
         if include_tests:
             self.tests = self.child_package('tests')
 
-        self.sim_lib = self.child_ref_package('sim_lib', self.template_sim_lib_package)
+        if include_libraries:
+            self.sim_lib = self.child_ref_package('sim_lib', self.template_sim_lib_package)
         self.sim = self.child_package('sim')
 
     def child_ref_package(self, name: str, ref_package:_PythonPackage) -> '_CopiedPythonPackage':
@@ -187,7 +192,7 @@ class _Package(_PythonPackage):
         return _CopiedPythonPackage(path=self.path / name, ref_package=ref_package)
 
 
-    def create_empty_package(self, cleanup: bool) -> None:
+    def create_empty_package(self, cleanup: bool, ) -> None:
         """
         create the directories and __init__.py files associated with the exported package
 
@@ -206,8 +211,9 @@ class _Package(_PythonPackage):
         self.reg_model.create_empty_package(cleanup=cleanup)
         if self._include_tests:
             self.tests.create_empty_package(cleanup=cleanup)
-        self.lib.create_empty_package(cleanup=cleanup)
-        self.sim_lib.create_empty_package(cleanup=cleanup)
+        if self._include_libraries:
+            self.lib.create_empty_package(cleanup=cleanup)
+            self.sim_lib.create_empty_package(cleanup=cleanup)
         self.sim.create_empty_package(cleanup=cleanup)
 
 
@@ -282,6 +288,7 @@ class PythonExporter:
     def __export_reg_model(self,
                            top_block: AddrmapNode,
                            package: _Package,
+                           skip_lib_copy: bool,
                            asyncoutput: bool) -> None:
 
         context = {
@@ -321,6 +328,7 @@ class PythonExporter:
             'raise_template_error' : self._raise_template_error,
             'get_python_path_segments' : get_python_path_segments,
             'safe_node_name' : safe_node_name,
+            'skip_lib_copy': skip_lib_copy,
             'version' : __version__
         }
 
@@ -334,6 +342,7 @@ class PythonExporter:
     def __export_simulator(self,
                            top_block: AddrmapNode,
                            package: _Package,
+                           skip_lib_copy: bool,
                            asyncoutput: bool) -> None:
 
         context = {
@@ -342,7 +351,9 @@ class PythonExporter:
             'systemrdlMemNode': MemNode,
             'isinstance': isinstance,
             'asyncoutput': asyncoutput,
+            'skip_lib_copy': skip_lib_copy,
             'version': __version__
+
             }
 
         context.update(self.user_template_context)
@@ -355,6 +366,7 @@ class PythonExporter:
     def __export_example(self,
                          top_block: AddrmapNode,
                          package: _Package,
+                         skip_lib_copy: bool,
                          asyncoutput: bool) -> None:
 
         context = {
@@ -363,6 +375,7 @@ class PythonExporter:
             'systemrdlMemNode': MemNode,
             'isinstance': isinstance,
             'asyncoutput': asyncoutput,
+            'skip_lib_copy': skip_lib_copy,
             'version': __version__
             }
 
@@ -374,9 +387,10 @@ class PythonExporter:
                                      template_context=context)
 
     def __export_base_tests(self,
-                           top_block: AddrmapNode,
-                           package: _Package,
-                           asyncoutput: bool) -> None:
+                            top_block: AddrmapNode,
+                            package: _Package,
+                            skip_lib_copy: bool,
+                            asyncoutput: bool) -> None:
         """
 
         Args:
@@ -391,6 +405,7 @@ class PythonExporter:
         context = {
             'top_node': top_block,
             'asyncoutput': asyncoutput,
+            'skip_lib_copy': skip_lib_copy,
             'version': __version__
         }
 
@@ -409,6 +424,7 @@ class PythonExporter:
     def __export_tests(self,
                        top_block: AddrmapNode,
                        package: _Package,
+                       skip_lib_copy: bool,
                        asyncoutput: bool) -> None:
         """
 
@@ -478,6 +494,7 @@ class PythonExporter:
                 'get_memory_width_bytes': get_memory_width_bytes,
                 'asyncoutput': asyncoutput,
                 'uses_enum': uses_enum(block),
+                'skip_lib_copy': skip_lib_copy,
                 'version': __version__
             }
 
@@ -494,7 +511,8 @@ class PythonExporter:
     def export(self, node: Node, path: str,
                asyncoutput: bool=False,
                skip_test_case_generation: bool=False,
-               delete_existing_package_content: bool = True) -> List[str]:
+               delete_existing_package_content: bool = True,
+               skip_library_copy: bool = False) -> List[str]:
         """
         Generated Python Code and Testbench
 
@@ -507,6 +525,10 @@ class PythonExporter:
             delete_existing_package_content (bool): delete any python files in the package
                                                     location, normally left over from previous
                                                     operations
+            skip_library_copy (bool): skip copy the libraries to the generated package, this is
+                                      useful to turn off when developing peakrdl python to avoid
+                                      editing the wrong copy of the library. However, it is not
+                                      recommended in end user cases
 
         Returns:
             List[str] : modules that have been exported:
@@ -522,23 +544,29 @@ class PythonExporter:
             raise TypeError(f'path should be a str but got {type(path)}')
         package = _Package(path=path,
                            package_name=node.inst_name,
-                           include_tests=not skip_test_case_generation)
+                           include_tests=not skip_test_case_generation,
+                           include_libraries=not skip_library_copy)
         package.create_empty_package(cleanup=delete_existing_package_content)
 
         self._build_node_type_table(top_block)
 
-        self.__export_reg_model(top_block=top_block, package=package, asyncoutput=asyncoutput)
+        self.__export_reg_model(top_block=top_block, package=package, asyncoutput=asyncoutput,
+                                skip_lib_copy=skip_library_copy)
 
-        self.__export_simulator(top_block=top_block, package=package, asyncoutput=asyncoutput)
+        self.__export_simulator(top_block=top_block, package=package, asyncoutput=asyncoutput,
+                                skip_lib_copy=skip_library_copy)
 
-        self.__export_example(top_block=top_block, package=package, asyncoutput=asyncoutput)
+        self.__export_example(top_block=top_block, package=package, asyncoutput=asyncoutput,
+                                skip_lib_copy=skip_library_copy)
 
         if not skip_test_case_generation:
 
             # export the baseclasses for the tests
-            self.__export_base_tests(top_block=top_block, package=package, asyncoutput=asyncoutput)
+            self.__export_base_tests(top_block=top_block, package=package, asyncoutput=asyncoutput,
+                                skip_lib_copy=skip_library_copy)
             # export the tests themselves, these are broken down to one file per addressmap
-            self.__export_tests(top_block=top_block, package=package, asyncoutput=asyncoutput)
+            self.__export_tests(top_block=top_block, package=package, asyncoutput=asyncoutput,
+                                skip_lib_copy=skip_library_copy)
 
         return top_block.inst_name
 

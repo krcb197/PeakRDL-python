@@ -79,9 +79,20 @@ jobs:
         python -m pip install --upgrade pip
         python -m pip install .
 
+        # retrieve the example code from the systemRDL compiler
+        wget -L https://raw.githubusercontent.com/SystemRDL/systemrdl-compiler/main/examples/accelera-generic_example.rdl -O tests/testcases/accelera-generic_example.rdl
+
     - name: Run Unit Tests
       run: |
         python -m unittest discover -s tests/unit_tests -t .
+
+    - name: Test Development Runner
+      - run: |
+          python -m generate_and_test --RDL_source_file tests/testcases/simulator_test.rdl --root_node simulator_test
+          python -m generate_and_test --RDL_source_file tests/testcases/simulator_test.rdl --root_node simulator_test --async
+
+          python -m generate_and_test --RDL_source_file tests/testcases/accelera-generic_example.rdl --root_node simulator_test
+
 
     - name: Generate testcases
       run: |
@@ -91,8 +102,6 @@ jobs:
         # the generated code is type checked with mypy so this is needed
         python -m pip install mypy
 
-        # retrieve the example code from the systemRDL compiler
-        wget -L https://raw.githubusercontent.com/SystemRDL/systemrdl-compiler/main/examples/accelera-generic_example.rdl -O tests/testcases/accelera-generic_example.rdl
         python generate_testcases.py
         mypy testcase_output --config-file=tests/.mypy.ini
         # pylint --rcfile tests/pylint.rc testcase_output/autopep8 --disable=duplicate-code,line-too-long,too-many-statements,invalid-name,unused-import,too-many-instance-attributes,too-many-arguments,too-many-lines

@@ -70,6 +70,13 @@ CommandLineParser.add_argument('--suppress_cleanup', action='store_true', dest='
                                     'However, if additional python files are added by the user '
                                     '(not recommended) this cleanup will need to be suppressed '
                                     'and managed by the user')
+CommandLineParser.add_argument('--copy_libraries', action='store_true', dest='copy_libraries',
+                               help='by default peakrdl python copies all the libraries over'
+                                    'to the generated package along with the generated code. '
+                                    'However, that is potententially problematic when developing'
+                                    'and debugging as multiple copies of the libraries can cause'
+                                    'confusion. Therefore by default this script does not copy '
+                                    'them over.')
 
 def build_logging_cong(logfilepath:str):
     return {
@@ -151,7 +158,8 @@ if __name__ == '__main__':
     start_time = time.time()
     exporter.export(node=spec, path=str(CommandLineArgs.output_path / 'generate_and_test_output'),
                     asyncoutput=CommandLineArgs.asyncoutput,
-                    delete_existing_package_content=not CommandLineArgs.suppress_cleanup)
+                    delete_existing_package_content=not CommandLineArgs.suppress_cleanup,
+                    skip_library_copy=not CommandLineArgs.copy_libraries)
     print(f'generation time {time.time() - start_time}s')
 
     if not CommandLineArgs.export_only:
@@ -168,10 +176,17 @@ if __name__ == '__main__':
         sim_module = __import__( 'generate_and_test_output.' +
             CommandLineArgs.root_node + '.sim.' + CommandLineArgs.root_node,
             globals(), locals(), [sim_class_name], 0)
-        peakrdl_python_package = __import__('generate_and_test_output.' + CommandLineArgs.root_node + '.lib',
-                                            globals(), locals(), ['CallbackSet'], 0)
+
 
         dut_cls = getattr(reg_model_module, reg_model_class_name)
+
+        if CommandLineArgs.copy_libraries:
+            peakrdl_python_package = __import__('generate_and_test_output.' + CommandLineArgs.root_node + '.lib',
+                                                globals(), locals(), ['CallbackSet'], 0)
+        else:
+            peakrdl_python_package = __import__('src.peakrdl_python.lib',
+                                                globals(), locals(), ['CallbackSet'], 0)
+
         if CommandLineArgs.asyncoutput is True:
             callbackset_cls = getattr(peakrdl_python_package, 'AsyncCallbackSet')
         else:

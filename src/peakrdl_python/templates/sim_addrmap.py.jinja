@@ -20,13 +20,14 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 from typing import Union, List, Dict
 
-from ..sim_lib.register import Register, MemoryRegister
-from ..sim_lib.memory import Memory
-from ..sim_lib.simulator import MemoryEntry
+from {% if skip_lib_copy %}src.peakrdl_python.{% else %}..{% endif %}sim_lib.register import Register, MemoryRegister
+from {% if skip_lib_copy %}src.peakrdl_python.{% else %}..{% endif %}sim_lib.memory import Memory
+from {% if skip_lib_copy %}src.peakrdl_python.{% else %}..{% endif %}sim_lib.simulator import MemoryEntry
+
 {% if asyncoutput -%}
-from ..sim_lib.simulator import AsyncSimulator as Simulator
+from {%if skip_lib_copy %}src.peakrdl_python.{% else %}..{% endif %}sim_lib.simulator import AsyncSimulator as Simulator
 {% else %}
-from ..sim_lib.simulator import Simulator
+from {% if skip_lib_copy %}src.peakrdl_python.{% else %}..{% endif %}sim_lib.simulator import Simulator
 {%- endif %}
 
 class {{top_node.inst_name}}_simulator_cls(Simulator):

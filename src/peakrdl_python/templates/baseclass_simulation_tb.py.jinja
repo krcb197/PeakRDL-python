@@ -30,11 +30,11 @@ import unittest
 {% endif %}
 
 
-from ..lib import RegisterWriteVerifyError
+from {% if skip_lib_copy %}src.peakrdl_python.{% else %}..{% endif %}lib import RegisterWriteVerifyError
 {% if asyncoutput %}
-from ..lib import AsyncCallbackSet
+from {% if skip_lib_copy %}src.peakrdl_python.{% else %}..{% endif %}lib import AsyncCallbackSet
 {% else %}
-from ..lib import NormalCallbackSet
+from {% if skip_lib_copy %}src.peakrdl_python.{% else %}..{% endif %}lib import NormalCallbackSet
 {% endif %}
 
 from ._{{top_node.inst_name}}_test_base import {{top_node.type_name}}_TestCase, {{top_node.type_name}}_TestCase_BlockAccess

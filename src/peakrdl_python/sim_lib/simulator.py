@@ -215,6 +215,16 @@ class BaseSimulator(ABC):
         end_address = start_address + (length * address_increment)
         return range(start_address, end_address, address_increment)
 
+    def node_by_full_name(self, name):
+
+        for mem in self._memories:
+            if mem.memory.full_inst_name == name:
+                return mem.memory
+
+        for reg in self._registers.values():
+            if reg.full_inst_name == name:
+                return reg
+
 
 class Simulator(BaseSimulator, ABC):
     """
