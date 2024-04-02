@@ -86,13 +86,6 @@ jobs:
       run: |
         python -m unittest discover -s tests/unit_tests -t .
 
-    - name: Test Development Runner
-      run: |
-          python -m generate_and_test --RDL_source_file tests/testcases/simulator_test.rdl --root_node simulator_test
-          python -m generate_and_test --RDL_source_file tests/testcases/simulator_test.rdl --root_node simulator_test --async
-
-          python -m generate_and_test --RDL_source_file tests/testcases/accelera-generic_example.rdl --root_node simulator_test
-
     - name: Generate testcases
       run: |
 
@@ -174,6 +167,15 @@ jobs:
         python -m with_hal
 
         cd ../..
+
+    - name: Test Development Runner
+      run: |
+        python -m pip install coverage
+
+        python -m generate_and_test --RDL_source_file tests/testcases/simulator_test.rdl --root_node simulator_test
+        python -m generate_and_test --RDL_source_file tests/testcases/simulator_test.rdl --root_node simulator_test --async
+
+        python -m generate_and_test --RDL_source_file tests/testcases/accelera-generic_example.rdl --root_node simulator_test
   #-------------------------------------------------------------------------------
   build:
     needs:
