@@ -234,9 +234,11 @@ class BaseSimulator(ABC):
             if reg.full_inst_name == name:
                 return reg
 
+            for field in reg.fields:
+                if field.full_inst_name == name:
+                    return field
+
         raise ValueError(f'node name not matched: {name}')
-
-
 
 
 class Simulator(BaseSimulator, ABC):

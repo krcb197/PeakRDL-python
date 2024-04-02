@@ -23,12 +23,31 @@ from typing import Dict
 from .base import Base
 
 
+class _MemoryContent:
+
+    __slots__ = ['__value', '__default_value']
+
+    def __init__(self, *,
+                 default_value: int):
+        self.__value:Dict[int, int] = {}
+        self.__default_value = default_value
+
+    def __getitem__(self, item):
+        if item in self.__value:
+            return self.__value[item]
+
+        return self.__default_value
+
+    def __setitem__(self, key, value):
+        self.__value[key] = value
+
+
 class Memory(Base):
     """
     Simulation of a memory, this is implemented using a sparse approach to avoid the simulator
     storing every possible entry in a register map, which could be very big.
     """
-    __slots__ = ['value', 'default_value', 'width', 'length']
+    __slots__ = ['__value', '__width', '__length']
 
     def __init__(self, *,
                  width: int,
@@ -38,10 +57,9 @@ class Memory(Base):
 
         super().__init__(full_inst_name=full_inst_name)
 
-        self.value: Dict[int, int] = {}
-        self.default_value = default_value
-        self.width = width
-        self.length = length
+        self.__value = _MemoryContent(default_value=default_value)
+        self.__width = width
+        self.__length = length
 
     def read(self, offset: int) -> int:
         """
@@ -54,10 +72,7 @@ class Memory(Base):
             memory word content
 
         """
-        if offset in self.value:
-            return self.value[offset]
-
-        return self.default_value
+        return self.value[offset]
 
     def write(self, offset: int, data: int) -> None:
         """
@@ -75,7 +90,7 @@ class Memory(Base):
 
     @property
     def _width_in_bytes(self) -> int:
-        return self.width >> 3
+        return self.__width >> 3
 
     def byte_offset_to_word_offset(self, byte_offset: int) -> int:
         """
@@ -89,3 +104,10 @@ class Memory(Base):
 
         """
         return byte_offset // self._width_in_bytes
+
+    @property
+    def value(self) -> _MemoryContent:
+        """
+        Access to the memory content, bypassing the callbacks
+        """
+        return self.__value
