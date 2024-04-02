@@ -508,9 +508,9 @@ class PythonExporter:
                                          target_name='test_sim_' + fq_block_name + '.py',
                                          template_context=context)
 
-    def export(self, node: Node, path: str,
-               asyncoutput: bool=False,
-               skip_test_case_generation: bool=False,
+    def export(self, node: Node, path: str,  # pylint: disable=too-many-arguments
+               asyncoutput: bool = False,
+               skip_test_case_generation: bool = False,
                delete_existing_package_content: bool = True,
                skip_library_copy: bool = False) -> List[str]:
         """
@@ -518,7 +518,7 @@ class PythonExporter:
 
         Args:
             node (str) : Top-level node to export. Can be the top-level `RootNode` or any
-                  internal `AddrmapNode`.
+                         internal `AddrmapNode`.
             path (str) : Output package path.
             asyncoutput (bool) : If set this builds a register model with async callbacks
             skip_test_case_generation (bool): skip generation the generation of the test cases
