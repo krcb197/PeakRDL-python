@@ -52,7 +52,7 @@ class Field():
     __slots__ = ['__high', '__low', '__msb', '__lsb', 'inst_name',
                  '__bitmask', '__msb0', '__lsb0', '__parent_register']
 
-    def __init__(self, *, low, high, msb, lsb,
+    def __init__(self, *, low: int, high: int, msb: int, lsb: int,
                  parent_register: 'BaseRegister', inst_name: str):
 
         self.inst_name = inst_name

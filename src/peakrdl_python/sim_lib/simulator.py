@@ -26,6 +26,7 @@ import asyncio
 
 from .register import Register, MemoryRegister
 from .memory import Memory
+from .field import Field
 
 from ..lib.utility_functions import get_array_typecode
 
@@ -215,7 +216,7 @@ class BaseSimulator(ABC):
         end_address = start_address + (length * address_increment)
         return range(start_address, end_address, address_increment)
 
-    def node_by_full_name(self, name: str) -> Union[Memory, MemoryRegister, Register]:
+    def node_by_full_name(self, name: str) -> Union[Memory, MemoryRegister, Register, Field]:
         """
         Find a node in the simulator by its fully qualified name
 

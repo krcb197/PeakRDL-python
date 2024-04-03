@@ -32,13 +32,13 @@ class _MemoryContent:
         self.__value:Dict[int, int] = {}
         self.__default_value = default_value
 
-    def __getitem__(self, item):
+    def __getitem__(self, item: int) -> int:
         if item in self.__value:
             return self.__value[item]
 
         return self.__default_value
 
-    def __setitem__(self, key, value):
+    def __setitem__(self, key: int, value: int) -> None:
         self.__value[key] = value
 
 
