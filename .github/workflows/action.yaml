@@ -261,9 +261,7 @@ jobs:
   #-------------------------------------------------------------------------------
   build:
     needs:
-      - tests
-      - lint
-      - mypy
+      - integration_tests
       - dev_runner
       - peakrdl_integration
     name: Build source distribution
