@@ -38,7 +38,6 @@ from {% if skip_lib_copy %}src.peakrdl_python.{% else %}..{% endif %}lib import 
 {% endif %}
 
 from ._{{top_node.inst_name}}_test_base import {{top_node.type_name}}_TestCase, {{top_node.type_name}}_TestCase_BlockAccess
-from ._{{top_node.inst_name}}_test_base import __name__ as base_name
 
 from ..reg_model.{{top_node.type_name}} import {{top_node.type_name}}_cls
 from ..sim.{{top_node.type_name}} import {{top_node.type_name}}_simulator_cls

@@ -25,12 +25,13 @@ import sys
 import asyncio
 if sys.version_info < (3, 8):
     import asynctest  # type: ignore[import]
-    from asynctest.mock import patch, call  # type: ignore[import]
+    from asynctest.mock import Mock  # type: ignore[import]
 else:
     import unittest
-    from unittest.mock import patch, call
+    from unittest.mock import Mock
 {% else %}
 import unittest
+from unittest.mock import Mock
 {% endif %}
 import random
 
@@ -47,13 +48,35 @@ class {{fq_block_name}}_single_access({{top_node.type_name}}_SimTestCase): # typ
         # test access operations (read and/or write) to register:
         # {{'.'.join(node.get_path_segments())}}
         with self.subTest(msg='register: {{'.'.join(node.get_path_segments())}}'):
-
+            register_read_callback = Mock()
+            register_write_callback = Mock()
             {% if node.has_sw_readable -%}
-            # test reading back 1 (the unpatched version returns 0 so this confirms the patch works)
+            # test reading back 0 (the initial value after reset)
             self.assertEqual({% if asyncoutput %}await {%endif %}self.dut.{{'.'.join(get_python_path_segments(node))}}.read(), 0)
+            # update the value via the backdoor in the simulator
+            sim_register = self.sim.node_by_full_name('{{'.'.join(node.get_path_segments())}}')
+            sim_register.value = 1
+            self.assertEqual({% if asyncoutput %}await {%endif %}self.dut.{{'.'.join(get_python_path_segments(node))}}.read(), 1)
+            # up to now the callback should not have been called
+            sim_register.read_callback = register_read_callback
+            sim_register.write_callback = register_write_callback
+            sim_register.value = 2
+            self.assertEqual({% if asyncoutput %}await {%endif %}self.dut.{{'.'.join(get_python_path_segments(node))}}.read(), 2)
+            register_write_callback.assert_not_called()
+            register_read_callback.assert_called_once_with(value=2)
+            register_write_callback.reset_mock()
+            register_read_callback.reset_mock()
+            sim_register.value = 3
+            sim_register.read_callback = None
+            sim_register.write_callback = None
+            self.assertEqual({% if asyncoutput %}await {%endif %}self.dut.{{'.'.join(get_python_path_segments(node))}}.read(), 3)
+            register_write_callback.assert_not_called()
+            register_read_callback.assert_not_called()
+
             {% endif %}
 
             {% if node.has_sw_writable -%}
+            self.assertNotEqual(0, 0, 'callbacks not tested')
             # test the write with high value
             {% if asyncoutput %}await {%endif %}self.dut.{{'.'.join(get_python_path_segments(node))}}.write({{get_reg_max_value_hex_string(node)}})
                 {%- if node.has_sw_readable %}
@@ -77,10 +100,17 @@ class {{fq_block_name}}_single_access({{top_node.type_name}}_SimTestCase): # typ
 
         {% endfor %}
 
+    {% if asyncoutput %}async {% endif %}def test_field_read_and_write(self) -> None:
+        """
+        Walk the register map and check every field can be read and written to correctly
+        """
+        self.assertNotEqual(0, 0, 'not implemented')
+
+
     {% if uses_memory %}
     {% if asyncoutput %}async {% endif %}def test_memory_read_and_write(self) -> None:
         """
-        Walk the register map and check every register can be read and written to correctly
+        Walk the register map and check every memory can be read and written to correctly
         """
         {% for node in owned_elements.memories -%}
 
@@ -89,6 +119,7 @@ class {{fq_block_name}}_single_access({{top_node.type_name}}_SimTestCase): # typ
         with self.subTest(msg='memory: {{'.'.join(node.get_path_segments())}}'):
 
             {% if node.is_sw_readable -%}
+            self.assertNotEqual(0, 0, 'callbacks not tested')
             # checks single unit accesses at the first entry, the last entry and a random entry in
             # in each case check a 0, max value and random value being read
             for entry in [0, random.randint(0,{{node.get_property('mementries')-1}}), {{node.get_property('mementries')-1}}]:
@@ -104,6 +135,7 @@ class {{fq_block_name}}_single_access({{top_node.type_name}}_SimTestCase): # typ
             {% endif %}
 
             {% if node.is_sw_writable -%}
+            self.assertNotEqual(0, 0, 'callbacks not tested')
             # checks single unit accesses at the first entry, the last entry and a random entry in
             # in each case check a 0, max value and random value being read
             for entry in [0, random.randint(0,{{node.get_property('mementries')-1}}), {{node.get_property('mementries')-1}}]:
