@@ -26,6 +26,9 @@ from ..lib.utility_functions import swap_msb_lsb_ordering
 if TYPE_CHECKING:
     from .register import BaseRegister
 
+# pylint: disable=too-many-instance-attributes,too-many-arguments
+
+
 @dataclass
 class FieldDefinition:
     """
@@ -52,11 +55,15 @@ class Field():
     def __init__(self, *, low, high, msb, lsb,
                  parent_register: 'BaseRegister', inst_name: str):
 
+        self.inst_name = inst_name
         self.__low = low
         self.__high = high
+
+        # there are a couple of properties that have been included because they may be needed in
+        # the future but are currently unused
+        # pylint: disable=unused-private-member
         self.__lsb = lsb
         self.__msb = msb
-        self.inst_name = inst_name
 
         if (msb == high) and (lsb == low):
             self.__lsb0 = True
@@ -66,6 +73,7 @@ class Field():
             self.__msb0 = True
         else:
             raise ValueError('msb/lsb are inconsistent with low/high')
+        # pylint: enable=unused-private-member
 
         self.__parent_register = parent_register
 
@@ -79,6 +87,9 @@ class Field():
 
     @property
     def value(self) -> int:
+        """
+        Access the register value without triggering the callbacks
+        """
 
         reg_value = self.__parent_register.value
 
@@ -88,8 +99,9 @@ class Field():
 
         return (reg_value & self.__bitmask) >> self.__low
 
-
-
     @property
     def full_inst_name(self) -> str:
+        """
+        Fully qualified instance name from the systemRDL
+        """
         return self.__parent_register.full_inst_name + '.' + self.inst_name

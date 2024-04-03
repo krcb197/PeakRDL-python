@@ -25,6 +25,7 @@ from .memory import Memory
 from .base import Base
 from .field import FieldDefinition, Field
 
+# pylint: disable=too-many-arguments
 
 class BaseRegister(Base, ABC):
     """
@@ -32,6 +33,7 @@ class BaseRegister(Base, ABC):
     """
 
     __slots__ = ['_width', '_readable', '_writable', 'fields']
+
     def __init__(self, *,
                  width: int,
                  full_inst_name: str,

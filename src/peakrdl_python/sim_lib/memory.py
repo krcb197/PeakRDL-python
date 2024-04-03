@@ -25,7 +25,7 @@ from .base import Base
 
 class _MemoryContent:
 
-    __slots__ = ['__value', '__default_value']
+    __slots__ = ['__value', '__default_value', '__length']
 
     def __init__(self, *,
                  default_value: int):
@@ -72,6 +72,8 @@ class Memory(Base):
             memory word content
 
         """
+        self.__offset_range_check(offset)
+
         return self.value[offset]
 
     def write(self, offset: int, data: int) -> None:
@@ -86,6 +88,8 @@ class Memory(Base):
             None
 
         """
+        self.__offset_range_check(offset)
+
         self.value[offset] = data
 
     @property
@@ -111,3 +115,7 @@ class Memory(Base):
         Access to the memory content, bypassing the callbacks
         """
         return self.__value
+
+    def __offset_range_check(self, offset: int) -> None:
+        if not 0 <= offset < self.__length:
+            raise IndexError(f'offset must in in range 0 to {self.__length-1}, got {offset:d}')
