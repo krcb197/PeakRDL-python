@@ -81,6 +81,10 @@ jobs:
           # the generate_and_test script is intended to run directly from source rather than from
           # the installed package
           python -m pip uninstall peakrdl-python -y
+          # peakrdl-ipxact is needed for some of the test cases so is imported by the
+          # generate_and_test script
+          python -m pip install peakrdl-ipxact
+
 
           # retrieve the example code from the systemRDL compiler
           wget -L https://raw.githubusercontent.com/SystemRDL/systemrdl-compiler/main/examples/accelera-generic_example.rdl -O tests/testcases/accelera-generic_example.rdl
