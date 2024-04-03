@@ -37,10 +37,12 @@ from unittest import TextTestRunner
 
 from coverage import Coverage
 
-
 from systemrdl import RDLCompiler
-from src import PythonExporter
+
 from peakrdl_ipxact import IPXACTImporter
+
+sys.path.append('src')
+from peakrdl_python import PythonExporter
 
 CommandLineParser = argparse.ArgumentParser(description='Test the framework')
 CommandLineParser.add_argument('--RDL_source_file', dest='root_RDL_file',
