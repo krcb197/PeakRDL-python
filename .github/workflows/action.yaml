@@ -56,10 +56,38 @@ jobs:
       - name: Type Check
         run: mypy src/peakrdl_python --config-file=tests/.mypy.ini
 
+  unit_tests:
+    needs:
+      - mypy
+      - lint
+
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: [ 3.7, 3.8, 3.9, "3.10", "3.11", "3.12" ]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install .
+
+      - name: Run Unit Tests
+        run: |
+          python -m unittest discover -s tests/unit_tests -t .
+
   dev_runner:
     needs:
       - mypy
       - lint
+      - unit_tests
 
     runs-on: ubuntu-latest
     strategy:
@@ -102,6 +130,7 @@ jobs:
     needs:
       - mypy
       - lint
+      - unit_tests
 
     runs-on: ubuntu-latest
     strategy:
@@ -181,10 +210,11 @@ jobs:
 
           cd ../..
 
-  tests:
+  integration_tests:
     needs:
       - mypy
       - lint
+      - unit_tests
 
     runs-on: ubuntu-latest
     strategy:
@@ -207,10 +237,6 @@ jobs:
         # retrieve the example code from the systemRDL compiler
         wget -L https://raw.githubusercontent.com/SystemRDL/systemrdl-compiler/main/examples/accelera-generic_example.rdl -O tests/testcases/accelera-generic_example.rdl
 
-    - name: Run Unit Tests
-      run: |
-        python -m unittest discover -s tests/unit_tests -t .
-
     - name: Generate testcases
       run: |
 
@@ -231,8 +257,6 @@ jobs:
         cp testcase_output autoformatted_testcase_output -r
         black autoformatted_testcase_output --line-length 120
         python -m unittest discover -s autoformatted_testcase_output
-
-
 
   #-------------------------------------------------------------------------------
   build:
