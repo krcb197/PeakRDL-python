@@ -398,7 +398,7 @@ User Defined Property), attributes can be accessed using the ``get_child_by_syst
 method of any object in the register model. The following example shows both methods to access the
 field from the example above
 
-.. literalinclude :: ../example/overridden_names/over_ridden_names.py
+.. literalinclude :: ../example/overridden_names/demo_over_ridden_names.py
    :language: python
 
 
@@ -421,7 +421,8 @@ that the generated code is compatible with an autoformatter.
 Simulator
 =========
 
-PeakRDL Python also generates an simulator
+PeakRDL Python also generates an simulator, this can be used to test and develop using the
+generated package.
 
 .. warning:: The PeakRDL Python simulator is not intended to replace an RTL simulation of the
              design. It does not simulate the hardware, it is intended as a simple tool for
