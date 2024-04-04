@@ -55,11 +55,13 @@ class Field(Base):
     """
 
     __slots__ = ['__high', '__low', '__msb', '__lsb',
-                 '__bitmask', '__msb0', '__lsb0', '__parent_register',
+                 '__bitmask', '__inverse_bitmask',
+                 '__msb0', '__lsb0',
+                 '__parent_register','__parent_width',
                  '__read_callback', '__write_callback']
 
     def __init__(self, *, low: int, high: int, msb: int, lsb: int,
-                 parent_register: 'BaseRegister', inst_name: str):
+                 parent_register: 'BaseRegister', parent_width: int, inst_name: str):
 
         super().__init__(full_inst_name=parent_register.full_inst_name + '.' + inst_name)
 
@@ -83,10 +85,14 @@ class Field(Base):
         # pylint: enable=unused-private-member
 
         self.__parent_register = parent_register
+        self.__parent_width = parent_width
 
         self.__bitmask = 0
         for bit_position in range(low, high+1):
             self.__bitmask |= (1 << bit_position)
+
+        parent_max_value = (2 ** parent_width) - 1
+        self.__inverse_bitmask = parent_max_value ^ self.__bitmask
 
         self.__read_callback: Optional[FieldReadCallback] = None
         self.__write_callback: Optional[FieldWriteCallback] = None
@@ -125,8 +131,24 @@ class Field(Base):
 
         reg_value = self.__parent_register.value
 
-        if self.__msb0 is True:
+        if self.__msb0:
             return swap_msb_lsb_ordering(value=(reg_value & self.__bitmask) >> self.__low,
                                          width=self.__width)
 
         return (reg_value & self.__bitmask) >> self.__low
+
+    @value.setter
+    def value(self, value: int) -> None:
+
+        if self.__msb0:
+            value = swap_msb_lsb_ordering(value=value, width=self._width)
+
+        if (self.__high == (self.__parent_width - 1)) and (self.__low == 0):
+            # special case where the field occupies the whole register,
+            # there a straight write can be performed
+            self.__parent_register.value = value
+        else:
+            # do a read, modify write
+            reg_value = self.__parent_register.read()
+            self.__parent_register.value = (reg_value & self.__inverse_bitmask) | \
+                                           (value << self.__low)

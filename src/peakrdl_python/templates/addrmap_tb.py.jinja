@@ -260,7 +260,7 @@ class {{fq_block_name}}_single_access({{top_node.type_name}}_TestCase): # type: 
                                     data=random_value)
                 write_callback_mock.reset_mock()
 
-                # test writting a value beyond the register range is blocked with an exception being raised
+                # test writing a value beyond the register range is blocked with an exception being raised
                 with self.assertRaises(ValueError):
                     {% if asyncoutput %}await {%endif %}rut.write(-1)
 

@@ -51,7 +51,8 @@ class BaseRegister(Base, ABC):
                              msb=field_def.msb,
                              lsb=field_def.lsb,
                              inst_name=field_def.inst_name,
-                             parent_register=self) for field_def in fields]
+                             parent_register=self,
+                             parent_width=width) for field_def in fields]
         self.__read_callback: Optional[RegisterReadCallback] = None
         self.__write_callback: Optional[RegisterWriteCallback] = None
 
