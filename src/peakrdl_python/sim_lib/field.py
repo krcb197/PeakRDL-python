@@ -24,12 +24,12 @@ from typing import Optional
 
 from ..lib.utility_functions import swap_msb_lsb_ordering
 
-if TYPE_CHECKING:
-    from .register import BaseRegister
-
 from ._callbacks import FieldReadCallback, FieldWriteCallback
 
 from .base import Base
+
+if TYPE_CHECKING:
+    from .register import BaseRegister
 
 # pylint: disable=too-many-instance-attributes,too-many-arguments
 
@@ -141,7 +141,7 @@ class Field(Base):
     def value(self, value: int) -> None:
 
         if self.__msb0:
-            value = swap_msb_lsb_ordering(value=value, width=self._width)
+            value = swap_msb_lsb_ordering(value=value, width=self.__width)
 
         if (self.__high == (self.__parent_width - 1)) and (self.__low == 0):
             # special case where the field occupies the whole register,

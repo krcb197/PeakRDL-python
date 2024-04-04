@@ -78,16 +78,22 @@ class BaseRegister(Base, ABC):
     def write_callback(self, callback: Optional[RegisterWriteCallback]) -> None:
         self.__write_callback = callback
 
-    def _action_read_callback(self):
+    def _action_read_callback(self) -> None:
         if self.read_callback is not None:
+            # pylint does not recognise that the property is returning a callback therefore it
+            # is legal to call it.
+            # pylint: disable-next=not-callable
             self.read_callback(value=self.value)
 
         for field in self.fields:
             if field.read_callback is not None:
                 field.read_callback(value=field.value)
 
-    def _action_write_callback(self):
+    def _action_write_callback(self) -> None:
         if self.write_callback is not None:
+            # pylint does not recognise that the property is returning a callback therefore it
+            # is legal to call it.
+            # pylint: disable-next=not-callable
             self.write_callback(value=self.value)
 
         for field in self.fields:
@@ -162,7 +168,7 @@ class Register(BaseRegister):
         return self.__value
 
     @value.setter
-    def value(self, value: int) -> int:
+    def value(self, value: int) -> None:
         self.__value = value
 
 
@@ -201,5 +207,5 @@ class MemoryRegister(BaseRegister):
         return self.__memory.value[self.__offset]
 
     @value.setter
-    def value(self, value: int) -> int:
+    def value(self, value: int) -> None:
         self.__memory.value[self.__offset] = value
