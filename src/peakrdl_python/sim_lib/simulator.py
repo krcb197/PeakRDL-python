@@ -216,6 +216,39 @@ class BaseSimulator(ABC):
         end_address = start_address + (length * address_increment)
         return range(start_address, end_address, address_increment)
 
+    def register_by_full_name(self, name: str) -> Union[MemoryRegister, Register]:
+        """
+        Find a register in the simulator by its fully qualified name
+
+        Args:
+            name: fully qualified register name
+
+        Returns: Register
+
+        """
+        for reg in self._registers.values():
+            if reg.full_inst_name == name:
+                return reg
+
+        raise ValueError(f'register name not matched: {name}')
+
+    def field_by_full_name(self, name: str) -> Field:
+        """
+        Find a register field in the simulator by its fully qualified name
+
+        Args:
+            name: fully qualified field name
+
+        Returns: Field
+
+        """
+        for reg in self._registers.values():
+            for field in reg.fields:
+                if field.full_inst_name == name:
+                    return field
+
+        raise ValueError(f'field name not matched: {name}')
+
     def node_by_full_name(self, name: str) -> Union[Memory, MemoryRegister, Register, Field]:
         """
         Find a node in the simulator by its fully qualified name

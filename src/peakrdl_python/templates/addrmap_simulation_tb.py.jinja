@@ -35,6 +35,9 @@ from unittest.mock import Mock
 {% endif %}
 import random
 
+from {% if skip_lib_copy %}src.peakrdl_python.{% else %}..{% endif %}sim_lib.register import Register,MemoryRegister
+from {% if skip_lib_copy %}src.peakrdl_python.{% else %}..{% endif %}sim_lib.field import Field
+
 from ._{{top_node.inst_name}}_sim_test_base import {{top_node.type_name}}_SimTestCase, {{top_node.type_name}}_SimTestCase_BlockAccess
 from ._{{top_node.inst_name}}_sim_test_base import __name__ as base_name
 
@@ -48,7 +51,8 @@ class {{fq_block_name}}_single_access({{top_node.type_name}}_SimTestCase): # typ
         # test access operations (read and/or write) to register:
         # {{'.'.join(node.get_path_segments())}}
         with self.subTest(msg='register: {{'.'.join(node.get_path_segments())}}'):
-            sim_register = self.sim.node_by_full_name('{{'.'.join(node.get_path_segments())}}')
+            sim_register = self.sim.register_by_full_name('{{'.'.join(node.get_path_segments())}}')
+            self.assertIsInstance(sim_register, (Register,MemoryRegister))
             register_read_callback = Mock()
             register_write_callback = Mock()
 
@@ -113,8 +117,10 @@ class {{fq_block_name}}_single_access({{top_node.type_name}}_SimTestCase): # typ
         # test access operations (read and/or write) to register:
         # {{'.'.join(node.get_path_segments())}}
         with self.subTest(msg='field: {{'.'.join(node.get_path_segments())}}'):
-            sim_register = self.sim.node_by_full_name('{{'.'.join(node.parent.get_path_segments())}}')
-            sim_field = self.sim.node_by_full_name('{{'.'.join(node.get_path_segments())}}')
+            sim_register = self.sim.register_by_full_name('{{'.'.join(node.parent.get_path_segments())}}')
+            self.assertIsInstance(sim_register, (Register,MemoryRegister))
+            sim_field = self.sim.field_by_full_name('{{'.'.join(node.get_path_segments())}}')
+            self.assertIsInstance(sim_field, Field)
             register_read_callback = Mock()
             register_write_callback = Mock()
             field_read_callback = Mock()
