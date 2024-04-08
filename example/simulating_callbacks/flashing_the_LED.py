@@ -1,15 +1,21 @@
+import tkinter
 import tkinter as tk
 
 from mychip.reg_model.mychip import mychip_cls
+from mychip.sim.mychip import mychip_simulator_cls
 from mychip.lib import NormalCallbackSet
 
-class ChipSim:
+class ChipSim(mychip_simulator_cls):
 
     def __init__(self):
 
-        # simulator state variables
-        self.PIN_output = False
-        self.PIN_state = False
+        # initialise the chip simulation of the registers at base address 0
+        super().__init__(address=0)
+        # create an alias to the GPIO[0] (connected to LED) direction control field
+        self.__gpio_pin_dir_reg_field_sim = self.node_by_full_name('mychip.GPIO.GPIO_dir.PIN_0')
+        # attach a callback function to the state of the GPIO[0], which is called everytime the
+        # field is written to
+        self.node_by_full_name('mychip.GPIO.GPIO_state.PIN_0').write_callback = self.__update_LED
 
         # basic GUI components
         self.root = tk.Tk()
@@ -24,91 +30,51 @@ class ChipSim:
         self.LED.pack()
         self.LED_inner = self.LED.create_oval(25, 25, 275, 275, fill='black')
 
-    def read_addr_space(self, addr: int, width: int, accesswidth: int) -> int:
+    def __update_LED(self, value) -> None:
         """
-        Callback to for the simulation of the chip
+        Call back attached to the state field for the GPIO.
 
         Args:
-            addr: Address to write to
-            width: Width of the register in bits
-            accesswidth: Minimum access width of the register in bits
-
-        Returns:
-            simulated register value
-        """
-        assert isinstance(addr, int)
-        assert isinstance(width, int)
-        assert isinstance(accesswidth, int)
-
-        if addr == 0x4:
-            if self.PIN_output is True:
-                return 0x1
-            else:
-                return 0x0
-        elif addr == 0x8:
-            if self.PIN_state is True:
-                return 0x1
-            else:
-                return 0x0
-
-    def write_addr_space(self, addr: int, width: int, accesswidth: int, data: int) -> None:
-        """
-        Callback to for the simulation of the chip
-
-        Args:
-            addr: Address to write to
-            width: Width of the register in bits
-            accesswidth: Minimum access width of the register in bits
-            data: value to be written to the register
+            value: value written to register field
 
         Returns:
             None
         """
-        assert isinstance(addr, int)
-        assert isinstance(width, int)
-        assert isinstance(accesswidth, int)
-        assert isinstance(data, int)
 
-        if addr == 0x4:
-            if (data & 0x1) == 0x1:
-                self.PIN_output = True
-            else:
-                self.PIN_output = False
-        elif addr == 0x8:
-            if (data & 0x1) == 0x1:
-                self.PIN_state = True
-            else:
-                self.PIN_state = False
-
-        self.update_LED()
-
-    def update_LED(self):
-
-        if self.PIN_output is True:
-            # LED is enabled
-            if self.PIN_state is True:
+        if self.__gpio_pin_dir_reg_field_sim.value == 1:
+            # only action the state of the GPIO (external LED if the direction is set to out)
+            if value == 1:
                 self.LED.itemconfig(self.LED_inner, fill='red')
             else:
                 self.LED.itemconfig(self.LED_inner, fill='black')
         else:
             self.LED.itemconfig(self.LED_inner, fill='black')
 
-# these two methods can be put in the simulator Tkinter event queue to perform register writes on
-# the register access layer (in turn causing the state of the simulator to change)
 
-def turn_LED_on(chip: mychip_cls, sim_kt_root):
+def timer_event(chip: mychip_cls, sim_kt_root: tkinter.Tk) -> None:
+    """
+    timer event which will invert the state of the LED and then set the timer event to run
+    in 2s
 
-    # write a '1' to the LED state field
-    chip.GPIO.GPIO_state.PIN_0.write(1)
+    Args:
+        chip: RAL for the chip
+        sim_kt_root: root of the tkinter object needed for setting up the next timer event
+
+    Returns:
+        None
+
+    """
+
+    # invert the current state of the LED
+    current_state = chip.GPIO.GPIO_state.PIN_0.read()
+    if current_state == 0:
+        chip.GPIO.GPIO_state.PIN_0.write(1)
+    elif current_state == 1:
+        chip.GPIO.GPIO_state.PIN_0.write(0)
+    else:
+        raise ValueError(f'unhandled current state {current_state:d}')
     # set up another event to happen
-    sim_kt_root.after(2000, turn_LED_off, chip, sim_kt_root)
-
-def turn_LED_off(chip: mychip_cls, sim_kt_root):
-
-    # write a '0' to the LED state field
-    chip.GPIO.GPIO_state.PIN_0.write(0)
-    # set up another event to happen
-    sim_kt_root.after(2000, turn_LED_on, chip, sim_kt_root)
+    sim_kt_root.after(2000, timer_event, chip, sim_kt_root)
 
 
 if __name__ == '__main__':
@@ -117,28 +83,17 @@ if __name__ == '__main__':
     # used to by the register access model
     chip_simulator = ChipSim()
 
-    def read_call_back(addr: int, width: int, accesswidth: int):
-        return chip_simulator.read_addr_space(addr=addr,
-                                              width=width,
-                                              accesswidth=accesswidth)
-    def write_call_back(addr: int, width: int, accesswidth: int, data: int):
-        chip_simulator.write_addr_space(addr=addr,
-                                        width=width,
-                                        accesswidth=accesswidth,
-                                        data=data)
-
     # create a callback set for the callbacks
-    callbacks = NormalCallbackSet(read_callback=read_call_back,
-                                  write_callback=write_call_back)
+    callbacks = NormalCallbackSet(read_callback=chip_simulator.read,
+                                  write_callback=chip_simulator.write)
 
     # created an instance of the register model and connect the callbacks to the simulator
     mychip = mychip_cls(callbacks=callbacks)
 
     # configure the GPIO.PIN_0 as an output
-    mychip.GPIO.GPIO_dir.PIN_0.write(mychip.GPIO.GPIO_dir.PIN_0.enum_cls.dir_out)
-
-    # set up the first event to turn the LED on after 2s (this event will then set-up a follow up
-    # event to turn it off. This sequencer repeats forever.
-    chip_simulator.root.after(2000, turn_LED_on, mychip, chip_simulator.root)
+    mychip.GPIO.GPIO_dir.PIN_0.write(mychip.GPIO.GPIO_dir.PIN_0.enum_cls.DIR_OUT)
+    # set up the first event to turn the LED on in 2s. This event will then set-up a follow up
+    # event such that the sequence runs forever.
+    chip_simulator.root.after(2000, timer_event, mychip, chip_simulator.root)
     # start the GUI (simulator)
     chip_simulator.root.mainloop()

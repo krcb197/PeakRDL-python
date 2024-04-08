@@ -2,43 +2,10 @@ import json
 from typing import Union
 
 from chip_with_registers.reg_model.chip_with_registers import chip_with_registers_cls
+from chip_with_registers.sim.chip_with_registers import chip_with_registers_simulator_cls
 
 from chip_with_registers.lib import NormalCallbackSet,  RegWriteOnly, RegReadWrite, \
     MemoryWriteOnly, MemoryReadWrite, RegFile, AddressMap
-
-
-# dummy functions to demonstrate the class
-def read_addr_space(addr: int, width: int, accesswidth: int) -> int:
-    """
-    Callback to simulate the operation of the package, everytime the read is called, it return
-    an integer value of 0
-
-    Args:
-        addr: Address to write to
-        width: Width of the register in bits
-        accesswidth: Minimum access width of the register in bits
-
-    Returns:
-        value inputted by the used
-    """
-    return int(0)
-
-
-def write_addr_space(addr: int, width: int, accesswidth: int, data: int) -> None:
-    """
-    Callback to simulate the operation of the package, everytime the read is called, it will
-    request the user input the value to be read back.
-
-    Args:
-        addr: Address to write to
-        width: Width of the register in bits
-        accesswidth: Minimum access width of the register in bits
-        data: value to be written to the register
-
-    Returns:
-        None
-    """
-    print(f'0x{data:X} written to 0x{addr:X}')
 
 
 class chip_with_registers_cls_with_reset(chip_with_registers_cls):
@@ -71,7 +38,7 @@ class chip_with_registers_cls_with_reset(chip_with_registers_cls):
                 if len(reset_value_dict) > 0:
                     register.write_fields(**reset_value_dict)
             else:
-                raise TypeError('unexpected type encoutered')
+                raise TypeError('unexpected type encountered')
 
     def _process_memory(self, node: Union[MemoryWriteOnly, MemoryReadWrite]):
         """
@@ -103,7 +70,7 @@ class chip_with_registers_cls_with_reset(chip_with_registers_cls):
             if isinstance(section, (RegFile, AddressMap)):
                 self._process_section(section)
             else:
-                raise TypeError('unexpected type encoutered')
+                raise TypeError('unexpected type encountered')
 
         # process all the memories in the section, note only AddressMaps can have memories within
         # them
@@ -112,7 +79,7 @@ class chip_with_registers_cls_with_reset(chip_with_registers_cls):
                 if isinstance(memory, (MemoryWriteOnly, MemoryReadWrite)):
                     self._process_memory(memory)
                 else:
-                    raise TypeError('unexpected type encoutered')
+                    raise TypeError('unexpected type encountered')
 
         # process all the registers in the section
         self._process_registers(node)
@@ -127,12 +94,13 @@ class chip_with_registers_cls_with_reset(chip_with_registers_cls):
         """
         self._process_section(self)
 
+
 if __name__ == '__main__':
 
     # create an instance of the address map with the simulated callback necessary to demonstrate
     # the example
-    dut = chip_with_registers_cls_with_reset(
-        callbacks=NormalCallbackSet(read_callback=read_addr_space,
-                                    write_callback=write_addr_space))
+    sim = chip_with_registers_simulator_cls(0)
+    dut = chip_with_registers_cls_with_reset(callbacks=NormalCallbackSet(read_callback=sim.read,
+                                                                         write_callback=sim.write))
 
     dut.reset()

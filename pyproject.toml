@@ -54,3 +54,12 @@ version = {attr = "peakrdl_python.__about__.__version__"}
 
 [project.entry-points."peakrdl.exporters"]
 python = "peakrdl_python.__peakrdl__:Exporter"
+
+[project.optional-dependencies]
+dev = [
+    "mypy",
+    "pylint",
+    "coverage",
+    "peakrdl-ipxact"
+]
+peakrdl = ["peakrdl"]

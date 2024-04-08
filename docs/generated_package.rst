@@ -9,7 +9,10 @@ will be based on the top level address map name with the package was generated
 
 | ``<root_name>``
 | ├── ``lib``
+| ├── ``sim_lib``
 | ├── ``reg_model``
+| │ └── ``<root_name>.py``
+| ├── ``sim``
 | │ └── ``<root_name>.py``
 | └── ``tests``
 |   └── ``test_<root_name>.py``
@@ -57,7 +60,7 @@ access layer package so that it can be used from the console:
         Args:
             addr: Address to write to
             width: Width of the register in bits
-            accesswidth: Minimium access width of the register in bits
+            accesswidth: Minimum access width of the register in bits
 
         Returns:
             value inputted by the used
@@ -69,8 +72,8 @@ access layer package so that it can be used from the console:
 
     def write_addr_space(addr: int, width: int, accesswidth: int, data: int) -> None:
         """
-        Callback to simulate the operation of the package, everytime the read is called, it will
-        request the user input the value to be read back.
+        Callback to simulate the operation of the package, everytime the write is called, it will
+        print out the result.
 
         Args:
             addr: Address to write to
@@ -130,11 +133,10 @@ a file called ``chip_with_a_GPIO.rdl``:
 .. tip:: It is always good practice to run the unittests on the generated code.
 
 Once the register access layer has been generated and it can be used. The following example
-does not actually use a device driver. Instead it chip simulator with a a Tkinter GUI,
+does not actually use a device driver. Instead it chip simulator with a Tkinter GUI,
 incorporating a RED circle to represent the LED. The chip simulator has read and write methods (
-equivalent to those offered by a device driver), these look at the address of the write and update
-the internal state of the simulator accordingly, the LED is then updated based on the state of the
-simulator.
+equivalent to those offered by a hardware device driver), in this case they use the simulator
+provided by PeakRDL Python.
 
 .. literalinclude :: ../example/simulating_callbacks/flashing_the_LED.py
    :language: python
@@ -395,7 +397,7 @@ User Defined Property), attributes can be accessed using the ``get_child_by_syst
 method of any object in the register model. The following example shows both methods to access the
 field from the example above
 
-.. literalinclude :: ../example/overridden_names/over_ridden_names.py
+.. literalinclude :: ../example/overridden_names/demo_over_ridden_names.py
    :language: python
 
 
@@ -413,4 +415,20 @@ to clean up the generated code. This had two issues:
 
 peakrdl-python uses the Black `Black <https://pypi.org/project/black/L>`_ in the CI tests to check
 that the generated code is compatible with an autoformatter.
+
+
+Simulator
+=========
+
+PeakRDL Python also generates an simulator, this can be used to test and develop using the
+generated package. The simulator is used in a the examples shown earlier in this section. The
+simulator has the option to attach a callback to the read and write operations of either a
+register or field. In addition there is a ``value`` property that allows access to the register
+or feild content, this allows the contents to be accessed or updated without activating the
+callbacks, this is intended to allow the simulator to be extended with behaviour that is not
+fully described by the systemRDL.
+
+.. warning:: The PeakRDL Python simulator is not intended to replace an RTL simulation of the
+             design. It does not simulate the hardware, it is intended as a simple tool for
+             development and testing of the python wrappers or code that uses them.
 

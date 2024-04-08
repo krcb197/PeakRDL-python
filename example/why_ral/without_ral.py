@@ -1,11 +1,29 @@
 """
 An example to turn on GPIO 0 with just read and write
 """
-from hardware_sim import HardwareSimulator
-# create an instance of the hardware simulator
-hw = HardwareSimulator()
+
+class HardwareSimulator:
+    def __init__(self):
+        # use a python dictionary to simulate the hardware
+        self._address_space = {0x100: 0, 0x104: 0}
+
+    def read(self, addr: int, width: int = 32, accesswidth: int = 32) -> int:
+        """
+        function to simulate a device read
+        """
+        return self._address_space[addr]
+
+
+    def write(self, addr: int, data: int, width: int=32, accesswidth: int=32) -> None:
+        """
+        function to simulate a device read
+        """
+        self._address_space[addr] = data
 
 if __name__ == '__main__':
+
+    # make an instance of the hardware simulator
+    hw = HardwareSimulator()
 
     # 1. Read the DIR register (to make sure you preserve the states of other pins)
     dir_reg = hw.read(0x100)
