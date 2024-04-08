@@ -105,13 +105,12 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          python -m pip install .
+          python -m pip install .[dev]
           # the generate_and_test script is intended to run directly from source rather than from
           # the installed package
           python -m pip uninstall peakrdl-python -y
           # peakrdl-ipxact is needed for some of the test cases so is imported by the
           # generate_and_test script
-          python -m pip install peakrdl-ipxact
 
 
           # retrieve the example code from the systemRDL compiler
@@ -119,7 +118,6 @@ jobs:
 
       - name: Test Development Runner
         run: |
-          python -m pip install coverage
 
           python -m generate_and_test --RDL_source_file tests/testcases/simulator_test.rdl --root_node simulator_test
           python -m generate_and_test --RDL_source_file tests/testcases/simulator_test.rdl --root_node simulator_test --async
@@ -148,8 +146,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          python -m pip install .
-          python -m pip install peakrdl
+          python -m pip install .[peakrdl]
 
       - name: Run PeakRDL Case
         run: |
