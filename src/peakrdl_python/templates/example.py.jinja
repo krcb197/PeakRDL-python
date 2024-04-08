@@ -1,8 +1,5 @@
-{% if asyncoutput %}
-from .lib import AsyncCallbackSet
-{% else %}
-from .lib import NormalCallbackSet
-{% endif %}
+
+from {% if skip_lib_copy %}src.peakrdl_python.{% else %}.{% endif %}lib import {% if asyncoutput %}Async{% else %}Normal{% endif %}CallbackSet
 
 from .reg_model.{{top_node.inst_name}} import {{top_node.inst_name}}_cls
 from .sim.{{top_node.inst_name}} import {{top_node.inst_name}}_simulator_cls
