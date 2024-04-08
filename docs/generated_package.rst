@@ -133,11 +133,10 @@ a file called ``chip_with_a_GPIO.rdl``:
 .. tip:: It is always good practice to run the unittests on the generated code.
 
 Once the register access layer has been generated and it can be used. The following example
-does not actually use a device driver. Instead it chip simulator with a a Tkinter GUI,
+does not actually use a device driver. Instead it chip simulator with a Tkinter GUI,
 incorporating a RED circle to represent the LED. The chip simulator has read and write methods (
-equivalent to those offered by a device driver), these look at the address of the write and update
-the internal state of the simulator accordingly, the LED is then updated based on the state of the
-simulator.
+equivalent to those offered by a hardware device driver), in this case they use the simulator
+provided by PeakRDL Python.
 
 .. literalinclude :: ../example/simulating_callbacks/flashing_the_LED.py
    :language: python
@@ -422,7 +421,12 @@ Simulator
 =========
 
 PeakRDL Python also generates an simulator, this can be used to test and develop using the
-generated package.
+generated package. The simulator is used in a the examples shown earlier in this section. The
+simulator has the option to attach a callback to the read and write operations of either a
+register or field. In addition there is a ``value`` property that allows access to the register
+or feild content, this allows the contents to be accessed or updated without activating the
+callbacks, this is intended to allow the simulator to be extended with behaviour that is not
+fully described by the systemRDL.
 
 .. warning:: The PeakRDL Python simulator is not intended to replace an RTL simulation of the
              design. It does not simulate the hardware, it is intended as a simple tool for
