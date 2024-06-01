@@ -26,6 +26,7 @@ from abc import ABC, abstractmethod
 from contextlib import asynccontextmanager
 from array import array as Array
 import sys
+from warnings import warn
 
 from .utility_functions import get_array_typecode
 from .base import AsyncAddressMap, AsyncRegFile
@@ -127,14 +128,16 @@ class RegAsyncReadOnly(AsyncReg, ABC):
         """
         Context manager to allow multiple field accesses to be performed with a single
         read of the register
-
-        Returns:
-
         """
         self.__register_state = await self.read()
+        # pylint: disable=duplicate-code
         self.__in_context_manager = True
-        yield self
-        self.__in_context_manager = False
+        # this try/finally is needed to make sure that in the event of an exception
+        # the state flags are not left incorrectly set
+        try:
+            yield self
+        finally:
+            self.__in_context_manager = False
 
     async def read(self) -> int:
         """Asynchronously read value from the register
@@ -292,7 +295,8 @@ class RegAsyncReadWrite(RegAsyncReadOnly, RegAsyncWriteOnly, ABC):
     class for an async read and write only register
 
     """
-    __slots__: List[str] = ['__in_context_manager', '__register_state']
+    __slots__: List[str] = ['__in_read_write_context_manager', '__in_read_context_manager',
+                            '__register_state']
 
     # pylint: disable=too-many-arguments, duplicate-code
     def __init__(self, *,
@@ -308,7 +312,8 @@ class RegAsyncReadWrite(RegAsyncReadOnly, RegAsyncWriteOnly, ABC):
                          inst_name=inst_name,
                          parent=parent, width=width, accesswidth=accesswidth)
 
-        self.__in_context_manager: bool = False
+        self.__in_read_write_context_manager: bool = False
+        self.__in_read_context_manager: bool = False
         self.__register_state: Optional[int] = None
 
     # pylint: enable=too-many-arguments, duplicate-code
@@ -324,18 +329,52 @@ class RegAsyncReadWrite(RegAsyncReadOnly, RegAsyncWriteOnly, ABC):
             verify (bool): very the write with a read afterwards
             skip_write (bool): skip the write back at the end
 
-        Returns:
-
         """
+        # pylint: disable=duplicate-code
+        if self.__in_read_context_manager:
+            raise RuntimeError('using the `single_read_modify_write` context manager within the '
+                               'single_read` is not permitted')
+
+        if skip_write is True:
+            warn('The `skip_write` argument will be removed in the future, use `single_read`'
+                 ' instead',
+                 DeprecationWarning, stacklevel=2)
+        # pylint: enable=duplicate-code
+
         self.__register_state = await self.read()
-        self.__in_context_manager = True
-        yield self
-        self.__in_context_manager = False
+
+        # pylint: disable=duplicate-code
+        self.__in_read_write_context_manager = True
+        # this try/finally is needed to make sure that in the event of an exception
+        # the state flags are not left incorrectly set
+        try:
+            yield self
+        finally:
+            self.__in_read_write_context_manager = False
+        # pylint: enable=duplicate-code
         if not skip_write:
             await self.write(self.__register_state, verify)
 
         # clear the register states at the end of the context manager
         self.__register_state = None
+
+    @asynccontextmanager
+    async def single_read(self) -> \
+            AsyncGenerator[Self, None]:
+        """
+        Context manager to allow multiple field reads with a single register read
+        """
+        # pylint: disable=duplicate-code
+        if self.__in_read_write_context_manager:
+            raise RuntimeError('using the `single_read` context manager within the '
+                               'single_read_modify_write` is not permitted')
+        self.__in_read_context_manager = True
+        # pylint: enable=duplicate-code
+        try:
+            async with super().single_read() as reg:
+                yield reg
+        finally:
+            self.__in_read_context_manager = False
 
     async def write(self, data: int, verify: bool = False) -> None:
         """
@@ -352,7 +391,10 @@ class RegAsyncReadWrite(RegAsyncReadOnly, RegAsyncWriteOnly, ABC):
             RegisterWriteVerifyError: the read back data after the write does not match the
                                       expected value
         """
-        if self.__in_context_manager:
+        if self.__in_read_context_manager:
+            raise RuntimeError('writes within the single read context manager are not permitted')
+
+        if self.__in_read_write_context_manager:
             # pylint: disable=duplicate-code
             if self.__register_state is None:
                 raise RuntimeError('The internal register state should never be None in the '
@@ -372,12 +414,15 @@ class RegAsyncReadWrite(RegAsyncReadOnly, RegAsyncWriteOnly, ABC):
         Returns:
             The value from register
         """
-        if self.__in_context_manager:
+        if self.__in_read_write_context_manager:
             # pylint: disable=duplicate-code
             if self.__register_state is None:
                 raise RuntimeError('The internal register state should never be None in the '
                                    'context manager')
             return self.__register_state
+
+        # the single read context manager is handled in the base class so does need any
+        # handling here
 
         return await super().read()
 
@@ -386,7 +431,7 @@ class RegAsyncReadWrite(RegAsyncReadOnly, RegAsyncWriteOnly, ABC):
         asynchronously read the register and return a dictionary of the field values
         """
         return_dict: Dict['str', Union[bool, Enum, int]] = {}
-        async with self.single_read_modify_write(skip_write=True) as reg:
+        async with self.single_read() as reg:
             for field in reg.readable_fields:
                 return_dict[field.inst_name] = await field.read()
 
@@ -647,8 +692,12 @@ class AsyncRegArray(BaseRegArray, ABC):
         else:
             self.__register_array_cache = await self.__block_read()
         self.__in_context_manager = True
-        yield self
-        self.__in_context_manager = False
+        # this try/finally is needed to make sure that in the event of an exception
+        # the state flags are not left incorrectly set
+        try:
+            yield self
+        finally:
+            self.__in_context_manager = False
         if not skip_write:
             await self.__block_write(self.__register_array_cache, verify)
 
@@ -711,7 +760,7 @@ class RegAsyncReadOnlyArray(AsyncRegArray, ABC):
 
         """
         async with self._cached_access(verify=False, skip_write=True,
-                                 skip_initial_read=False) as reg_array:
+                                       skip_initial_read=False) as reg_array:
             yield reg_array
 
     @property
@@ -818,8 +867,13 @@ class RegAsyncReadWriteArray(AsyncRegArray, ABC):
         Returns:
 
         """
+        if skip_write is True:
+            warn('The `skip_write` argument will be removed in the future, use `single_read`'
+                 ' instead',
+                 DeprecationWarning, stacklevel=2)
+
         async with self._cached_access(verify=verify, skip_write=skip_write,
-                                  skip_initial_read=False) as reg_array:
+                                       skip_initial_read=False) as reg_array:
             yield reg_array
 
     @property
