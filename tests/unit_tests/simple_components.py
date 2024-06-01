@@ -9,7 +9,7 @@ import logging
 from array import array as Array
 
 # pylint: disable-next=unused-wildcard-import, wildcard-import
-from src.peakrdl_python.lib import *
+from peakrdl_python.lib import *
 
 # pylint: disable=logging-not-lazy,logging-fstring-interpolation
 
