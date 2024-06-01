@@ -143,7 +143,6 @@ class BaseReg(Node, ABC):
         """
         return self.__width >> 3
 
-
     @property
     @abstractmethod
     def _is_readable(self) -> bool:
@@ -153,6 +152,7 @@ class BaseReg(Node, ABC):
     @abstractmethod
     def _is_writeable(self) -> bool:
         ...
+
 
 class Reg(BaseReg, ABC):
     """
@@ -266,7 +266,6 @@ class BaseRegArray(NodeArray[BaseRegArrayElementType], ABC):
             width=self.width,
             accesswidth=self.accesswidth,
             parent=self)
-
 
     def _sub_instance(self, elements: Dict[Tuple[int, ...], BaseRegArrayElementType]) ->\
             NodeArray[BaseRegArrayElementType]:
@@ -472,8 +471,6 @@ class RegArray(BaseRegArray, ABC):
                                                               width=width,
                                                               accesswidth=accesswidth)]
 
-
-
     def __cache_write(self, addr: int, width: int, accesswidth: int, data: int) -> None:
         """
         Used to replace the normal callbacks with those that access the cache
@@ -495,12 +492,10 @@ class RegArray(BaseRegArray, ABC):
                                                        width=width,
                                                        accesswidth=accesswidth)] = data
 
-
     @property
     def __cache_callbacks(self) -> NormalCallbackSet:
         return NormalCallbackSet(read_callback=self.__cache_read,
                                  write_callback=self.__cache_write)
-
 
     @property
     def __number_cache_entries(self) -> int:
@@ -508,7 +503,7 @@ class RegArray(BaseRegArray, ABC):
 
     @contextmanager
     def _cached_access(self, verify: bool = False, skip_write: bool = False,
-                                   skip_initial_read: bool = False) -> \
+                       skip_initial_read: bool = False) -> \
             Generator[Self, None, None]:
         """
         Context manager to allow multiple field reads/write to be done with a single set of
@@ -548,6 +543,7 @@ class RegArray(BaseRegArray, ABC):
         # This cast is OK because the type was checked in the __init__
         # pylint: disable-next=protected-access
         return cast(NormalCallbackSet, self.parent._callbacks)
+
 
 class RegReadOnly(Reg, ABC):
     """
@@ -872,8 +868,10 @@ class RegReadWrite(RegReadOnly, RegWriteOnly, ABC):
         # pylint: disable=duplicate-code
         return True
 
+
 ReadableRegister = Union[RegReadOnly, RegReadWrite]
 WritableRegister = Union[RegWriteOnly, RegReadWrite]
+
 
 class RegReadOnlyArray(RegArray, ABC):
     """
@@ -931,6 +929,7 @@ class RegReadOnlyArray(RegArray, ABC):
     def _is_writeable(self) -> bool:
         # pylint: disable=duplicate-code
         return False
+
 
 class RegWriteOnlyArray(RegArray, ABC):
     """
@@ -1018,7 +1017,6 @@ class RegReadWriteArray(RegArray, ABC):
                          parent=parent, address=address, width=width, accesswidth=accesswidth,
                          stride=stride, dimensions=dimensions, elements=elements)
 
-
     # pylint: enable=too-many-arguments,duplicate-code
 
     @contextmanager
@@ -1036,7 +1034,7 @@ class RegReadWriteArray(RegArray, ABC):
 
         """
         with self._cached_access(verify=verify, skip_write=skip_write,
-                                  skip_initial_read=False) as reg_array:
+                                 skip_initial_read=False) as reg_array:
             yield reg_array
 
     @property
