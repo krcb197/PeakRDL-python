@@ -409,10 +409,8 @@ class RegAsyncReadWrite(RegAsyncReadOnly, RegAsyncWriteOnly, ABC):
                                                    f'after writing {data:X}')
 
     async def read(self) -> int:
-        """Asynchronously read value from the register
-
-        Returns:
-            The value from register
+        """
+        Asynchronously read value from the register
         """
         if self.__in_read_write_context_manager:
             # pylint: disable=duplicate-code
@@ -599,7 +597,8 @@ class AsyncRegArray(BaseRegArray, ABC):
             width: Width of the register in bits
             accesswidth: Minimum access width of the register in bits
 
-        Returns: cache entry
+        Returns:
+            cache entry
 
         """
         if not isinstance(width, int):
@@ -681,8 +680,6 @@ class AsyncRegArray(BaseRegArray, ABC):
         Args:
             verify (bool): very the write with a read afterwards
             skip_write (bool): skip the write back at the end
-
-        Returns:
 
         """
         self.__register_address_array = \
