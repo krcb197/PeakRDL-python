@@ -1,7 +1,13 @@
 addrmap simulator_test {
 
+    enum FieldEncoding {
+        value1 = 1;
+        value2 = 2;
+	};
+
      reg {
             field {} field_entry;
+            field { encode = FieldEncoding; fieldwidth=2; } enum_field_entry;
      } a_register;
 
      reg {
