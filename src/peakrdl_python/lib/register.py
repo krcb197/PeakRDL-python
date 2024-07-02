@@ -26,6 +26,7 @@ from abc import ABC, abstractmethod
 from contextlib import contextmanager
 from array import array as Array
 import sys
+from warnings import warn
 
 from .base import Node, AddressMap, RegFile, NodeArray
 from .utility_functions import get_array_typecode
@@ -93,7 +94,8 @@ class BaseReg(Node, ABC):
 
     @property
     def max_value(self) -> int:
-        """maximum unsigned integer value that can be stored in the register
+        """
+        maximum unsigned integer value that can be stored in the register
 
         For example:
 
@@ -121,9 +123,6 @@ class BaseReg(Node, ABC):
     def width(self) -> int:
         """
         The width of the register in bits, this uses the `regwidth` systemRDL property
-
-        Returns: register width
-
         """
         return self.__width
 
@@ -131,8 +130,6 @@ class BaseReg(Node, ABC):
     def accesswidth(self) -> int:
         """
         The access width of the register in bits, this uses the `accesswidth` systemRDL property
-
-        Returns: register access width
         """
         return self.__accesswidth
 
@@ -143,7 +140,6 @@ class BaseReg(Node, ABC):
         """
         return self.__width >> 3
 
-
     @property
     @abstractmethod
     def _is_readable(self) -> bool:
@@ -153,6 +149,7 @@ class BaseReg(Node, ABC):
     @abstractmethod
     def _is_writeable(self) -> bool:
         ...
+
 
 class Reg(BaseReg, ABC):
     """
@@ -242,9 +239,6 @@ class BaseRegArray(NodeArray[BaseRegArrayElementType], ABC):
     def width(self) -> int:
         """
         The width of the register in bits, this uses the `regwidth` systemRDL property
-
-        Returns: register width
-
         """
         return self.__width
 
@@ -252,8 +246,6 @@ class BaseRegArray(NodeArray[BaseRegArrayElementType], ABC):
     def accesswidth(self) -> int:
         """
         The access width of the register in bits, this uses the `accesswidth` systemRDL property
-
-        Returns: register access width
         """
         return self.__accesswidth
 
@@ -266,7 +258,6 @@ class BaseRegArray(NodeArray[BaseRegArrayElementType], ABC):
             width=self.width,
             accesswidth=self.accesswidth,
             parent=self)
-
 
     def _sub_instance(self, elements: Dict[Tuple[int, ...], BaseRegArrayElementType]) ->\
             NodeArray[BaseRegArrayElementType]:
@@ -431,7 +422,8 @@ class RegArray(BaseRegArray, ABC):
             width: Width of the register in bits
             accesswidth: Minimum access width of the register in bits
 
-        Returns: cache entry
+        Returns:
+            cache entry
 
         """
         if not isinstance(width, int):
@@ -472,8 +464,6 @@ class RegArray(BaseRegArray, ABC):
                                                               width=width,
                                                               accesswidth=accesswidth)]
 
-
-
     def __cache_write(self, addr: int, width: int, accesswidth: int, data: int) -> None:
         """
         Used to replace the normal callbacks with those that access the cache
@@ -495,12 +485,10 @@ class RegArray(BaseRegArray, ABC):
                                                        width=width,
                                                        accesswidth=accesswidth)] = data
 
-
     @property
     def __cache_callbacks(self) -> NormalCallbackSet:
         return NormalCallbackSet(read_callback=self.__cache_read,
                                  write_callback=self.__cache_write)
-
 
     @property
     def __number_cache_entries(self) -> int:
@@ -508,7 +496,7 @@ class RegArray(BaseRegArray, ABC):
 
     @contextmanager
     def _cached_access(self, verify: bool = False, skip_write: bool = False,
-                                   skip_initial_read: bool = False) -> \
+                       skip_initial_read: bool = False) -> \
             Generator[Self, None, None]:
         """
         Context manager to allow multiple field reads/write to be done with a single set of
@@ -517,9 +505,6 @@ class RegArray(BaseRegArray, ABC):
         Args:
             verify (bool): very the write with a read afterwards
             skip_write (bool): skip the write back at the end
-
-        Returns:
-
         """
         self.__register_address_array = \
             [self.address + (i * (self.width >> 3)) for i in range(self.__number_cache_entries)]
@@ -528,8 +513,12 @@ class RegArray(BaseRegArray, ABC):
         else:
             self.__register_array_cache = self.__block_read()
         self.__in_context_manager = True
-        yield self
-        self.__in_context_manager = False
+        # this try/finally is needed to make sure that in the event of an exception
+        # the state flags are not left incorrectly set
+        try:
+            yield self
+        finally:
+            self.__in_context_manager = False
         if not skip_write:
             self.__block_write(self.__register_array_cache, verify)
 
@@ -548,6 +537,7 @@ class RegArray(BaseRegArray, ABC):
         # This cast is OK because the type was checked in the __init__
         # pylint: disable-next=protected-access
         return cast(NormalCallbackSet, self.parent._callbacks)
+
 
 class RegReadOnly(Reg, ABC):
     """
@@ -589,21 +579,19 @@ class RegReadOnly(Reg, ABC):
         """
         Context manager to allow multiple field accesses to be performed with a single
         read of the register
-
-        Returns:
-
         """
         self.__register_state = self.read()
         self.__in_context_manager = True
-        yield self
-        self.__in_context_manager = False
+        # this try/finally is needed to make sure that in the event of an exception
+        # the state flags are not left incorrectly set
+        try:
+            yield self
+        finally:
+            self.__in_context_manager = False
 
     def read(self) -> int:
-        """Read value from the register
-
-        Returns:
-            The value from register
-
+        """
+        Read value from the register
         """
         if self.__in_context_manager:
             return self.__register_state
@@ -748,7 +736,8 @@ class RegReadWrite(RegReadOnly, RegWriteOnly, ABC):
     class for a read and write only register
 
     """
-    __slots__: List[str] = ['__in_context_manager', '__register_state']
+    __slots__: List[str] = ['__in_read_write_context_manager', '__in_read_context_manager',
+                            '__register_state']
 
     # pylint: disable=too-many-arguments, duplicate-code
     def __init__(self, *,
@@ -764,7 +753,8 @@ class RegReadWrite(RegReadOnly, RegWriteOnly, ABC):
                          inst_name=inst_name,
                          parent=parent, width=width, accesswidth=accesswidth)
 
-        self.__in_context_manager: bool = False
+        self.__in_read_write_context_manager: bool = False
+        self.__in_read_context_manager: bool = False
         self.__register_state: Optional[int] = None
 
     # pylint: enable=too-many-arguments, duplicate-code
@@ -780,18 +770,46 @@ class RegReadWrite(RegReadOnly, RegWriteOnly, ABC):
             verify (bool): very the write with a read afterwards
             skip_write (bool): skip the write back at the end
 
-        Returns:
-
         """
+        if self.__in_read_context_manager:
+            raise RuntimeError('using the `single_read_modify_write` context manager within the '
+                               'single_read` is not permitted')
+
+        if skip_write is True:
+            warn('The `skip_write` argument will be removed in the future, use `single_read`'
+                 ' instead',
+                 DeprecationWarning, stacklevel=2)
+
         self.__register_state = self.read()
-        self.__in_context_manager = True
-        yield self
-        self.__in_context_manager = False
+        self.__in_read_write_context_manager = True
+        try:
+            yield self
+        finally:
+            # need to make sure the state flag is cleared even if an exception occurs within
+            # the context
+            self.__in_read_write_context_manager = False
+
         if not skip_write:
             self.write(self.__register_state, verify)
 
         # clear the register states at the end of the context manager
         self.__register_state = None
+
+    @contextmanager
+    def single_read(self) -> \
+            Generator[Self, None, None]:
+        """
+        Context manager to allow multiple field reads with a single register read
+        """
+        if self.__in_read_write_context_manager:
+            raise RuntimeError('using the `single_read` context manager within the '
+                               'single_read_modify_write` is not permitted')
+        self.__in_read_context_manager = True
+        try:
+            with super().single_read() as reg:
+                yield reg
+        finally:
+            self.__in_read_context_manager = False
 
     def write(self, data: int, verify: bool = False) -> None:  # pylint: disable=arguments-differ
         """
@@ -808,7 +826,10 @@ class RegReadWrite(RegReadOnly, RegWriteOnly, ABC):
             RegisterWriteVerifyError: the read back data after the write does not match the
                                       expected value
         """
-        if self.__in_context_manager:
+        if self.__in_read_context_manager:
+            raise RuntimeError('writes within the single read context manager are not permitted')
+
+        if self.__in_read_write_context_manager:
             if self.__register_state is None:
                 raise RuntimeError('The internal register state should never be None in the '
                                    'context manager')
@@ -822,16 +843,17 @@ class RegReadWrite(RegReadOnly, RegWriteOnly, ABC):
                                                    f'after writing {data:X}')
 
     def read(self) -> int:
-        """Read value from the register
-
-        Returns:
-            The value from register
         """
-        if self.__in_context_manager:
+        Read value from the register
+        """
+        if self.__in_read_write_context_manager:
             if self.__register_state is None:
                 raise RuntimeError('The internal register state should never be None in the '
                                    'context manager')
             return self.__register_state
+
+        # the single read context manager is handled in the base class so does need any
+        # handling here
 
         return super().read()
 
@@ -856,7 +878,7 @@ class RegReadWrite(RegReadOnly, RegWriteOnly, ABC):
         read the register and return a dictionary of the field values
         """
         return_dict: Dict['str', Union[bool, Enum, int]] = {}
-        with self.single_read_modify_write(skip_write=True) as reg:
+        with self.single_read() as reg:
             for field in reg.readable_fields:
                 return_dict[field.inst_name] = field.read()
 
@@ -872,8 +894,10 @@ class RegReadWrite(RegReadOnly, RegWriteOnly, ABC):
         # pylint: disable=duplicate-code
         return True
 
+
 ReadableRegister = Union[RegReadOnly, RegReadWrite]
 WritableRegister = Union[RegWriteOnly, RegReadWrite]
+
 
 class RegReadOnlyArray(RegArray, ABC):
     """
@@ -911,12 +935,6 @@ class RegReadOnlyArray(RegArray, ABC):
         """
         Context manager to allow multiple field reads/write to be done with a single set of
         field operations
-
-        Args:
-
-
-        Returns:
-
         """
         with self._cached_access(verify=False, skip_write=True,
                                  skip_initial_read=False) as reg_array:
@@ -931,6 +949,7 @@ class RegReadOnlyArray(RegArray, ABC):
     def _is_writeable(self) -> bool:
         # pylint: disable=duplicate-code
         return False
+
 
 class RegWriteOnlyArray(RegArray, ABC):
     """
@@ -968,12 +987,6 @@ class RegWriteOnlyArray(RegArray, ABC):
         """
         Context manager to allow multiple field reads/write to be done with a single set of
         field operations
-
-        Args:
-
-
-        Returns:
-
         """
         with self._cached_access(verify=False, skip_write=False,
                                   skip_initial_read=True) as reg_array:
@@ -1018,7 +1031,6 @@ class RegReadWriteArray(RegArray, ABC):
                          parent=parent, address=address, width=width, accesswidth=accesswidth,
                          stride=stride, dimensions=dimensions, elements=elements)
 
-
     # pylint: enable=too-many-arguments,duplicate-code
 
     @contextmanager
@@ -1031,12 +1043,9 @@ class RegReadWriteArray(RegArray, ABC):
         Args:
             verify (bool): very the write with a read afterwards
             skip_write (bool): skip the write back at the end
-
-        Returns:
-
         """
         with self._cached_access(verify=verify, skip_write=skip_write,
-                                  skip_initial_read=False) as reg_array:
+                                 skip_initial_read=False) as reg_array:
             yield reg_array
 
     @property

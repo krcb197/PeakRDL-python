@@ -65,7 +65,7 @@ Memories
     :inherited-members:
 
 Registers
-^^^^^^^^^
+=========
 
 .. autoclass:: peakrdl_python.lib.register.RegReadOnly
     :members:
@@ -93,6 +93,7 @@ Registers
 
 Register Fields
 ^^^^^^^^^^^^^^^
+A register will always have fields within it
 
 .. autoclass:: peakrdl_python.lib.fields.FieldReadOnly
     :members:
