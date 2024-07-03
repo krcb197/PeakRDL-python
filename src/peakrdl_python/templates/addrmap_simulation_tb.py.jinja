@@ -192,10 +192,15 @@ class {{fq_block_name}}_single_access({{top_node.type_name}}_SimTestCase): # typ
 
             {% if node.is_sw_writable -%}
             # register write checks
-            # update the register value via the backdoor in the simulator, then perfrom a field
-            # write and makde sure it is updated
+            # update the register value via the backdoor in the simulator, then perform a field
+            # write and make sure it is updated
+            {% if node.parent.has_sw_readable -%}
             inital_reg_random_value = random.randrange(0, {{get_reg_max_value_hex_string(node.parent)}}+1)
             sim_register.value = inital_reg_random_value
+            {% else -%}
+            {# if the register is not readable the write assumes the rest of the register is 0 #}
+            inital_reg_random_value = 0
+            {% endif %}
             {%- if 'encode' in node.list_properties() %}
             random_field_value = random.choice(list(self.dut.{{'.'.join(get_python_path_segments(node))}}.enum_cls))
             {% else %}
