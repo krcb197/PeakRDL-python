@@ -7,8 +7,6 @@ from gpio.reg_model.gpio import gpio_gpio_direction_enc_enumcls as GPIO_DIR_ENUM
 
 from gpio.lib import NormalCallbackSet
 
-from hardware_sim import HardwareSimulator
-
 class HAL:
 
     class GPIO_HAL:
