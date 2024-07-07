@@ -113,6 +113,7 @@ class {{fq_block_name}}_single_access({{top_node.type_name}}_SimTestCase): # typ
         """
         Walk the register map and check every field can be read and written to correctly
         """
+        random_field_value: Union[int, IntEnum]
         {% for node in owned_elements.fields -%}
         # test access operations (read and/or write) to register:
         # {{'.'.join(node.get_path_segments())}}
