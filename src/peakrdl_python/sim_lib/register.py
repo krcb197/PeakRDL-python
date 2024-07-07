@@ -80,25 +80,35 @@ class BaseRegister(Base, ABC):
 
     def _action_read_callback(self) -> None:
         if self.read_callback is not None:
+            # python 3.7 doesn't have the callback defined as protocol so mypy doesn't recognise
+            # the arguments in the call back functions
+
             # pylint does not recognise that the property is returning a callback therefore it
             # is legal to call it.
             # pylint: disable-next=not-callable
-            self.read_callback(value=self.value)
+            self.read_callback(value=self.value)  # type: ignore[call-arg]
 
         for field in self.fields:
             if field.read_callback is not None:
-                field.read_callback(value=field.value)
+                # python 3.7 doesn't have the callback defined as protocol so mypy doesn't
+                # recognise the arguments in the call back functions
+                field.read_callback(value=field.value)  # type: ignore[call-arg]
 
     def _action_write_callback(self) -> None:
         if self.write_callback is not None:
+            # python 3.7 doesn't have the callback defined as protocol so mypy doesn't recognise
+            # the arguments in the call back functions
+
             # pylint does not recognise that the property is returning a callback therefore it
             # is legal to call it.
             # pylint: disable-next=not-callable
-            self.write_callback(value=self.value)
+            self.write_callback(value=self.value)  # type: ignore[call-arg]
 
         for field in self.fields:
             if field.write_callback is not None:
-                field.write_callback(value=field.value)
+                # python 3.7 doesn't have the callback defined as protocol so mypy doesn't
+                # recognise the arguments in the call back functions
+                field.write_callback(value=field.value)  # type: ignore[call-arg]
 
     @abstractmethod
     def read(self) -> int:
