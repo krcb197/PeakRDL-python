@@ -61,6 +61,8 @@ class {{get_fully_qualified_type_name(node)}}_cls(Field{%- if 'encode' in node.l
             ValueError - if the value read back for the field can not be matched to the enum
         """
         field_value = super().decode_read_value(value)
+        if field_value not in self._enum_values:
+            raise ValueError(f'{field_value:X} is not legal for the enumeration')
 
         return self.enum_cls(field_value)
 

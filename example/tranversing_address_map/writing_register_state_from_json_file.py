@@ -2,44 +2,11 @@ import json
 from typing import Union, Dict, List
 
 from chip_with_registers.reg_model.chip_with_registers import chip_with_registers_cls
+from chip_with_registers.sim.chip_with_registers import chip_with_registers_simulator_cls
 
 from chip_with_registers.lib import NormalCallbackSet, RegWriteOnly, RegReadWrite, \
     MemoryWriteOnly, MemoryReadWrite, RegFile, AddressMap, RegWriteOnlyArray, RegReadWriteArray, \
     AddressMapArray, RegFileArray, MemoryWriteOnlyArray, MemoryReadWriteArray, FieldEnum, Field
-
-
-# dummy functions to demonstrate the class
-def read_addr_space(addr: int, width: int, accesswidth: int) -> int:
-    """
-    Callback to simulate the operation of the package, everytime the read is called, it return
-    an integer value of 0
-
-    Args:
-        addr: Address to write to
-        width: Width of the register in bits
-        accesswidth: Minimum access width of the register in bits
-
-    Returns:
-        value inputted by the used
-    """
-    return int(0)
-
-
-def write_addr_space(addr: int, width: int, accesswidth: int, data: int) -> None:
-    """
-    Callback to simulate the operation of the package, everytime the read is called, it will
-    request the user input the value to be read back.
-
-    Args:
-        addr: Address to write to
-        width: Width of the register in bits
-        accesswidth: Minimum access width of the register in bits
-        data: value to be written to the register
-
-    Returns:
-        None
-    """
-    print(f'0x{data:X} written to 0x{addr:X}')
 
 
 class RegisterWriter:
@@ -86,8 +53,6 @@ class RegisterWriter:
             reg_from_json = json.load(fp)
 
         self._process_json_leaf(node=self.address_map, reg_from_json=reg_from_json)
-
-
 
     @staticmethod
     def _registers_template(node: Union[MemoryWriteOnly, MemoryReadWrite, RegFile, AddressMap]):
@@ -248,8 +213,9 @@ if __name__ == '__main__':
 
     # create an instance of the address map with the simulated callback necessary to demonstrate
     # the example
-    dut = chip_with_registers_cls(callbacks=NormalCallbackSet(read_callback=read_addr_space,
-                                                              write_callback=write_addr_space))
+    sim = chip_with_registers_simulator_cls(0)
+    dut = chip_with_registers_cls(callbacks=NormalCallbackSet(read_callback=sim.read,
+                                                              write_callback=sim.write))
 
     # generate an instance of the RegisterWriter and write the template JSON file for registers
     # in the design. In the template all the values are set to null (None in python)

@@ -823,10 +823,7 @@ class FieldEnum(Field, ABC):
     @property
     def _enum_values(self) -> List[int]:
         """
-        checks whether the default value is within the legal range for the enum
-
-        Returns:
-
+        provide the legal values for the enumeration
         """
         return [e.value for e in self.enum_cls] # type: ignore[var-annotated]
 

@@ -1,0 +1,44 @@
+addrmap simulator_test {
+
+    enum FieldEncoding {
+        value1 = 1;
+        value2 = 2;
+	};
+
+     reg {
+            field {} field_entry;
+            field { encode = FieldEncoding; fieldwidth=2; } enum_field_entry;
+     } a_register;
+
+     reg {
+            field {} field_entry;
+     } a_register_array[2];
+
+    external mem {
+        mementries = 16;
+        memwidth = 32;
+        sw=rw;
+
+        reg mem_entry_definition {
+            field {} lower_entry[15:0];
+        };
+
+        mem_entry_definition mem_entry_set1;
+        mem_entry_definition mem_entry_set2[4];
+
+    } mem_with_internal_registers;
+
+    external mem {
+        mementries = 16;
+        memwidth = 32;
+        sw=rw;
+    } mem_without_registers;
+
+    external mem {
+        mementries = 16;
+        memwidth = 32;
+        sw=rw;
+    } mem_array[2];
+
+
+};
