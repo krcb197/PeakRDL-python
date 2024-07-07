@@ -35,11 +35,11 @@ from unittest import TestLoader
 from unittest import TestSuite
 from unittest import TextTestRunner
 
-# from coverage import Coverage
+from coverage import Coverage
 
 from systemrdl import RDLCompiler
 
-# from peakrdl_ipxact import IPXACTImporter
+from peakrdl_ipxact import IPXACTImporter
 
 sys.path.append('src')
 from peakrdl_python import PythonExporter
