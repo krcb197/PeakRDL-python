@@ -19,7 +19,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 {% include "header_tb.py.jinja" with context %}
 
 from array import array as Array
-from typing import List, Union, Dict
+from typing import List, Union, Dict, TYPE_CHECKING
 {% if asyncoutput %}
 import sys
 import asyncio
@@ -34,6 +34,7 @@ import unittest
 from unittest.mock import Mock
 {% endif %}
 import random
+from enum import IntEnum
 
 from {% if skip_lib_copy %}src.peakrdl_python.{% else %}..{% endif %}sim_lib.register import Register,MemoryRegister
 from {% if skip_lib_copy %}src.peakrdl_python.{% else %}..{% endif %}sim_lib.field import Field
@@ -131,7 +132,7 @@ class {{fq_block_name}}_single_access({{top_node.type_name}}_SimTestCase): # typ
 
             {%- if 'encode' in node.list_properties() %}
             random_field_value = random.choice(list(self.dut.{{'.'.join(get_python_path_segments(node))}}.enum_cls))
-            random_value = (random.randrange(0, {{get_reg_max_value_hex_string(node.parent)}}+1) & {{get_field_inv_bitmask_hex_string(node)}}) | (random_field_value.value << {{node.low}})
+            random_value = (random.randrange(0, {{get_reg_max_value_hex_string(node.parent)}}+1) & {{get_field_inv_bitmask_hex_string(node)}}) | (random_field_value.value << {{node.low}}) # type: ignore[attr-defined]
             {% else %}
             random_value = random.randrange(0, {{get_reg_max_value_hex_string(node.parent)}}+1)
             random_field_value = (random_value & {{get_field_bitmask_hex_string(node)}}) >> {{node.low}}
@@ -151,7 +152,7 @@ class {{fq_block_name}}_single_access({{top_node.type_name}}_SimTestCase): # typ
             # hook up the call backs to check they work correctly
             {%- if 'encode' in node.list_properties() %}
             random_field_value = random.choice(list(self.dut.{{'.'.join(get_python_path_segments(node))}}.enum_cls))
-            random_value = (random.randrange(0, {{get_reg_max_value_hex_string(node.parent)}}+1) & {{get_field_inv_bitmask_hex_string(node)}}) | (random_field_value.value << {{node.low}})
+            random_value = (random.randrange(0, {{get_reg_max_value_hex_string(node.parent)}}+1) & {{get_field_inv_bitmask_hex_string(node)}}) | (random_field_value.value << {{node.low}}) # type: ignore[attr-defined]
             {% else %}
             random_value = random.randrange(0, {{get_reg_max_value_hex_string(node.parent)}}+1)
             random_field_value = (random_value & {{get_field_bitmask_hex_string(node)}}) >> {{node.low}}
@@ -177,7 +178,7 @@ class {{fq_block_name}}_single_access({{top_node.type_name}}_SimTestCase): # typ
             sim_field.write_callback = None
             {%- if 'encode' in node.list_properties() %}
             random_field_value = random.choice(list(self.dut.{{'.'.join(get_python_path_segments(node))}}.enum_cls))
-            random_value = (random.randrange(0, {{get_reg_max_value_hex_string(node.parent)}}+1) & {{get_field_inv_bitmask_hex_string(node)}}) | (random_field_value.value << {{node.low}})
+            random_value = (random.randrange(0, {{get_reg_max_value_hex_string(node.parent)}}+1) & {{get_field_inv_bitmask_hex_string(node)}}) | (random_field_value.value << {{node.low}}) # type: ignore[attr-defined]
             {% else %}
             random_value = random.randrange(0, {{get_reg_max_value_hex_string(node.parent)}}+1)
             random_field_value = (random_value & {{get_field_bitmask_hex_string(node)}}) >> {{node.low}}
@@ -208,7 +209,7 @@ class {{fq_block_name}}_single_access({{top_node.type_name}}_SimTestCase): # typ
             {% endif %}
             {% if asyncoutput %}await {%endif %}self.dut.{{'.'.join(get_python_path_segments(node))}}.write(random_field_value)
             {%- if 'encode' in node.list_properties() %}
-            self.assertEqual(sim_register.value, (inital_reg_random_value & {{get_field_inv_bitmask_hex_string(node)}}) | ({{get_field_bitmask_hex_string(node)}} & (random_field_value.value << {{node.low}})))
+            self.assertEqual(sim_register.value, (inital_reg_random_value & {{get_field_inv_bitmask_hex_string(node)}}) | ({{get_field_bitmask_hex_string(node)}} & (random_field_value.value << {{node.low}}))) # type: ignore[attr-defined]
             {% else %}
             self.assertEqual(sim_register.value, (inital_reg_random_value & {{get_field_inv_bitmask_hex_string(node)}}) | ({{get_field_bitmask_hex_string(node)}} & (random_field_value << {{node.low}})))
             {% endif %}
@@ -229,9 +230,9 @@ class {{fq_block_name}}_single_access({{top_node.type_name}}_SimTestCase): # typ
             {% endif %}
             {% if asyncoutput %}await {%endif %}self.dut.{{'.'.join(get_python_path_segments(node))}}.write(random_field_value)
             {%- if 'encode' in node.list_properties() %}
-            self.assertEqual(sim_register.value, (inital_reg_random_value & {{get_field_inv_bitmask_hex_string(node)}}) | ({{get_field_bitmask_hex_string(node)}} & (random_field_value.value << {{node.low}})))
-            register_write_callback.assert_called_once_with(value=(reg_random_value & {{get_field_inv_bitmask_hex_string(node)}}) | ({{get_field_bitmask_hex_string(node)}} & (random_field_value.value << {{node.low}})))
-            field_write_callback.assert_called_once_with(value=random_field_value.value)
+            self.assertEqual(sim_register.value, (inital_reg_random_value & {{get_field_inv_bitmask_hex_string(node)}}) | ({{get_field_bitmask_hex_string(node)}} & (random_field_value.value << {{node.low}}))) # type: ignore[attr-defined]
+            register_write_callback.assert_called_once_with(value=(reg_random_value & {{get_field_inv_bitmask_hex_string(node)}}) | ({{get_field_bitmask_hex_string(node)}} & (random_field_value.value << {{node.low}}))) # type: ignore[attr-defined]
+            field_write_callback.assert_called_once_with(value=random_field_value.value) # type: ignore[attr-defined]
             {% else %}
             self.assertEqual(sim_register.value, (inital_reg_random_value & {{get_field_inv_bitmask_hex_string(node)}}) | ({{get_field_bitmask_hex_string(node)}} & (random_field_value << {{node.low}})))
             register_write_callback.assert_called_once_with(value=(reg_random_value & {{get_field_inv_bitmask_hex_string(node)}}) | ({{get_field_bitmask_hex_string(node)}} & (random_field_value << {{node.low}})))
@@ -254,7 +255,7 @@ class {{fq_block_name}}_single_access({{top_node.type_name}}_SimTestCase): # typ
             {% endif %}
             {% if asyncoutput %}await {%endif %}self.dut.{{'.'.join(get_python_path_segments(node))}}.write(random_field_value)
             {%- if 'encode' in node.list_properties() %}
-            self.assertEqual(sim_register.value, (inital_reg_random_value & {{get_field_inv_bitmask_hex_string(node)}}) | ({{get_field_bitmask_hex_string(node)}} & (random_field_value.value << {{node.low}})))
+            self.assertEqual(sim_register.value, (inital_reg_random_value & {{get_field_inv_bitmask_hex_string(node)}}) | ({{get_field_bitmask_hex_string(node)}} & (random_field_value.value << {{node.low}}))) # type: ignore[attr-defined]
             {% else %}
             self.assertEqual(sim_register.value, (inital_reg_random_value & {{get_field_inv_bitmask_hex_string(node)}}) | ({{get_field_bitmask_hex_string(node)}} & (random_field_value << {{node.low}})))
             {% endif %}
