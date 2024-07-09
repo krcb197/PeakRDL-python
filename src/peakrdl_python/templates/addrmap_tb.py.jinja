@@ -18,7 +18,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 {% include "header_tb.py.jinja" with context %}
 from typing import List, Union, Dict
-from array import array as Array
+{% if legacy_block_access %}from array import array as Array{% endif %}
 {% if asyncoutput %}
 import sys
 import asyncio
@@ -845,8 +845,14 @@ class {{fq_block_name}}_single_access({{top_node.type_name}}_TestCase): # type: 
                     for value in [0, random.randint(0,{{get_memory_max_entry_value_hex_string(node)}}), {{get_memory_max_entry_value_hex_string(node)}}]:
                         read_callback_mock.reset_mock()
                         read_callback_mock.return_value = value
+                        {% if legacy_block_access %}
                         self.assertEqual({% if asyncoutput %}await {%endif %}self.dut.{{'.'.join(get_python_path_segments(node))}}.read(start_entry=entry, number_entries=1), # type: ignore[union-attr]
                                                                  Array('{{get_array_typecode(node.get_property('memwidth'))}}', [value]))
+                        {% else %}
+                        self.assertEqual({% if asyncoutput %}await {%endif %}self.dut.{{'.'.join(get_python_path_segments(node))}}.read(start_entry=entry, number_entries=1), # type: ignore[union-attr]
+                                                                 [value])
+                        {% endif %}
+
                         read_callback_mock.assert_called_once_with(
                                             addr={{node.absolute_address}}+(entry * {{get_memory_width_bytes(node)}}),
                                             width={{node.get_property('memwidth')}},
@@ -855,14 +861,16 @@ class {{fq_block_name}}_single_access({{top_node.type_name}}_TestCase): # type: 
                 # check a multi-entry read, if the memory is small do the entire memory, however, if
                 # it is large limit the number of entries to 10
                 entries_to_test = {% if node.get_property('mementries') > 10 %}10{% else %}{{node.get_property('mementries')}}{% endif %}
+                {% if legacy_block_access %}
                 random_data = Array('{{get_array_typecode(node.get_property('memwidth'))}}',
                                     [random.randint(0,{{get_memory_max_entry_value_hex_string(node)}}) for x in range(entries_to_test)])
+                {% else %}
+                random_data = [random.randint(0,{{get_memory_max_entry_value_hex_string(node)}}) for x in range(entries_to_test)]
+                {% endif %}
+
 
                 def read_data_mock(addr:int, width:int, accesswidth:int) -> int:
-                    # the memory is entry width defined where as the address is byte address, so need
-                    # to convert between them, the sift is determined by
-                    shift = int(math.log2({% if 'accesswidth' in node.list_properties() -%}{{node.get_property('accesswidth')}}{%- else -%}{{node.get_property('memwidth')}}{%- endif -%}) - 3)
-                    mem_entry = (addr - {{node.absolute_address}}) >> shift
+                    mem_entry = (addr - {{node.absolute_address}}) // {{get_memory_width_bytes(node)}}
                     return random_data[mem_entry]
 
                 read_callback_mock.reset_mock()
@@ -881,7 +889,11 @@ class {{fq_block_name}}_single_access({{top_node.type_name}}_TestCase): # type: 
                 for entry in [0, random.randint(0,{{node.get_property('mementries')-1}}), {{node.get_property('mementries')-1}}]:
                     for value in [0, random.randint(0,{{get_memory_max_entry_value_hex_string(node)}}), {{get_memory_max_entry_value_hex_string(node)}}]:
                         write_callback_mock.reset_mock()
+                        {% if legacy_block_access %}
                         {% if asyncoutput %}await {%endif %}self.dut.{{'.'.join(get_python_path_segments(node))}}.write(start_entry=entry, data=Array('{{get_array_typecode(node.get_property('memwidth'))}}', [value])) # type: ignore[union-attr]
+                        {% else %}
+                        {% if asyncoutput %}await {%endif %}self.dut.{{'.'.join(get_python_path_segments(node))}}.write(start_entry=entry, data=[value]) # type: ignore[union-attr]
+                        {% endif %}
                         write_callback_mock.assert_called_once_with(
                                             addr={{node.absolute_address}}+(entry * {{get_memory_width_bytes(node)}}),
                                             width={{node.get_property('memwidth')}},
@@ -894,8 +906,12 @@ class {{fq_block_name}}_single_access({{top_node.type_name}}_TestCase): # type: 
                 # check a multi-entry read, if the memory is small do the entire memory, however, if
                 # it is large limit the number of entries to 10
                 entries_to_test = {% if node.get_property('mementries') > 10 %}10{% else %}{{node.get_property('mementries')}}{% endif %}
+                {% if legacy_block_access %}
                 random_data = Array('{{get_array_typecode(node.get_property('memwidth'))}}',
                                     [random.randint(0,{{get_memory_max_entry_value_hex_string(node)}}) for x in range(entries_to_test)])
+                {% else %}
+                random_data = [random.randint(0,{{get_memory_max_entry_value_hex_string(node)}}) for x in range(entries_to_test)]
+                {% endif %}
                 {% if asyncoutput %}await {%endif %}self.dut.{{'.'.join(get_python_path_segments(node))}}.write(start_entry=0, data=random_data) # type: ignore[union-attr]
 
                 for x in range(entries_to_test):
@@ -1214,7 +1230,7 @@ class {{fq_block_name}}_block_access({{top_node.type_name}}_TestCase_BlockAccess
         with patch(base_name + '.write_addr_space') as write_callback_mock,\
                             patch(base_name + '.read_addr_space', return_value=1) as read_callback_mock, \
                             patch(base_name + '.read_block_addr_space',
-                                  return_value=Array('{{get_array_typecode(node.get_property('memwidth'))}}', [0])) as read_block_callback_mock , \
+                                  return_value={% if legacy_block_access %}Array('{{get_array_typecode(node.get_property('memwidth'))}}', [0]){% else %}[0]{% endif %}) as read_block_callback_mock , \
                             patch(base_name + '.write_block_addr_space') as write_block_callback_mock:
 
             {% if node.is_sw_readable -%}
@@ -1223,10 +1239,20 @@ class {{fq_block_name}}_block_access({{top_node.type_name}}_TestCase_BlockAccess
             for entry in [0, random.randint(0,{{node.get_property('mementries')-1}}), {{node.get_property('mementries')-1}}]:
                 for value in [0, random.randint(0,{{get_memory_max_entry_value_hex_string(node)}}), {{get_memory_max_entry_value_hex_string(node)}}]:
                     read_block_callback_mock.reset_mock()
+                    {% if legacy_block_access %}
                     read_block_callback_mock.return_value = Array('{{get_array_typecode(node.get_property('memwidth'))}}',
                                                                   [value])
+                    {% else %}
+                    read_block_callback_mock.return_value = [value]
+                    {% endif %}
+
+                    {% if legacy_block_access %}
                     self.assertEqual({% if asyncoutput %}await {%endif %}self.dut.{{'.'.join(get_python_path_segments(node))}}.read(start_entry=entry, number_entries=1), # type: ignore[union-attr]
                                                              Array('{{get_array_typecode(node.get_property('memwidth'))}}', [value]))
+                    {% else %}
+                    self.assertEqual({% if asyncoutput %}await {%endif %}self.dut.{{'.'.join(get_python_path_segments(node))}}.read(start_entry=entry, number_entries=1), # type: ignore[union-attr]
+                                                             [value])
+                    {% endif %}
                     read_block_callback_mock.assert_called_once_with(
                                         addr={{node.absolute_address}}+(entry * {{get_memory_width_bytes(node)}}),
                                         width={{node.get_property('memwidth')}},
@@ -1236,8 +1262,13 @@ class {{fq_block_name}}_block_access({{top_node.type_name}}_TestCase_BlockAccess
             # check a multi-entry read, if the memory is small do the entire memory, however, if
             # it is large limit the number of entries to 10
             entries_to_test = {% if node.get_property('mementries') > 10 %}10{% else %}{{node.get_property('mementries')}}{% endif %}
+            {% if legacy_block_access %}
             random_data = Array('{{get_array_typecode(node.get_property('memwidth'))}}',
                                 [random.randint(0,{{get_memory_max_entry_value_hex_string(node)}}) for x in range(entries_to_test)])
+            {% else %}
+            random_data = [random.randint(0,{{get_memory_max_entry_value_hex_string(node)}}) for x in range(entries_to_test)]
+            {% endif %}
+
 
             read_block_callback_mock.reset_mock()
             read_block_callback_mock.return_value = random_data
@@ -1258,12 +1289,22 @@ class {{fq_block_name}}_block_access({{top_node.type_name}}_TestCase_BlockAccess
             for entry in [0, random.randint(0,{{node.get_property('mementries')-1}}), {{node.get_property('mementries')-1}}]:
                 for value in [0, random.randint(0,{{get_memory_max_entry_value_hex_string(node)}}), {{get_memory_max_entry_value_hex_string(node)}}]:
                     write_block_callback_mock.reset_mock()
+                    {% if legacy_block_access %}
                     {% if asyncoutput %}await {%endif %}self.dut.{{'.'.join(get_python_path_segments(node))}}.write(start_entry=entry, data=Array('{{get_array_typecode(node.get_property('memwidth'))}}', [value])) # type: ignore[union-attr]
                     write_block_callback_mock.assert_called_once_with(
                                         addr={{node.absolute_address}}+(entry * {{get_memory_width_bytes(node)}}),
                                         width={{node.get_property('memwidth')}},
                                         accesswidth={{node.get_property('memwidth')}},
                                         data=Array('{{get_array_typecode(node.get_property('memwidth'))}}', [value]))
+                    {% else %}
+                    {% if asyncoutput %}await {%endif %}self.dut.{{'.'.join(get_python_path_segments(node))}}.write(start_entry=entry, data=[value]) # type: ignore[union-attr]
+                    write_block_callback_mock.assert_called_once_with(
+                                        addr={{node.absolute_address}}+(entry * {{get_memory_width_bytes(node)}}),
+                                        width={{node.get_property('memwidth')}},
+                                        accesswidth={{node.get_property('memwidth')}},
+                                        data=[value])
+                    {% endif %}
+
 
             read_callback_mock.assert_not_called()
             write_callback_mock.assert_not_called()
@@ -1273,8 +1314,12 @@ class {{fq_block_name}}_block_access({{top_node.type_name}}_TestCase_BlockAccess
             # check a multi-entry read, if the memory is small do the entire memory, however, if
             # it is large limit the number of entries to 10
             entries_to_test = {% if node.get_property('mementries') > 10 %}10{% else %}{{node.get_property('mementries')}}{% endif %}
+            {% if legacy_block_access %}
             random_data = Array('{{get_array_typecode(node.get_property('memwidth'))}}',
                                 [random.randint(0,{{get_memory_max_entry_value_hex_string(node)}}) for x in range(entries_to_test)])
+            {% else %}
+            random_data = [random.randint(0,{{get_memory_max_entry_value_hex_string(node)}}) for x in range(entries_to_test)]
+            {% endif %}
             {% if asyncoutput %}await {%endif %}self.dut.{{'.'.join(get_python_path_segments(node))}}.write(start_entry=0, data=random_data) # type: ignore[union-attr]
 
             write_block_callback_mock.assert_called_once_with(

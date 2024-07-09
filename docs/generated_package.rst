@@ -104,6 +104,25 @@ The callbacks are passed into the register access layer using either:
 * ``AsyncCallbackSet`` for async python function callbacks, these are called from the library using
   ``await``
 
+Legacy Callback
+---------------
+
+.. versionchanged:: 0.9.0
+
+   Previous versions of peakrdl python used the python ``array.array`` for efficently moving blocks
+   of data. This was changed in version 0.9.0 in order to accommodate memories which were larger
+   than 64 bit wide which could not be supported as the array type only support enties of up to
+   64 bit.
+
+   In order to minimise the issues with older code the following types remain but require the
+   package to be built with the ``legacy_block_access`` option turned on
+
+   The callbacks are passed into the register access layer using either:
+
+   * ``NormalCallbackSetLegacy`` for standard python function callbacks
+   * ``AsyncCallbackSetLegacy`` for async python function callbacks, these are called from the library using
+     ``await``
+
 Using the Register Access Layer
 ===============================
 

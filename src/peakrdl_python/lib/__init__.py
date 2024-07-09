@@ -23,8 +23,8 @@ from .callbacks import ReadCallback
 from .callbacks import ReadBlockCallback
 from .callbacks import WriteCallback
 from .callbacks import WriteBlockCallback
-from .callbacks import NormalCallbackSet
-from .callbacks import AsyncCallbackSet
+from .callbacks import NormalCallbackSet,NormalCallbackSetLegacy
+from .callbacks import AsyncCallbackSet,AsyncCallbackSetLegacy
 from .callbacks import CallbackSet
 
 from .base import AddressMap

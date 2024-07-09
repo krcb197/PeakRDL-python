@@ -1,8 +1,6 @@
 """
 PeakRDL Python example to show the different methods to access the a register array
 """
-from array import array as Array
-
 from optimised_array_access.reg_model.optimised_array_access import optimised_array_access_cls
 from optimised_array_access.sim.optimised_array_access import optimised_array_access_simulator_cls
 

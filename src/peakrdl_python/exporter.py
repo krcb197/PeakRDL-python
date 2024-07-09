@@ -289,7 +289,8 @@ class PythonExporter:
                            top_block: AddrmapNode,
                            package: _Package,
                            skip_lib_copy: bool,
-                           asyncoutput: bool) -> None:
+                           asyncoutput: bool,
+                           legacy_block_access: bool) -> None:
 
         context = {
             'print': print,
@@ -322,15 +323,17 @@ class PythonExporter:
             'get_reg_writable_fields': get_reg_writable_fields,
             'get_reg_readable_fields': get_reg_readable_fields,
             'get_memory_max_entry_value_hex_string': get_memory_max_entry_value_hex_string,
-            'get_array_typecode': get_array_typecode,
             'get_memory_width_bytes': get_memory_width_bytes,
             'get_field_default_value': get_field_default_value,
             'raise_template_error' : self._raise_template_error,
             'get_python_path_segments' : get_python_path_segments,
             'safe_node_name' : safe_node_name,
             'skip_lib_copy': skip_lib_copy,
-            'version' : __version__
+            'version' : __version__,
+            'legacy_block_access' : legacy_block_access,
         }
+        if legacy_block_access is True:
+            context['get_array_typecode'] = get_array_typecode
 
         context.update(self.user_template_context)
 
@@ -343,7 +346,8 @@ class PythonExporter:
                            top_block: AddrmapNode,
                            package: _Package,
                            skip_lib_copy: bool,
-                           asyncoutput: bool) -> None:
+                           asyncoutput: bool,
+                           legacy_block_access: bool) -> None:
 
         context = {
             'top_node': top_block,
@@ -352,8 +356,8 @@ class PythonExporter:
             'isinstance': isinstance,
             'asyncoutput': asyncoutput,
             'skip_lib_copy': skip_lib_copy,
-            'version': __version__
-
+            'version': __version__,
+            'legacy_block_access' : legacy_block_access,
             }
 
         context.update(self.user_template_context)
@@ -367,7 +371,8 @@ class PythonExporter:
                          top_block: AddrmapNode,
                          package: _Package,
                          skip_lib_copy: bool,
-                         asyncoutput: bool) -> None:
+                         asyncoutput: bool,
+                         legacy_block_access: bool) -> None:
 
         context = {
             'top_node': top_block,
@@ -376,7 +381,8 @@ class PythonExporter:
             'isinstance': isinstance,
             'asyncoutput': asyncoutput,
             'skip_lib_copy': skip_lib_copy,
-            'version': __version__
+            'version': __version__,
+            'legacy_block_access' : legacy_block_access,
             }
 
         context.update(self.user_template_context)
@@ -390,7 +396,8 @@ class PythonExporter:
                             top_block: AddrmapNode,
                             package: _Package,
                             skip_lib_copy: bool,
-                            asyncoutput: bool) -> None:
+                            asyncoutput: bool,
+                            legacy_block_access: bool) -> None:
         """
 
         Args:
@@ -406,7 +413,8 @@ class PythonExporter:
             'top_node': top_block,
             'asyncoutput': asyncoutput,
             'skip_lib_copy': skip_lib_copy,
-            'version': __version__
+            'version': __version__,
+            'legacy_block_access' : legacy_block_access,
         }
 
         context.update(self.user_template_context)
@@ -425,7 +433,8 @@ class PythonExporter:
                        top_block: AddrmapNode,
                        package: _Package,
                        skip_lib_copy: bool,
-                       asyncoutput: bool) -> None:
+                       asyncoutput: bool,
+                       legacy_block_access: bool) -> None:
         """
 
         Args:
@@ -490,13 +499,15 @@ class PythonExporter:
                 'get_reg_readable_fields': get_reg_readable_fields,
                 'get_memory_max_entry_value_hex_string': get_memory_max_entry_value_hex_string,
                 'get_enum_values': get_enum_values,
-                'get_array_typecode': get_array_typecode,
                 'get_memory_width_bytes': get_memory_width_bytes,
                 'asyncoutput': asyncoutput,
                 'uses_enum': uses_enum(block),
                 'skip_lib_copy': skip_lib_copy,
-                'version': __version__
+                'version': __version__,
+                'legacy_block_access': legacy_block_access,
             }
+            if legacy_block_access is True:
+                context['get_array_typecode'] = get_array_typecode
 
             self.__stream_jinja_template(template_name="addrmap_tb.py.jinja",
                                          target_package=package.tests,
@@ -512,7 +523,8 @@ class PythonExporter:
                asyncoutput: bool = False,
                skip_test_case_generation: bool = False,
                delete_existing_package_content: bool = True,
-               skip_library_copy: bool = False) -> List[str]:
+               skip_library_copy: bool = False,
+               legacy_block_access: bool = True) -> List[str]:
         """
         Generated Python Code and Testbench
 
@@ -529,6 +541,12 @@ class PythonExporter:
                                       useful to turn off when developing peakrdl python to avoid
                                       editing the wrong copy of the library. However, it is not
                                       recommended in end user cases
+            legacy_block_access (bool): version 0.8 changed the block access methods from using
+                                        arrays to to lists. This allows memory widths of other
+                                        than 8, 16, 32, 64 to be supported which are legal in
+                                        systemRDL. The legacy mode with Arrays is still in
+                                        the tool and will be turned on by default for a few
+                                        releases.
 
         Returns:
             List[str] : modules that have been exported:
@@ -551,22 +569,27 @@ class PythonExporter:
         self._build_node_type_table(top_block)
 
         self.__export_reg_model(top_block=top_block, package=package, asyncoutput=asyncoutput,
-                                skip_lib_copy=skip_library_copy)
+                                skip_lib_copy=skip_library_copy,
+                                legacy_block_access=legacy_block_access)
 
         self.__export_simulator(top_block=top_block, package=package, asyncoutput=asyncoutput,
-                                skip_lib_copy=skip_library_copy)
+                                skip_lib_copy=skip_library_copy,
+                                legacy_block_access=legacy_block_access)
 
         self.__export_example(top_block=top_block, package=package, asyncoutput=asyncoutput,
-                                skip_lib_copy=skip_library_copy)
+                                skip_lib_copy=skip_library_copy,
+                                legacy_block_access=legacy_block_access)
 
         if not skip_test_case_generation:
 
             # export the baseclasses for the tests
             self.__export_base_tests(top_block=top_block, package=package, asyncoutput=asyncoutput,
-                                skip_lib_copy=skip_library_copy)
+                                skip_lib_copy=skip_library_copy,
+                                legacy_block_access=legacy_block_access)
             # export the tests themselves, these are broken down to one file per addressmap
             self.__export_tests(top_block=top_block, package=package, asyncoutput=asyncoutput,
-                                skip_lib_copy=skip_library_copy)
+                                skip_lib_copy=skip_library_copy,
+                                legacy_block_access=legacy_block_access)
 
         return top_block.inst_name
 

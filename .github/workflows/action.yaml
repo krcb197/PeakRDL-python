@@ -153,9 +153,12 @@ jobs:
 
           peakrdl python tests/testcases/basic.rdl -o peakrdl_out/raw/
           peakrdl python tests/testcases/simple.xml tests/testcases/multifile.rdl -o peakrdl_out/raw
+          peakrdl python tests/testcases/extended_memories.rdl -o peakrdl_out/raw/
           python -m unittest discover -s peakrdl_out/raw
           peakrdl python tests/testcases/basic.rdl -o peakrdl_out/raw_async/ --async
           python -m unittest discover -s peakrdl_out/raw_async
+          peakrdl python tests/testcases/extended_memories.rdl -o peakrdl_out/raw_legacy/ --legacy_block_access
+          python -m unittest discover -s peakrdl_out/raw_legacy
 
           peakrdl python tests/testcases/basic.rdl -o peakrdl_out/no_test/ --skip_test_case_generation
 

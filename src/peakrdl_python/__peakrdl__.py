@@ -68,6 +68,10 @@ class Exporter(ExporterSubcommandPlugin):
                                     'However, if additional python files are added by the user '
                                     '(not recommended) this cleanup will need to be suppressed '
                                     'and managed by the user')
+        arg_group.add_argument('--legacy_block_access', action='store_true',
+                               dest='legacy_block_access',
+                               help='peakrdl python has two methods to hold blocks of data, the '
+                                    'legacy mode based on array.array or the new mode using lists')
 
     def do_export(self, top_node: 'AddrmapNode', options: 'argparse.Namespace') -> None:
         """
@@ -89,5 +93,6 @@ class Exporter(ExporterSubcommandPlugin):
             options.output,
             options.is_async,
             skip_test_case_generation=options.skip_test_case_generation,
-            delete_existing_package_content=not options.suppress_cleanup
+            delete_existing_package_content=not options.suppress_cleanup,
+            legacy_block_access=options.legacy_block_access
         )

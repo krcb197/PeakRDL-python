@@ -29,6 +29,7 @@ from operator import mul
 import sys
 
 from .callbacks import CallbackSet, NormalCallbackSet, AsyncCallbackSet
+from .callbacks import NormalCallbackSetLegacy, AsyncCallbackSetLegacy
 
 if sys.version_info >= (3, 10):
     # type guarding was introduced in python 3.10
@@ -531,7 +532,7 @@ class AddressMap(Section, ABC):
     __slots__: List[str] = ['__callbacks']
 
     def __init__(self, *,
-                 callbacks: Optional[NormalCallbackSet],
+                 callbacks: Optional[Union[NormalCallbackSet, NormalCallbackSetLegacy]],
                  address: int,
                  logger_handle: str,
                  inst_name: str,
@@ -540,13 +541,13 @@ class AddressMap(Section, ABC):
         # only the top-level address map should have callbacks assigned, everything else should
         # use its parent callback
         if parent is None:
-            if not isinstance(callbacks, NormalCallbackSet):
+            if not isinstance(callbacks, (NormalCallbackSet, NormalCallbackSetLegacy)):
                 raise TypeError(f'callback type wrong, got {type(callbacks)}')
             self.__callbacks = callbacks
         else:
             if not callbacks is None:
                 raise RuntimeError('Callbacks must be None when a parent is set')
-            if not isinstance(parent._callbacks, NormalCallbackSet):
+            if not isinstance(parent._callbacks, (NormalCallbackSet, NormalCallbackSetLegacy)):
                 raise TypeError(f'callback type wrong, got {type(callbacks)}')
 
         super().__init__(address=address,

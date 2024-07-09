@@ -67,7 +67,8 @@ def compile_rdl(infile: str,
 
 def generate(root: Node, outdir: str,
              asyncoutput: bool = False,
-             skip_test_case_generation: bool = False) -> List[str]:
+             skip_test_case_generation: bool = False,
+             legacy_block_access: bool = True) -> List[str]:
     """
     Generate a PeakRDL output package from compiled systemRDL
 
@@ -76,8 +77,8 @@ def generate(root: Node, outdir: str,
         outdir: directory to store the result in
         autoformatoutputs: If set to True the code will be run through autopep8 to
                 clean it up. This can slow down large jobs or mask problems
-        asyncoutput: If set to True the code build a register model with async operations to
-                access the harware layer
+        legacy_block_access: If set to True the code build a register model the legacy array block
+                             access as opposed to the newer list based
 
     Returns:
         List of strings with the module names generated
@@ -86,7 +87,8 @@ def generate(root: Node, outdir: str,
     print(f'Info: Generating python for {root.inst_name} in {outdir}')
     modules = PythonExporter().export(root, outdir, # type: ignore[no-untyped-call]
                                       asyncoutput=asyncoutput,
-                                      skip_test_case_generation=skip_test_case_generation)
+                                      skip_test_case_generation=skip_test_case_generation,
+                                      legacy_block_access=legacy_block_access)
 
     return modules
 
@@ -115,10 +117,21 @@ if __name__ == '__main__':
         else:
             root = compile_rdl(rdl_file)
 
-        for asyncoutput, folder_name in [(False, 'raw'),
-                                         (True, 'raw_async')]:
+        for build_options, folder_name in \
+                [({'asyncoutput': True, 'legacy':False}, 'raw_async'),
+                 ({'asyncoutput': False, 'legacy':False}, 'raw'),
+                 ({'asyncoutput': True, 'legacy': True}, 'raw_async_legacy'),
+                 ({'asyncoutput': False, 'legacy': True}, 'raw_legacy')
+                 ]:
+
+            if (testcase_name == 'extended_memories') and (build_options['legacy'] is True):
+                continue
+
+
             _ = generate(root, os.path.join('testcase_output', folder_name),
-                            asyncoutput=asyncoutput)
+                         asyncoutput=build_options['asyncoutput'],
+                         legacy_block_access=build_options['legacy']
+                         )
 
             module_fqfn = os.path.join('testcase_output', folder_name, '__init__.py')
             with open(module_fqfn, 'w', encoding='utf-8') as fid:
