@@ -399,7 +399,7 @@ class MemoryReadOnly(Memory, ABC):
 
             raise RuntimeError(f'There is no usable callback block callback:{read_block_callback}')
 
-        elif read_callback is not None:
+        if read_callback is not None:
             # there is not read_block_callback defined so we must used individual read
             data_read = Array(self.array_typecode, [0 for _ in range(number_entries)])
 
@@ -412,12 +412,12 @@ class MemoryReadOnly(Memory, ABC):
                                            accesswidth=self.width)  # type: ignore[call-arg]
 
                 data_read[entry] = data_entry
-        else:
-            raise RuntimeError(f'There is no usable callback, '
-                               f'block callback:{read_block_callback}, '
-                               f'normal callback:{read_callback}')
 
-        return data_read
+            return data_read
+
+        raise RuntimeError(f'There is no usable callback, '
+                           f'block callback:{read_block_callback}, '
+                           f'normal callback:{read_callback}')
 
     def get_readable_registers(self, unroll: bool = False) -> \
             Iterator[Union['ReadableRegister', 'ReadableRegisterArray']]:
@@ -473,12 +473,14 @@ class MemoryWriteOnly(Memory, ABC):
 
     # pylint: enable=too-many-arguments
     @property
-    def _callbacks(self) -> NormalCallbackSet:
+    def _callbacks(self) -> Union[NormalCallbackSet, NormalCallbackSetLegacy]:
         if self.parent is None:
             raise RuntimeError('Parent must be set')
-        # This cast is OK because the type was checked in the __init__
-        # pylint: disable-next=protected-access
-        return cast(NormalCallbackSet,  self.parent._callbacks)
+
+        if isinstance(self.parent._callbacks, (NormalCallbackSet, NormalCallbackSetLegacy)):
+            return self.parent._callbacks
+
+        raise TypeError(f'unhandled parent callback type: {type(self.parent._callbacks)}')
 
     def _write(self, start_entry: int, data: Union[Array, List[int]]) -> None:
         """
@@ -499,7 +501,7 @@ class MemoryWriteOnly(Memory, ABC):
                              f'but got {start_entry:d}')
 
         if not isinstance(data, (Array, List)):
-            raise TypeError(f'data should be an array.array got {type(data)}')
+            raise TypeError(f'data should be an List or array.array got {type(data)}')
 
         if len(data) not in range(0, self.entries - start_entry + 1):
             raise ValueError(f'data length must be in range 0 to {self.entries - start_entry:d} '
@@ -512,10 +514,22 @@ class MemoryWriteOnly(Memory, ABC):
             # python 3.7 doesn't have the callback defined as protocol so mypy doesn't recognise
             # the arguments in the call back functions
             addr = self.address_lookup(entry=start_entry)
-            write_block_callback(addr=addr,  # type: ignore[call-arg]
-                                 width=self.width,  # type: ignore[call-arg]
-                                 accesswidth=self.width,  # type: ignore[call-arg]
-                                 data=data)  # type: ignore[call-arg]
+            if isinstance(self._callbacks, NormalCallbackSet):
+                if not isinstance(data, List):
+                    raise TypeError(f'data should be an List got {type(data)}')
+                self._callbacks.write_block_callback(
+                    addr=addr,  # type: ignore[call-arg]
+                    width=self.width,  # type: ignore[call-arg]
+                    accesswidth=self.width,  # type: ignore[call-arg]
+                    data=data)  # type: ignore[call-arg]
+            if isinstance(self._callbacks, NormalCallbackSetLegacy):
+                if not isinstance(data, Array):
+                    raise TypeError(f'data should be an List got {type(data)}')
+                self._callbacks.write_block_callback(
+                    addr=addr,  # type: ignore[call-arg]
+                    width=self.width,  # type: ignore[call-arg]
+                    accesswidth=self.width,  # type: ignore[call-arg]
+                    data=data)  # type: ignore[call-arg]
 
         elif write_callback is not None:
             # there is not write_block_callback defined so we must used individual write
@@ -657,9 +671,9 @@ class MemoryAsyncReadOnly(AsyncMemory, ABC):
         # pylint: disable-next=protected-access
         return cast(AsyncCallbackSet,  self.parent._callbacks)
 
-    async def read(self, start_entry: int, number_entries: int) -> Array:
+    async def _read(self, start_entry: int, number_entries: int) -> List[int]:
         """
-        Asynchronously read from the memory
+        Read from the memory
 
         Args:
             start_entry: index in the memory to start from, this is not the address
@@ -690,17 +704,27 @@ class MemoryAsyncReadOnly(AsyncMemory, ABC):
             # python 3.7 doesn't have the callback defined as protocol so mypy doesn't recognise
             # the arguments in the call back functions
             addr = self.address_lookup(entry=start_entry)
-            data_read = await read_block_callback(addr=addr,  # type: ignore[call-arg]
-                                                  width=self.width,  # type: ignore[call-arg]
-                                                  accesswidth=self.width,  # type: ignore[call-arg]
-                                                  length=number_entries)  # type: ignore[call-arg]
+            data_read = \
+                await read_block_callback(addr=addr,  # type: ignore[call-arg]
+                                          width=self.width,  # type: ignore[call-arg]
+                                          accesswidth=self.width,  # type: ignore[call-arg]
+                                          length=number_entries)  # type: ignore[call-arg]
 
-            if not isinstance(data_read, Array):
-                raise TypeError('The read block callback is expected to return an array')
+            if isinstance(self._callbacks, NormalCallbackSet):
+                if not isinstance(data_read, List):
+                    raise TypeError('The read block callback is expected to return an List')
+                return data_read
 
-        elif read_callback is not None:
+            if isinstance(self._callbacks, NormalCallbackSetLegacy):
+                if not isinstance(data_read, Array):
+                    raise TypeError('The read block callback is expected to return an array')
+                return data_read.tolist()
+
+            raise RuntimeError(f'There is no usable callback block callback:{read_block_callback}')
+
+        if read_callback is not None:
             # there is not read_block_callback defined so we must used individual read
-            data_read = Array(self.array_typecode, [0 for _ in range(number_entries)])
+            data_read = [0 for _ in range(number_entries)]
 
             for entry in range(number_entries):
                 entry_address = self.address_lookup(entry=start_entry+entry)
@@ -712,10 +736,84 @@ class MemoryAsyncReadOnly(AsyncMemory, ABC):
 
                 data_read[entry] = data_entry
 
-        else:
-            raise RuntimeError('No suitable callback type available')
+            return data_read
 
-        return data_read
+        raise RuntimeError(f'There is no usable callback, '
+                           f'block callback:{read_block_callback}, '
+                           f'normal callback:{read_callback}')
+
+    async def _read_legacy(self, start_entry: int, number_entries: int) -> Array:
+        """
+        Read from the memory
+
+        Args:
+            start_entry: index in the memory to start from, this is not the address
+            number_entries: number of entries to read
+
+        Returns: data read from memory
+
+        """
+
+        if not isinstance(start_entry, int):
+            raise TypeError(f'start_entry should be an int got {type(start_entry)}')
+
+        if not isinstance(number_entries, int):
+            raise TypeError(f'number_entries should be an int got {type(number_entries)}')
+
+        if start_entry not in range(0, self.entries):
+            raise ValueError(f'entry must be in range 0 to {self.entries - 1:d} '
+                             f'but got {start_entry:d}')
+
+        if number_entries not in range(0, self.entries - start_entry + 1):
+            raise ValueError(f'number_entries must be in range 0 to'
+                             f' {self.entries - start_entry:d} but got {number_entries:d}')
+
+        read_block_callback = self._callbacks.read_block_callback
+        read_callback = self._callbacks.read_callback
+
+        if read_block_callback is not None:
+            # python 3.7 doesn't have the callback defined as protocol so mypy doesn't recognise
+            # the arguments in the call back functions
+            addr = self.address_lookup(entry=start_entry)
+            data_read = \
+                await read_block_callback(addr=addr,  # type: ignore[call-arg]
+                                          width=self.width,  # type: ignore[call-arg]
+                                          accesswidth=self.width,  # type: ignore[call-arg]
+                                          length=number_entries)  # type: ignore[call-arg]
+
+            if isinstance(self._callbacks, NormalCallbackSet):
+                if not isinstance(data_read, List):
+                    raise TypeError('The read block callback is expected to return an List')
+                return Array(self.array_typecode, data_read)
+
+            if isinstance(self._callbacks, NormalCallbackSetLegacy):
+                if not isinstance(data_read, Array):
+                    raise TypeError('The read block callback is expected to return an array')
+                return data_read
+
+            raise RuntimeError(f'There is no usable callback block callback:{read_block_callback}')
+
+        if read_callback is not None:
+            # there is not read_block_callback defined so we must used individual read
+            data_read = Array(self.array_typecode, [0 for _ in range(number_entries)])
+
+            for entry in range(number_entries):
+                entry_address = self.address_lookup(entry=start_entry + entry)
+                # python 3.7 doesn't have the callback defined as protocol so mypy doesn't
+                # recognise the arguments in the call back functions
+                data_entry = await read_callback(addr=entry_address,  # type: ignore[call-arg]
+                                                 width=self.width,  # type: ignore[call-arg]
+                                                 accesswidth=self.width)  # type: ignore[call-arg]
+
+                data_read[entry] = data_entry
+
+            return data_read
+
+        raise RuntimeError(f'There is no usable callback, '
+                           f'block callback:{read_block_callback}, '
+                           f'normal callback:{read_callback}')
+
+
 
     def get_readable_registers(self, unroll: bool = False) -> \
             Iterator[Union['ReadableAsyncRegister', 'ReadableAsyncRegisterArray']]:
@@ -779,7 +877,7 @@ class MemoryAsyncWriteOnly(AsyncMemory, ABC):
         # pylint: disable-next=protected-access
         return cast(AsyncCallbackSet,  self.parent._callbacks)
 
-    async def write(self, start_entry: int, data: Array) -> None:
+    async def _write(self, start_entry: int, data: Union[Array, List[int]]) -> None:
         """
         Asynchronously write data to memory
 
@@ -797,7 +895,7 @@ class MemoryAsyncWriteOnly(AsyncMemory, ABC):
             raise ValueError(f'entry must be in range 0 to {self.entries - 1:d} '
                              f'but got {start_entry:d}')
 
-        if not isinstance(data, Array):
+        if not isinstance(data, (List, Array)):
             raise TypeError(f'data should be an array.array got {type(data)}')
 
         if len(data) not in range(0, self.entries - start_entry + 1):

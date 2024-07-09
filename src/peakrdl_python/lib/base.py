@@ -28,7 +28,8 @@ from functools import reduce
 from operator import mul
 import sys
 
-from .callbacks import CallbackSet, NormalCallbackSet, AsyncCallbackSet
+from .callbacks import CallbackSet, CallbackSetLegacy
+from .callbacks import NormalCallbackSet, AsyncCallbackSet
 from .callbacks import NormalCallbackSetLegacy, AsyncCallbackSetLegacy
 
 if sys.version_info >= (3, 10):
@@ -138,7 +139,7 @@ class Node(Base, ABC):
 
     @property
     @abstractmethod
-    def _callbacks(self) -> CallbackSet:
+    def _callbacks(self) -> Union[CallbackSet, CallbackSetLegacy]:
         ...
 
     @property
@@ -430,7 +431,7 @@ class NodeArray(Base, Sequence[NodeArrayElementType]):
         return self.__stride
 
     @property
-    def _callbacks(self) -> CallbackSet:
+    def _callbacks(self) -> Union[CallbackSet, CallbackSetLegacy]:
         if self.parent is None:
             raise RuntimeError('Parent must be set')
         # pylint: disable-next=protected-access
@@ -517,7 +518,7 @@ class Section(BaseSection, ABC):
 
     @property
     @abstractmethod
-    def _callbacks(self) -> NormalCallbackSet:
+    def _callbacks(self) -> Union[NormalCallbackSet, NormalCallbackSetLegacy]:
         ...
 
 
@@ -587,11 +588,14 @@ class AddressMap(Section, ABC):
                      self.get_memories(unroll=unroll))
 
     @property
-    def _callbacks(self) -> NormalCallbackSet:
+    def _callbacks(self) -> Union[NormalCallbackSet, NormalCallbackSetLegacy]:
         if self.parent is None:
-            return self.__callbacks
-        # pylint: disable-next=protected-access
-        return cast(NormalCallbackSet, self.parent._callbacks)
+            raise RuntimeError('Parent must be set')
+
+        if isinstance(self.parent._callbacks, (NormalCallbackSet, NormalCallbackSetLegacy)):
+            return self.parent._callbacks
+
+        raise TypeError(f'unhandled parent callback type: {type(self.parent._callbacks)}')
 
 
 class AsyncSection(BaseSection, ABC):

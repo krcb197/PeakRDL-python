@@ -33,7 +33,7 @@ from .utility_functions import get_array_typecode
 from .base import AsyncAddressMap, AsyncRegFile
 from .memory import  MemoryReadOnly, MemoryWriteOnly, MemoryReadWrite, \
     BaseMemory, Memory, ReadableMemory, WritableMemory
-from .callbacks import NormalCallbackSet
+from .callbacks import NormalCallbackSet, NormalCallbackSetLegacy
 
 # pylint: disable=duplicate-code
 if sys.version_info >= (3, 11):
@@ -697,11 +697,18 @@ class RegWriteOnly(Reg, ABC):
         elif block_callback is not None:
             # python 3.7 doesn't have the callback defined as protocol so mypy doesn't recognise
             # the arguments in the call back functions
-            data_as_array = Array(get_array_typecode(self.width), [data])
-            block_callback(addr=self.address,  # type: ignore[call-arg]
-                           width=self.width,  # type: ignore[call-arg]
-                           accesswidth=self.accesswidth,  # type: ignore[call-arg]
-                           data=data_as_array)  # type: ignore[call-arg]
+            if isinstance(self._callbacks, NormalCallbackSetLegacy):
+                data_as_array = Array(get_array_typecode(self.width), [data])
+                block_callback(addr=self.address,  # type: ignore[call-arg]
+                               width=self.width,  # type: ignore[call-arg]
+                               accesswidth=self.accesswidth,  # type: ignore[call-arg]
+                               data=data_as_array)  # type: ignore[call-arg]
+
+            if isinstance(self._callbacks, NormalCallbackSet):
+                block_callback(addr=self.address,  # type: ignore[call-arg]
+                               width=self.width,  # type: ignore[call-arg]
+                               accesswidth=self.accesswidth,  # type: ignore[call-arg]
+                               data=[data])  # type: ignore[call-arg]
 
         else:
             raise RuntimeError('This function does not have a useable callback')

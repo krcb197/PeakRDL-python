@@ -33,7 +33,7 @@ from .base import AsyncAddressMap, AsyncRegFile
 from .register import BaseReg, BaseRegArray, RegisterWriteVerifyError
 from .memory import  MemoryAsyncReadOnly, MemoryAsyncWriteOnly, MemoryAsyncReadWrite, \
     AsyncMemory, ReadableAsyncMemory, WritableAsyncMemory
-from .callbacks import AsyncCallbackSet
+from .callbacks import AsyncCallbackSet, AsyncCallbackSetLegacy
 
 # pylint: disable=duplicate-code
 if sys.version_info >= (3, 11):
@@ -703,16 +703,18 @@ class AsyncRegArray(BaseRegArray, ABC):
         self.__register_array_cache = None
 
     @property
-    def _callbacks(self) -> AsyncCallbackSet:
+    def _callbacks(self) -> Union[AsyncCallbackSet, AsyncCallbackSetLegacy]:
 
         if self.__in_context_manager:
             return self.__cache_callbacks
 
         if self.parent is None:
             raise RuntimeError('Parent must be set')
-        # This cast is OK because the type was checked in the __init__
-        # pylint: disable-next=protected-access
-        return cast(AsyncCallbackSet, self.parent._callbacks)
+
+        if isinstance(self.parent._callbacks, (AsyncCallbackSet, AsyncCallbackSetLegacy)):
+            return self.parent._callbacks
+
+        raise TypeError(f'unhandled parent callback type: {type(self.parent._callbacks)}')
 
 
 class RegAsyncReadOnlyArray(AsyncRegArray, ABC):
