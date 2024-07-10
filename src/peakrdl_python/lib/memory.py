@@ -229,7 +229,7 @@ class Memory(BaseMemory, ABC):
         """
 
 
-class MemoryReadOnly(Memory, ABC):
+class _MemoryReadOnly(Memory, ABC):
     """
     base class of memory wrappers
 
@@ -249,6 +249,10 @@ class MemoryReadOnly(Memory, ABC):
                  logger_handle: str,
                  inst_name: str,
                  parent: Union[AddressMap, 'MemoryArray']):
+
+        if parent is None:
+            raise TypeError('parent should be either AddressMap or Memory Array '
+                            f'got {type(parent)}')
 
         if not isinstance(parent, (AddressMap, MemoryWriteOnlyArray,
                                    MemoryReadOnlyArray, MemoryReadWriteArray)):
@@ -434,8 +438,43 @@ class MemoryReadOnly(Memory, ABC):
 
         return filter(is_readable, self.get_registers(unroll=unroll))
 
+class MemoryReadOnly(_MemoryReadOnly, ABC):
 
-class MemoryWriteOnly(Memory, ABC):
+    __slots__: List[str] = []
+
+    def read(self, start_entry: int, number_entries: int) -> List[int]:
+        """
+        Read from the memory
+
+        Args:
+            start_entry: index in the memory to start from, this is not the address
+            number_entries: number of entries to read
+
+        Returns: data read from memory
+
+        """
+        return self._read(start_entry=start_entry, number_entries=number_entries)
+
+
+class MemoryReadOnlyLegacy(_MemoryReadOnly, ABC):
+
+    __slots__: List[str] = []
+
+    def read(self, start_entry: int, number_entries: int) -> Array:
+        """
+        Read from the memory
+
+        Args:
+            start_entry: index in the memory to start from, this is not the address
+            number_entries: number of entries to read
+
+        Returns: data read from memory
+
+        """
+        return self._read_legacy(start_entry=start_entry, number_entries=number_entries)
+
+
+class _MemoryWriteOnly(Memory, ABC):
     """
     base class of memory wrappers
 
@@ -507,10 +546,7 @@ class MemoryWriteOnly(Memory, ABC):
             raise ValueError(f'data length must be in range 0 to {self.entries - start_entry:d} '
                              f'but got {len(data):d}')
 
-        write_block_callback = self._callbacks.write_block_callback
-        write_callback = self._callbacks.write_callback
-
-        if write_block_callback is not None:
+        if self._callbacks.write_block_callback is not None:
             # python 3.7 doesn't have the callback defined as protocol so mypy doesn't recognise
             # the arguments in the call back functions
             addr = self.address_lookup(entry=start_entry)
@@ -531,16 +567,16 @@ class MemoryWriteOnly(Memory, ABC):
                     accesswidth=self.width,  # type: ignore[call-arg]
                     data=data)  # type: ignore[call-arg]
 
-        elif write_callback is not None:
+        elif self._callbacks.write_callback is not None:
             # there is not write_block_callback defined so we must used individual write
             for entry_index, entry_data in enumerate(data):
                 entry_address = self.address_lookup(entry=start_entry+entry_index)
                 # python 3.7 doesn't have the callback defined as protocol so mypy doesn't
                 # recognise the arguments in the call back functions
-                write_callback(addr=entry_address,  # type: ignore[call-arg]
-                               width=self.width,  # type: ignore[call-arg]
-                               accesswidth=self.width,  # type: ignore[call-arg]
-                               data=entry_data)  # type: ignore[call-arg]
+                self._callbacks.write_callback(addr=entry_address,  # type: ignore[call-arg]
+                                               width=self.width,  # type: ignore[call-arg]
+                                               accesswidth=self.width,  # type: ignore[call-arg]
+                                               data=entry_data)  # type: ignore[call-arg]
 
         else:
             raise RuntimeError('No suitable callback')
@@ -561,7 +597,39 @@ class MemoryWriteOnly(Memory, ABC):
         return filter(is_writable, self.get_registers(unroll=unroll))
 
 
+class MemoryWriteOnly(_MemoryWriteOnly, ABC):
+
+    __slots__: List[str] = []
+
+    def write(self, start_entry: int, data: List[int]) -> None:
+        if not isinstance(data, list):
+            raise TypeError(f'data should be an Listgot {type(data)}')
+        return self._write(start_entry=start_entry, data=data)
+
+
+class MemoryWriteOnlyLegacy(_MemoryWriteOnly, ABC):
+
+    __slots__: List[str] = []
+
+    def write(self, start_entry: int, data: List[int]) -> None:
+        if not isinstance(data, list):
+            raise TypeError(f'data should be an Array {type(data)}')
+        return self._write(start_entry=start_entry, data=data)
+
+
 class MemoryReadWrite(MemoryReadOnly, MemoryWriteOnly, ABC):
+    """
+    base class of memory wrappers
+
+    Note:
+        It is not expected that this class will be instantiated under normal
+        circumstances however, it is useful for type checking
+    """
+
+    __slots__: List[str] = []
+
+
+class MemoryReadWriteLegacy(MemoryReadOnlyLegacy, MemoryWriteOnlyLegacy, ABC):
     """
     base class of memory wrappers
 
@@ -625,7 +693,7 @@ class AsyncMemory(BaseMemory, ABC):
         """
 
 
-class MemoryAsyncReadOnly(AsyncMemory, ABC):
+class _MemoryAsyncReadOnly(AsyncMemory, ABC):
     """
     base class of memory wrappers
 
@@ -831,8 +899,43 @@ class MemoryAsyncReadOnly(AsyncMemory, ABC):
         return filter(is_readable, self.get_registers(unroll=unroll))
 
 
+class MemoryAsyncReadOnly(_MemoryAsyncReadOnly, ABC):
 
-class MemoryAsyncWriteOnly(AsyncMemory, ABC):
+    __slots__: List[str] = []
+
+    async def read(self, start_entry: int, number_entries: int) -> List[int]:
+        """
+        Read from the memory
+
+        Args:
+            start_entry: index in the memory to start from, this is not the address
+            number_entries: number of entries to read
+
+        Returns: data read from memory
+
+        """
+        return await self._read(start_entry=start_entry, number_entries=number_entries)
+
+
+class MemoryAsyncReadOnlyLegacy(_MemoryAsyncReadOnly, ABC):
+
+    __slots__: List[str] = []
+
+    async def read(self, start_entry: int, number_entries: int) -> Array:
+        """
+        Read from the memory
+
+        Args:
+            start_entry: index in the memory to start from, this is not the address
+            number_entries: number of entries to read
+
+        Returns: data read from memory
+
+        """
+        return await self._read_legacy(start_entry=start_entry, number_entries=number_entries)
+
+
+class _MemoryAsyncWriteOnly(AsyncMemory, ABC):
     """
     base class of memory wrappers
 
@@ -944,8 +1047,40 @@ class MemoryAsyncWriteOnly(AsyncMemory, ABC):
         return filter(is_writable, self.get_registers(unroll=unroll))
 
 
+class MemoryAsyncWriteOnly(_MemoryAsyncWriteOnly, ABC):
+
+    __slots__: List[str] = []
+
+    async def write(self, start_entry: int, data: List[int]) -> None:
+        if not isinstance(data, list):
+            raise TypeError(f'data should be an Listgot {type(data)}')
+        return await self._write(start_entry=start_entry, data=data)
+
+
+class MemoryAsyncWriteOnlyLegacy(_MemoryAsyncWriteOnly, ABC):
+
+    __slots__: List[str] = []
+
+    async def write(self, start_entry: int, data: List[int]) -> None:
+        if not isinstance(data, list):
+            raise TypeError(f'data should be an Array {type(data)}')
+        return await self._write(start_entry=start_entry, data=data)
+
+
 
 class MemoryAsyncReadWrite(MemoryAsyncReadOnly, MemoryAsyncWriteOnly, ABC):
+    """
+    base class of memory wrappers
+
+    Note:
+        It is not expected that this class will be instantiated under normal
+        circumstances however, it is useful for type checking
+    """
+
+    __slots__: List[str] = []
+
+
+class MemoryAsyncReadWriteLegacy(MemoryAsyncReadOnlyLegacy, MemoryAsyncWriteOnlyLegacy, ABC):
     """
     base class of memory wrappers
 
@@ -1086,6 +1221,10 @@ ReadableMemory = Union[MemoryReadOnly, MemoryReadWrite]
 WritableMemory = Union[MemoryWriteOnly, MemoryReadWrite]
 ReadableAsyncMemory = Union[MemoryAsyncReadOnly, MemoryAsyncReadWrite]
 WritableAsyncMemory = Union[MemoryAsyncWriteOnly, MemoryAsyncReadWrite]
+ReadableMemoryLegacy = Union[MemoryReadOnlyLegacy, MemoryReadWriteLegacy]
+WritableMemoryLegacy = Union[MemoryWriteOnlyLegacy, MemoryReadWriteLegacy]
+ReadableAsyncMemoryLegacy = Union[MemoryAsyncReadOnlyLegacy, MemoryAsyncReadWriteLegacy]
+WritableAsyncMemoryLegacy = Union[MemoryAsyncWriteOnlyLegacy, MemoryAsyncReadWriteLegacy]
 MemoryArray = Union[MemoryReadOnlyArray, MemoryWriteOnlyArray, MemoryReadWriteArray]
 AsyncMemoryArray = Union[MemoryAsyncReadOnlyArray, MemoryAsyncWriteOnlyArray,
                          MemoryAsyncReadWriteArray]

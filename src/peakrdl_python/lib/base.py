@@ -590,7 +590,7 @@ class AddressMap(Section, ABC):
     @property
     def _callbacks(self) -> Union[NormalCallbackSet, NormalCallbackSetLegacy]:
         if self.parent is None:
-            raise RuntimeError('Parent must be set')
+            return self.__callbacks
 
         if isinstance(self.parent._callbacks, (NormalCallbackSet, NormalCallbackSetLegacy)):
             return self.parent._callbacks

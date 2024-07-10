@@ -45,7 +45,7 @@ from {% if skip_lib_copy %}src.peakrdl_python.{% else %}..{% endif %}lib import 
 from {% if skip_lib_copy %}src.peakrdl_python.{% else %}..{% endif %}lib import AsyncRegFile
 from {% if skip_lib_copy %}src.peakrdl_python.{% else %}..{% endif %}lib  import AsyncAddressMapArray
 from {% if skip_lib_copy %}src.peakrdl_python.{% else %}..{% endif %}lib  import AsyncRegFileArray
-from {% if skip_lib_copy %}src.peakrdl_python.{% else %}..{% endif %}lib import MemoryAsyncReadOnly, MemoryAsyncWriteOnly, MemoryAsyncReadWrite
+from {% if skip_lib_copy %}src.peakrdl_python.{% else %}..{% endif %}lib import MemoryAsyncReadOnly{% if legacy_block_access %}Legacy{% endif %}, MemoryAsyncWriteOnly{% if legacy_block_access %}Legacy{% endif %}, MemoryAsyncReadWrite{% if legacy_block_access %}Legacy{% endif %}
 from {% if skip_lib_copy %}src.peakrdl_python.{% else %}..{% endif %}lib import MemoryAsyncReadOnlyArray, MemoryAsyncWriteOnlyArray, MemoryAsyncReadWriteArray
 from {% if skip_lib_copy %}src.peakrdl_python.{% else %}..{% endif %}lib import AsyncReg, AsyncRegArray
 from {% if skip_lib_copy %}src.peakrdl_python.{% else %}..{% endif %}lib import RegAsyncReadOnly, RegAsyncWriteOnly, RegAsyncReadWrite
@@ -53,7 +53,7 @@ from {% if skip_lib_copy %}src.peakrdl_python.{% else %}..{% endif %}lib import 
 from {% if skip_lib_copy %}src.peakrdl_python.{% else %}..{% endif %}lib import FieldAsyncReadOnly, FieldAsyncWriteOnly, FieldAsyncReadWrite, Field
 {% if uses_enum %}from {% if skip_lib_copy %}src.peakrdl_python.{% else %}..{% endif %}lib import FieldEnumAsyncReadOnly, FieldEnumAsyncWriteOnly, FieldEnumAsyncReadWrite{% endif %}
 from {% if skip_lib_copy %}src.peakrdl_python.{% else %}..{% endif %}lib import ReadableAsyncRegister, WritableAsyncRegister
-from {% if skip_lib_copy %}src.peakrdl_python.{% else %}..{% endif %}lib import ReadableAsyncMemory, WritableAsyncMemory
+from {% if skip_lib_copy %}src.peakrdl_python.{% else %}..{% endif %}lib import ReadableAsyncMemory{% if legacy_block_access %}Legacy{% endif %}, WritableAsyncMemory{% if legacy_block_access %}Legacy{% endif %}
 from {% if skip_lib_copy %}src.peakrdl_python.{% else %}..{% endif %}lib import ReadableAsyncRegisterArray, WriteableAsyncRegisterArray
 {%- else -%}
 from {% if skip_lib_copy %}src.peakrdl_python.{% else %}..{% endif %}lib import Memory, MemoryArray
@@ -61,7 +61,7 @@ from {% if skip_lib_copy %}src.peakrdl_python.{% else %}..{% endif %}lib import 
 from {% if skip_lib_copy %}src.peakrdl_python.{% else %}..{% endif %}lib import RegFile
 from {% if skip_lib_copy %}src.peakrdl_python.{% else %}..{% endif %}lib  import AddressMapArray
 from {% if skip_lib_copy %}src.peakrdl_python.{% else %}..{% endif %}lib  import RegFileArray
-from {% if skip_lib_copy %}src.peakrdl_python.{% else %}..{% endif %}lib import MemoryReadOnly, MemoryWriteOnly, MemoryReadWrite
+from {% if skip_lib_copy %}src.peakrdl_python.{% else %}..{% endif %}lib import MemoryReadOnly{% if legacy_block_access %}Legacy{% endif %}, MemoryWriteOnly{% if legacy_block_access %}Legacy{% endif %}, MemoryReadWrite{% if legacy_block_access %}Legacy{% endif %}
 from {% if skip_lib_copy %}src.peakrdl_python.{% else %}..{% endif %}lib import MemoryReadOnlyArray, MemoryWriteOnlyArray, MemoryReadWriteArray
 from {% if skip_lib_copy %}src.peakrdl_python.{% else %}..{% endif %}lib import Reg, RegArray
 from {% if skip_lib_copy %}src.peakrdl_python.{% else %}..{% endif %}lib import RegReadOnly, RegWriteOnly, RegReadWrite
@@ -69,7 +69,7 @@ from {% if skip_lib_copy %}src.peakrdl_python.{% else %}..{% endif %}lib import 
 from {% if skip_lib_copy %}src.peakrdl_python.{% else %}..{% endif %}lib import FieldReadOnly, FieldWriteOnly, FieldReadWrite, Field
 {% if uses_enum %}from {% if skip_lib_copy %}src.peakrdl_python.{% else %}..{% endif %}lib import FieldEnumReadOnly, FieldEnumWriteOnly, FieldEnumReadWrite{% endif %}
 from {% if skip_lib_copy %}src.peakrdl_python.{% else %}..{% endif %}lib import ReadableRegister, WritableRegister
-from {% if skip_lib_copy %}src.peakrdl_python.{% else %}..{% endif %}lib import ReadableMemory, WritableMemory
+from {% if skip_lib_copy %}src.peakrdl_python.{% else %}..{% endif %}lib import ReadableMemory{% if legacy_block_access %}Legacy{% endif %}, WritableMemory{% if legacy_block_access %}Legacy{% endif %}
 from {% if skip_lib_copy %}src.peakrdl_python.{% else %}..{% endif %}lib import ReadableRegisterArray, WriteableRegisterArray
 {%- endif %}
 from {% if skip_lib_copy %}src.peakrdl_python.{% else %}..{% endif %}lib import FieldSizeProps, FieldMiscProps

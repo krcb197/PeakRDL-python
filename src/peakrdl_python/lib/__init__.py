@@ -84,23 +84,23 @@ from .fields import FieldEnumAsyncReadOnly
 from .fields import FieldEnumAsyncWriteOnly
 from .fields import FieldEnumAsyncReadWrite
 
-from .memory import MemoryReadOnly
-from .memory import MemoryWriteOnly
-from .memory import MemoryReadWrite
+from .memory import MemoryReadOnly, MemoryReadOnlyLegacy
+from .memory import MemoryWriteOnly, MemoryWriteOnlyLegacy
+from .memory import MemoryReadWrite, MemoryReadWriteLegacy
 from .memory import MemoryReadOnlyArray
 from .memory import MemoryWriteOnlyArray
 from .memory import MemoryReadWriteArray
-from .memory import MemoryAsyncReadOnly
-from .memory import MemoryAsyncWriteOnly
-from .memory import MemoryAsyncReadWrite
+from .memory import MemoryAsyncReadOnly, MemoryAsyncReadOnly
+from .memory import MemoryAsyncWriteOnly, MemoryAsyncWriteOnly
+from .memory import MemoryAsyncReadWrite, MemoryAsyncReadWrite
 from .memory import MemoryAsyncReadOnlyArray
 from .memory import MemoryAsyncWriteOnlyArray
 from .memory import MemoryAsyncReadWriteArray
-from .memory import ReadableMemory
-from .memory import WritableMemory
+from .memory import ReadableMemory, ReadableMemoryLegacy
+from .memory import WritableMemory, WritableMemoryLegacy
 from .memory import Memory
-from .memory import ReadableAsyncMemory
-from .memory import WritableAsyncMemory
+from .memory import ReadableAsyncMemory, ReadableAsyncMemoryLegacy
+from .memory import WritableAsyncMemory, ReadableAsyncMemoryLegacy
 from .memory import AsyncMemory
 from .memory import MemoryArray
 from .memory import AsyncMemoryArray

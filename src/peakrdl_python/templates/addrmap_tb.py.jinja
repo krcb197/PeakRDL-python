@@ -45,7 +45,7 @@ from {% if skip_lib_copy %}src.peakrdl_python.{% else %}..{% endif %}lib import 
 from {% if skip_lib_copy %}src.peakrdl_python.{% else %}..{% endif %}lib import WritableAsyncRegister, ReadableAsyncRegister
 from {% if skip_lib_copy %}src.peakrdl_python.{% else %}..{% endif %}lib import RegAsyncReadWrite, RegAsyncReadOnly, RegAsyncWriteOnly
 from {% if skip_lib_copy %}src.peakrdl_python.{% else %}..{% endif %}lib import RegAsyncReadWriteArray, RegAsyncReadOnlyArray, RegAsyncWriteOnlyArray
-from {% if skip_lib_copy %}src.peakrdl_python.{% else %}..{% endif %}lib import MemoryAsyncReadOnly, MemoryAsyncWriteOnly, MemoryAsyncReadWrite
+from {% if skip_lib_copy %}src.peakrdl_python.{% else %}..{% endif %}lib import MemoryAsyncReadOnly{% if legacy_block_access %}Legacy{% endif %}, MemoryAsyncWriteOnly{% if legacy_block_access %}Legacy{% endif %}, MemoryAsyncReadWrite{% if legacy_block_access %}Legacy{% endif %}
 from {% if skip_lib_copy %}src.peakrdl_python.{% else %}..{% endif %}lib import MemoryAsyncReadOnlyArray, MemoryAsyncWriteOnlyArray, MemoryAsyncReadWriteArray
 from {% if skip_lib_copy %}src.peakrdl_python.{% else %}..{% endif %}lib import AsyncAddressMap, AsyncRegFile
 from {% if skip_lib_copy %}src.peakrdl_python.{% else %}..{% endif %}lib import AsyncAddressMapArray, AsyncRegFileArray
@@ -55,7 +55,7 @@ from {% if skip_lib_copy %}src.peakrdl_python.{% else %}..{% endif %}lib import 
 from {% if skip_lib_copy %}src.peakrdl_python.{% else %}..{% endif %}lib import WritableRegister, ReadableRegister
 from {% if skip_lib_copy %}src.peakrdl_python.{% else %}..{% endif %}lib import RegReadWrite, RegReadOnly, RegWriteOnly
 from {% if skip_lib_copy %}src.peakrdl_python.{% else %}..{% endif %}lib import RegReadWriteArray, RegReadOnlyArray, RegWriteOnlyArray
-from {% if skip_lib_copy %}src.peakrdl_python.{% else %}..{% endif %}lib import MemoryReadOnly, MemoryWriteOnly, MemoryReadWrite
+from {% if skip_lib_copy %}src.peakrdl_python.{% else %}..{% endif %}lib import MemoryReadOnly{% if legacy_block_access %}Legacy{% endif %}, MemoryWriteOnly{% if legacy_block_access %}Legacy{% endif %}, MemoryReadWrite{% if legacy_block_access %}Legacy{% endif %}
 from {% if skip_lib_copy %}src.peakrdl_python.{% else %}..{% endif %}lib import MemoryReadOnlyArray, MemoryWriteOnlyArray, MemoryReadWriteArray
 from {% if skip_lib_copy %}src.peakrdl_python.{% else %}..{% endif %}lib import AddressMap, RegFile
 from {% if skip_lib_copy %}src.peakrdl_python.{% else %}..{% endif %}lib import AddressMapArray, RegFileArray
@@ -123,7 +123,7 @@ class {{fq_block_name}}_single_access({{top_node.type_name}}_TestCase): # type: 
         with self.subTest(msg='memory: {{'.'.join(node.get_path_segments())}}'):
             mut = self.dut.{{'.'.join(get_python_path_segments(node))}} # type: ignore[union-attr,assignment]
 
-            self.assertIsInstance(mut, (Memory{% if asyncoutput %}Async{% endif %}ReadOnly, Memory{% if asyncoutput %}Async{% endif %}WriteOnly, Memory{% if asyncoutput %}Async{% endif %}ReadWrite))
+            self.assertIsInstance(mut, (Memory{% if asyncoutput %}Async{% endif %}ReadOnly{% if legacy_block_access %}Legacy{% endif %}, Memory{% if asyncoutput %}Async{% endif %}WriteOnly{% if legacy_block_access %}Legacy{% endif %}, Memory{% if asyncoutput %}Async{% endif %}ReadWrite{% if legacy_block_access %}Legacy{% endif %}))
             self.assertEqual(mut.address, {{node.absolute_address}})
             self.assertEqual(mut.width, {{node.get_property('memwidth')}})
             self.assertEqual(mut.entries, {{node.get_property('mementries')}})
@@ -950,12 +950,12 @@ class {{fq_block_name}}_single_access({{top_node.type_name}}_TestCase): # type: 
         {% if asyncoutput %}
         expected_writable_regs: List[WritableAsyncRegister]
         expected_readable_regs: List[ReadableAsyncRegister]
-        expected_memories:List[Union[MemoryAsyncReadOnly, MemoryAsyncWriteOnly, MemoryAsyncReadWrite]]
+        expected_memories:List[Union[MemoryAsyncReadOnly{% if legacy_block_access %}Legacy{% endif %}, MemoryAsyncWriteOnly{% if legacy_block_access %}Legacy{% endif %}, MemoryAsyncReadWrite{% if legacy_block_access %}Legacy{% endif %}]]
 
         {% else %}
         expected_writable_regs: List[WritableRegister]
         expected_readable_regs: List[ReadableRegister]
-        expected_memories:List[Union[MemoryReadOnly, MemoryWriteOnly, MemoryReadWrite]]
+        expected_memories:List[Union[MemoryReadOnly{% if legacy_block_access %}Legacy{% endif %}, MemoryWriteOnly{% if legacy_block_access %}Legacy{% endif %}, MemoryReadWrite{% if legacy_block_access %}Legacy{% endif %}]]
         {% endif %}
         expected_sections : List[Union[{% if asyncoutput %}Async{% endif %}AddressMap, {% if asyncoutput %}Async{% endif %}RegFile]]
 
@@ -1019,7 +1019,7 @@ class {{fq_block_name}}_single_access({{top_node.type_name}}_TestCase): # type: 
                               {% endfor %} ]
         memories = []
         for memory in self.dut.get_memories(unroll=True):  # type: ignore[union-attr]
-            self.assertIsInstance(memory, (Memory{% if asyncoutput %}Async{% endif %}ReadOnly, Memory{% if asyncoutput %}Async{% endif %}WriteOnly, Memory{% if asyncoutput %}Async{% endif %}ReadWrite))
+            self.assertIsInstance(memory, (Memory{% if asyncoutput %}Async{% endif %}ReadOnly{% if legacy_block_access %}Legacy{% endif %}, Memory{% if asyncoutput %}Async{% endif %}WriteOnly{% if legacy_block_access %}Legacy{% endif %}, Memory{% if asyncoutput %}Async{% endif %}ReadWrite{% if legacy_block_access %}Legacy{% endif %}))
             memories.append(memory)
         self.assertCountEqual(expected_memories, memories)
         {# check the rolled case second #}
@@ -1028,7 +1028,7 @@ class {{fq_block_name}}_single_access({{top_node.type_name}}_TestCase): # type: 
                               {% endfor %} ]
         memories = []
         for memory in self.dut.get_memories(unroll=False):  # type: ignore[union-attr]
-            self.assertIsInstance(memory, (Memory{% if asyncoutput %}Async{% endif %}ReadOnly, Memory{% if asyncoutput %}Async{% endif %}WriteOnly, Memory{% if asyncoutput %}Async{% endif %}ReadWrite, Memory{% if asyncoutput %}Async{% endif %}ReadOnlyArray, Memory{% if asyncoutput %}Async{% endif %}WriteOnlyArray, Memory{% if asyncoutput %}Async{% endif %}ReadWriteArray))
+            self.assertIsInstance(memory, (Memory{% if asyncoutput %}Async{% endif %}ReadOnly{% if legacy_block_access %}Legacy{% endif %}, Memory{% if asyncoutput %}Async{% endif %}WriteOnly{% if legacy_block_access %}Legacy{% endif %}, Memory{% if asyncoutput %}Async{% endif %}ReadWrite{% if legacy_block_access %}Legacy{% endif %}, Memory{% if asyncoutput %}Async{% endif %}ReadOnlyArray, Memory{% if asyncoutput %}Async{% endif %}WriteOnlyArray, Memory{% if asyncoutput %}Async{% endif %}ReadWriteArray))
             memories.append(memory)
         self.assertCountEqual(expected_memories, memories)
 
@@ -1104,7 +1104,7 @@ class {{fq_block_name}}_single_access({{top_node.type_name}}_TestCase): # type: 
                               {% endfor %} ]
         memories = []
         for memory in self.dut.{{'.'.join(get_python_path_segments(node))}}.get_memories(unroll=True):  # type: ignore[union-attr]
-            self.assertIsInstance(memory, (Memory{% if asyncoutput %}Async{% endif %}ReadOnly, Memory{% if asyncoutput %}Async{% endif %}WriteOnly, Memory{% if asyncoutput %}Async{% endif %}ReadWrite))
+            self.assertIsInstance(memory, (Memory{% if asyncoutput %}Async{% endif %}ReadOnly{% if legacy_block_access %}Legacy{% endif %}, Memory{% if asyncoutput %}Async{% endif %}WriteOnly{% if legacy_block_access %}Legacy{% endif %}, Memory{% if asyncoutput %}Async{% endif %}ReadWrite{% if legacy_block_access %}Legacy{% endif %}))
             memories.append(memory)
         self.assertCountEqual(expected_memories, memories)
         {# check the rolled case second #}
@@ -1113,7 +1113,7 @@ class {{fq_block_name}}_single_access({{top_node.type_name}}_TestCase): # type: 
                               {% endfor %} ]
         memories = []
         for memory in self.dut.{{'.'.join(get_python_path_segments(node))}}.get_memories(unroll=False):  # type: ignore[union-attr]
-            self.assertIsInstance(memory, (Memory{% if asyncoutput %}Async{% endif %}ReadOnly, Memory{% if asyncoutput %}Async{% endif %}WriteOnly, Memory{% if asyncoutput %}Async{% endif %}ReadWrite, Memory{% if asyncoutput %}Async{% endif %}ReadOnlyArray, Memory{% if asyncoutput %}Async{% endif %}WriteOnlyArray, Memory{% if asyncoutput %}Async{% endif %}ReadWriteArray))
+            self.assertIsInstance(memory, (Memory{% if asyncoutput %}Async{% endif %}ReadOnly{% if legacy_block_access %}Legacy{% endif %}, Memory{% if asyncoutput %}Async{% endif %}WriteOnly{% if legacy_block_access %}Legacy{% endif %}, Memory{% if asyncoutput %}Async{% endif %}ReadWrite{% if legacy_block_access %}Legacy{% endif %}, Memory{% if asyncoutput %}Async{% endif %}ReadOnlyArray, Memory{% if asyncoutput %}Async{% endif %}WriteOnlyArray, Memory{% if asyncoutput %}Async{% endif %}ReadWriteArray))
             memories.append(memory)
         self.assertCountEqual(expected_memories, memories)
     {% endmacro %}
@@ -1134,7 +1134,7 @@ class {{fq_block_name}}_single_access({{top_node.type_name}}_TestCase): # type: 
         expected_readable_fields: List[Union[FieldReadOnly, FieldReadWrite]]
         expected_writable_regs: List[WritableRegister]
         expected_readable_regs: List[ReadableRegister]
-        expected_memories:List[Union[MemoryReadOnly, MemoryWriteOnly, MemoryReadWrite]]
+        expected_memories:List[Union[MemoryReadOnly{% if legacy_block_access %}Legacy{% endif %}, MemoryWriteOnly{% if legacy_block_access %}Legacy{% endif %}, MemoryReadWrite{% if legacy_block_access %}Legacy{% endif %}]]
         {% endif %}
         expected_sections : List[Union[{% if asyncoutput %}Async{% endif %}AddressMap, {% if asyncoutput %}Async{% endif %}RegFile]]
 
