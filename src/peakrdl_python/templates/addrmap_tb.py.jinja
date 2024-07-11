@@ -1353,7 +1353,7 @@ class {{fq_block_name}}_block_access({{top_node.type_name}}_TestCase_BlockAccess
             with patch(base_name + '.write_addr_space') as write_callback_mock,\
                                 patch(base_name + '.read_addr_space', return_value=0) as read_callback_mock, \
                                 patch(base_name + '.read_block_addr_space',
-                                      return_value=Array('{{get_array_typecode(node.size * 8)}}', empty_read)) as read_block_callback_mock , \
+                                      return_value={% if legacy_block_access %}Array('{{get_array_typecode(node.size * 8)}}', empty_read){% else %}empty_read{% endif %}) as read_block_callback_mock , \
                                 patch(base_name + '.write_block_addr_space') as write_block_callback_mock:
                 {% if node.has_sw_readable and node.has_sw_writable -%}
                 {% if asyncoutput %}async {% endif %}with self.dut.{{'.'.join(get_python_path_segments(node))}}.single_read_modify_write() as dut:
