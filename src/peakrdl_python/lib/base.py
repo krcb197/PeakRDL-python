@@ -39,7 +39,8 @@ else:
     from typing_extensions import TypeGuard
 
 if TYPE_CHECKING:
-    from .memory import Memory, MemoryArray, AsyncMemory, AsyncMemoryArray
+    from .memory import Memory, MemoryArray
+    from .async_memory import AsyncMemory, AsyncMemoryArray
     from .register import Reg, RegArray
     from .register import WritableRegister, ReadableRegister
     from .async_register import AsyncReg, AsyncRegArray
