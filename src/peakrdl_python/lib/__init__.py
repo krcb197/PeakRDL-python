@@ -90,20 +90,20 @@ from .memory import MemoryReadWrite, MemoryReadWriteLegacy
 from .memory import MemoryReadOnlyArray
 from .memory import MemoryWriteOnlyArray
 from .memory import MemoryReadWriteArray
-from .memory import MemoryAsyncReadOnly, MemoryAsyncReadOnly
-from .memory import MemoryAsyncWriteOnly, MemoryAsyncWriteOnly
-from .memory import MemoryAsyncReadWrite, MemoryAsyncReadWrite
-from .memory import MemoryAsyncReadOnlyArray
-from .memory import MemoryAsyncWriteOnlyArray
-from .memory import MemoryAsyncReadWriteArray
+from .async_memory import MemoryAsyncReadOnly, MemoryAsyncReadOnlyLegacy
+from .async_memory import MemoryAsyncWriteOnly, MemoryAsyncWriteOnlyLegacy
+from .async_memory import MemoryAsyncReadWrite, MemoryAsyncReadWriteLegacy
+from .async_memory import MemoryAsyncReadOnlyArray
+from .async_memory import MemoryAsyncWriteOnlyArray
+from .async_memory import MemoryAsyncReadWriteArray
 from .memory import ReadableMemory, ReadableMemoryLegacy
 from .memory import WritableMemory, WritableMemoryLegacy
 from .memory import Memory
-from .memory import ReadableAsyncMemory, ReadableAsyncMemoryLegacy
-from .memory import WritableAsyncMemory, ReadableAsyncMemoryLegacy
-from .memory import AsyncMemory
+from .async_memory import ReadableAsyncMemory, ReadableAsyncMemoryLegacy
+from .async_memory import WritableAsyncMemory, WritableAsyncMemoryLegacy
+from .async_memory import AsyncMemory
 from .memory import MemoryArray
-from .memory import AsyncMemoryArray
+from .async_memory import AsyncMemoryArray
 
 from .utility_functions import get_array_typecode
 from .base import Node

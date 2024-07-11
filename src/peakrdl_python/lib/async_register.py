@@ -31,7 +31,7 @@ from warnings import warn
 from .utility_functions import get_array_typecode
 from .base import AsyncAddressMap, AsyncRegFile
 from .register import BaseReg, BaseRegArray, RegisterWriteVerifyError
-from .memory import  MemoryAsyncReadOnly, MemoryAsyncWriteOnly, MemoryAsyncReadWrite, \
+from .async_memory import  MemoryAsyncReadOnly, MemoryAsyncWriteOnly, MemoryAsyncReadWrite, \
     AsyncMemory, ReadableAsyncMemory, WritableAsyncMemory
 from .callbacks import AsyncCallbackSet, AsyncCallbackSetLegacy
 
@@ -257,11 +257,18 @@ class RegAsyncWriteOnly(AsyncReg, ABC):
             # python 3.7 doesn't have the callback defined as protocol so mypy doesn't recognise
             # the arguments in the call back functions
             # pylint: disable-next=duplicate-code
-            data_as_array = Array(get_array_typecode(self.width), [data])
-            await block_callback(addr=self.address,  # type: ignore[call-arg]
-                                 width=self.width,  # type: ignore[call-arg]
-                                 accesswidth=self.accesswidth,  # type: ignore[call-arg]
-                                 data=data_as_array)  # type: ignore[call-arg]
+            if isinstance(self._callbacks, AsyncCallbackSetLegacy):
+                data_as_array = Array(get_array_typecode(self.width), [data])
+                await block_callback(addr=self.address,  # type: ignore[call-arg]
+                                     width=self.width,  # type: ignore[call-arg]
+                                     accesswidth=self.accesswidth,  # type: ignore[call-arg]
+                                     data=data_as_array)  # type: ignore[call-arg]
+
+            if isinstance(self._callbacks, AsyncCallbackSet):
+                await block_callback(addr=self.address,  # type: ignore[call-arg]
+                                     width=self.width,  # type: ignore[call-arg]
+                                     accesswidth=self.accesswidth,  # type: ignore[call-arg]
+                                     data=[data])  # type: ignore[call-arg]
 
         else:
             # pylint: disable-next=duplicate-code
@@ -478,7 +485,7 @@ class AsyncRegArray(BaseRegArray, ABC):
     """
     # pylint: disable=too-many-arguments,duplicate-code
 
-    __slots__: List[str] = ['__in_context_manager', '__register_array_cache',
+    __slots__: List[str] = ['__in_context_manager', '__register_cache',
                             '__register_address_array']
 
     def __init__(self, *,
@@ -492,7 +499,7 @@ class AsyncRegArray(BaseRegArray, ABC):
                  elements: Optional[Dict[Tuple[int, ...], AsyncRegArrayElementType]] = None):
 
         self.__in_context_manager: bool = False
-        self.__register_array_cache: Optional[Array] = None
+        self.__register_cache: Optional[Union[Array, List[int]]] = None
         self.__register_address_array: Optional[List[int]] = None
 
         if not isinstance(parent._callbacks, AsyncCallbackSet):
@@ -504,13 +511,19 @@ class AsyncRegArray(BaseRegArray, ABC):
 
     @property
     def __empty_array_cache(self) -> Array:
-        empty_array = [0 for _ in range(self.__number_cache_entries)]
-        return Array(get_array_typecode(self.width), empty_array)
+        return Array(get_array_typecode(self.width), self.__empty_list_cache)
 
-    async def __block_read(self) -> Array:
+    @property
+    def __empty_list_cache(self) -> List[int]:
+        return [0 for _ in range(self.__number_cache_entries)]
+
+    async def __block_read_legacy(self) -> Array:
         """
         Read all the contents of the array in the most optimal way, ideally with a block operation
         """
+        if not isinstance(self._callbacks, AsyncCallbackSetLegacy):
+            raise RuntimeError('This function should only be used with legacy callbacks')
+
         read_block_callback = self._callbacks.read_block_callback
         read_callback = self._callbacks.read_callback
 
@@ -518,7 +531,7 @@ class AsyncRegArray(BaseRegArray, ABC):
             # python 3.7 doesn't have the callback defined as protocol so mypy doesn't recognise
             # the arguments in the call back functions
             data_read = \
-                await read_block_callback(  # type: ignore[call-arg]
+                await read_block_callback(
                     addr=self.address,  # type: ignore[call-arg]
                     width=self.width,  # type: ignore[call-arg]
                     accesswidth=self.accesswidth,  # type: ignore[call-arg]
@@ -539,7 +552,7 @@ class AsyncRegArray(BaseRegArray, ABC):
             for entry, address in enumerate(self.__register_address_array):
                 # python 3.7 doesn't have the callback defined as protocol so mypy doesn't
                 # recognise the arguments in the call back functions
-                data_entry = await read_callback(  # type: ignore[call-arg]
+                data_entry = await read_callback(
                     addr=address,  # type: ignore[call-arg]
                     width=self.width,  # type: ignore[call-arg]
                     accesswidth=self.accesswidth)  # type: ignore[call-arg]
@@ -550,10 +563,100 @@ class AsyncRegArray(BaseRegArray, ABC):
 
         raise RuntimeError('There is no usable callback')
 
-    async def __block_write(self, data: Array, verify: bool) -> None:
+    async def __block_write_legacy(self, data: Array, verify: bool) -> None:
         """
         Write all the contents of the array in the most optimal way, ideally with a block operation
         """
+        if not isinstance(self._callbacks, AsyncCallbackSetLegacy):
+            raise RuntimeError('This function should only be used with legacy callbacks')
+
+        write_block_callback = self._callbacks.write_block_callback
+        write_callback = self._callbacks.write_callback
+
+        if write_block_callback is not None:
+            # python 3.7 doesn't have the callback defined as protocol so mypy doesn't recognise
+            # the arguments in the call back functions
+            await write_block_callback(addr=self.address,  # type: ignore[call-arg]
+                                       width=self.width,  # type: ignore[call-arg]
+                                       accesswidth=self.width,  # type: ignore[call-arg]
+                                       data=data)  # type: ignore[call-arg]
+
+        elif write_callback is not None:
+            # there is not write_block_callback defined so we must used individual write
+
+            if self.__register_address_array is None:
+                raise RuntimeError('This address array has not be initialised')
+
+            for entry_index, entry_data in enumerate(data):
+                entry_address = self.__register_address_array[entry_index]
+                # python 3.7 doesn't have the callback defined as protocol so mypy doesn't
+                # recognise the arguments in the call back functions
+                await write_callback(addr=entry_address,  # type: ignore[call-arg]
+                                     width=self.width,  # type: ignore[call-arg]
+                                     accesswidth=self.accesswidth,  # type: ignore[call-arg]
+                                     data=entry_data)  # type: ignore[call-arg]
+
+        else:
+            raise RuntimeError('No suitable callback')
+
+        if verify:
+            read_back_verify_data = self.__block_read_legacy()
+            if read_back_verify_data != data:
+                raise RegisterWriteVerifyError('Read back block miss-match')
+
+    async def __block_read(self) -> List[int]:
+        """
+        Read all the contents of the array in the most optimal way, ideally with a block operation
+        """
+        if not isinstance(self._callbacks, AsyncCallbackSet):
+            raise RuntimeError('This function should only be used with non-legacy callbacks')
+
+        read_block_callback = self._callbacks.read_block_callback
+        read_callback = self._callbacks.read_callback
+
+        if read_block_callback is not None:
+            # python 3.7 doesn't have the callback defined as protocol so mypy doesn't recognise
+            # the arguments in the call back functions
+            data_read = \
+                await read_block_callback(
+                    addr=self.address,  # type: ignore[call-arg]
+                    width=self.width,  # type: ignore[call-arg]
+                    accesswidth=self.accesswidth,  # type: ignore[call-arg]
+                    length=self.__number_cache_entries)  # type: ignore[call-arg]
+
+            if not isinstance(data_read, List):
+                raise TypeError('The read block callback is expected to return an array')
+
+            return data_read
+
+        if read_callback is not None:
+            # there is not read_block_callback defined so we must used individual read
+            data_list = self.__empty_list_cache
+
+            if self.__register_address_array is None:
+                raise RuntimeError('This address array has not be initialised')
+
+            for entry, address in enumerate(self.__register_address_array):
+                # python 3.7 doesn't have the callback defined as protocol so mypy doesn't
+                # recognise the arguments in the call back functions
+                data_entry = await read_callback(
+                    addr=address,  # type: ignore[call-arg]
+                    width=self.width,  # type: ignore[call-arg]
+                    accesswidth=self.accesswidth)  # type: ignore[call-arg]
+
+                data_list[entry] = data_entry
+
+            return data_list
+
+        raise RuntimeError('There is no usable callback')
+
+    async def __block_write(self, data: List[int], verify: bool) -> None:
+        """
+        Write all the contents of the array in the most optimal way, ideally with a block operation
+        """
+        if not isinstance(self._callbacks, AsyncCallbackSet):
+            raise RuntimeError('This function should only be used with non-legacy callbacks')
+
         write_block_callback = self._callbacks.write_block_callback
         write_callback = self._callbacks.write_callback
 
@@ -633,11 +736,11 @@ class AsyncRegArray(BaseRegArray, ABC):
         Returns:
             value inputted by the used
         """
-        if self.__register_array_cache is None:
+        if self.__register_cache is None:
             raise RuntimeError('The cache array should be initialised')
-        return self.__register_array_cache[self.__cache_entry(addr=addr,
-                                                              width=width,
-                                                              accesswidth=accesswidth)]
+        return self.__register_cache[self.__cache_entry(addr=addr,
+                                                        width=width,
+                                                        accesswidth=accesswidth)]
 
     async def __cache_write(self, addr: int, width: int, accesswidth: int, data: int) -> None:
         """
@@ -654,11 +757,11 @@ class AsyncRegArray(BaseRegArray, ABC):
         """
         if not isinstance(data, int):
             raise TypeError(f'Data should be an int byt got {type(data)}')
-        if self.__register_array_cache is None:
+        if self.__register_cache is None:
             raise RuntimeError('The cache array should be initialised')
-        self.__register_array_cache[self.__cache_entry(addr=addr,
-                                                       width=width,
-                                                       accesswidth=accesswidth)] = data
+        self.__register_cache[self.__cache_entry(addr=addr,
+                                                 width=width,
+                                                 accesswidth=accesswidth)] = data
 
     @property
     def __cache_callbacks(self) -> AsyncCallbackSet:
@@ -668,6 +771,19 @@ class AsyncRegArray(BaseRegArray, ABC):
     @property
     def __number_cache_entries(self) -> int:
         return self.size // (self.width >> 3)
+
+    async def __initialise_cache(self, skip_initial_read: bool) -> Union[Array, List[int]]:
+        if isinstance(self._callbacks, AsyncCallbackSet):
+            if skip_initial_read:
+                return self.__empty_list_cache
+            return await self.__block_read()
+
+        if isinstance(self._callbacks, AsyncCallbackSetLegacy):
+            if skip_initial_read:
+                return self.__empty_array_cache
+            return await self.__block_read_legacy()
+
+        raise TypeError('Unhandled callback type')
 
     @asynccontextmanager
     async def _cached_access(self, verify: bool = False, skip_write: bool = False,
@@ -684,10 +800,7 @@ class AsyncRegArray(BaseRegArray, ABC):
         """
         self.__register_address_array = \
             [self.address + (i * (self.width >> 3)) for i in range(self.__number_cache_entries)]
-        if skip_initial_read:
-            self.__register_array_cache = self.__empty_array_cache
-        else:
-            self.__register_array_cache = await self.__block_read()
+        self.__register_cache = await self.__initialise_cache(skip_initial_read=skip_initial_read)
         self.__in_context_manager = True
         # this try/finally is needed to make sure that in the event of an exception
         # the state flags are not left incorrectly set
@@ -696,15 +809,22 @@ class AsyncRegArray(BaseRegArray, ABC):
         finally:
             self.__in_context_manager = False
         if not skip_write:
-            await self.__block_write(self.__register_array_cache, verify)
+            if isinstance(self._callbacks, AsyncCallbackSet):
+                if not isinstance(self.__register_cache, list):
+                    raise TypeError('Register cache should be a list in non-legacy mode')
+                await self.__block_write(self.__register_cache, verify)
+            if isinstance(self._callbacks, AsyncCallbackSetLegacy):
+                if not isinstance(self.__register_cache, Array):
+                    raise TypeError('Register cache should be a Array in legacy mode')
+                await self.__block_write_legacy(self.__register_cache, verify)
 
         # clear the register states at the end of the context manager
         self.__register_address_array = None
-        self.__register_array_cache = None
+        self.__register_cache = None
 
     @property
     def _callbacks(self) -> Union[AsyncCallbackSet, AsyncCallbackSetLegacy]:
-
+        # pylint: disable=protected-access
         if self.__in_context_manager:
             return self.__cache_callbacks
 

@@ -441,10 +441,12 @@ class PythonExporter:
             top_block:
             package:
             asyncoutput:
+            legacy_block_access:
 
         Returns:
 
         """
+        #pylint: disable=too-many-locals
 
         blocks = AddressMaps()
         # running the walker populated the blocks with all the address maps in within the
