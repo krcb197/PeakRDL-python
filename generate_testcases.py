@@ -127,7 +127,6 @@ if __name__ == '__main__':
             if (testcase_name == 'extended_memories') and (build_options['legacy'] is True):
                 continue
 
-
             _ = generate(root, os.path.join('testcase_output', folder_name),
                          asyncoutput=build_options['asyncoutput'],
                          legacy_block_access=build_options['legacy']
