@@ -797,32 +797,31 @@ class RegWriteOnly(Reg, ABC):
 
         self._logger.info('Writing data:%X to %X', data, self.address)
 
-        block_callback = self._callbacks.write_block_callback
-        single_callback = self._callbacks.write_callback
-
-        if single_callback is not None:
+        if self._callbacks.write_callback is not None:
             # python 3.7 doesn't have the callback defined as protocol so mypy doesn't recognise
             # the arguments in the call back functions
-            single_callback(addr=self.address,  # type: ignore[call-arg]
-                            width=self.width,  # type: ignore[call-arg]
-                            accesswidth=self.accesswidth,  # type: ignore[call-arg]
-                            data=data)  # type: ignore[call-arg]
+            self._callbacks.write_callback(addr=self.address,  # type: ignore[call-arg]
+                                           width=self.width,  # type: ignore[call-arg]
+                                           accesswidth=self.accesswidth,  # type: ignore[call-arg]
+                                           data=data)  # type: ignore[call-arg]
 
-        elif block_callback is not None:
+        elif self._callbacks.write_block_callback is not None:
             # python 3.7 doesn't have the callback defined as protocol so mypy doesn't recognise
             # the arguments in the call back functions
             if isinstance(self._callbacks, NormalCallbackSetLegacy):
                 data_as_array = Array(get_array_typecode(self.width), [data])
-                block_callback(addr=self.address,  # type: ignore[call-arg]
-                               width=self.width,  # type: ignore[call-arg]
-                               accesswidth=self.accesswidth,  # type: ignore[call-arg]
-                               data=data_as_array)  # type: ignore[call-arg]
+                self._callbacks.write_block_callback(addr=self.address,  # type: ignore[call-arg]
+                                                     width=self.width,  # type: ignore[call-arg]
+                                                     accesswidth=self.accesswidth,
+                                                     # type: ignore[call-arg]
+                                                     data=data_as_array)  # type: ignore[call-arg]
 
             if isinstance(self._callbacks, NormalCallbackSet):
-                block_callback(addr=self.address,  # type: ignore[call-arg]
-                               width=self.width,  # type: ignore[call-arg]
-                               accesswidth=self.accesswidth,  # type: ignore[call-arg]
-                               data=[data])  # type: ignore[call-arg]
+                self._callbacks.write_block_callback(addr=self.address,  # type: ignore[call-arg]
+                                                     width=self.width,  # type: ignore[call-arg]
+                                                     accesswidth=self.accesswidth,
+                                                     # type: ignore[call-arg]
+                                                     data=[data])  # type: ignore[call-arg]
 
         else:
             raise RuntimeError('This function does not have a useable callback')
