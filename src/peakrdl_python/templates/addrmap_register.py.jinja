@@ -40,11 +40,11 @@ class {{get_fully_qualified_type_name(node)}}_cls(Reg{% if asyncoutput %}Async{%
                  inst_name: str,
                  parent: Union[{% if asyncoutput -%}Async{%- endif -%}AddressMap,{%- if asyncoutput -%}Async{%- endif -%}RegFile,
                  {%- if node.has_sw_readable and node.has_sw_writable -%}
-                    Memory{% if asyncoutput %}Async{% endif -%}ReadWrite
+                    Memory{% if asyncoutput %}Async{% endif -%}ReadWrite{% if legacy_block_access %}Legacy{% endif %}
                  {%- elif node.has_sw_readable and not node.has_sw_writable -%}
-                    Readable{% if asyncoutput %}Async{% endif -%}Memory
+                    Readable{% if asyncoutput %}Async{% endif -%}Memory{% if legacy_block_access %}Legacy{% endif %}
                  {%- elif not node.has_sw_readable and node.has_sw_writable -%}
-                    Writable{% if asyncoutput %}Async{% endif -%}Memory
+                    Writable{% if asyncoutput %}Async{% endif -%}Memory{% if legacy_block_access %}Legacy{% endif %}
                  {%- endif -%}
                  ]):
 

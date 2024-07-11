@@ -175,19 +175,22 @@ class Reg(BaseReg, ABC):
                                    MemoryReadOnly, MemoryWriteOnly, MemoryReadWrite, RegArray)):
             raise TypeError(f'bad parent type got: {type(parent)}')
 
-        if not isinstance(parent._callbacks, NormalCallbackSet):
+        if not isinstance(parent._callbacks, (NormalCallbackSet, NormalCallbackSetLegacy)):
             raise TypeError(f'callback set type is wrong, got {type(parent._callbacks)}')
 
         super().__init__(address=address, width=width, accesswidth=accesswidth,
                          logger_handle=logger_handle, inst_name=inst_name, parent=parent)
 
     @property
-    def _callbacks(self) -> NormalCallbackSet:
+    def _callbacks(self) -> Union[NormalCallbackSet, NormalCallbackSetLegacy]:
+        # pylint: disable=protected-access
         if self.parent is None:
             raise RuntimeError('Parent must be set')
-        # This cast is OK because the type was checked in the __init__
-        # pylint: disable-next=protected-access
-        return cast(NormalCallbackSet, self.parent._callbacks)
+
+        if isinstance(self.parent._callbacks, (NormalCallbackSet, NormalCallbackSetLegacy)):
+            return self.parent._callbacks
+
+        raise TypeError(f'unhandled parent callback type: {type(self.parent._callbacks)}')
 
 
 # pylint: disable-next=invalid-name

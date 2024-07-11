@@ -73,19 +73,22 @@ class AsyncReg(BaseReg, ABC):
                                    MemoryAsyncReadWrite, AsyncRegArray)):
             raise TypeError(f'bad parent type got: {type(parent)}')
 
-        if not isinstance(parent._callbacks, AsyncCallbackSet):
+        if not isinstance(parent._callbacks, (AsyncCallbackSet, AsyncCallbackSetLegacy)):
             raise TypeError(f'callback set type is wrong, got {type(parent._callbacks)}')
 
         super().__init__(address=address, width=width, accesswidth=accesswidth,
                          logger_handle=logger_handle, inst_name=inst_name, parent=parent)
 
     @property
-    def _callbacks(self) -> AsyncCallbackSet:
+    def _callbacks(self) -> Union[AsyncCallbackSet, AsyncCallbackSetLegacy]:
+        # pylint: disable=protected-access
         if self.parent is None:
             raise RuntimeError('Parent must be set')
-        # This cast is OK because the type was checked in the __init__
-        # pylint: disable-next=protected-access
-        return cast(AsyncCallbackSet, self.parent._callbacks)
+
+        if isinstance(self.parent._callbacks, (AsyncCallbackSet, AsyncCallbackSetLegacy)):
+            return self.parent._callbacks
+
+        raise TypeError(f'unhandled parent callback type: {type(self.parent._callbacks)}')
 
 
 class RegAsyncReadOnly(AsyncReg, ABC):
