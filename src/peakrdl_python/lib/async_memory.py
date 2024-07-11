@@ -27,7 +27,6 @@ import sys
 from .base import AsyncAddressMap, NodeArray
 from .memory import BaseMemory
 
-from .callbacks import NormalCallbackSet, NormalCallbackSetLegacy
 from .callbacks import AsyncCallbackSet, AsyncCallbackSetLegacy
 
 # same bit of code exists in base so flags as duplicate
@@ -188,12 +187,12 @@ class _MemoryAsyncReadOnly(AsyncMemory, ABC):
                                           accesswidth=self.width,  # type: ignore[call-arg]
                                           length=number_entries)  # type: ignore[call-arg]
 
-            if isinstance(self._callbacks, NormalCallbackSet):
+            if isinstance(self._callbacks, AsyncCallbackSet):
                 if not isinstance(data_read, List):
                     raise TypeError('The read block callback is expected to return an List')
                 return data_read
 
-            if isinstance(self._callbacks, NormalCallbackSetLegacy):
+            if isinstance(self._callbacks, AsyncCallbackSetLegacy):
                 if not isinstance(data_read, Array):
                     raise TypeError('The read block callback is expected to return an array')
                 return data_read.tolist()
@@ -259,12 +258,12 @@ class _MemoryAsyncReadOnly(AsyncMemory, ABC):
                                           accesswidth=self.width,  # type: ignore[call-arg]
                                           length=number_entries)  # type: ignore[call-arg]
 
-            if isinstance(self._callbacks, NormalCallbackSet):
+            if isinstance(self._callbacks, AsyncCallbackSet):
                 if not isinstance(data_read, List):
                     raise TypeError('The read block callback is expected to return an List')
                 return Array(self.array_typecode, data_read)
 
-            if isinstance(self._callbacks, NormalCallbackSetLegacy):
+            if isinstance(self._callbacks, AsyncCallbackSetLegacy):
                 if not isinstance(data_read, Array):
                     raise TypeError('The read block callback is expected to return an array')
                 return data_read
@@ -434,7 +433,7 @@ class _MemoryAsyncWriteOnly(AsyncMemory, ABC):
             # python 3.7 doesn't have the callback defined as protocol so mypy doesn't recognise
             # the arguments in the call back functions
             addr = self.address_lookup(entry=start_entry)
-            if isinstance(self._callbacks, NormalCallbackSet):
+            if isinstance(self._callbacks, AsyncCallbackSet):
                 if not isinstance(data, List):
                     raise TypeError(f'data should be an List got {type(data)}')
                 await self._callbacks.write_block_callback(
@@ -442,7 +441,7 @@ class _MemoryAsyncWriteOnly(AsyncMemory, ABC):
                     width=self.width,  # type: ignore[call-arg]
                     accesswidth=self.width,  # type: ignore[call-arg]
                     data=data)  # type: ignore[call-arg]
-            if isinstance(self._callbacks, NormalCallbackSetLegacy):
+            if isinstance(self._callbacks, AsyncCallbackSetLegacy):
                 if not isinstance(data, Array):
                     raise TypeError(f'data should be an List got {type(data)}')
                 await self._callbacks.write_block_callback(
