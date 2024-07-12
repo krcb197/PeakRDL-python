@@ -503,7 +503,7 @@ class MemoryAsyncWriteOnly(_MemoryAsyncWriteOnly, ABC):
 
         """
         if not isinstance(data, list):
-            raise TypeError(f'data should be an Listgot {type(data)}')
+            raise TypeError(f'data should be an List got {type(data)}')
         return await self._write(start_entry=start_entry, data=data)
 
 
@@ -517,7 +517,7 @@ class MemoryAsyncWriteOnlyLegacy(_MemoryAsyncWriteOnly, ABC):
     """
     __slots__: List[str] = []
 
-    async def write(self, start_entry: int, data: List[int]) -> None:
+    async def write(self, start_entry: int, data: Array) -> None:
         """
         Asynchronously write data to memory
 
@@ -528,10 +528,9 @@ class MemoryAsyncWriteOnlyLegacy(_MemoryAsyncWriteOnly, ABC):
         Returns: None
 
         """
-        if not isinstance(data, list):
+        if not isinstance(data, Array):
             raise TypeError(f'data should be an Array {type(data)}')
         return await self._write(start_entry=start_entry, data=data)
-
 
 
 class MemoryAsyncReadWrite(MemoryAsyncReadOnly, MemoryAsyncWriteOnly, ABC):
