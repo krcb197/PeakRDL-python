@@ -513,7 +513,7 @@ class AsyncRegArray(BaseRegArray, ABC):
         self.__register_cache: Optional[Union[Array, List[int]]] = None
         self.__register_address_array: Optional[List[int]] = None
 
-        if not isinstance(parent._callbacks, AsyncCallbackSet):
+        if not isinstance(parent._callbacks, (AsyncCallbackSet, AsyncCallbackSetLegacy)):
             raise TypeError(f'callback set type is wrong, got {type(parent._callbacks)}')
 
         super().__init__(logger_handle=logger_handle, inst_name=inst_name,

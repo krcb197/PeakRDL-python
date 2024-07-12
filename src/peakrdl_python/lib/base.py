@@ -853,7 +853,7 @@ class AsyncRegFile(AsyncSection, ABC):
                          inst_name=inst_name,
                          parent=parent)
 
-        if not isinstance(parent._callbacks, AsyncCallbackSet):
+        if not isinstance(parent._callbacks, (AsyncCallbackSet, AsyncCallbackSetLegacy)):
             raise TypeError(f'parent._callbacks type wrong, got {type(parent._callbacks)}')
 
     @abstractmethod

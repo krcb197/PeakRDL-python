@@ -84,6 +84,7 @@ CommandLineParser.add_argument('--legacy_block_access', action='store_true',
                                help='peakrdl python has two methods to hold blocks of data, the '
                                     'legacy mode based on Array or the new mode using lists')
 
+
 def build_logging_cong(logfilepath:str):
     return {
         'version': 1,
@@ -130,6 +131,7 @@ def build_logging_cong(logfilepath:str):
             }
         }
     }
+
 
 if __name__ == '__main__':
 
