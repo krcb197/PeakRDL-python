@@ -37,7 +37,7 @@ from itertools import combinations
 import math
 from enum import IntEnum
 
-from {% if skip_lib_copy %}src.peakrdl_python.{% else %}..{% endif %}lib import RegisterWriteVerifyError
+from {% if skip_lib_copy %}src.peakrdl_python.{% else %}..{% endif %}lib import RegisterWriteVerifyError, UnsupportedWidthError
 
 from ..reg_model.{{top_node.type_name}} import {{top_node.type_name}}_cls
 {% if asyncoutput %}
@@ -1386,6 +1386,14 @@ class {{fq_block_name}}_block_access({{top_node.type_name}}_TestCase_AltBlockAcc
 
         # test access operations (read and/or write) to register:
         # {{'.'.join(node.get_path_segments())}}
+        entries_to_test = {% if node.get_property('mementries') > 10 %}10{% else %}{{node.get_property('mementries')}}{% endif %}
+        {% if node.get_property('memwidth') not in [8, 16, 32, 64] and not legacy_block_access %}
+            {% if node.is_sw_readable %}
+        with self.assertRaises(UnsupportedWidthError):
+            _ = {% if asyncoutput %}await {%endif %}self.dut.{{'.'.join(get_python_path_segments(node))}}.read(start_entry=0, # type: ignore[union-attr]
+                                      number_entries=entries_to_test)
+            {% endif %}
+        {% else %}
         with patch(base_name + '.write_addr_space') as write_callback_mock,\
                             patch(base_name + '.read_addr_space', return_value=1) as read_callback_mock, \
                             patch(base_name + '.read_block_addr_space_alt',
@@ -1393,9 +1401,6 @@ class {{fq_block_name}}_block_access({{top_node.type_name}}_TestCase_AltBlockAcc
                             patch(base_name + '.write_block_addr_space_alt') as write_block_callback_mock:
 
             {% if node.is_sw_readable -%}
-            # check a multi-entry read, if the memory is small do the entire memory, however, if
-            # it is large limit the number of entries to 10
-            entries_to_test = {% if node.get_property('mementries') > 10 %}10{% else %}{{node.get_property('mementries')}}{% endif %}
             random_data_list = [random.randint(0,{{get_memory_max_entry_value_hex_string(node)}}) for x in range(entries_to_test)]
             random_data_array = Array('{{get_array_typecode(node.get_property('memwidth'))}}', random_data_list)
 
@@ -1438,7 +1443,7 @@ class {{fq_block_name}}_block_access({{top_node.type_name}}_TestCase_AltBlockAcc
             write_block_callback_mock.reset_mock()
 
             {%- endif %}
-
+        {% endif %}
         {%- endfor %}
     {%- endif %}
 

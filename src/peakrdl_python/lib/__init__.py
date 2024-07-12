@@ -106,4 +106,5 @@ from .memory import MemoryArray
 from .async_memory import AsyncMemoryArray
 
 from .utility_functions import get_array_typecode
+from .utility_functions import UnsupportedWidthError
 from .base import Node
