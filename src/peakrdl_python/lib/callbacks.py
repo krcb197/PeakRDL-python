@@ -150,18 +150,27 @@ else:
     AsyncWriteBlockLegacyCallback = Callable[[int, int, int, Array], Coroutine[None, None, None]]
 
 
-class _NormalCallbackSetBase:
+class NormalCallbackSet:
     """
     Class to hold a set of callbacks, this reduces the number of callback that need to be passed
     around
     """
 
-    __slots__ = ['__write_callback', '__read_callback']
+    __slots__ = ['__write_callback', '__read_callback',
+                 '__write_block_callback', '__read_block_callback']
 
     def __init__(self,
                  write_callback: Optional[WriteCallback] = None,
-                 read_callback: Optional[ReadCallback] = None):
+                 read_callback: Optional[ReadCallback] = None,
+                 write_block_callback: Optional[Union[WriteBlockCallback,
+                                                      WriteBlockLegacyCallback]] = None,
+                 read_block_callback: Optional[Union[ReadBlockCallback,
+                                                     ReadBlockLegacyCallback]] = None):
 
+        super().__init__(read_callback=read_callback, write_callback=write_callback)
+
+        self.__read_block_callback = read_block_callback
+        self.__write_block_callback = write_block_callback
         self.__read_callback = read_callback
         self.__write_callback = write_callback
 
@@ -185,29 +194,9 @@ class _NormalCallbackSetBase:
         """
         return self.__write_callback
 
-
-
-class NormalCallbackSet(_NormalCallbackSetBase):
-    """
-    Class to hold a set of callbacks, this reduces the number of callback that need to be passed
-    around
-    """
-
-    __slots__ = ['__write_block_callback', '__read_block_callback']
-
-    def __init__(self,
-                 write_callback: Optional[WriteCallback] = None,
-                 read_callback: Optional[ReadCallback] = None,
-                 write_block_callback: Optional[WriteBlockCallback] = None,
-                 read_block_callback: Optional[ReadBlockCallback] = None):
-
-        super().__init__(read_callback=read_callback, write_callback=write_callback)
-
-        self.__read_block_callback = read_block_callback
-        self.__write_block_callback = write_block_callback
-
     @property
-    def read_block_callback(self) -> Optional[ReadBlockCallback]:
+    def read_block_callback(self) -> Optional[Union[ReadBlockCallback,
+                                                    ReadBlockLegacyCallback]]:
         """
         block read callback function
 
@@ -217,68 +206,40 @@ class NormalCallbackSet(_NormalCallbackSetBase):
         return self.__read_block_callback
 
     @property
-    def write_block_callback(self) -> Optional[WriteBlockCallback]:
+    def write_block_callback(self) -> Optional[Union[WriteBlockCallback,
+                                                     WriteBlockLegacyCallback]]:
         """
-        block read callback function
+        block write callback function
 
         Returns: call back function
 
         """
         return self.__write_block_callback
 
-class NormalCallbackSetLegacy(_NormalCallbackSetBase):
+
+class AsyncCallbackSet:
     """
     Class to hold a set of callbacks, this reduces the number of callback that need to be passed
     around
     """
 
-    __slots__ = ['__write_block_callback', '__read_block_callback']
-
-    def __init__(self,
-                 write_callback: Optional[WriteCallback] = None,
-                 read_callback: Optional[ReadCallback] = None,
-                 write_block_callback: Optional[WriteBlockLegacyCallback] = None,
-                 read_block_callback: Optional[ReadBlockLegacyCallback] = None):
-
-        super().__init__(read_callback=read_callback, write_callback=write_callback)
-
-        self.__read_block_callback = read_block_callback
-        self.__write_block_callback = write_block_callback
-
-    @property
-    def read_block_callback(self) -> Optional[ReadBlockLegacyCallback]:
-        """
-        block read callback function
-
-        Returns: call back function
-
-        """
-        return self.__read_block_callback
-
-    @property
-    def write_block_callback(self) -> Optional[WriteBlockLegacyCallback]:
-        """
-        block read callback function
-
-        Returns: call back function
-
-        """
-        return self.__write_block_callback
-
-class _AsyncCallbackSetBase:
-    """
-    Class to hold a set of callbacks, this reduces the number of callback that need to be passed
-    around
-    """
-
-    __slots__ = ['__write_callback', '__read_callback']
+    __slots__ = ['__write_callback', '__read_callback',
+                 '__write_block_callback', '__read_block_callback']
 
     def __init__(self,
                  write_callback: Optional[AsyncWriteCallback] = None,
-                 read_callback: Optional[AsyncReadCallback] = None):
+                 read_callback: Optional[AsyncReadCallback] = None,
+                 write_block_callback: Optional[Union[AsyncWriteBlockCallback,
+                                                AsyncWriteBlockLegacyCallback]] = None,
+                 read_block_callback: Optional[Union[AsyncReadBlockCallback,
+                                                     AsyncReadBlockLegacyCallback]] = None):
+
+        super().__init__(read_callback=read_callback, write_callback=write_callback)
 
         self.__read_callback = read_callback
         self.__write_callback = write_callback
+        self.__read_block_callback = read_block_callback
+        self.__write_block_callback = write_block_callback
 
     @property
     def read_callback(self) -> Optional[AsyncReadCallback]:
@@ -300,28 +261,9 @@ class _AsyncCallbackSetBase:
         """
         return self.__write_callback
 
-
-class AsyncCallbackSet(_AsyncCallbackSetBase):
-    """
-    Class to hold a set of callbacks, this reduces the number of callback that need to be passed
-    around
-    """
-
-    __slots__ = ['__write_block_callback', '__read_block_callback']
-
-    def __init__(self,
-                 write_callback: Optional[AsyncWriteCallback] = None,
-                 read_callback: Optional[AsyncReadCallback] = None,
-                 write_block_callback: Optional[AsyncWriteBlockCallback] = None,
-                 read_block_callback: Optional[AsyncReadBlockCallback] = None):
-
-        super().__init__(read_callback=read_callback, write_callback=write_callback)
-
-        self.__read_block_callback = read_block_callback
-        self.__write_block_callback = write_block_callback
-
     @property
-    def read_block_callback(self) -> Optional[AsyncReadBlockCallback]:
+    def read_block_callback(self) -> Optional[Union[AsyncReadBlockCallback,
+                                                    AsyncReadBlockLegacyCallback]]:
         """
         block read callback function
 
@@ -331,48 +273,10 @@ class AsyncCallbackSet(_AsyncCallbackSetBase):
         return self.__read_block_callback
 
     @property
-    def write_block_callback(self) -> Optional[AsyncWriteBlockCallback]:
+    def write_block_callback(self) -> Optional[Union[AsyncWriteBlockCallback,
+                                                     AsyncWriteBlockLegacyCallback]]:
         """
-        block read callback function
-
-        Returns: call back function
-
-        """
-        return self.__write_block_callback
-
-
-class AsyncCallbackSetLegacy(_AsyncCallbackSetBase):
-    """
-    Class to hold a set of callbacks, this reduces the number of callback that need to be passed
-    around
-    """
-
-    __slots__ = ['__write_block_callback', '__read_block_callback']
-
-    def __init__(self,
-                 write_callback: Optional[AsyncWriteCallback] = None,
-                 read_callback: Optional[AsyncReadCallback] = None,
-                 write_block_callback: Optional[AsyncWriteBlockLegacyCallback] = None,
-                 read_block_callback: Optional[AsyncReadBlockLegacyCallback] = None):
-        super().__init__(read_callback=read_callback, write_callback=write_callback)
-
-        self.__read_block_callback = read_block_callback
-        self.__write_block_callback = write_block_callback
-
-    @property
-    def read_block_callback(self) -> Optional[AsyncReadBlockLegacyCallback]:
-        """
-        block read callback function
-
-        Returns: call back function
-
-        """
-        return self.__read_block_callback
-
-    @property
-    def write_block_callback(self) -> Optional[AsyncWriteBlockLegacyCallback]:
-        """
-        block read callback function
+        block write callback function
 
         Returns: call back function
 
@@ -381,4 +285,3 @@ class AsyncCallbackSetLegacy(_AsyncCallbackSetBase):
 
 
 CallbackSet = Union[AsyncCallbackSet, NormalCallbackSet]
-CallbackSetLegacy = Union[AsyncCallbackSetLegacy, NormalCallbackSetLegacy]
