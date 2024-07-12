@@ -640,7 +640,7 @@ class MemoryWriteOnlyLegacy(_MemoryWriteOnly, ABC):
     """
     __slots__: List[str] = []
 
-    def write(self, start_entry: int, data: List[int]) -> None:
+    def write(self, start_entry: int, data: Array) -> None:
         """
         Write data to memory
 

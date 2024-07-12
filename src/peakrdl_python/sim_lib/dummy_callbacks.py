@@ -78,6 +78,7 @@ def dummy_read_block(addr: int, width: int, accesswidth: int, length:int) -> Lis
     """
     return [0 for x in range(length)]
 
+
 def dummy_read_block_legacy(addr: int, width: int, accesswidth: int, length:int) -> Array:
     """
     Callback to simulate the operation of the package, everytime the read_block is called, it
