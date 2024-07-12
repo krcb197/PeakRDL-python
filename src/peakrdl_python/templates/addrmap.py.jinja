@@ -75,9 +75,9 @@ from {% if skip_lib_copy %}src.peakrdl_python.{% else %}..{% endif %}lib import 
 from {% if skip_lib_copy %}src.peakrdl_python.{% else %}..{% endif %}lib import FieldSizeProps, FieldMiscProps
 
 {% if asyncoutput %}
-from {% if skip_lib_copy %}src.peakrdl_python.{% else %}..{% endif %}lib import AsyncCallbackSet{% if legacy_block_access %}Legacy{% endif %}
+from {% if skip_lib_copy %}src.peakrdl_python.{% else %}..{% endif %}lib import AsyncCallbackSet, AsyncCallbackSetLegacy
 {% else %}
-from {% if skip_lib_copy %}src.peakrdl_python.{% else %}..{% endif %}lib import NormalCallbackSet{% if legacy_block_access %}Legacy{% endif %}
+from {% if skip_lib_copy %}src.peakrdl_python.{% else %}..{% endif %}lib import NormalCallbackSet, NormalCallbackSetLegacy
 {% endif %}
 
 
@@ -253,12 +253,12 @@ class {{get_fully_qualified_type_name(node)}}_cls({% if asyncoutput %}Async{% en
                  address:int {%- if node == top_node -%}={{top_node.absolute_address}}{%- endif -%},
                  logger_handle:str {%- if node == top_node -%}='reg_model.{{top_node.get_path()}}'{%- endif -%},
                  inst_name:str{%- if node == top_node -%}='{{node.inst_name}}'{%- endif -%},
-                 callbacks: Optional[{% if asyncoutput %}AsyncCallbackSet{% else %}NormalCallbackSet{% endif %}{% if legacy_block_access %}Legacy{% endif %}]=None,
+                 callbacks: Optional[Union[{% if asyncoutput %}Async{% else %}Normal{% endif %}CallbackSet, {% if asyncoutput %}Async{% else %}Normal{% endif %}CallbackSetLegacy]]=None,
                  parent:Optional[{% if asyncoutput %}Async{% endif %}AddressMap]=None):
 
         if callbacks is not None:
-            if not isinstance(callbacks, {% if asyncoutput %}AsyncCallbackSet{% else %}NormalCallbackSet{% endif %}{% if legacy_block_access %}Legacy{% endif %}):
-                raise TypeError(f'callbacks should be {% if asyncoutput %}AsyncCallbackSet{% else %}NormalCallbackSet{% endif %}{% if legacy_block_access %}Legacy{% endif %} got {type(callbacks)}')
+            if not isinstance(callbacks, ({% if asyncoutput %}Async{% else %}Normal{% endif %}CallbackSet, {% if asyncoutput %}Async{% else %}Normal{% endif %}CallbackSetLegacy)):
+                raise TypeError(f'callbacks should be {% if asyncoutput %}Async{% else %}Normal{% endif %}CallbackSet, {% if asyncoutput %}Async{% else %}Normal{% endif %}CallbackSetLegacy got {type(callbacks)}')
 
         super().__init__(callbacks=callbacks,
                          address=address,

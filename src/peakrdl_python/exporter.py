@@ -506,10 +506,10 @@ class PythonExporter:
                 'uses_enum': uses_enum(block),
                 'skip_lib_copy': skip_lib_copy,
                 'version': __version__,
+                'get_array_typecode' : get_array_typecode,
                 'legacy_block_access': legacy_block_access,
             }
-            if legacy_block_access is True:
-                context['get_array_typecode'] = get_array_typecode
+
 
             self.__stream_jinja_template(template_name="addrmap_tb.py.jinja",
                                          target_package=package.tests,

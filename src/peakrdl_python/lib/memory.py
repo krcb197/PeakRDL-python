@@ -558,21 +558,32 @@ class _MemoryWriteOnly(Memory, ABC):
             # the arguments in the call back functions
             addr = self.address_lookup(entry=start_entry)
             if isinstance(self._callbacks, NormalCallbackSet):
-                if not isinstance(data, List):
-                    raise TypeError(f'data should be an List got {type(data)}')
-                self._callbacks.write_block_callback(
-                    addr=addr,  # type: ignore[call-arg]
-                    width=self.width,  # type: ignore[call-arg]
-                    accesswidth=self.width,  # type: ignore[call-arg]
-                    data=data)  # type: ignore[call-arg]
+                if isinstance(data, Array):
+                    self._callbacks.write_block_callback(
+                        addr=addr,  # type: ignore[call-arg]
+                        width=self.width,  # type: ignore[call-arg]
+                        accesswidth=self.width,  # type: ignore[call-arg]
+                        data=data.tolist())  # type: ignore[call-arg]
+                else:
+                    self._callbacks.write_block_callback(
+                        addr=addr,  # type: ignore[call-arg]
+                        width=self.width,  # type: ignore[call-arg]
+                        accesswidth=self.width,  # type: ignore[call-arg]
+                        data=data)  # type: ignore[call-arg]
             if isinstance(self._callbacks, NormalCallbackSetLegacy):
-                if not isinstance(data, Array):
-                    raise TypeError(f'data should be an List got {type(data)}')
-                self._callbacks.write_block_callback(
-                    addr=addr,  # type: ignore[call-arg]
-                    width=self.width,  # type: ignore[call-arg]
-                    accesswidth=self.width,  # type: ignore[call-arg]
-                    data=data)  # type: ignore[call-arg]
+                if isinstance(data, list):
+                    # need to convert the data to an array before calling
+                    self._callbacks.write_block_callback(
+                        addr=addr,  # type: ignore[call-arg]
+                        width=self.width,  # type: ignore[call-arg]
+                        accesswidth=self.width,  # type: ignore[call-arg]
+                        data=Array(self.array_typecode, data))  # type: ignore[call-arg]
+                else:
+                    self._callbacks.write_block_callback(
+                        addr=addr,  # type: ignore[call-arg]
+                        width=self.width,  # type: ignore[call-arg]
+                        accesswidth=self.width,  # type: ignore[call-arg]
+                        data=data)  # type: ignore[call-arg]
 
         elif self._callbacks.write_callback is not None:
             # there is not write_block_callback defined so we must used individual write
@@ -626,7 +637,7 @@ class MemoryWriteOnly(_MemoryWriteOnly, ABC):
 
         """
         if not isinstance(data, list):
-            raise TypeError(f'data should be an Listgot {type(data)}')
+            raise TypeError(f'data should be an List got {type(data)}')
         return self._write(start_entry=start_entry, data=data)
 
 

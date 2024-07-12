@@ -18,7 +18,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 {% include "header_tb.py.jinja" with context %}
 from typing import List, Union, Dict
-{% if legacy_block_access %}from array import array as Array{% endif %}
+from array import array as Array
 {% if asyncoutput %}
 import sys
 import asyncio
@@ -66,7 +66,7 @@ from {% if skip_lib_copy %}src.peakrdl_python.{% else %}..{% endif %}lib import 
 from {% if skip_lib_copy %}src.peakrdl_python.{% else %}..{% endif %}lib import Field
 from {% if skip_lib_copy %}src.peakrdl_python.{% else %}..{% endif %}lib import Reg
 
-from ._{{top_node.inst_name}}_test_base import {{top_node.type_name}}_TestCase, {{top_node.type_name}}_TestCase_BlockAccess
+from ._{{top_node.inst_name}}_test_base import {{top_node.type_name}}_TestCase, {{top_node.type_name}}_TestCase_BlockAccess, {{top_node.type_name}}_TestCase_AltBlockAccess
 from ._{{top_node.inst_name}}_test_base import __name__ as base_name
 
 class {{fq_block_name}}_single_access({{top_node.type_name}}_TestCase): # type: ignore[valid-type,misc]
@@ -1371,6 +1371,76 @@ class {{fq_block_name}}_block_access({{top_node.type_name}}_TestCase_BlockAccess
                 write_callback_mock.assert_not_called()
 
         {%- endfor %}
+
+class {{fq_block_name}}_block_access({{top_node.type_name}}_TestCase_AltBlockAccess): # type: ignore[valid-type,misc]
+    """
+    tests for all the block access methods with the alternative callbacks, this is a simpler
+    version of the tests above
+    """
+        {% if uses_memory %}
+    {% if asyncoutput %}async {% endif %}def test_memory_read_and_write(self) -> None:
+        """
+        Walk the register map and check every register can be read and written to correctly
+        """
+        {% for node in owned_elements.memories -%}
+
+        # test access operations (read and/or write) to register:
+        # {{'.'.join(node.get_path_segments())}}
+        with patch(base_name + '.write_addr_space') as write_callback_mock,\
+                            patch(base_name + '.read_addr_space', return_value=1) as read_callback_mock, \
+                            patch(base_name + '.read_block_addr_space_alt',
+                                  return_value={% if not legacy_block_access %}Array('{{get_array_typecode(node.get_property('memwidth'))}}', [0]){% else %}[0]{% endif %}) as read_block_callback_mock , \
+                            patch(base_name + '.write_block_addr_space_alt') as write_block_callback_mock:
+
+            {% if node.is_sw_readable -%}
+            # check a multi-entry read, if the memory is small do the entire memory, however, if
+            # it is large limit the number of entries to 10
+            entries_to_test = {% if node.get_property('mementries') > 10 %}10{% else %}{{node.get_property('mementries')}}{% endif %}
+            random_data_list = [random.randint(0,{{get_memory_max_entry_value_hex_string(node)}}) for x in range(entries_to_test)]
+            random_data_array = Array('{{get_array_typecode(node.get_property('memwidth'))}}', random_data_list)
+
+            read_block_callback_mock.reset_mock()
+            {% if not legacy_block_access %}
+            read_block_callback_mock.return_value = random_data_array
+            self.assertEqual({% if asyncoutput %}await {%endif %}self.dut.{{'.'.join(get_python_path_segments(node))}}.read(start_entry=0, # type: ignore[union-attr]
+                                          number_entries=entries_to_test),
+                                          random_data_list)
+            {% else %}
+            read_block_callback_mock.return_value = random_data_list
+            self.assertEqual({% if asyncoutput %}await {%endif %}self.dut.{{'.'.join(get_python_path_segments(node))}}.read(start_entry=0, # type: ignore[union-attr]
+                                          number_entries=entries_to_test),
+                                          random_data_array)
+            {% endif %}
+
+            write_callback_mock.assert_not_called()
+            read_callback_mock.assert_not_called()
+            write_block_callback_mock.assert_not_called()
+            read_block_callback_mock.reset_mock()
+            {% endif %}
+
+            {% if node.is_sw_writable -%}
+            # check a multi-entry read, if the memory is small do the entire memory, however, if
+            # it is large limit the number of entries to 10
+            entries_to_test = {% if node.get_property('mementries') > 10 %}10{% else %}{{node.get_property('mementries')}}{% endif %}
+            random_data_list = [random.randint(0,{{get_memory_max_entry_value_hex_string(node)}}) for x in range(entries_to_test)]
+            random_data_array = Array('{{get_array_typecode(node.get_property('memwidth'))}}', random_data_list)
+            {% if asyncoutput %}await {%endif %}self.dut.{{'.'.join(get_python_path_segments(node))}}.write(start_entry=0, data={% if legacy_block_access %}random_data_array{% else %}random_data_list{% endif %}) # type: ignore[union-attr]
+
+            write_block_callback_mock.assert_called_once_with(
+                                        addr={{node.absolute_address}},
+                                        width={{node.get_property('memwidth')}},
+                                        accesswidth={{node.get_property('memwidth')}},
+                                        data={% if not legacy_block_access %}random_data_array{% else %}random_data_list{% endif %})
+
+            read_callback_mock.assert_not_called()
+            write_callback_mock.assert_not_called()
+            read_block_callback_mock.assert_not_called()
+            write_block_callback_mock.reset_mock()
+
+            {%- endif %}
+
+        {%- endfor %}
+    {%- endif %}
 
 
 if __name__ == '__main__':

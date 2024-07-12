@@ -17,7 +17,8 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #}
 
 {% include "header_tb.py.jinja" with context %}
-{% if legacy_block_access %}from array import array as Array{% else %}from typing import List{% endif %}
+from array import array as Array
+from typing import List
 {% if asyncoutput %}
 import sys
 import asyncio
@@ -32,9 +33,9 @@ import unittest
 
 from {% if skip_lib_copy %}src.peakrdl_python.{% else %}..{% endif %}lib import RegisterWriteVerifyError
 {% if asyncoutput %}
-from {% if skip_lib_copy %}src.peakrdl_python.{% else %}..{% endif %}lib import AsyncCallbackSet{% if legacy_block_access %}Legacy{% endif %}
+from {% if skip_lib_copy %}src.peakrdl_python.{% else %}..{% endif %}lib import AsyncCallbackSet, AsyncCallbackSetLegacy
 {% else %}
-from {% if skip_lib_copy %}src.peakrdl_python.{% else %}..{% endif %}lib import NormalCallbackSet{% if legacy_block_access %}Legacy{% endif %}
+from {% if skip_lib_copy %}src.peakrdl_python.{% else %}..{% endif %}lib import NormalCallbackSet, NormalCallbackSetLegacy
 {% endif %}
 
 
@@ -42,13 +43,17 @@ from ..reg_model.{{top_node.type_name}} import {{top_node.type_name}}_cls
 {% if asyncoutput %}
 from {% if skip_lib_copy %}src.peakrdl_python.{% else %}..{% endif %}sim_lib.dummy_callbacks import async_dummy_read as read_addr_space
 from {% if skip_lib_copy %}src.peakrdl_python.{% else %}..{% endif %}sim_lib.dummy_callbacks import async_dummy_write as write_addr_space
-from {% if skip_lib_copy %}src.peakrdl_python.{% else %}..{% endif %}sim_lib.dummy_callbacks import async_dummy_read_block{% if legacy_block_access %}_legacy{% endif %} as read_block_addr_space{% if legacy_block_access %}_legacy{% endif %}
-from {% if skip_lib_copy %}src.peakrdl_python.{% else %}..{% endif %}sim_lib.dummy_callbacks import async_dummy_write_block{% if legacy_block_access %}_legacy{% endif %} as write_block_addr_space{% if legacy_block_access %}_legacy{% endif %}
+from {% if skip_lib_copy %}src.peakrdl_python.{% else %}..{% endif %}sim_lib.dummy_callbacks import async_dummy_read_block{% if legacy_block_access %}_legacy{% endif %} as read_block_addr_space
+from {% if skip_lib_copy %}src.peakrdl_python.{% else %}..{% endif %}sim_lib.dummy_callbacks import async_dummy_write_block{% if legacy_block_access %}_legacy{% endif %} as write_block_addr_space
+from {% if skip_lib_copy %}src.peakrdl_python.{% else %}..{% endif %}sim_lib.dummy_callbacks import async_dummy_read_block{% if not legacy_block_access %}_legacy{% endif %} as read_block_addr_space_alt
+from {% if skip_lib_copy %}src.peakrdl_python.{% else %}..{% endif %}sim_lib.dummy_callbacks import async_dummy_write_block{% if not legacy_block_access %}_legacy{% endif %} as write_block_addr_space_alt
 {% else %}
 from {% if skip_lib_copy %}src.peakrdl_python.{% else %}..{% endif %}sim_lib.dummy_callbacks import dummy_read as read_addr_space
 from {% if skip_lib_copy %}src.peakrdl_python.{% else %}..{% endif %}sim_lib.dummy_callbacks import dummy_write as write_addr_space
 from {% if skip_lib_copy %}src.peakrdl_python.{% else %}..{% endif %}sim_lib.dummy_callbacks import dummy_read_block{% if legacy_block_access %}_legacy{% endif %} as read_block_addr_space
 from {% if skip_lib_copy %}src.peakrdl_python.{% else %}..{% endif %}sim_lib.dummy_callbacks import dummy_write_block{% if legacy_block_access %}_legacy{% endif %} as write_block_addr_space
+from {% if skip_lib_copy %}src.peakrdl_python.{% else %}..{% endif %}sim_lib.dummy_callbacks import dummy_read_block{% if not legacy_block_access %}_legacy{% endif %} as read_block_addr_space_alt
+from {% if skip_lib_copy %}src.peakrdl_python.{% else %}..{% endif %}sim_lib.dummy_callbacks import dummy_write_block{% if not legacy_block_access %}_legacy{% endif %} as write_block_addr_space_alt
 {% endif %}
 
 {% if asyncoutput %}async {% endif %}def read_callback(addr: int, width: int, accesswidth: int) -> int:
@@ -57,11 +62,17 @@ from {% if skip_lib_copy %}src.peakrdl_python.{% else %}..{% endif %}sim_lib.dum
 {% if asyncoutput %}async {%endif %}def read_block_callback(addr: int, width: int, accesswidth: int, length: int) -> {% if legacy_block_access %}Array{% else %}List{% endif %}:
     return {% if asyncoutput %}await {% endif %}read_block_addr_space(addr=addr, width=width, accesswidth=accesswidth, length=length)
 
+{% if asyncoutput %}async {%endif %}def read_block_callback_alt(addr: int, width: int, accesswidth: int, length: int) -> {% if not legacy_block_access %}Array{% else %}List{% endif %}:
+    return {% if asyncoutput %}await {% endif %}read_block_addr_space_alt(addr=addr, width=width, accesswidth=accesswidth, length=length)
+
 {% if asyncoutput %}async {%endif %}def write_callback(addr: int, width: int, accesswidth: int,  data: int) -> None:
     {% if asyncoutput %}await {% endif %}write_addr_space(addr=addr, width=width, accesswidth=accesswidth, data=data)
 
 {% if asyncoutput %}async {%endif %}def write_block_callback(addr: int, width: int, accesswidth: int,  data: {% if legacy_block_access %}Array{% else %}List{% endif %}) -> None:
     {% if asyncoutput %}await {% endif %}write_block_addr_space(addr=addr, width=width, accesswidth=accesswidth, data=data)
+
+{% if asyncoutput %}async {%endif %}def write_block_callback_alt(addr: int, width: int, accesswidth: int,  data: {% if not legacy_block_access %}Array{% else %}List{% endif %}) -> None:
+    {% if asyncoutput %}await {% endif %}write_block_addr_space_alt(addr=addr, width=width, accesswidth=accesswidth, data=data)
 
 
 {% if asyncoutput %}
@@ -103,6 +114,19 @@ class {{top_node.type_name}}_TestCase_BlockAccess(TestCaseBase): # type: ignore[
                                                           write_callback=write_callback,
                                                           read_block_callback=read_block_callback,
                                                           write_block_callback=write_block_callback))
+
+class {{top_node.type_name}}_TestCase_AltBlockAccess(TestCaseBase): # type: ignore[valid-type,misc]
+    """
+    Based test to use with the alternative call backs, this allow the legacy output API to be tested
+    with the new callbacks and visa versa.
+    """
+
+    def setUp(self) -> None:
+        self.dut = {{top_node.type_name}}_cls(callbacks={% if asyncoutput %}AsyncCallbackSet{% else %}NormalCallbackSet{% endif %}{% if not legacy_block_access %}Legacy{% endif %}(
+                                                          read_callback=read_callback,
+                                                          write_callback=write_callback,
+                                                          read_block_callback=read_block_callback_alt,
+                                                          write_block_callback=write_block_callback_alt))
 
 
 
