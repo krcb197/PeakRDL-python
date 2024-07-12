@@ -1372,7 +1372,7 @@ class {{fq_block_name}}_block_access({{top_node.type_name}}_TestCase_BlockAccess
 
         {%- endfor %}
 
-class {{fq_block_name}}_block_access({{top_node.type_name}}_TestCase_AltBlockAccess): # type: ignore[valid-type,misc]
+class {{fq_block_name}}_alt_block_access({{top_node.type_name}}_TestCase_AltBlockAccess): # type: ignore[valid-type,misc]
     """
     tests for all the block access methods with the alternative callbacks, this is a simpler
     version of the tests above
