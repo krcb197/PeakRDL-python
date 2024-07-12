@@ -186,7 +186,7 @@ class NodeArray(Base, Sequence[NodeArrayElementType]):
 
     # pylint: disable=too-few-public-methods
     __slots__: List[str] = ['__elements', '__address',
-                            '__stride', '__dimensions' ]
+                            '__stride', '__dimensions']
 
     # pylint: disable-next=too-many-arguments
     def __init__(self, *, logger_handle: str,
@@ -258,7 +258,7 @@ class NodeArray(Base, Sequence[NodeArrayElementType]):
         """
         return self.inst_name + '[' + ']['.join([str(item) for item in indices]) + ']'
 
-    def __check_init_element(self, elements:Dict[Tuple[int, ...], NodeArrayElementType]) -> None:
+    def __check_init_element(self, elements: Dict[Tuple[int, ...], NodeArrayElementType]) -> None:
         """
         Used in the __init__ to check that the elements passed in are valid
         Args:
@@ -458,7 +458,7 @@ class BaseSection(Node, ABC):
     __slots__: List[str] = []
 
     @abstractmethod
-    def get_children(self, unroll:bool=False) -> Iterator[Union[Node, NodeArray]]:
+    def get_children(self, unroll: bool = False) -> Iterator[Union[Node, NodeArray]]:
         """
         generator that produces all the readable_registers of this node
 
@@ -493,7 +493,7 @@ class Section(BaseSection, ABC):
 
         return filter(is_writable, self.get_registers(unroll=unroll))
 
-    def get_readable_registers(self, unroll:bool=False) ->\
+    def get_readable_registers(self, unroll: bool = False) -> \
             Iterator[Union[ReadableRegister, ReadableRegisterArray]]:
         """
         generator that produces all the readable_registers of this node
@@ -661,6 +661,7 @@ class AsyncSection(BaseSection, ABC):
     def _callbacks(self) -> Union[AsyncCallbackSet, AsyncCallbackSetLegacy]:
         ...
 
+
 class AsyncAddressMap(AsyncSection, ABC):
     """
     base class of address map wrappers
@@ -758,6 +759,7 @@ class AddressMapArray(NodeArray, ABC):
 
         super().__init__(logger_handle=logger_handle, inst_name=inst_name,
                          parent=parent, address=address, stride=stride, dimensions=dimensions)
+
 
 class AsyncAddressMapArray(NodeArray, ABC):
     """

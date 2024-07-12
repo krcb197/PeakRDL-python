@@ -290,8 +290,6 @@ class _MemoryAsyncReadOnly(AsyncMemory, ABC):
                            f'block callback:{read_block_callback}, '
                            f'normal callback:{read_callback}')
 
-
-
     def get_readable_registers(self, unroll: bool = False) -> \
             Iterator[Union['ReadableAsyncRegister', 'ReadableAsyncRegisterArray']]:
         """
@@ -436,31 +434,35 @@ class _MemoryAsyncWriteOnly(AsyncMemory, ABC):
             addr = self.address_lookup(entry=start_entry)
             if isinstance(self._callbacks, AsyncCallbackSet):
                 if isinstance(data, Array):
-                    await self._callbacks.write_block_callback(
-                        addr=addr,  # type: ignore[call-arg]
-                        width=self.width,  # type: ignore[call-arg]
-                        accesswidth=self.width,  # type: ignore[call-arg]
-                        data=data.tolist())  # type: ignore[call-arg]
+                    # pylint: disable=line-too-long
+                    await self._callbacks.write_block_callback(addr=addr,  # type: ignore[call-arg]
+                                                               width=self.width,  # type: ignore[call-arg]
+                                                               accesswidth=self.width,  # type: ignore[call-arg]
+                                                               data=data.tolist())  # type: ignore[call-arg]
+                    # pylint: enable=line-too-long
                 else:
-                    await self._callbacks.write_block_callback(
-                        addr=addr,  # type: ignore[call-arg]
-                        width=self.width,  # type: ignore[call-arg]
-                        accesswidth=self.width,  # type: ignore[call-arg]
-                        data=data)  # type: ignore[call-arg]
+                    # pylint: disable=line-too-long
+                    await self._callbacks.write_block_callback(addr=addr,  # type: ignore[call-arg]
+                                                               width=self.width,  # type: ignore[call-arg]
+                                                               accesswidth=self.width,  # type: ignore[call-arg]
+                                                               data=data)  # type: ignore[call-arg]
+                    # pylint: enable=line-too-long
             if isinstance(self._callbacks, AsyncCallbackSetLegacy):
                 if isinstance(data, list):
                     # need to convert the data to an array before calling
-                    await self._callbacks.write_block_callback(
-                        addr=addr,  # type: ignore[call-arg]
-                        width=self.width,  # type: ignore[call-arg]
-                        accesswidth=self.width,  # type: ignore[call-arg]
-                        data=Array(self.array_typecode, data))  # type: ignore[call-arg]
+                    # pylint: disable=line-too-long
+                    await self._callbacks.write_block_callback(addr=addr,  # type: ignore[call-arg]
+                                                               width=self.width,  # type: ignore[call-arg]
+                                                               accesswidth=self.width,  # type: ignore[call-arg]
+                                                               data=Array(self.array_typecode, data))  # type: ignore[call-arg]
+                    # pylint: enable=line-too-long
                 else:
-                    await self._callbacks.write_block_callback(
-                        addr=addr,  # type: ignore[call-arg]
-                        width=self.width,  # type: ignore[call-arg]
-                        accesswidth=self.width,  # type: ignore[call-arg]
-                        data=data)  # type: ignore[call-arg]
+                    # pylint: disable=line-too-long
+                    await self._callbacks.write_block_callback(addr=addr,  # type: ignore[call-arg]
+                                                               width=self.width,  # type: ignore[call-arg]
+                                                               accesswidth=self.width,  # type: ignore[call-arg]
+                                                               data=data)  # type: ignore[call-arg]
+                    # pylint: enable=line-too-long
 
         elif self._callbacks.write_callback is not None:
             # there is not write_block_callback defined so we must used individual write
@@ -468,11 +470,12 @@ class _MemoryAsyncWriteOnly(AsyncMemory, ABC):
                 entry_address = self.address_lookup(entry=start_entry+entry_index)
                 # python 3.7 doesn't have the callback defined as protocol so mypy doesn't
                 # recognise the arguments in the call back functions
+                # pylint: disable=line-too-long
                 await self._callbacks.write_callback(addr=entry_address,  # type: ignore[call-arg]
                                                      width=self.width,  # type: ignore[call-arg]
-                                                     accesswidth=self.width,
-                                                     # type: ignore[call-arg]
+                                                     accesswidth=self.width,  # type: ignore[call-arg]
                                                      data=entry_data)  # type: ignore[call-arg]
+                # pylint: enable=line-too-long
 
         else:
             raise RuntimeError('No suitable callback')
@@ -633,6 +636,7 @@ class MemoryAsyncReadWriteArray(MemoryAsyncReadOnlyArray, MemoryAsyncWriteOnlyAr
         super().__init__(logger_handle=logger_handle, inst_name=inst_name,
                          parent=parent, address=address,
                          stride=stride, dimensions=dimensions)
+
 
 ReadableAsyncMemory = Union[MemoryAsyncReadOnly, MemoryAsyncReadWrite]
 WritableAsyncMemory = Union[MemoryAsyncWriteOnly, MemoryAsyncReadWrite]

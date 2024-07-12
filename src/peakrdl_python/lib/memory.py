@@ -560,31 +560,35 @@ class _MemoryWriteOnly(Memory, ABC):
             addr = self.address_lookup(entry=start_entry)
             if isinstance(self._callbacks, NormalCallbackSet):
                 if isinstance(data, Array):
-                    self._callbacks.write_block_callback(
-                        addr=addr,  # type: ignore[call-arg]
-                        width=self.width,  # type: ignore[call-arg]
-                        accesswidth=self.width,  # type: ignore[call-arg]
-                        data=data.tolist())  # type: ignore[call-arg]
+                    # pylint: disable=line-too-long
+                    self._callbacks.write_block_callback(addr=addr,  # type: ignore[call-arg]
+                                                         width=self.width,  # type: ignore[call-arg]
+                                                         accesswidth=self.width,  # type: ignore[call-arg]
+                                                         data=data.tolist())  # type: ignore[call-arg]
+                    # pylint: enable=line-too-long
                 else:
-                    self._callbacks.write_block_callback(
-                        addr=addr,  # type: ignore[call-arg]
-                        width=self.width,  # type: ignore[call-arg]
-                        accesswidth=self.width,  # type: ignore[call-arg]
-                        data=data)  # type: ignore[call-arg]
+                    # pylint: disable=line-too-long
+                    self._callbacks.write_block_callback(addr=addr,  # type: ignore[call-arg]
+                                                         width=self.width,  # type: ignore[call-arg]
+                                                         accesswidth=self.width,  # type: ignore[call-arg]
+                                                         data=data)  # type: ignore[call-arg]
+                    # pylint: enable=line-too-long
             if isinstance(self._callbacks, NormalCallbackSetLegacy):
                 if isinstance(data, list):
                     # need to convert the data to an array before calling
-                    self._callbacks.write_block_callback(
-                        addr=addr,  # type: ignore[call-arg]
-                        width=self.width,  # type: ignore[call-arg]
-                        accesswidth=self.width,  # type: ignore[call-arg]
-                        data=Array(self.array_typecode, data))  # type: ignore[call-arg]
+                    # pylint: disable=line-too-long
+                    self._callbacks.write_block_callback(addr=addr,  # type: ignore[call-arg]
+                                                         width=self.width,  # type: ignore[call-arg]
+                                                         accesswidth=self.width,  # type: ignore[call-arg]
+                                                         data=Array(self.array_typecode, data))  # type: ignore[call-arg]
+                    # pylint: enable=line-too-long
                 else:
-                    self._callbacks.write_block_callback(
-                        addr=addr,  # type: ignore[call-arg]
-                        width=self.width,  # type: ignore[call-arg]
-                        accesswidth=self.width,  # type: ignore[call-arg]
-                        data=data)  # type: ignore[call-arg]
+                    # pylint: disable=line-too-long
+                    self._callbacks.write_block_callback(addr=addr,  # type: ignore[call-arg]
+                                                         width=self.width,  # type: ignore[call-arg]
+                                                         accesswidth=self.width,  # type: ignore[call-arg]
+                                                         data=data)  # type: ignore[call-arg]
+                    # pylint: enable=line-too-long
 
         elif self._callbacks.write_callback is not None:
             # there is not write_block_callback defined so we must used individual write
