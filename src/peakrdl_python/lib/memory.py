@@ -539,6 +539,7 @@ class _MemoryWriteOnly(Memory, ABC):
         Returns: None
 
         """
+        # pylint:disable=too-many-branches
         if not isinstance(start_entry, int):
             raise TypeError(f'start_entry should be an int got {type(start_entry)}')
 
