@@ -651,7 +651,7 @@ class MemoryWriteOnlyLegacy(_MemoryWriteOnly, ABC):
         Returns: None
 
         """
-        if not isinstance(data, list):
+        if not isinstance(data, Array):
             raise TypeError(f'data should be an Array {type(data)}')
         return self._write(start_entry=start_entry, data=data)
 
