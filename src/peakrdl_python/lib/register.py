@@ -33,6 +33,8 @@ from .utility_functions import get_array_typecode
 from .base import AsyncAddressMap, AsyncRegFile
 from .memory import  MemoryReadOnly, MemoryWriteOnly, MemoryReadWrite, \
     BaseMemory, Memory, ReadableMemory, WritableMemory
+from .memory import MemoryReadOnlyLegacy, MemoryWriteOnlyLegacy, MemoryReadWriteLegacy
+from .memory import ReadableMemoryLegacy, WritableMemoryLegacy
 from .callbacks import NormalCallbackSet, NormalCallbackSetLegacy
 
 # pylint: disable=duplicate-code
@@ -676,7 +678,7 @@ class RegReadOnly(Reg, ABC):
                  accesswidth: int,
                  logger_handle: str,
                  inst_name: str,
-                 parent: Union[AddressMap, RegFile, ReadableMemory]):
+                 parent: Union[AddressMap, RegFile, ReadableMemory, ReadableMemoryLegacy ]):
 
         super().__init__(address=address,
                          logger_handle=logger_handle,
@@ -773,7 +775,7 @@ class RegWriteOnly(Reg, ABC):
                  accesswidth: int,
                  logger_handle: str,
                  inst_name: str,
-                 parent: Union[AddressMap, RegFile, WritableMemory]):
+                 parent: Union[AddressMap, RegFile, WritableMemory, WritableMemoryLegacy]):
 
         super().__init__(address=address,
                          logger_handle=logger_handle,
@@ -866,7 +868,7 @@ class RegReadWrite(RegReadOnly, RegWriteOnly, ABC):
                  accesswidth: int,
                  logger_handle: str,
                  inst_name: str,
-                 parent: Union[AddressMap, RegFile, MemoryReadWrite]):
+                 parent: Union[AddressMap, RegFile, MemoryReadWrite, MemoryReadWriteLegacy]):
 
         super().__init__(address=address,
                          logger_handle=logger_handle,
@@ -1028,7 +1030,7 @@ class RegReadOnlyArray(RegArray, ABC):
     # pylint: disable=too-many-arguments,duplicate-code
     def __init__(self, *,
                  logger_handle: str, inst_name: str,
-                 parent: Union[RegFile, AddressMap, ReadableMemory],
+                 parent: Union[RegFile, AddressMap, ReadableMemory, ReadableMemoryLegacy],
                  address: int,
                  width: int,
                  accesswidth: int,
@@ -1036,7 +1038,8 @@ class RegReadOnlyArray(RegArray, ABC):
                  dimensions: Tuple[int, ...],
                  elements: Optional[Dict[Tuple[int, ...], RegReadOnly]] = None):
 
-        if not isinstance(parent, (RegFile, AddressMap, MemoryReadOnly, MemoryReadWrite)):
+        if not isinstance(parent, (RegFile, AddressMap, MemoryReadOnly, MemoryReadWrite,
+                                   MemoryReadOnlyLegacy, MemoryReadWriteLegacy)):
             raise TypeError('parent should be either RegFile, AddressMap, '
                             'MemoryReadOnly, MemoryReadWrite '
                             f'got {type(parent)}')
@@ -1080,7 +1083,7 @@ class RegWriteOnlyArray(RegArray, ABC):
     # pylint: disable=too-many-arguments,duplicate-code
     def __init__(self, *,
                  logger_handle: str, inst_name: str,
-                 parent: Union[RegFile, AddressMap, WritableMemory],
+                 parent: Union[RegFile, AddressMap, WritableMemory, WritableMemoryLegacy],
                  address: int,
                  width: int,
                  accesswidth: int,
@@ -1088,7 +1091,8 @@ class RegWriteOnlyArray(RegArray, ABC):
                  dimensions: Tuple[int, ...],
                  elements: Optional[Dict[Tuple[int, ...], RegWriteOnly]] = None):
 
-        if not isinstance(parent, (RegFile, AddressMap, MemoryWriteOnly, MemoryReadWrite)):
+        if not isinstance(parent, (RegFile, AddressMap, MemoryWriteOnly, MemoryReadWrite,
+                                   MemoryWriteOnlyLegacy, MemoryReadWriteLegacy)):
             raise TypeError('parent should be either RegFile, AddressMap, MemoryWriteOnly, '
                             'MemoryReadWrite '
                             f'got {type(parent)}')
@@ -1132,7 +1136,7 @@ class RegReadWriteArray(RegArray, ABC):
     # pylint: disable=too-many-arguments,duplicate-code
     def __init__(self, *,
                  logger_handle: str, inst_name: str,
-                 parent: Union[RegFile, AddressMap, MemoryReadWrite],
+                 parent: Union[RegFile, AddressMap, MemoryReadWrite, MemoryReadWriteLegacy],
                  address: int,
                  width: int,
                  accesswidth: int,
@@ -1140,7 +1144,7 @@ class RegReadWriteArray(RegArray, ABC):
                  dimensions: Tuple[int, ...],
                  elements: Optional[Dict[Tuple[int, ...], RegReadWrite]] = None):
 
-        if not isinstance(parent, (RegFile, AddressMap, MemoryReadWrite)):
+        if not isinstance(parent, (RegFile, AddressMap, MemoryReadWrite, MemoryReadWriteLegacy)):
             raise TypeError('parent should be either RegFile, AddressMap, MemoryReadWrite '
                             f'got {type(parent)}')
 

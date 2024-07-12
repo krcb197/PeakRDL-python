@@ -1127,7 +1127,7 @@ class {{fq_block_name}}_single_access({{top_node.type_name}}_TestCase): # type: 
         expected_readable_fields: List[Union[FieldAsyncReadOnly, FieldAsyncReadWrite]]
         expected_writable_regs: List[WritableAsyncRegister]
         expected_readable_regs: List[ReadableAsyncRegister]
-        expected_memories:List[Union[MemoryAsyncReadOnly, MemoryAsyncWriteOnly, MemoryAsyncReadWrite]]
+        expected_memories:List[Union[MemoryAsyncReadOnly{% if legacy_block_access %}Legacy{% endif %}, MemoryAsyncWriteOnly{% if legacy_block_access %}Legacy{% endif %}, MemoryAsyncReadWrite{% if legacy_block_access %}Legacy{% endif %}]]
 
         {% else %}
         expected_writable_fields: List[Union[FieldWriteOnly, FieldReadWrite]]
