@@ -1044,7 +1044,7 @@ class RegReadOnlyArray(RegArray, ABC):
                             'MemoryReadOnly, MemoryReadWrite '
                             f'got {type(parent)}')
 
-        if not isinstance(parent._callbacks, NormalCallbackSet):
+        if not isinstance(parent._callbacks, (NormalCallbackSet, NormalCallbackSetLegacy)):
             raise TypeError(f'callback set type is wrong, got {type(parent._callbacks)}')
 
         super().__init__(logger_handle=logger_handle, inst_name=inst_name,
@@ -1097,7 +1097,7 @@ class RegWriteOnlyArray(RegArray, ABC):
                             'MemoryReadWrite '
                             f'got {type(parent)}')
 
-        if not isinstance(parent._callbacks, NormalCallbackSet):
+        if not isinstance(parent._callbacks, (NormalCallbackSet, NormalCallbackSetLegacy)):
             raise TypeError(f'callback set type is wrong, got {type(parent._callbacks)}')
 
         super().__init__(logger_handle=logger_handle, inst_name=inst_name,
@@ -1148,7 +1148,7 @@ class RegReadWriteArray(RegArray, ABC):
             raise TypeError('parent should be either RegFile, AddressMap, MemoryReadWrite '
                             f'got {type(parent)}')
 
-        if not isinstance(parent._callbacks, NormalCallbackSet):
+        if not isinstance(parent._callbacks, (NormalCallbackSet, NormalCallbackSetLegacy)):
             raise TypeError(f'callback set type is wrong, got {type(parent._callbacks)}')
 
         super().__init__(logger_handle=logger_handle, inst_name=inst_name,
