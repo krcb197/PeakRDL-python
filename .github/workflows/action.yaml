@@ -297,6 +297,7 @@ jobs:
   build:
     needs:
       - integration_tests
+      - autoformating
       - dev_runner
       - peakrdl_integration
     name: Build source distribution
