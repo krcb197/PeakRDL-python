@@ -66,3 +66,19 @@ def get_array_typecode(width: int) -> str:
 
     raise UnsupportedWidthError(f'unhandled width {width:d}, consider using the new new list '
                                 f'based API and callbacks rather than the legacy Array versions')
+
+
+def is_power_two(value: int) -> bool:
+    """
+    efficient algorithm for checking if something is a power of two
+    """
+    return (value != 0) and ((value & (value - 1)) == 0)
+
+
+def legal_register_width(width_in_bits: int) -> bool:
+    """
+    check if a register width is legal, see the system RDL specification 10.1 e) and f)
+    must be a power of 2 and greater than 8
+    """
+    return (width_in_bits >= 8) and is_power_two(width_in_bits)
+

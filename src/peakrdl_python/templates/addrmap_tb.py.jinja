@@ -1377,7 +1377,7 @@ class {{fq_block_name}}_alt_block_access({{top_node.type_name}}_TestCase_AltBloc
     tests for all the block access methods with the alternative callbacks, this is a simpler
     version of the tests above
     """
-        {% if uses_memory %}
+    {% if uses_memory %}
     {% if asyncoutput %}async {% endif %}def test_memory_read_and_write(self) -> None:
         """
         Walk the register map and check every register can be read and written to correctly
@@ -1446,6 +1446,55 @@ class {{fq_block_name}}_alt_block_access({{top_node.type_name}}_TestCase_AltBloc
         {% endif %}
         {%- endfor %}
     {%- endif %}
+
+    {% if asyncoutput %}async {% endif %}def test_register_array_context_manager(self) -> None:
+        """
+        Walk the register map and check that register map context managers work correctly
+        """
+        {% for node in rolled_owned_reg_array %}
+        # test context manager to register:
+        # {{'.'.join(node.get_path_segments())}}
+        # size {{node.size}}
+        # total_size {{node.total_size}}
+        {% if node.size > 8 and not legacy_block_access %}
+        with self.assertRaises(UnsupportedWidthError):
+            {% if node.has_sw_readable and node.has_sw_writable -%}
+            {% if asyncoutput %}async {% endif %}with self.dut.{{'.'.join(get_python_path_segments(node))}}.single_read_modify_write() as dut:
+                pass
+            {% elif not node.has_sw_readable and node.has_sw_writable-%}
+            {% if asyncoutput %}async {% endif %}with self.dut.{{'.'.join(get_python_path_segments(node))}}.single_write() as dut:
+                pass
+            read_block_callback_mock.assert_not_called()
+            {% elif node.has_sw_readable and not node.has_sw_writable-%}
+            {% if asyncoutput %}async {% endif %}with self.dut.{{'.'.join(get_python_path_segments(node))}}.single_read() as dut:
+                pass
+            write_block_callback_mock.assert_not_called()
+            {% endif %}
+        {% else %}
+        empty_read = [0 for i in range({{node.total_size}} // {{node.size}})]
+        follow_along = [0 for i in range({{node.total_size}} // {{node.size}})]
+        with self.subTest(msg='register: {{'.'.join(node.get_path_segments())}}'):
+            with patch(base_name + '.write_addr_space') as write_callback_mock,\
+                            patch(base_name + '.read_addr_space', return_value=1) as read_callback_mock, \
+                            patch(base_name + '.read_block_addr_space_alt',
+                                  return_value={% if not legacy_block_access %}Array('{{get_array_typecode(node.size * 8)}}', empty_read){% else %}empty_read{% endif %}) as read_block_callback_mock , \
+                            patch(base_name + '.write_block_addr_space_alt') as write_block_callback_mock:
+                {% if node.has_sw_readable and node.has_sw_writable -%}
+                {% if asyncoutput %}async {% endif %}with self.dut.{{'.'.join(get_python_path_segments(node))}}.single_read_modify_write() as dut:
+                    pass
+                {% elif not node.has_sw_readable and node.has_sw_writable-%}
+                {% if asyncoutput %}async{% endif %}with self.dut.{{'.'.join(get_python_path_segments(node))}}.single_write() as dut:
+                    pass
+                read_block_callback_mock.assert_not_called()
+                {% elif node.has_sw_readable and not node.has_sw_writable-%}
+                {% if asyncoutput %}async {% endif %}with self.dut.{{'.'.join(get_python_path_segments(node))}}.single_read() as dut:
+                    pass
+                write_block_callback_mock.assert_not_called()
+                {% endif %}
+                read_callback_mock.assert_not_called()
+                write_callback_mock.assert_not_called()
+        {% endif %}
+        {%- endfor %}
 
 
 if __name__ == '__main__':

@@ -1,0 +1,13 @@
+addrmap extended_sizes_registers_array {
+    // note that register widths only have to support powers of 2 (unlike memory widths)
+    reg {
+        regwidth = 128;
+        field { fieldwidth = 1; } field_a;
+    } reg_128_32_4[4] ;
+
+    reg {
+        regwidth = 256;
+        field { fieldwidth = 1; } field_a;
+    } reg_256_32_4[4];
+
+};

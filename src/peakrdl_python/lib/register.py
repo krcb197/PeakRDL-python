@@ -29,7 +29,7 @@ import sys
 from warnings import warn
 
 from .base import Node, AddressMap, RegFile, NodeArray
-from .utility_functions import get_array_typecode
+from .utility_functions import get_array_typecode, legal_register_width
 from .base import AsyncAddressMap, AsyncRegFile
 from .memory import  MemoryReadOnly, MemoryWriteOnly, MemoryReadWrite, \
     BaseMemory, Memory, ReadableMemory, WritableMemory
@@ -83,14 +83,13 @@ class BaseReg(Node, ABC):
                          parent=parent)
         if not isinstance(width, int):
             raise TypeError(f'width should be int but got {(type(width))}')
-        if width not in (8, 16, 32, 64, 128, 256, 512, 1024, 2048):
-            raise ValueError('currently only support 8, 16, 32, 64, 128, 256, 512, 1024 or 2048 '
-                             f'width registers, got {width:d}')
+        if not legal_register_width(width_in_bits=width):
+            raise ValueError(f'Unsupported register width {width:d}')
         self.__width = width
         if not isinstance(accesswidth, int):
             raise TypeError(f'accesswidth should be int but got {(type(accesswidth))}')
-        if accesswidth not in (8, 16, 32, 64):
-            raise ValueError(f'currently only support 8, 16, 32 or 64 accesswidth, got {width:d}')
+        if not legal_register_width(width_in_bits=accesswidth):
+            raise ValueError(f'Unsupported access width {accesswidth:d}')
         self.__accesswidth = accesswidth
     # pylint: enable=too-many-arguments,duplicate-code
 
@@ -225,14 +224,13 @@ class BaseRegArray(NodeArray[BaseRegArrayElementType], ABC):
 
         if not isinstance(width, int):
             raise TypeError(f'width should be int but got {(type(width))}')
-        if width not in (8, 16, 32, 64, 128, 256, 512, 1024, 2048):
-            raise ValueError('currently only support 8, 16, 32, 64, 128, 256, 512, 1024 or 2048 '
-                             f'width registers, got {width:d}')
+        if not legal_register_width(width_in_bits=width):
+            raise ValueError(f'Unsupported register width {width:d}')
         self.__width = width
         if not isinstance(accesswidth, int):
             raise TypeError(f'accesswidth should be int but got {(type(accesswidth))}')
-        if accesswidth not in (8, 16, 32, 64):
-            raise ValueError(f'currently only support 8, 16, 32 or 64 accesswidth, got {width:d}')
+        if not legal_register_width(width_in_bits=accesswidth):
+            raise ValueError(f'Unsupported access width {accesswidth:d}')
         self.__accesswidth = accesswidth
 
         if not issubclass(self._element_datatype, BaseReg):

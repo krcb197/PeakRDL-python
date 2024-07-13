@@ -472,7 +472,7 @@ class PythonExporter:
             def is_reg_array(item: RegNode) -> bool:
                 return item.is_array
 
-            rolled_owned_reg_array = filter(is_reg_array, rolled_owned_reg)
+            rolled_owned_reg_array = list(filter(is_reg_array, rolled_owned_reg))
 
             fq_block_name = '_'.join(block.get_path_segments(array_suffix='_{index:d}_'))
 
