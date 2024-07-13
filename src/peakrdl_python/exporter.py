@@ -18,9 +18,11 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 Main Classes for the peakrdl-python
 """
 import os
+import warnings
 from pathlib import Path
 from shutil import copy
 from typing import List, NoReturn, Iterable, Tuple, Dict, Any
+import sys
 
 import jinja2 as jj
 from systemrdl import RDLWalker # type: ignore
@@ -533,6 +535,9 @@ class PythonExporter:
         Returns:
             List[str] : modules that have been exported:
         """
+        if sys.version_info <= (3, 7):
+            warnings.warn('Support for Python 3.7 will be withdrawn in the next major release',
+                          category=DeprecationWarning)
 
         # If it is the root node, skip to top addrmap
         if isinstance(node, RootNode):
