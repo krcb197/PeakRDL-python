@@ -25,6 +25,8 @@ import os
 
 from glob import glob
 from typing import Optional, List
+import argparse
+import pathlib
 
 from systemrdl import RDLCompiler # type: ignore
 from systemrdl.node import Node, AddrmapNode # type: ignore
@@ -32,6 +34,11 @@ from peakrdl_ipxact import IPXACTImporter # type: ignore
 from src.peakrdl_python import PythonExporter # type: ignore
 
 test_case_path = os.path.join('tests', 'testcases')
+
+CommandLineParser = argparse.ArgumentParser(description='Test the framework')
+CommandLineParser.add_argument('--output', dest='output_path',
+                               type=pathlib.Path,
+                               default='testcase_output')
 
 
 def compile_rdl(infile: str,
@@ -94,13 +101,14 @@ def generate(root: Node, outdir: str,
 
 
 if __name__ == '__main__':
-    if len(sys.argv) == 1:
-        testcases = glob(os.path.join(test_case_path,'*.rdl'))
-    else:
-        testcases = glob(os.path.join(test_case_path,'{}.rdl').format(sys.argv[1]))
+
+    CommandLineArgs = CommandLineParser.parse_args()
+
+    output_path = CommandLineArgs.output_path
 
     #-------------------------------------------------------------------------------
     results = {}
+    testcases = glob(os.path.join(test_case_path, '*.rdl'))
     for case in testcases:
         print("Case: ", case)
         rdl_file = case
@@ -124,15 +132,17 @@ if __name__ == '__main__':
                  ({'asyncoutput': False, 'legacy': True}, 'raw_legacy')
                  ]:
 
-            if (testcase_name == 'extended_memories') and (build_options['legacy'] is True):
+            # test cases that use the extended widths an not be tested in the non-legacy modes
+            if (testcase_name in ['extended_memories', 'extended_sizes_registers_array']) and \
+                    (build_options['legacy'] is True):
                 continue
 
-            _ = generate(root, os.path.join('testcase_output', folder_name),
+            _ = generate(root, str(output_path / folder_name),
                          asyncoutput=build_options['asyncoutput'],
                          legacy_block_access=build_options['legacy']
                          )
 
-            module_fqfn = os.path.join('testcase_output', folder_name, '__init__.py')
+            module_fqfn = output_path / folder_name / '__init__.py'
             with open(module_fqfn, 'w', encoding='utf-8') as fid:
                 fid.write('pass\n')
 
