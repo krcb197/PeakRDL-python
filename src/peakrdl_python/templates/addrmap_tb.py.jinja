@@ -1452,7 +1452,7 @@ class {{fq_block_name}}_alt_block_access({{top_node.type_name}}_TestCase_AltBloc
         Walk the register map and check that register map context managers work correctly
         """
         {% for node in rolled_owned_reg_array %}
-        # test context manager to register:
+        # test context manager to register with alt block interfaces:
         # {{'.'.join(node.get_path_segments())}}
         # size {{node.size}}
         # total_size {{node.total_size}}
@@ -1483,7 +1483,7 @@ class {{fq_block_name}}_alt_block_access({{top_node.type_name}}_TestCase_AltBloc
                 {% if asyncoutput %}async {% endif %}with self.dut.{{'.'.join(get_python_path_segments(node))}}.single_read_modify_write() as dut:
                     pass
                 {% elif not node.has_sw_readable and node.has_sw_writable-%}
-                {% if asyncoutput %}async{% endif %}with self.dut.{{'.'.join(get_python_path_segments(node))}}.single_write() as dut:
+                {% if asyncoutput %}async {% endif %}with self.dut.{{'.'.join(get_python_path_segments(node))}}.single_write() as dut:
                     pass
                 read_block_callback_mock.assert_not_called()
                 {% elif node.has_sw_readable and not node.has_sw_writable-%}
