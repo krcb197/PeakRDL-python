@@ -326,7 +326,7 @@ class RegArray(BaseRegArray, ABC):
         self.__register_cache: Optional[Union[Array, List[int]]] = None
         self.__register_address_array: Optional[List[int]] = None
 
-        if not isinstance(parent._callbacks, NormalCallbackSet):
+        if not isinstance(parent._callbacks, (NormalCallbackSet, NormalCallbackSetLegacy)):
             raise TypeError(f'callback set type is wrong, got {type(parent._callbacks)}')
 
         super().__init__(logger_handle=logger_handle, inst_name=inst_name,
