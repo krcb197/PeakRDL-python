@@ -39,6 +39,8 @@ CommandLineParser = argparse.ArgumentParser(description='Test the framework')
 CommandLineParser.add_argument('--output', dest='output_path',
                                type=pathlib.Path,
                                default='testcase_output')
+CommandLineParser.add_argument('--test_case', dest='test_case',
+                               type=str)
 
 
 def compile_rdl(infile: str,
@@ -108,7 +110,10 @@ if __name__ == '__main__':
 
     #-------------------------------------------------------------------------------
     results = {}
-    testcases = glob(os.path.join(test_case_path, '*.rdl'))
+    if CommandLineArgs.test_case:
+        testcases = [os.path.join(test_case_path, CommandLineArgs.test_case)]
+    else:
+        testcases = glob(os.path.join(test_case_path, '*.rdl'))
     for case in testcases:
         print("Case: ", case)
         rdl_file = case
