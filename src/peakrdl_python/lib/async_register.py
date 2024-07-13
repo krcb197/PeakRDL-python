@@ -74,7 +74,9 @@ class AsyncReg(BaseReg, ABC):
 
         if not isinstance(parent, (AsyncAddressMap, AsyncRegFile,
                                    MemoryAsyncReadOnly, MemoryAsyncWriteOnly,
-                                   MemoryAsyncReadWrite, AsyncRegArray)):
+                                   MemoryAsyncReadWrite, AsyncRegArray, MemoryAsyncReadOnlyLegacy,
+                                   MemoryAsyncWriteOnlyLegacy,
+                                   MemoryAsyncReadWriteLegacy)):
             raise TypeError(f'bad parent type got: {type(parent)}')
 
         if not isinstance(parent._callbacks, (AsyncCallbackSet, AsyncCallbackSetLegacy)):
