@@ -81,4 +81,3 @@ def legal_register_width(width_in_bits: int) -> bool:
     must be a power of 2 and greater than 8
     """
     return (width_in_bits >= 8) and is_power_two(width_in_bits)
-
