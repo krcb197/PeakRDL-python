@@ -174,7 +174,9 @@ class Reg(BaseReg, ABC):
                  parent: Union[AddressMap, RegFile, Memory, 'RegArray']):
 
         if not isinstance(parent, (AddressMap, RegFile,
-                                   MemoryReadOnly, MemoryWriteOnly, MemoryReadWrite, RegArray)):
+                                   MemoryReadOnly, MemoryWriteOnly, MemoryReadWrite, RegArray,
+                                   MemoryReadOnlyLegacy, MemoryWriteOnlyLegacy,
+                                   MemoryReadWriteLegacy)):
             raise TypeError(f'bad parent type got: {type(parent)}')
 
         if not isinstance(parent._callbacks, (NormalCallbackSet, NormalCallbackSetLegacy)):
