@@ -21,11 +21,11 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 {%- macro memory_class(node) %}
     {%- if node.is_sw_readable and node.is_sw_writable %}
-class {{get_fully_qualified_type_name(node)}}_cls(Memory{% if asyncoutput %}Async{% endif %}ReadWrite):
+class {{get_fully_qualified_type_name(node)}}_cls(Memory{% if asyncoutput %}Async{% endif %}ReadWrite{% if legacy_block_access %}Legacy{% endif %}):
     {%- elif node.is_sw_readable and not node.is_sw_writable %}
-class {{get_fully_qualified_type_name(node)}}_cls(Memory{% if asyncoutput %}Async{% endif %}ReadOnly):
+class {{get_fully_qualified_type_name(node)}}_cls(Memory{% if asyncoutput %}Async{% endif %}ReadOnly{% if legacy_block_access %}Legacy{% endif %}):
     {%- elif not node.is_sw_readable and node.is_sw_writable %}
-class {{get_fully_qualified_type_name(node)}}_cls(Memory{% if asyncoutput %}Async{% endif %}WriteOnly):
+class {{get_fully_qualified_type_name(node)}}_cls(Memory{% if asyncoutput %}Async{% endif %}WriteOnly{% if legacy_block_access %}Legacy{% endif %}):
     {%- endif %}
     """
     Class to represent a memory in the register model

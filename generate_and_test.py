@@ -79,6 +79,11 @@ CommandLineParser.add_argument('--copy_libraries', action='store_true', dest='co
                                     'and debugging as multiple copies of the libraries can cause'
                                     'confusion. Therefore by default this script does not copy '
                                     'them over.')
+CommandLineParser.add_argument('--legacy_block_access', action='store_true',
+                               dest='legacy_block_access',
+                               help='peakrdl python has two methods to hold blocks of data, the '
+                                    'legacy mode based on Array or the new mode using lists')
+
 
 def build_logging_cong(logfilepath:str):
     return {
@@ -127,6 +132,7 @@ def build_logging_cong(logfilepath:str):
         }
     }
 
+
 if __name__ == '__main__':
 
     CommandLineArgs = CommandLineParser.parse_args()
@@ -161,7 +167,8 @@ if __name__ == '__main__':
     exporter.export(node=spec, path=str(CommandLineArgs.output_path / 'generate_and_test_output'),
                     asyncoutput=CommandLineArgs.asyncoutput,
                     delete_existing_package_content=not CommandLineArgs.suppress_cleanup,
-                    skip_library_copy=not CommandLineArgs.copy_libraries)
+                    skip_library_copy=not CommandLineArgs.copy_libraries,
+                    legacy_block_access=CommandLineArgs.legacy_block_access)
     print(f'generation time {time.time() - start_time}s')
 
     if not CommandLineArgs.export_only:
@@ -190,9 +197,15 @@ if __name__ == '__main__':
                                                 globals(), locals(), ['CallbackSet'], 0)
 
         if CommandLineArgs.asyncoutput is True:
-            callbackset_cls = getattr(peakrdl_python_package, 'AsyncCallbackSet')
+            if CommandLineArgs.legacy_block_access is True:
+                callbackset_cls = getattr(peakrdl_python_package, 'AsyncCallbackSetLegacy')
+            else:
+                callbackset_cls = getattr(peakrdl_python_package, 'AsyncCallbackSet')
         else:
-            callbackset_cls = getattr(peakrdl_python_package, 'NormalCallbackSet')
+            if CommandLineArgs.legacy_block_access is True:
+                callbackset_cls = getattr(peakrdl_python_package, 'NormalCallbackSetLegacy')
+            else:
+                callbackset_cls = getattr(peakrdl_python_package, 'NormalCallbackSet')
 
         sim_cls = getattr(sim_module, sim_class_name)
         sim = sim_cls(address=0)
@@ -209,7 +222,5 @@ if __name__ == '__main__':
         if CommandLineArgs.coverage_report:
             cov.stop()
             cov.html_report(directory=str(CommandLineArgs.coverage_report_path / CommandLineArgs.root_node))
-
-        sim.memory_for_address(64)
 
 

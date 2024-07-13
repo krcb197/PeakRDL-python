@@ -18,6 +18,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 This module provides a set of "dummy" callbacks that provide the most basic of operations
 """
 from array import array as Array
+from typing import List
 import asyncio
 
 from ..lib.utility_functions import get_array_typecode
@@ -60,7 +61,7 @@ def dummy_write(addr: int, width: int, accesswidth: int, data: int) -> None:
     print(f'0x{data:X} written to 0x{addr:X}')
 
 
-def dummy_read_block(addr: int, width: int, accesswidth: int, length:int) -> Array:
+def dummy_read_block(addr: int, width: int, accesswidth: int, length:int) -> List[int]:
     """
     Callback to simulate the operation of the package, everytime the read_block is called, it
     return an integer value of array of o's
@@ -75,10 +76,47 @@ def dummy_read_block(addr: int, width: int, accesswidth: int, length:int) -> Arr
         an array with the correct type (based on width) populated with 0's
 
     """
+    return [0 for x in range(length)]
+
+
+def dummy_read_block_legacy(addr: int, width: int, accesswidth: int, length:int) -> Array:
+    """
+    Callback to simulate the operation of the package, everytime the read_block is called, it
+    return an integer value of array of o's
+
+    Args:
+        addr: Address to write to
+        width: Width of the register in bits
+        accesswidth: Minimum access width of the register in bits
+        length: number of array entries
+
+    Returns:
+        an list with the correct type (based on width) populated with 0's
+
+    """
     return Array(get_array_typecode(width=width), [0 for x in range(length)])
 
 
-def dummy_write_block(addr: int, width: int, accesswidth: int,  data: Array) -> None:
+def dummy_write_block(addr: int, width: int, accesswidth: int,  data: List[int]) -> None:
+    """
+    Callback to simulate the operation of the package, everytime the read_block is called, it
+    return an integer value of array of o's
+
+    Args:
+        addr: Address to write to
+        width: Width of the register in bits
+        accesswidth: Minimum access width of the register in bits
+        data: number of array entries
+
+    Returns:
+        None
+
+    """
+    # pylint: disable=unnecessary-pass
+    pass
+
+
+def dummy_write_block_legacy(addr: int, width: int, accesswidth: int,  data: Array) -> None:
     """
     Callback to simulate the operation of the package, everytime the read_block is called, it
     return an integer value of array of o's
@@ -135,7 +173,7 @@ async def async_dummy_write(addr: int, width: int, accesswidth: int, data: int) 
 async def async_dummy_read_block(addr: int,
                                  width: int,
                                  accesswidth: int,
-                                 length: int) -> Array:
+                                 length: int) -> List[int]:
     """
     Callback to simulate the operation of the package, everytime the read_block is called, it
     return an integer value of array of o's
@@ -154,9 +192,31 @@ async def async_dummy_read_block(addr: int,
     return dummy_read_block(addr, width, accesswidth, length)
 
 
+async def async_dummy_read_block_legacy(addr: int,
+                                        width: int,
+                                        accesswidth: int,
+                                        length: int) -> Array:
+    """
+    Callback to simulate the operation of the package, everytime the read_block is called, it
+    return an integer value of array of o's
+
+    Args:
+        addr: Address to write to
+        width: Width of the register in bits
+        accesswidth: Minimum access width of the register in bits
+        length: number of array entries
+
+    Returns:
+        an List with the correct type (based on width) populated with 0's
+
+    """
+    await asyncio.sleep(0)
+    return dummy_read_block_legacy(addr, width, accesswidth, length)
+
+
 async def async_dummy_write_block(addr: int,
                                   width: int,
-                                  accesswidth: int, data: Array) -> None:
+                                  accesswidth: int, data: List[int]) -> None:
     """
     Callback to simulate the operation of the package, everytime the read_block is called, it
     return an integer value of array of o's
@@ -173,3 +233,24 @@ async def async_dummy_write_block(addr: int,
     """
     await asyncio.sleep(0)
     return dummy_write_block(addr, width, accesswidth, data)
+
+
+async def async_dummy_write_block_legacy(addr: int,
+                                         width: int,
+                                         accesswidth: int, data: Array) -> None:
+    """
+    Callback to simulate the operation of the package, everytime the read_block is called, it
+    return an integer value of array of o's
+
+    Args:
+        addr: Address to write to
+        width: Width of the register in bits
+        accesswidth: Minimum access width of the register in bits
+        data: number of array entries
+
+    Returns:
+        None
+
+    """
+    await asyncio.sleep(0)
+    return dummy_write_block_legacy(addr, width, accesswidth, data)
