@@ -535,7 +535,7 @@ class PythonExporter:
         Returns:
             List[str] : modules that have been exported:
         """
-        if sys.version_info <= (3, 7):
+        if sys.version_info < (3, 8):
             warnings.warn('Support for Python 3.7 will be withdrawn in the next major release',
                           category=DeprecationWarning)
 
