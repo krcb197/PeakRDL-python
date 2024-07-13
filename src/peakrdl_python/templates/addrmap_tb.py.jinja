@@ -443,7 +443,8 @@ class {{fq_block_name}}_single_access({{top_node.type_name}}_TestCase): # type: 
                 {% endif -%}
 
                 self.assertEqual({% if asyncoutput %}await {%endif %}self.dut.{{'.'.join(get_python_path_segments(node))}}.read(), # type: ignore[union-attr]
-                                 self.dut.{{'.'.join(get_python_path_segments(node))}}.enum_cls.{{value_of_enum_needed.name.upper()}}) # type: ignore[attr-defined]
+                                 self.dut.{{'.'.join(get_python_path_segments(node))}}.enum_cls.{{value_of_enum_needed.name.upper()}} # type: ignore[attr-defined]
+                                 )
                 read_callback_mock.assert_called_once_with(
                                     addr={{node.parent.absolute_address}},
                                     width={{node.parent.size * 8}},
@@ -641,7 +642,8 @@ class {{fq_block_name}}_single_access({{top_node.type_name}}_TestCase): # type: 
                     {%- if isinstance(field, systemrdlFieldNode) -%}
                     {%- if field.is_sw_readable %}
                     self.assertEqual(reference_read_fields['{{ field.inst_name }}'],
-                                     {% if asyncoutput %} await {% endif %}reg_context.get_child_by_system_rdl_name('{{ field.inst_name }}').read())  # type: ignore[attr-defined,union-attr]
+                                     {% if asyncoutput %} await {% endif %}reg_context.get_child_by_system_rdl_name('{{ field.inst_name }}').read()  # type: ignore[attr-defined,union-attr]
+                                     )
                     {%- endif -%}
                     {%- endif -%}
                     {%- endfor %}
