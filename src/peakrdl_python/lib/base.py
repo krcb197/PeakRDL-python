@@ -796,7 +796,7 @@ class RegFile(Section, ABC):
                  inst_name: str,
                  parent: Union[AddressMap, 'RegFile']):
 
-        if not isinstance(parent._callbacks, NormalCallbackSet):
+        if not isinstance(parent._callbacks, (NormalCallbackSet, NormalCallbackSetLegacy)):
             raise TypeError(f'parent._callbacks type wrong, got {type(parent._callbacks)}')
 
         super().__init__(address=address,
