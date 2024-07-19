@@ -180,10 +180,10 @@ class Test1DArrayReadWrite(ArrayBase):
 
         # try a standard operation
         with patch.object(self.callbacks, 'read_block_callback',
-                          return_value=Array('L', [0 for x in range(10)])) as read_patch, \
+                          return_value=[0 for x in range(10)]) as read_patch, \
                 patch.object(self.callbacks, 'write_block_callback') as write_patch:
 
-            follow_along_array = Array('L', [0 for x in range(10)])
+            follow_along_array = [0 for x in range(10)]
             with self.dut.single_read_modify_write() as dut_context:
                 self.assertEqual(dut_context[2].read(), follow_along_array[2])
                 dut_context[2].write(4)
@@ -204,7 +204,7 @@ class Test1DArrayReadWrite(ArrayBase):
 
         # try with write-back skip
         with patch.object(self.callbacks, 'read_block_callback',
-                          return_value=Array('L', [0 for x in range(10)])) as read_patch, \
+                          return_value=[0 for x in range(10)]) as read_patch, \
                 patch.object(self.callbacks, 'write_block_callback') as write_patch:
             with self.dut.single_read_modify_write(skip_write=True) as dut_context:
                 dut_context[2].write(4)
@@ -273,7 +273,7 @@ class Test1DArrayReadOnly(ArrayBase):
 
         # try a standard operation
         with patch.object(self.callbacks, 'read_block_callback',
-                          return_value=Array('L', [x+9 for x in range(10)])) as read_patch, \
+                          return_value=[x+9 for x in range(10)]) as read_patch, \
                 patch.object(self.callbacks, 'write_block_callback') as write_patch:
 
             with self.dut.single_read() as dut_context:
@@ -336,7 +336,7 @@ class Test1DArrayWriteOnly(ArrayBase):
                           return_value=Array('L', [0 for x in range(10)])) as read_patch, \
                 patch.object(self.callbacks, 'write_block_callback') as write_patch:
 
-            follow_along_array = Array('L', [0 for x in range(10)])
+            follow_along_array = [0 for x in range(10)]
             with self.dut.single_write() as dut_context:
                 for idx, item in enumerate(dut_context):
                     item.write(idx+29)

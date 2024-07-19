@@ -309,7 +309,7 @@ def get_memory_width_bytes(node: MemNode) -> int:
     if not isinstance(node, MemNode):
         raise TypeError(f'node is not a {type(MemNode)} got {type(node)}')
 
-    return node.get_property('memwidth') >> 3
+    return node.size // node.get_property('mementries')
 
 
 def get_field_default_value(node: FieldNode) -> Optional[int]:

@@ -21,3 +21,11 @@ Integer Data Types
 
 All the APIs present memory, register and field entries as python integers. This abstracts, the
 complexity of byte ordering and reversed registers.
+
+Blocks of Data
+==============
+
+.. versionchanged:: 0.9.0
+
+    blocks of data (for example memories were accessed as python array.array previously. This
+    did not support width of larger than 128 bits therefore this was changed to list.

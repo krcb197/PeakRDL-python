@@ -2,28 +2,16 @@ import json
 from typing import Union
 
 from array_access.reg_model.array_access import array_access_cls
+from array_access.sim.array_access import array_access_simulator_cls
 from array_access.lib.callbacks import NormalCallbackSet
-
-# dummy functions to demonstrate the class
-def read_addr_space(addr: int, width: int, accesswidth: int) -> int:
-    """
-    Callback to simulate the operation of the package, everytime the read is called, it return
-    an integer value of 0
-
-    Args:
-        addr: Address to write to
-        width: Width of the register in bits
-        accesswidth: Minimum access width of the register in bits
-
-    Returns:
-        value inputted by the used
-    """
-    return int(0)
 
 if __name__ == '__main__':
 
+    # setup the simple simulator
+    sim = array_access_simulator_cls(0)
+
     # create an instance of the class
-    regmodel = array_access_cls(callbacks=NormalCallbackSet(read_callback=read_addr_space))
+    regmodel = array_access_cls(callbacks=NormalCallbackSet(read_callback=sim.read))
 
     # access a entry in the 1D array
     print(regmodel.reg_array_1D[0].field_a.read())

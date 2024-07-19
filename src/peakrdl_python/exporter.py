@@ -20,7 +20,7 @@ Main Classes for the peakrdl-python
 import os
 from pathlib import Path
 from shutil import copy
-from typing import List, NoReturn, Iterable, Tuple
+from typing import List, NoReturn, Iterable, Tuple, Dict, Any
 
 import jinja2 as jj
 from systemrdl import RDLWalker # type: ignore
@@ -122,6 +122,35 @@ class _PythonPackage:
         self._make_empty_init_file()
 
 
+class _CopiedPythonPackage(_PythonPackage):
+    """
+    Class to represent a python package, which is copied from another
+    """
+    def __init__(self, path: Path, ref_package: _PythonPackage):
+        super().__init__(path=path)
+        self._ref_package = ref_package
+
+    def create_empty_package(self, cleanup: bool) -> None:
+        """
+        make the package folder (if it does not already exist), populate the __init__.py and
+        optionally remove any existing python files
+
+        Args:
+            cleanup (bool) : delete any existing python files in the package
+
+        Returns:
+            None
+        """
+        super().create_empty_package(cleanup=cleanup)
+
+        # copy all the python source code that is part of the library which comes as part of the
+        # peakrdl-python to the lib direction of the generated package
+        files_in_package = self._ref_package.path.glob('*.py')
+
+        for file_in_package in files_in_package:
+            copy(src=file_in_package, dst=self.path)
+
+
 class _Package(_PythonPackage):
     """
     Class to define the package being generated
@@ -129,16 +158,41 @@ class _Package(_PythonPackage):
     Args:
         include_tests (bool): include the tests package
     """
-    def __init__(self, path:str, package_name: str, include_tests: bool):
+    template_lib_package = _PythonPackage(Path(__file__).parent / 'lib')
+    template_sim_lib_package = _PythonPackage(Path(__file__).parent / 'sim_lib')
+
+    def __init__(self, path:str, package_name: str, include_tests: bool, include_libraries: bool):
         super().__init__(Path(path) / package_name)
-        self.reg_model = self.child_package('reg_model')
+
         self._include_tests = include_tests
+        self._include_libraries = include_libraries
+
+        if include_libraries:
+            self.lib = self.child_ref_package('lib', self.template_lib_package)
+        self.reg_model = self.child_package('reg_model')
+
         if include_tests:
             self.tests = self.child_package('tests')
-        self.lib = self.child_package('lib')
+
+        if include_libraries:
+            self.sim_lib = self.child_ref_package('sim_lib', self.template_sim_lib_package)
+        self.sim = self.child_package('sim')
+
+    def child_ref_package(self, name: str, ref_package:_PythonPackage) -> '_CopiedPythonPackage':
+        """
+        provide a child package within the current package
+
+        Args:
+            name: name of child package
+
+        Returns:
+            None
+
+        """
+        return _CopiedPythonPackage(path=self.path / name, ref_package=ref_package)
 
 
-    def create_empty_package(self, cleanup: bool) -> None:
+    def create_empty_package(self, cleanup: bool, ) -> None:
         """
         create the directories and __init__.py files associated with the exported package
 
@@ -157,15 +211,10 @@ class _Package(_PythonPackage):
         self.reg_model.create_empty_package(cleanup=cleanup)
         if self._include_tests:
             self.tests.create_empty_package(cleanup=cleanup)
-        self.lib.create_empty_package(cleanup=cleanup)
-
-        # copy all the python source code that is part of the library which comes as part of the
-        # peakrdl-python to the lib direction of the generated package
-        template_package = Path(__file__).parent / 'lib'
-        files_in_package = template_package.glob('*.py')
-
-        for file_in_package in files_in_package:
-            copy(src=file_in_package, dst=self.lib.path)
+        if self._include_libraries:
+            self.lib.create_empty_package(cleanup=cleanup)
+            self.sim_lib.create_empty_package(cleanup=cleanup)
+        self.sim.create_empty_package(cleanup=cleanup)
 
 
 class PythonExporter:
@@ -223,40 +272,25 @@ class PythonExporter:
         # Dictionary used for determining the unique type names to use
         self.node_type_name = {}
 
-    def export(self, node: Node, path: str,
-               asyncoutput: bool=False,
-               skip_test_case_generation: bool=False,
-               delete_existing_package_content: bool = True) -> List[str]:
-        """
-        Generated Python Code and Testbench
+    def __stream_jinja_template(self,
+                                template_name: str,
+                                target_package: _PythonPackage,
+                                target_name: str,
+                                template_context: Dict[str, Any]) -> None:
 
-        Args:
-            node (str) : Top-level node to export. Can be the top-level `RootNode` or any
-                  internal `AddrmapNode`.
-            path (str) : Output package path.
-            asyncoutput (bool) : If set this builds a register model with async callbacks
-            skip_test_case_generation (bool): skip generation the generation of the test cases
-            delete_existing_package_content (bool): delete any python files in the package
-                                                    location, normally left over from previous
-                                                    operations
+        template = self.jj_env.get_template(template_name)
+        module_path = target_package.child_module_path(target_name)
 
-        Returns:
-            List[str] : modules that have been exported:
-        """
-        # pylint: disable=too-many-locals
+        with module_path.open('w', encoding='utf-8') as fp:
+            stream = template.stream(template_context)
+            stream.dump(fp)
 
-        # If it is the root node, skip to top addrmap
-        if isinstance(node, RootNode):
-            top_block = node.top
-        else:
-            top_block = node
-
-        package = _Package(path=path,
-                           package_name=node.inst_name,
-                           include_tests=not skip_test_case_generation)
-        package.create_empty_package(cleanup=delete_existing_package_content)
-
-        self._build_node_type_table(top_block)
+    def __export_reg_model(self,
+                           top_block: AddrmapNode,
+                           package: _Package,
+                           skip_lib_copy: bool,
+                           asyncoutput: bool,
+                           legacy_block_access: bool) -> None:
 
         context = {
             'print': print,
@@ -289,107 +323,275 @@ class PythonExporter:
             'get_reg_writable_fields': get_reg_writable_fields,
             'get_reg_readable_fields': get_reg_readable_fields,
             'get_memory_max_entry_value_hex_string': get_memory_max_entry_value_hex_string,
-            'get_array_typecode': get_array_typecode,
             'get_memory_width_bytes': get_memory_width_bytes,
             'get_field_default_value': get_field_default_value,
             'raise_template_error' : self._raise_template_error,
             'get_python_path_segments' : get_python_path_segments,
             'safe_node_name' : safe_node_name,
-            'version' : __version__
+            'skip_lib_copy': skip_lib_copy,
+            'version' : __version__,
+            'legacy_block_access' : legacy_block_access,
+        }
+        if legacy_block_access is True:
+            context['get_array_typecode'] = get_array_typecode
+
+        context.update(self.user_template_context)
+
+        self.__stream_jinja_template(template_name="addrmap.py.jinja",
+                                     target_package=package.reg_model,
+                                     target_name=top_block.inst_name + '.py',
+                                     template_context=context)
+
+    def __export_simulator(self,
+                           top_block: AddrmapNode,
+                           package: _Package,
+                           skip_lib_copy: bool,
+                           asyncoutput: bool,
+                           legacy_block_access: bool) -> None:
+
+        context = {
+            'top_node': top_block,
+            'systemrdlRegNode': RegNode,
+            'systemrdlMemNode': MemNode,
+            'isinstance': isinstance,
+            'asyncoutput': asyncoutput,
+            'skip_lib_copy': skip_lib_copy,
+            'version': __version__,
+            'legacy_block_access' : legacy_block_access,
+            }
+
+        context.update(self.user_template_context)
+
+        self.__stream_jinja_template(template_name="sim_addrmap.py.jinja",
+                                     target_package=package.sim,
+                                     target_name=top_block.inst_name + '.py',
+                                     template_context=context)
+
+    def __export_example(self,
+                         top_block: AddrmapNode,
+                         package: _Package,
+                         skip_lib_copy: bool,
+                         asyncoutput: bool,
+                         legacy_block_access: bool) -> None:
+
+        context = {
+            'top_node': top_block,
+            'systemrdlRegNode': RegNode,
+            'systemrdlMemNode': MemNode,
+            'isinstance': isinstance,
+            'asyncoutput': asyncoutput,
+            'skip_lib_copy': skip_lib_copy,
+            'version': __version__,
+            'legacy_block_access' : legacy_block_access,
+            }
+
+        context.update(self.user_template_context)
+
+        self.__stream_jinja_template(template_name="example.py.jinja",
+                                     target_package=package,
+                                     target_name='example.py',
+                                     template_context=context)
+
+    def __export_base_tests(self,
+                            top_block: AddrmapNode,
+                            package: _Package,
+                            skip_lib_copy: bool,
+                            asyncoutput: bool,
+                            legacy_block_access: bool) -> None:
+        """
+
+        Args:
+            top_block:
+            package:
+            asyncoutput:
+
+        Returns:
+
+        """
+
+        context = {
+            'top_node': top_block,
+            'asyncoutput': asyncoutput,
+            'skip_lib_copy': skip_lib_copy,
+            'version': __version__,
+            'legacy_block_access' : legacy_block_access,
         }
 
         context.update(self.user_template_context)
 
-        template = self.jj_env.get_template("addrmap.py.jinja")
-        module_path = package.reg_model.child_module_path(top_block.inst_name + '.py')
+        self.__stream_jinja_template(template_name="baseclass_tb.py.jinja",
+                                     target_package=package.tests,
+                                     target_name='_' + top_block.inst_name + '_test_base.py',
+                                     template_context=context)
 
-        with module_path.open('w', encoding='utf-8') as fp:
-            stream = template.stream(context)
-            stream.dump(fp)
+        self.__stream_jinja_template(template_name="baseclass_simulation_tb.py.jinja",
+                                     target_package=package.tests,
+                                     target_name='_' + top_block.inst_name + '_sim_test_base.py',
+                                     template_context=context)
 
-        if not skip_test_case_generation:
+    def __export_tests(self,
+                       top_block: AddrmapNode,
+                       package: _Package,
+                       skip_lib_copy: bool,
+                       asyncoutput: bool,
+                       legacy_block_access: bool) -> None:
+        """
 
-            # make the top level base class for all the other test, this is what instantes
-            # the register model
-            template = self.jj_env.get_template("baseclass_tb.py.jinja")
-            module_tb_path = package.tests.child_module_path(
-                '_' + top_block.inst_name + '_test_base.py')
+        Args:
+            top_block:
+            package:
+            asyncoutput:
+            legacy_block_access:
+
+        Returns:
+
+        """
+        #pylint: disable=too-many-locals
+
+        blocks = AddressMaps()
+        # running the walker populated the blocks with all the address maps in within the
+        # top block, including the top_block itself
+        RDLWalker(unroll=True).walk(top_block, blocks, skip_top=False)
+
+        for block in blocks:
+            owned_elements = OwnedbyAddressMap()
+            # running the walker populated the blocks with all the address maps in within the
+            # top block, including the top_block itself
+            RDLWalker(unroll=True).walk(block, owned_elements, skip_top=True)
+
+            # The code that generates the tests for the register array context managers needs
+            # the arrays rolled up but parents within the address map e.g. a regfile unrolled
+            # I have not found a way to do this with the Walker as the unroll seems to be a
+            # global setting, the following code works but it is not elegant
+            rolled_owned_reg: List[RegNode] = list(block.registers(unroll=False))
+            for regfile in owned_elements.reg_files:
+                rolled_owned_reg += list(regfile.registers(unroll=False))
+            for memory in owned_elements.memories:
+                rolled_owned_reg += list(memory.registers(unroll=False))
+
+            def is_reg_array(item: RegNode) -> bool:
+                return item.is_array
+
+            rolled_owned_reg_array = list(filter(is_reg_array, rolled_owned_reg))
+
+            fq_block_name = '_'.join(block.get_path_segments(array_suffix='_{index:d}_'))
 
             context = {
                 'top_node': top_block,
+                'block': block,
+                'fq_block_name': fq_block_name,
+                'owned_elements': owned_elements,
+                'rolled_owned_reg_array': rolled_owned_reg_array,
+                'systemrdlFieldNode': FieldNode,
+                'systemrdlSignalNode': SignalNode,
+                'systemrdlRegNode': RegNode,
+                'systemrdlMemNode': MemNode,
+                'systemrdlRegfileNode': RegfileNode,
+                'systemrdlAddrmapNode': AddrmapNode,
+                'isinstance': isinstance,
+                'get_python_path_segments': get_python_path_segments,
+                'safe_node_name': safe_node_name,
+                'uses_memory': (len(owned_elements.memories) > 0),
+                'get_field_bitmask_hex_string': get_field_bitmask_hex_string,
+                'get_field_inv_bitmask_hex_string': get_field_inv_bitmask_hex_string,
+                'get_field_max_value_hex_string': get_field_max_value_hex_string,
+                'get_field_default_value': get_field_default_value,
+                'get_reg_max_value_hex_string': get_reg_max_value_hex_string,
+                'get_reg_writable_fields': get_reg_writable_fields,
+                'get_reg_readable_fields': get_reg_readable_fields,
+                'get_memory_max_entry_value_hex_string': get_memory_max_entry_value_hex_string,
+                'get_enum_values': get_enum_values,
+                'get_memory_width_bytes': get_memory_width_bytes,
                 'asyncoutput': asyncoutput,
-                'version': __version__
+                'uses_enum': uses_enum(block),
+                'skip_lib_copy': skip_lib_copy,
+                'version': __version__,
+                'get_array_typecode' : get_array_typecode,
+                'legacy_block_access': legacy_block_access,
             }
 
-            with module_tb_path.open('w', encoding='utf-8') as fp:
-                stream = template.stream(context)
-                stream.dump(fp)
 
-            # make the tests themselves
-            template = self.jj_env.get_template("addrmap_tb.py.jinja")
+            self.__stream_jinja_template(template_name="addrmap_tb.py.jinja",
+                                         target_package=package.tests,
+                                         target_name='test_' + fq_block_name + '.py',
+                                         template_context=context)
 
-            blocks = AddressMaps()
-            # running the walker populated the blocks with all the address maps in within the
-            # top block, including the top_block itself
-            RDLWalker(unroll=True).walk(top_block, blocks, skip_top=False)
+            self.__stream_jinja_template(template_name="addrmap_simulation_tb.py.jinja",
+                                         target_package=package.tests,
+                                         target_name='test_sim_' + fq_block_name + '.py',
+                                         template_context=context)
 
-            for block in blocks:
-                owned_elements = OwnedbyAddressMap()
-                # running the walker populated the blocks with all the address maps in within the
-                # top block, including the top_block itself
-                RDLWalker(unroll=True).walk(block, owned_elements, skip_top=True)
+    def export(self, node: Node, path: str,  # pylint: disable=too-many-arguments
+               asyncoutput: bool = False,
+               skip_test_case_generation: bool = False,
+               delete_existing_package_content: bool = True,
+               skip_library_copy: bool = False,
+               legacy_block_access: bool = True) -> List[str]:
+        """
+        Generated Python Code and Testbench
 
-                # The code that generates the tests for the register array context managers needs
-                # the arrays rolled up but parents within the address map e.g. a regfile unrolled
-                # I have not found a way to do this with the Walker as the unroll seems to be a
-                # global setting, the following code works but it is not elegant
-                rolled_owned_reg: List[RegNode] = list(block.registers(unroll=False))
-                for regfile in owned_elements.reg_files:
-                    rolled_owned_reg += list(regfile.registers(unroll=False))
-                for memory in owned_elements.memories:
-                    rolled_owned_reg += list(memory.registers(unroll=False))
-                def is_reg_array(item: RegNode) -> bool:
-                    return item.is_array
-                rolled_owned_reg_array = filter(is_reg_array, rolled_owned_reg)
+        Args:
+            node (str) : Top-level node to export. Can be the top-level `RootNode` or any
+                         internal `AddrmapNode`.
+            path (str) : Output package path.
+            asyncoutput (bool) : If set this builds a register model with async callbacks
+            skip_test_case_generation (bool): skip generation the generation of the test cases
+            delete_existing_package_content (bool): delete any python files in the package
+                                                    location, normally left over from previous
+                                                    operations
+            skip_library_copy (bool): skip copy the libraries to the generated package, this is
+                                      useful to turn off when developing peakrdl python to avoid
+                                      editing the wrong copy of the library. However, it is not
+                                      recommended in end user cases
+            legacy_block_access (bool): version 0.8 changed the block access methods from using
+                                        arrays to to lists. This allows memory widths of other
+                                        than 8, 16, 32, 64 to be supported which are legal in
+                                        systemRDL. The legacy mode with Arrays is still in
+                                        the tool and will be turned on by default for a few
+                                        releases.
 
-                fq_block_name = '_'.join(block.get_path_segments(array_suffix = '_{index:d}_'))
-                module_tb_path = package.tests.child_module_path('test_' + fq_block_name + '.py')
+        Returns:
+            List[str] : modules that have been exported:
+        """
 
-                context = {
-                    'top_node': top_block,
-                    'block' : block,
-                    'fq_block_name' : fq_block_name,
-                    'owned_elements': owned_elements,
-                    'rolled_owned_reg_array' : rolled_owned_reg_array,
-                    'systemrdlFieldNode': FieldNode,
-                    'systemrdlSignalNode': SignalNode,
-                    'systemrdlRegNode': RegNode,
-                    'systemrdlMemNode': MemNode,
-                    'systemrdlRegfileNode': RegfileNode,
-                    'systemrdlAddrmapNode': AddrmapNode,
-                    'isinstance': isinstance,
-                    'get_python_path_segments': get_python_path_segments,
-                    'safe_node_name': safe_node_name,
-                    'uses_memory': (len(owned_elements.memories) > 0),
-                    'get_field_bitmask_hex_string': get_field_bitmask_hex_string,
-                    'get_field_inv_bitmask_hex_string': get_field_inv_bitmask_hex_string,
-                    'get_field_max_value_hex_string': get_field_max_value_hex_string,
-                    'get_field_default_value': get_field_default_value,
-                    'get_reg_max_value_hex_string': get_reg_max_value_hex_string,
-                    'get_reg_writable_fields': get_reg_writable_fields,
-                    'get_reg_readable_fields': get_reg_readable_fields,
-                    'get_memory_max_entry_value_hex_string': get_memory_max_entry_value_hex_string,
-                    'get_enum_values': get_enum_values,
-                    'get_array_typecode': get_array_typecode,
-                    'get_memory_width_bytes': get_memory_width_bytes,
-                    'asyncoutput': asyncoutput,
-                    'uses_enum': uses_enum(block),
-                    'version': __version__
-                }
+        # If it is the root node, skip to top addrmap
+        if isinstance(node, RootNode):
+            top_block = node.top
+        else:
+            top_block = node
 
-                with module_tb_path.open('w', encoding='utf-8') as fp:
-                    stream = template.stream(context)
-                    stream.dump(fp)
+        if not isinstance(path, str):
+            raise TypeError(f'path should be a str but got {type(path)}')
+        package = _Package(path=path,
+                           package_name=node.inst_name,
+                           include_tests=not skip_test_case_generation,
+                           include_libraries=not skip_library_copy)
+        package.create_empty_package(cleanup=delete_existing_package_content)
+
+        self._build_node_type_table(top_block)
+
+        self.__export_reg_model(top_block=top_block, package=package, asyncoutput=asyncoutput,
+                                skip_lib_copy=skip_library_copy,
+                                legacy_block_access=legacy_block_access)
+
+        self.__export_simulator(top_block=top_block, package=package, asyncoutput=asyncoutput,
+                                skip_lib_copy=skip_library_copy,
+                                legacy_block_access=legacy_block_access)
+
+        self.__export_example(top_block=top_block, package=package, asyncoutput=asyncoutput,
+                                skip_lib_copy=skip_library_copy,
+                                legacy_block_access=legacy_block_access)
+
+        if not skip_test_case_generation:
+
+            # export the baseclasses for the tests
+            self.__export_base_tests(top_block=top_block, package=package, asyncoutput=asyncoutput,
+                                skip_lib_copy=skip_library_copy,
+                                legacy_block_access=legacy_block_access)
+            # export the tests themselves, these are broken down to one file per addressmap
+            self.__export_tests(top_block=top_block, package=package, asyncoutput=asyncoutput,
+                                skip_lib_copy=skip_library_copy,
+                                legacy_block_access=legacy_block_access)
 
         return top_block.inst_name
 

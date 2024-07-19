@@ -26,13 +26,16 @@ from abc import ABC, abstractmethod
 from contextlib import contextmanager
 from array import array as Array
 import sys
+from warnings import warn
 
 from .base import Node, AddressMap, RegFile, NodeArray
-from .utility_functions import get_array_typecode
+from .utility_functions import get_array_typecode, legal_register_width
 from .base import AsyncAddressMap, AsyncRegFile
 from .memory import  MemoryReadOnly, MemoryWriteOnly, MemoryReadWrite, \
     BaseMemory, Memory, ReadableMemory, WritableMemory
-from .callbacks import NormalCallbackSet
+from .memory import MemoryReadOnlyLegacy, MemoryWriteOnlyLegacy, MemoryReadWriteLegacy
+from .memory import ReadableMemoryLegacy, WritableMemoryLegacy
+from .callbacks import NormalCallbackSet, NormalCallbackSetLegacy
 
 # pylint: disable=duplicate-code
 if sys.version_info >= (3, 11):
@@ -80,20 +83,20 @@ class BaseReg(Node, ABC):
                          parent=parent)
         if not isinstance(width, int):
             raise TypeError(f'width should be int but got {(type(width))}')
-        if width not in (8, 16, 32, 64, 128, 256, 512, 1024, 2048):
-            raise ValueError('currently only support 8, 16, 32, 64, 128, 256, 512, 1024 or 2048 '
-                             f'width registers, got {width:d}')
+        if not legal_register_width(width_in_bits=width):
+            raise ValueError(f'Unsupported register width {width:d}')
         self.__width = width
         if not isinstance(accesswidth, int):
             raise TypeError(f'accesswidth should be int but got {(type(accesswidth))}')
-        if accesswidth not in (8, 16, 32, 64):
-            raise ValueError(f'currently only support 8, 16, 32 or 64 accesswidth, got {width:d}')
+        if not legal_register_width(width_in_bits=accesswidth):
+            raise ValueError(f'Unsupported access width {accesswidth:d}')
         self.__accesswidth = accesswidth
     # pylint: enable=too-many-arguments,duplicate-code
 
     @property
     def max_value(self) -> int:
-        """maximum unsigned integer value that can be stored in the register
+        """
+        maximum unsigned integer value that can be stored in the register
 
         For example:
 
@@ -121,9 +124,6 @@ class BaseReg(Node, ABC):
     def width(self) -> int:
         """
         The width of the register in bits, this uses the `regwidth` systemRDL property
-
-        Returns: register width
-
         """
         return self.__width
 
@@ -131,8 +131,6 @@ class BaseReg(Node, ABC):
     def accesswidth(self) -> int:
         """
         The access width of the register in bits, this uses the `accesswidth` systemRDL property
-
-        Returns: register access width
         """
         return self.__accesswidth
 
@@ -143,7 +141,6 @@ class BaseReg(Node, ABC):
         """
         return self.__width >> 3
 
-
     @property
     @abstractmethod
     def _is_readable(self) -> bool:
@@ -153,6 +150,7 @@ class BaseReg(Node, ABC):
     @abstractmethod
     def _is_writeable(self) -> bool:
         ...
+
 
 class Reg(BaseReg, ABC):
     """
@@ -175,22 +173,27 @@ class Reg(BaseReg, ABC):
                  parent: Union[AddressMap, RegFile, Memory, 'RegArray']):
 
         if not isinstance(parent, (AddressMap, RegFile,
-                                   MemoryReadOnly, MemoryWriteOnly, MemoryReadWrite, RegArray)):
+                                   MemoryReadOnly, MemoryWriteOnly, MemoryReadWrite, RegArray,
+                                   MemoryReadOnlyLegacy, MemoryWriteOnlyLegacy,
+                                   MemoryReadWriteLegacy)):
             raise TypeError(f'bad parent type got: {type(parent)}')
 
-        if not isinstance(parent._callbacks, NormalCallbackSet):
+        if not isinstance(parent._callbacks, (NormalCallbackSet, NormalCallbackSetLegacy)):
             raise TypeError(f'callback set type is wrong, got {type(parent._callbacks)}')
 
         super().__init__(address=address, width=width, accesswidth=accesswidth,
                          logger_handle=logger_handle, inst_name=inst_name, parent=parent)
 
     @property
-    def _callbacks(self) -> NormalCallbackSet:
+    def _callbacks(self) -> Union[NormalCallbackSet, NormalCallbackSetLegacy]:
+        # pylint: disable=protected-access
         if self.parent is None:
             raise RuntimeError('Parent must be set')
-        # This cast is OK because the type was checked in the __init__
-        # pylint: disable-next=protected-access
-        return cast(NormalCallbackSet, self.parent._callbacks)
+
+        if isinstance(self.parent._callbacks, (NormalCallbackSet, NormalCallbackSetLegacy)):
+            return self.parent._callbacks
+
+        raise TypeError(f'unhandled parent callback type: {type(self.parent._callbacks)}')
 
 
 # pylint: disable-next=invalid-name
@@ -221,14 +224,13 @@ class BaseRegArray(NodeArray[BaseRegArrayElementType], ABC):
 
         if not isinstance(width, int):
             raise TypeError(f'width should be int but got {(type(width))}')
-        if width not in (8, 16, 32, 64, 128, 256, 512, 1024, 2048):
-            raise ValueError('currently only support 8, 16, 32, 64, 128, 256, 512, 1024 or 2048 '
-                             f'width registers, got {width:d}')
+        if not legal_register_width(width_in_bits=width):
+            raise ValueError(f'Unsupported register width {width:d}')
         self.__width = width
         if not isinstance(accesswidth, int):
             raise TypeError(f'accesswidth should be int but got {(type(accesswidth))}')
-        if accesswidth not in (8, 16, 32, 64):
-            raise ValueError(f'currently only support 8, 16, 32 or 64 accesswidth, got {width:d}')
+        if not legal_register_width(width_in_bits=accesswidth):
+            raise ValueError(f'Unsupported access width {accesswidth:d}')
         self.__accesswidth = accesswidth
 
         if not issubclass(self._element_datatype, BaseReg):
@@ -242,9 +244,6 @@ class BaseRegArray(NodeArray[BaseRegArrayElementType], ABC):
     def width(self) -> int:
         """
         The width of the register in bits, this uses the `regwidth` systemRDL property
-
-        Returns: register width
-
         """
         return self.__width
 
@@ -252,8 +251,6 @@ class BaseRegArray(NodeArray[BaseRegArrayElementType], ABC):
     def accesswidth(self) -> int:
         """
         The access width of the register in bits, this uses the `accesswidth` systemRDL property
-
-        Returns: register access width
         """
         return self.__accesswidth
 
@@ -266,7 +263,6 @@ class BaseRegArray(NodeArray[BaseRegArrayElementType], ABC):
             width=self.width,
             accesswidth=self.accesswidth,
             parent=self)
-
 
     def _sub_instance(self, elements: Dict[Tuple[int, ...], BaseRegArrayElementType]) ->\
             NodeArray[BaseRegArrayElementType]:
@@ -313,7 +309,7 @@ class RegArray(BaseRegArray, ABC):
     """
     # pylint: disable=too-many-arguments,duplicate-code
 
-    __slots__: List[str] = ['__in_context_manager', '__register_array_cache',
+    __slots__: List[str] = ['__in_context_manager', '__register_cache',
                             '__register_address_array']
 
     def __init__(self, *,
@@ -327,10 +323,10 @@ class RegArray(BaseRegArray, ABC):
                  elements: Optional[Dict[Tuple[int, ...], RegArrayElementType]] = None):
 
         self.__in_context_manager: bool = False
-        self.__register_array_cache: Optional[Array] = None
+        self.__register_cache: Optional[Union[Array, List[int]]] = None
         self.__register_address_array: Optional[List[int]] = None
 
-        if not isinstance(parent._callbacks, NormalCallbackSet):
+        if not isinstance(parent._callbacks, (NormalCallbackSet, NormalCallbackSetLegacy)):
             raise TypeError(f'callback set type is wrong, got {type(parent._callbacks)}')
 
         super().__init__(logger_handle=logger_handle, inst_name=inst_name,
@@ -339,13 +335,19 @@ class RegArray(BaseRegArray, ABC):
 
     @property
     def __empty_array_cache(self) -> Array:
-        empty_array = [0 for _ in range(self.__number_cache_entries)]
-        return Array(get_array_typecode(self.width), empty_array)
+        return Array(get_array_typecode(self.width), self.__empty_list_cache)
 
-    def __block_read(self) -> Array:
+    @property
+    def __empty_list_cache(self) -> List[int]:
+        return [0 for _ in range(self.__number_cache_entries)]
+
+    def __block_read_legacy(self) -> Array:
         """
         Read all the contents of the array in the most optimal way, ideally with a block operation
         """
+        if not isinstance(self._callbacks, NormalCallbackSetLegacy):
+            raise RuntimeError('This function should only be used with legacy callbacks')
+
         read_block_callback = self._callbacks.read_block_callback
         read_callback = self._callbacks.read_callback
 
@@ -384,10 +386,102 @@ class RegArray(BaseRegArray, ABC):
 
         raise RuntimeError('There is no usable callback')
 
-    def __block_write(self, data: Array, verify: bool) -> None:
+    def __block_write_legacy(self, data: Array, verify: bool) -> None:
         """
         Write all the contents of the array in the most optimal way, ideally with a block operation
         """
+        if not isinstance(self._callbacks, NormalCallbackSetLegacy):
+            raise RuntimeError('This function should only be used with legacy callbacks')
+
+        write_block_callback = self._callbacks.write_block_callback
+        write_callback = self._callbacks.write_callback
+
+        if write_block_callback is not None:
+            # python 3.7 doesn't have the callback defined as protocol so mypy doesn't recognise
+            # the arguments in the call back functions
+            write_block_callback(addr=self.address,  # type: ignore[call-arg]
+                                 width=self.width,  # type: ignore[call-arg]
+                                 accesswidth=self.width,  # type: ignore[call-arg]
+                                 data=data)  # type: ignore[call-arg]
+
+        elif write_callback is not None:
+            # there is not write_block_callback defined so we must used individual write
+
+            if self.__register_address_array is None:
+                raise RuntimeError('This address array has not be initialised')
+
+            for entry_index, entry_data in enumerate(data):
+                entry_address = self.__register_address_array[entry_index]
+                # python 3.7 doesn't have the callback defined as protocol so mypy doesn't
+                # recognise the arguments in the call back functions
+                write_callback(addr=entry_address,  # type: ignore[call-arg]
+                               width=self.width,  # type: ignore[call-arg]
+                               accesswidth=self.accesswidth,  # type: ignore[call-arg]
+                               data=entry_data)  # type: ignore[call-arg]
+
+        else:
+            raise RuntimeError('No suitable callback')
+
+        if verify:
+            read_back_verify_data = self.__block_read_legacy()
+            if read_back_verify_data != data:
+                raise RegisterWriteVerifyError('Read back block miss-match')
+
+    def __block_read(self) -> List[int]:
+        """
+        Read all the contents of the array in the most optimal way, ideally with a block operation
+        """
+        if not isinstance(self._callbacks, NormalCallbackSet):
+            raise RuntimeError('This function should only be used with non-legacy callbacks')
+
+        read_block_callback = self._callbacks.read_block_callback
+        read_callback = self._callbacks.read_callback
+
+        if read_block_callback is not None:
+            # python 3.7 doesn't have the callback defined as protocol so mypy doesn't recognise
+            # the arguments in the call back functions
+            data_read = \
+                read_block_callback(addr=self.address,  # type: ignore[call-arg]
+                                    width=self.width,  # type: ignore[call-arg]
+                                    accesswidth=self.accesswidth,  # type: ignore[call-arg]
+                                    length=self.__number_cache_entries)  # type: ignore[call-arg]
+
+            if not isinstance(data_read, List):
+                if isinstance(data_read, Array):
+                    raise TypeError('The read block callback is expected to return an list, this '
+                                    'is likely to happen if you are using legacy callbacks without '
+                                    'NormalCallbackSetLegacy')
+                raise TypeError('The read block callback is expected to return an list')
+            NormalCallbackSetLegacy
+            return data_read
+
+        if read_callback is not None:
+            # there is not read_block_callback defined so we must used individual read
+            data_list = self.__empty_list_cache
+
+            if self.__register_address_array is None:
+                raise RuntimeError('This address array has not be initialised')
+
+            for entry, address in enumerate(self.__register_address_array):
+                # python 3.7 doesn't have the callback defined as protocol so mypy doesn't
+                # recognise the arguments in the call back functions
+                data_entry = read_callback(addr=address,  # type: ignore[call-arg]
+                                           width=self.width,  # type: ignore[call-arg]
+                                           accesswidth=self.accesswidth)  # type: ignore[call-arg]
+
+                data_list[entry] = data_entry
+
+            return data_list
+
+        raise RuntimeError('There is no usable callback')
+
+    def __block_write(self, data: List[int], verify: bool) -> None:
+        """
+        Write all the contents of the array in the most optimal way, ideally with a block operation
+        """
+        if not isinstance(self._callbacks, NormalCallbackSet):
+            raise RuntimeError('This function should only be used with non-legacy callbacks')
+
         write_block_callback = self._callbacks.write_block_callback
         write_callback = self._callbacks.write_callback
 
@@ -431,7 +525,8 @@ class RegArray(BaseRegArray, ABC):
             width: Width of the register in bits
             accesswidth: Minimum access width of the register in bits
 
-        Returns: cache entry
+        Returns:
+            cache entry
 
         """
         if not isinstance(width, int):
@@ -466,13 +561,11 @@ class RegArray(BaseRegArray, ABC):
         Returns:
             value inputted by the used
         """
-        if self.__register_array_cache is None:
+        if self.__register_cache is None:
             raise RuntimeError('The cache array should be initialised')
-        return self.__register_array_cache[self.__cache_entry(addr=addr,
-                                                              width=width,
-                                                              accesswidth=accesswidth)]
-
-
+        return self.__register_cache[self.__cache_entry(addr=addr,
+                                                        width=width,
+                                                        accesswidth=accesswidth)]
 
     def __cache_write(self, addr: int, width: int, accesswidth: int, data: int) -> None:
         """
@@ -489,26 +582,37 @@ class RegArray(BaseRegArray, ABC):
         """
         if not isinstance(data, int):
             raise TypeError(f'Data should be an int byt got {type(data)}')
-        if self.__register_array_cache is None:
+        if self.__register_cache is None:
             raise RuntimeError('The cache array should be initialised')
-        self.__register_array_cache[self.__cache_entry(addr=addr,
-                                                       width=width,
-                                                       accesswidth=accesswidth)] = data
-
+        self.__register_cache[self.__cache_entry(addr=addr,
+                                                 width=width,
+                                                 accesswidth=accesswidth)] = data
 
     @property
     def __cache_callbacks(self) -> NormalCallbackSet:
         return NormalCallbackSet(read_callback=self.__cache_read,
                                  write_callback=self.__cache_write)
 
-
     @property
     def __number_cache_entries(self) -> int:
         return self.size // (self.width >> 3)
 
+    def __initialise_cache(self, skip_initial_read: bool) -> Union[Array, List[int]]:
+        if isinstance(self._callbacks, NormalCallbackSet):
+            if skip_initial_read:
+                return self.__empty_list_cache
+            return self.__block_read()
+
+        if isinstance(self._callbacks, NormalCallbackSetLegacy):
+            if skip_initial_read:
+                return self.__empty_array_cache
+            return self.__block_read_legacy()
+
+        raise TypeError('Unhandled callback type')
+
     @contextmanager
     def _cached_access(self, verify: bool = False, skip_write: bool = False,
-                                   skip_initial_read: bool = False) -> \
+                       skip_initial_read: bool = False) -> \
             Generator[Self, None, None]:
         """
         Context manager to allow multiple field reads/write to be done with a single set of
@@ -517,25 +621,30 @@ class RegArray(BaseRegArray, ABC):
         Args:
             verify (bool): very the write with a read afterwards
             skip_write (bool): skip the write back at the end
-
-        Returns:
-
         """
         self.__register_address_array = \
             [self.address + (i * (self.width >> 3)) for i in range(self.__number_cache_entries)]
-        if skip_initial_read:
-            self.__register_array_cache = self.__empty_array_cache
-        else:
-            self.__register_array_cache = self.__block_read()
+        self.__register_cache = self.__initialise_cache(skip_initial_read=skip_initial_read)
         self.__in_context_manager = True
-        yield self
-        self.__in_context_manager = False
+        # this try/finally is needed to make sure that in the event of an exception
+        # the state flags are not left incorrectly set
+        try:
+            yield self
+        finally:
+            self.__in_context_manager = False
         if not skip_write:
-            self.__block_write(self.__register_array_cache, verify)
+            if isinstance(self._callbacks, NormalCallbackSet):
+                if not isinstance(self.__register_cache, list):
+                    raise TypeError('Register cache should be a list in non-legacy mode')
+                self.__block_write(self.__register_cache, verify)
+            if isinstance(self._callbacks, NormalCallbackSetLegacy):
+                if not isinstance(self.__register_cache, Array):
+                    raise TypeError('Register cache should be a Array in legacy mode')
+                self.__block_write_legacy(self.__register_cache, verify)
 
         # clear the register states at the end of the context manager
         self.__register_address_array = None
-        self.__register_array_cache = None
+        self.__register_cache = None
 
     @property
     def _callbacks(self) -> NormalCallbackSet:
@@ -548,6 +657,7 @@ class RegArray(BaseRegArray, ABC):
         # This cast is OK because the type was checked in the __init__
         # pylint: disable-next=protected-access
         return cast(NormalCallbackSet, self.parent._callbacks)
+
 
 class RegReadOnly(Reg, ABC):
     """
@@ -572,7 +682,7 @@ class RegReadOnly(Reg, ABC):
                  accesswidth: int,
                  logger_handle: str,
                  inst_name: str,
-                 parent: Union[AddressMap, RegFile, ReadableMemory]):
+                 parent: Union[AddressMap, RegFile, ReadableMemory, ReadableMemoryLegacy ]):
 
         super().__init__(address=address,
                          logger_handle=logger_handle,
@@ -589,21 +699,19 @@ class RegReadOnly(Reg, ABC):
         """
         Context manager to allow multiple field accesses to be performed with a single
         read of the register
-
-        Returns:
-
         """
         self.__register_state = self.read()
         self.__in_context_manager = True
-        yield self
-        self.__in_context_manager = False
+        # this try/finally is needed to make sure that in the event of an exception
+        # the state flags are not left incorrectly set
+        try:
+            yield self
+        finally:
+            self.__in_context_manager = False
 
     def read(self) -> int:
-        """Read value from the register
-
-        Returns:
-            The value from register
-
+        """
+        Read value from the register
         """
         if self.__in_context_manager:
             return self.__register_state
@@ -671,7 +779,7 @@ class RegWriteOnly(Reg, ABC):
                  accesswidth: int,
                  logger_handle: str,
                  inst_name: str,
-                 parent: Union[AddressMap, RegFile, WritableMemory]):
+                 parent: Union[AddressMap, RegFile, WritableMemory, WritableMemoryLegacy]):
 
         super().__init__(address=address,
                          logger_handle=logger_handle,
@@ -695,25 +803,31 @@ class RegWriteOnly(Reg, ABC):
 
         self._logger.info('Writing data:%X to %X', data, self.address)
 
-        block_callback = self._callbacks.write_block_callback
-        single_callback = self._callbacks.write_callback
-
-        if single_callback is not None:
+        if self._callbacks.write_callback is not None:
             # python 3.7 doesn't have the callback defined as protocol so mypy doesn't recognise
             # the arguments in the call back functions
-            single_callback(addr=self.address,  # type: ignore[call-arg]
-                            width=self.width,  # type: ignore[call-arg]
-                            accesswidth=self.accesswidth,  # type: ignore[call-arg]
-                            data=data)  # type: ignore[call-arg]
+            self._callbacks.write_callback(addr=self.address,  # type: ignore[call-arg]
+                                           width=self.width,  # type: ignore[call-arg]
+                                           accesswidth=self.accesswidth,  # type: ignore[call-arg]
+                                           data=data)  # type: ignore[call-arg]
 
-        elif block_callback is not None:
+        elif self._callbacks.write_block_callback is not None:
             # python 3.7 doesn't have the callback defined as protocol so mypy doesn't recognise
             # the arguments in the call back functions
-            data_as_array = Array(get_array_typecode(self.width), [data])
-            block_callback(addr=self.address,  # type: ignore[call-arg]
-                           width=self.width,  # type: ignore[call-arg]
-                           accesswidth=self.accesswidth,  # type: ignore[call-arg]
-                           data=data_as_array)  # type: ignore[call-arg]
+            if isinstance(self._callbacks, NormalCallbackSetLegacy):
+                data_as_array = Array(get_array_typecode(self.width), [data])
+                self._callbacks.write_block_callback(addr=self.address,  # type: ignore[call-arg]
+                                                     width=self.width,  # type: ignore[call-arg]
+                                                     accesswidth=self.accesswidth,
+                                                     # type: ignore[call-arg]
+                                                     data=data_as_array)  # type: ignore[call-arg]
+
+            if isinstance(self._callbacks, NormalCallbackSet):
+                self._callbacks.write_block_callback(addr=self.address,  # type: ignore[call-arg]
+                                                     width=self.width,  # type: ignore[call-arg]
+                                                     accesswidth=self.accesswidth,
+                                                     # type: ignore[call-arg]
+                                                     data=[data])  # type: ignore[call-arg]
 
         else:
             raise RuntimeError('This function does not have a useable callback')
@@ -748,7 +862,8 @@ class RegReadWrite(RegReadOnly, RegWriteOnly, ABC):
     class for a read and write only register
 
     """
-    __slots__: List[str] = ['__in_context_manager', '__register_state']
+    __slots__: List[str] = ['__in_read_write_context_manager', '__in_read_context_manager',
+                            '__register_state']
 
     # pylint: disable=too-many-arguments, duplicate-code
     def __init__(self, *,
@@ -757,14 +872,15 @@ class RegReadWrite(RegReadOnly, RegWriteOnly, ABC):
                  accesswidth: int,
                  logger_handle: str,
                  inst_name: str,
-                 parent: Union[AddressMap, RegFile, MemoryReadWrite]):
+                 parent: Union[AddressMap, RegFile, MemoryReadWrite, MemoryReadWriteLegacy]):
 
         super().__init__(address=address,
                          logger_handle=logger_handle,
                          inst_name=inst_name,
                          parent=parent, width=width, accesswidth=accesswidth)
 
-        self.__in_context_manager: bool = False
+        self.__in_read_write_context_manager: bool = False
+        self.__in_read_context_manager: bool = False
         self.__register_state: Optional[int] = None
 
     # pylint: enable=too-many-arguments, duplicate-code
@@ -780,18 +896,46 @@ class RegReadWrite(RegReadOnly, RegWriteOnly, ABC):
             verify (bool): very the write with a read afterwards
             skip_write (bool): skip the write back at the end
 
-        Returns:
-
         """
+        if self.__in_read_context_manager:
+            raise RuntimeError('using the `single_read_modify_write` context manager within the '
+                               'single_read` is not permitted')
+
+        if skip_write is True:
+            warn('The `skip_write` argument will be removed in the future, use `single_read`'
+                 ' instead',
+                 DeprecationWarning, stacklevel=2)
+
         self.__register_state = self.read()
-        self.__in_context_manager = True
-        yield self
-        self.__in_context_manager = False
+        self.__in_read_write_context_manager = True
+        try:
+            yield self
+        finally:
+            # need to make sure the state flag is cleared even if an exception occurs within
+            # the context
+            self.__in_read_write_context_manager = False
+
         if not skip_write:
             self.write(self.__register_state, verify)
 
         # clear the register states at the end of the context manager
         self.__register_state = None
+
+    @contextmanager
+    def single_read(self) -> \
+            Generator[Self, None, None]:
+        """
+        Context manager to allow multiple field reads with a single register read
+        """
+        if self.__in_read_write_context_manager:
+            raise RuntimeError('using the `single_read` context manager within the '
+                               'single_read_modify_write` is not permitted')
+        self.__in_read_context_manager = True
+        try:
+            with super().single_read() as reg:
+                yield reg
+        finally:
+            self.__in_read_context_manager = False
 
     def write(self, data: int, verify: bool = False) -> None:  # pylint: disable=arguments-differ
         """
@@ -808,7 +952,10 @@ class RegReadWrite(RegReadOnly, RegWriteOnly, ABC):
             RegisterWriteVerifyError: the read back data after the write does not match the
                                       expected value
         """
-        if self.__in_context_manager:
+        if self.__in_read_context_manager:
+            raise RuntimeError('writes within the single read context manager are not permitted')
+
+        if self.__in_read_write_context_manager:
             if self.__register_state is None:
                 raise RuntimeError('The internal register state should never be None in the '
                                    'context manager')
@@ -822,16 +969,17 @@ class RegReadWrite(RegReadOnly, RegWriteOnly, ABC):
                                                    f'after writing {data:X}')
 
     def read(self) -> int:
-        """Read value from the register
-
-        Returns:
-            The value from register
         """
-        if self.__in_context_manager:
+        Read value from the register
+        """
+        if self.__in_read_write_context_manager:
             if self.__register_state is None:
                 raise RuntimeError('The internal register state should never be None in the '
                                    'context manager')
             return self.__register_state
+
+        # the single read context manager is handled in the base class so does need any
+        # handling here
 
         return super().read()
 
@@ -856,7 +1004,7 @@ class RegReadWrite(RegReadOnly, RegWriteOnly, ABC):
         read the register and return a dictionary of the field values
         """
         return_dict: Dict['str', Union[bool, Enum, int]] = {}
-        with self.single_read_modify_write(skip_write=True) as reg:
+        with self.single_read() as reg:
             for field in reg.readable_fields:
                 return_dict[field.inst_name] = field.read()
 
@@ -872,8 +1020,10 @@ class RegReadWrite(RegReadOnly, RegWriteOnly, ABC):
         # pylint: disable=duplicate-code
         return True
 
+
 ReadableRegister = Union[RegReadOnly, RegReadWrite]
 WritableRegister = Union[RegWriteOnly, RegReadWrite]
+
 
 class RegReadOnlyArray(RegArray, ABC):
     """
@@ -884,7 +1034,7 @@ class RegReadOnlyArray(RegArray, ABC):
     # pylint: disable=too-many-arguments,duplicate-code
     def __init__(self, *,
                  logger_handle: str, inst_name: str,
-                 parent: Union[RegFile, AddressMap, ReadableMemory],
+                 parent: Union[RegFile, AddressMap, ReadableMemory, ReadableMemoryLegacy],
                  address: int,
                  width: int,
                  accesswidth: int,
@@ -892,12 +1042,13 @@ class RegReadOnlyArray(RegArray, ABC):
                  dimensions: Tuple[int, ...],
                  elements: Optional[Dict[Tuple[int, ...], RegReadOnly]] = None):
 
-        if not isinstance(parent, (RegFile, AddressMap, MemoryReadOnly, MemoryReadWrite)):
+        if not isinstance(parent, (RegFile, AddressMap, MemoryReadOnly, MemoryReadWrite,
+                                   MemoryReadOnlyLegacy, MemoryReadWriteLegacy)):
             raise TypeError('parent should be either RegFile, AddressMap, '
                             'MemoryReadOnly, MemoryReadWrite '
                             f'got {type(parent)}')
 
-        if not isinstance(parent._callbacks, NormalCallbackSet):
+        if not isinstance(parent._callbacks, (NormalCallbackSet, NormalCallbackSetLegacy)):
             raise TypeError(f'callback set type is wrong, got {type(parent._callbacks)}')
 
         super().__init__(logger_handle=logger_handle, inst_name=inst_name,
@@ -911,12 +1062,6 @@ class RegReadOnlyArray(RegArray, ABC):
         """
         Context manager to allow multiple field reads/write to be done with a single set of
         field operations
-
-        Args:
-
-
-        Returns:
-
         """
         with self._cached_access(verify=False, skip_write=True,
                                  skip_initial_read=False) as reg_array:
@@ -932,6 +1077,7 @@ class RegReadOnlyArray(RegArray, ABC):
         # pylint: disable=duplicate-code
         return False
 
+
 class RegWriteOnlyArray(RegArray, ABC):
     """
     base class for a array of write only registers
@@ -941,7 +1087,7 @@ class RegWriteOnlyArray(RegArray, ABC):
     # pylint: disable=too-many-arguments,duplicate-code
     def __init__(self, *,
                  logger_handle: str, inst_name: str,
-                 parent: Union[RegFile, AddressMap, WritableMemory],
+                 parent: Union[RegFile, AddressMap, WritableMemory, WritableMemoryLegacy],
                  address: int,
                  width: int,
                  accesswidth: int,
@@ -949,12 +1095,13 @@ class RegWriteOnlyArray(RegArray, ABC):
                  dimensions: Tuple[int, ...],
                  elements: Optional[Dict[Tuple[int, ...], RegWriteOnly]] = None):
 
-        if not isinstance(parent, (RegFile, AddressMap, MemoryWriteOnly, MemoryReadWrite)):
+        if not isinstance(parent, (RegFile, AddressMap, MemoryWriteOnly, MemoryReadWrite,
+                                   MemoryWriteOnlyLegacy, MemoryReadWriteLegacy)):
             raise TypeError('parent should be either RegFile, AddressMap, MemoryWriteOnly, '
                             'MemoryReadWrite '
                             f'got {type(parent)}')
 
-        if not isinstance(parent._callbacks, NormalCallbackSet):
+        if not isinstance(parent._callbacks, (NormalCallbackSet, NormalCallbackSetLegacy)):
             raise TypeError(f'callback set type is wrong, got {type(parent._callbacks)}')
 
         super().__init__(logger_handle=logger_handle, inst_name=inst_name,
@@ -968,12 +1115,6 @@ class RegWriteOnlyArray(RegArray, ABC):
         """
         Context manager to allow multiple field reads/write to be done with a single set of
         field operations
-
-        Args:
-
-
-        Returns:
-
         """
         with self._cached_access(verify=False, skip_write=False,
                                   skip_initial_read=True) as reg_array:
@@ -999,7 +1140,7 @@ class RegReadWriteArray(RegArray, ABC):
     # pylint: disable=too-many-arguments,duplicate-code
     def __init__(self, *,
                  logger_handle: str, inst_name: str,
-                 parent: Union[RegFile, AddressMap, MemoryReadWrite],
+                 parent: Union[RegFile, AddressMap, MemoryReadWrite, MemoryReadWriteLegacy],
                  address: int,
                  width: int,
                  accesswidth: int,
@@ -1007,17 +1148,16 @@ class RegReadWriteArray(RegArray, ABC):
                  dimensions: Tuple[int, ...],
                  elements: Optional[Dict[Tuple[int, ...], RegReadWrite]] = None):
 
-        if not isinstance(parent, (RegFile, AddressMap, MemoryReadWrite)):
+        if not isinstance(parent, (RegFile, AddressMap, MemoryReadWrite, MemoryReadWriteLegacy)):
             raise TypeError('parent should be either RegFile, AddressMap, MemoryReadWrite '
                             f'got {type(parent)}')
 
-        if not isinstance(parent._callbacks, NormalCallbackSet):
+        if not isinstance(parent._callbacks, (NormalCallbackSet, NormalCallbackSetLegacy)):
             raise TypeError(f'callback set type is wrong, got {type(parent._callbacks)}')
 
         super().__init__(logger_handle=logger_handle, inst_name=inst_name,
                          parent=parent, address=address, width=width, accesswidth=accesswidth,
                          stride=stride, dimensions=dimensions, elements=elements)
-
 
     # pylint: enable=too-many-arguments,duplicate-code
 
@@ -1031,12 +1171,9 @@ class RegReadWriteArray(RegArray, ABC):
         Args:
             verify (bool): very the write with a read afterwards
             skip_write (bool): skip the write back at the end
-
-        Returns:
-
         """
         with self._cached_access(verify=verify, skip_write=skip_write,
-                                  skip_initial_read=False) as reg_array:
+                                 skip_initial_read=False) as reg_array:
             yield reg_array
 
     @property

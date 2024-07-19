@@ -23,8 +23,8 @@ from .callbacks import ReadCallback
 from .callbacks import ReadBlockCallback
 from .callbacks import WriteCallback
 from .callbacks import WriteBlockCallback
-from .callbacks import NormalCallbackSet
-from .callbacks import AsyncCallbackSet
+from .callbacks import NormalCallbackSet, NormalCallbackSetLegacy
+from .callbacks import AsyncCallbackSet, AsyncCallbackSetLegacy
 from .callbacks import CallbackSet
 
 from .base import AddressMap
@@ -84,26 +84,27 @@ from .fields import FieldEnumAsyncReadOnly
 from .fields import FieldEnumAsyncWriteOnly
 from .fields import FieldEnumAsyncReadWrite
 
-from .memory import MemoryReadOnly
-from .memory import MemoryWriteOnly
-from .memory import MemoryReadWrite
+from .memory import MemoryReadOnly, MemoryReadOnlyLegacy
+from .memory import MemoryWriteOnly, MemoryWriteOnlyLegacy
+from .memory import MemoryReadWrite, MemoryReadWriteLegacy
 from .memory import MemoryReadOnlyArray
 from .memory import MemoryWriteOnlyArray
 from .memory import MemoryReadWriteArray
-from .memory import MemoryAsyncReadOnly
-from .memory import MemoryAsyncWriteOnly
-from .memory import MemoryAsyncReadWrite
-from .memory import MemoryAsyncReadOnlyArray
-from .memory import MemoryAsyncWriteOnlyArray
-from .memory import MemoryAsyncReadWriteArray
-from .memory import ReadableMemory
-from .memory import WritableMemory
+from .async_memory import MemoryAsyncReadOnly, MemoryAsyncReadOnlyLegacy
+from .async_memory import MemoryAsyncWriteOnly, MemoryAsyncWriteOnlyLegacy
+from .async_memory import MemoryAsyncReadWrite, MemoryAsyncReadWriteLegacy
+from .async_memory import MemoryAsyncReadOnlyArray
+from .async_memory import MemoryAsyncWriteOnlyArray
+from .async_memory import MemoryAsyncReadWriteArray
+from .memory import ReadableMemory, ReadableMemoryLegacy
+from .memory import WritableMemory, WritableMemoryLegacy
 from .memory import Memory
-from .memory import ReadableAsyncMemory
-from .memory import WritableAsyncMemory
-from .memory import AsyncMemory
+from .async_memory import ReadableAsyncMemory, ReadableAsyncMemoryLegacy
+from .async_memory import WritableAsyncMemory, WritableAsyncMemoryLegacy
+from .async_memory import AsyncMemory
 from .memory import MemoryArray
-from .memory import AsyncMemoryArray
+from .async_memory import AsyncMemoryArray
 
 from .utility_functions import get_array_typecode
+from .utility_functions import UnsupportedWidthError
 from .base import Node

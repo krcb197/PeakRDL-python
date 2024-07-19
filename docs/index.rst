@@ -68,12 +68,9 @@ set the state to `1`. The device has 8 GPIO pins controlled from two registers.
 |          |         |            |            |            |            |            |            |            |            | GPIO configured as out |
 +----------+---------+------------+------------+------------+------------+------------+------------+------------+------------+------------------------+
 
-This example uses a simple simulation class to mimic the behaviour of the device offering ``read`` and ``write``
+This example uses the peakrdl python simulator to mimic the behaviour of the device offering ``read`` and ``write``
 methods to offer register read and write access to the device. In the real work this would likely go
 via a device driver or JTAG emulator, if the software is running off chip (i.e. a PC).
-
-.. literalinclude :: ../example/why_ral/hardware_sim.py
-   :language: python
 
 To configure pin 0 and set its state you would need to do the following steps:
 
@@ -151,6 +148,7 @@ attempts to set the output state.
    :caption: developer notes
 
    design_decisions
+   design_tools
 
 .. toctree::
    :hidden:

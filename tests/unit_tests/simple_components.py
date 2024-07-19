@@ -311,7 +311,7 @@ class CallBackTestWrapper(unittest.TestCase, ABC):
         assert isinstance(data, int)
         self.logger.info(f'write data:{data:X} to address:0x{addr:X}')
 
-    def read_block_addr_space(self, addr: int, width: int, accesswidth: int, length: int) -> Array:
+    def read_block_addr_space(self, addr: int, width: int, accesswidth: int, length: int) -> List:
         """
         Callback to simulate the operation of the package
 
@@ -329,20 +329,10 @@ class CallBackTestWrapper(unittest.TestCase, ABC):
         assert isinstance(accesswidth, int)
         assert isinstance(length, int)
 
-        if width == 32:
-            typecode = 'L'
-        elif width == 64:
-            typecode = 'Q'
-        elif width == 16:
-            typecode = 'I'
-        elif width == 8:
-            typecode = 'B'
-        else:
-            raise ValueError('unhandled memory width')
+        return [0 for x in range(length)]
 
-        return Array(typecode, [0 for x in range(length)])
-
-    def write_block_addr_space(self, addr: int, width: int, accesswidth: int, data: Array) -> None:
+    def write_block_addr_space(self, addr: int,
+                               width: int, accesswidth: int, data: List[int]) -> None:
         """
         Callback to simulate the operation of the package
 
@@ -358,7 +348,7 @@ class CallBackTestWrapper(unittest.TestCase, ABC):
         assert isinstance(addr, int)
         assert isinstance(width, int)
         assert isinstance(accesswidth, int)
-        assert isinstance(data, Array)
+        assert isinstance(data, List)
 
     def setUp(self) -> None:
         # the callbacks need to a faked magic mock so that the methods can be patched in tests
