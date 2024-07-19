@@ -447,8 +447,12 @@ class RegArray(BaseRegArray, ABC):
                                     length=self.__number_cache_entries)  # type: ignore[call-arg]
 
             if not isinstance(data_read, List):
-                raise TypeError('The read block callback is expected to return an array')
-
+                if isinstance(data_read, Array):
+                    raise TypeError('The read block callback is expected to return an list, this '
+                                    'is likely to happen if you are using legacy callbacks without '
+                                    'NormalCallbackSetLegacy')
+                raise TypeError('The read block callback is expected to return an list')
+            NormalCallbackSetLegacy
             return data_read
 
         if read_callback is not None:

@@ -104,24 +104,35 @@ The callbacks are passed into the register access layer using either:
 * ``AsyncCallbackSet`` for async python function callbacks, these are called from the library using
   ``await``
 
-Legacy Callback
----------------
+Legacy Block Callback and Block Access
+--------------------------------------
 
 .. versionchanged:: 0.9.0
 
-   Previous versions of peakrdl python used the python ``array.array`` for efficently moving blocks
+   Previous versions of peakrdl python used the python ``array.array`` for efficiently moving blocks
    of data. This was changed in version 0.9.0 in order to accommodate memories which were larger
-   than 64 bit wide which could not be supported as the array type only support enties of up to
+   than 64 bit wide which could not be supported as the array type only support entries of up to
    64 bit.
 
-   In order to minimise the issues with older code the following types remain but require the
-   package to be built with the ``legacy_block_access`` option turned on
+   .. warning::
+      The developers apologise for making a breaking change, however, not being able to fully the
+      systemRDL specification was determined to be a major limitation that needed to be addressed.
 
-   The callbacks are passed into the register access layer using either:
+      It could have left this as a future compatibility mode before making a breaking change but
+      that would just delay the pain it was felt to be better to get as many users onto the new
+      API as soon as possible whilst peakrdl-python is in beta.
 
-   * ``NormalCallbackSetLegacy`` for standard python function callbacks
-   * ``AsyncCallbackSetLegacy`` for async python function callbacks, these are called from the library using
-     ``await``
+   If you really want to just keep on with the array based interface and make only minimal changes
+   to existing code, there are two simple steps:
+   1. The northbound interfaces that are provided by the generated package expect lists of integers
+      rather than array. The old interfaces can be retained by using the ``legacy_block_access``
+      build option.
+   2. The southbound interfaces into the callbacks again need to use lists for the
+      ``read_block_callback`` and ``write_block_callback`` methods. If you want to continue to use
+      the old scheme use the following callback classes which are part of the callbacks:
+      * ``NormalCallbackSetLegacy`` for standard python function callbacks
+      * ``AsyncCallbackSetLegacy`` for async python function callbacks, these are called from the
+        library using ``await``
 
 Using the Register Access Layer
 ===============================

@@ -314,6 +314,11 @@ class _MemoryReadOnly(Memory, ABC):
 
             if isinstance(self._callbacks, NormalCallbackSet):
                 if not isinstance(data_read, List):
+                    if isinstance(data_read, Array):
+                        raise TypeError(
+                            'The read block callback is expected to return an list, this '
+                            'is likely to happen if you are using legacy callbacks without '
+                            'NormalCallbackSetLegacy')
                     raise TypeError('The read block callback is expected to return an List')
                 return data_read
 
@@ -385,6 +390,11 @@ class _MemoryReadOnly(Memory, ABC):
 
             if isinstance(self._callbacks, NormalCallbackSet):
                 if not isinstance(data_read, List):
+                    if isinstance(data_read, Array):
+                        raise TypeError(
+                            'The read block callback is expected to return an list, this '
+                            'is likely to happen if you are using legacy callbacks without '
+                            'NormalCallbackSetLegacy')
                     raise TypeError('The read block callback is expected to return an List')
                 return Array(self.array_typecode, data_read)
 
