@@ -290,7 +290,8 @@ class PythonExporter:
                            package: _Package,
                            skip_lib_copy: bool,
                            asyncoutput: bool,
-                           legacy_block_access: bool) -> None:
+                           legacy_block_access: bool,
+                           show_hidden: bool) -> None:
 
         context = {
             'print': print,
@@ -331,6 +332,7 @@ class PythonExporter:
             'skip_lib_copy': skip_lib_copy,
             'version' : __version__,
             'legacy_block_access' : legacy_block_access,
+            'show_hidden': show_hidden
         }
         if legacy_block_access is True:
             context['get_array_typecode'] = get_array_typecode
@@ -526,7 +528,8 @@ class PythonExporter:
                skip_test_case_generation: bool = False,
                delete_existing_package_content: bool = True,
                skip_library_copy: bool = False,
-               legacy_block_access: bool = True) -> List[str]:
+               legacy_block_access: bool = True,
+               show_hidden: bool =False) -> List[str]:
         """
         Generated Python Code and Testbench
 
@@ -549,6 +552,11 @@ class PythonExporter:
                                         systemRDL. The legacy mode with Arrays is still in
                                         the tool and will be turned on by default for a few
                                         releases.
+            show_hidden (bool) : By default any item (Address Map, Regfile, Register, Memory or
+                                 Field) with the systemRDL User Defined Property (UDP) python_hide
+                                 set to true will not be included in the generated python code.
+                                 This behaviour can be overridden by setting this property to
+                                 true.
 
         Returns:
             List[str] : modules that have been exported:
@@ -572,7 +580,7 @@ class PythonExporter:
 
         self.__export_reg_model(top_block=top_block, package=package, asyncoutput=asyncoutput,
                                 skip_lib_copy=skip_library_copy,
-                                legacy_block_access=legacy_block_access)
+                                legacy_block_access=legacy_block_access, show_hidden=show_hidden)
 
         self.__export_simulator(top_block=top_block, package=package, asyncoutput=asyncoutput,
                                 skip_lib_copy=skip_library_copy,
