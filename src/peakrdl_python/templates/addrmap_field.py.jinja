@@ -17,26 +17,27 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #}
 
 {%- macro field_class(node) %}
-    {% if node.is_sw_readable and node.is_sw_writable %}
+    {% if not node.get_property('python_hide', default=False) %}
+        {% if node.is_sw_readable and node.is_sw_writable %}
 class {{get_fully_qualified_type_name(node)}}_cls(Field{%- if 'encode' in node.list_properties() -%}Enum{% endif %}{% if asyncoutput %}Async{% endif %}ReadWrite):
-    {% elif node.is_sw_readable and not node.is_sw_writable %}
+        {% elif node.is_sw_readable and not node.is_sw_writable %}
 class {{get_fully_qualified_type_name(node)}}_cls(Field{%- if 'encode' in node.list_properties() -%}Enum{% endif %}{% if asyncoutput %}Async{% endif %}ReadOnly):
-    {% elif not node.is_sw_readable and node.is_sw_writable %}
+        {% elif not node.is_sw_readable and node.is_sw_writable %}
 class {{get_fully_qualified_type_name(node)}}_cls(Field{%- if 'encode' in node.list_properties() -%}Enum{% endif %}{% if asyncoutput %}Async{% endif %}WriteOnly):
-    {% endif %}
+        {% endif %}
     """
     Class to represent a register field in the register model
 
     {{get_table_block(node) | indent}}
     """
 
-    {%- if 'encode' in node.list_properties() %}
+        {%- if 'encode' in node.list_properties() %}
     __enum_cls = {{get_fully_qualified_enum_type(node.get_property('encode'), top_node.parent, node)}}_enumcls
-    {% endif %}
+        {% endif %}
 
     __slots__ : List[str] = []
 
-    {%- if 'encode' in node.list_properties() %}
+        {%- if 'encode' in node.list_properties() %}
     @property
     def enum_cls(self) -> EnumMeta:
         """
@@ -44,7 +45,7 @@ class {{get_fully_qualified_type_name(node)}}_cls(Field{%- if 'encode' in node.l
         """
         return self.__enum_cls
 
-        {% if node.is_sw_readable %}
+            {% if node.is_sw_readable %}
     def decode_read_value(self, value: int) -> {{get_fully_qualified_enum_type(node.get_property('encode'), top_node.parent, node)}}_enumcls:
         """
         extracts the field value from a register value, by applying the bit
@@ -80,9 +81,9 @@ class {{get_fully_qualified_type_name(node)}}_cls(Field{%- if 'encode' in node.l
         """
         reg_value = {% if asyncoutput %}await {% endif %}self.parent_register.read()
         return self.decode_read_value(reg_value)
-        {% endif %}
+            {% endif %}
 
-        {% if node.is_sw_writable %}
+            {% if node.is_sw_writable %}
     def encode_write_value(self, value: {{get_fully_qualified_enum_type(node.get_property('encode'), top_node.parent, node)}}_enumcls) -> int: # type: ignore[override]
 
         if not isinstance(value, self.enum_cls):
@@ -96,7 +97,7 @@ class {{get_fully_qualified_type_name(node)}}_cls(Field{%- if 'encode' in node.l
             raise TypeError('value must be an {{get_fully_qualified_enum_type(node.get_property('encode'), top_node.parent, node)}}_enumcls but got %s' % type(value))
 
         {% if asyncoutput %}await {% endif %}super().write(value.value)
-        {% endif %}
+            {% endif %}
 
     @property
     def default(self) -> Optional[{{get_fully_qualified_enum_type(node.get_property('encode'), top_node.parent, node)}}_enumcls]:
@@ -119,6 +120,6 @@ class {{get_fully_qualified_type_name(node)}}_cls(Field{%- if 'encode' in node.l
                 return None
 
         return None
-    {% endif %}
-
+        {% endif %}
+    {% endif %} {# not hidden #}
 {%- endmacro -%}
