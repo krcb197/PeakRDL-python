@@ -452,7 +452,6 @@ class RegArray(BaseRegArray, ABC):
                                     'is likely to happen if you are using legacy callbacks without '
                                     'NormalCallbackSetLegacy')
                 raise TypeError('The read block callback is expected to return an list')
-            NormalCallbackSetLegacy
             return data_read
 
         if read_callback is not None:
