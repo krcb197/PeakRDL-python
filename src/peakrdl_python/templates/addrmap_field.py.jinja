@@ -17,7 +17,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #}
 
 {%- macro field_class(node) %}
-    {% if not node.get_property('python_hide', default=False) %}
+    {% if not node.get_property('python_hide', default=False) or show_hidden %}
         {% if node.is_sw_readable and node.is_sw_writable %}
 class {{get_fully_qualified_type_name(node)}}_cls(Field{%- if 'encode' in node.list_properties() -%}Enum{% endif %}{% if asyncoutput %}Async{% endif %}ReadWrite):
         {% elif node.is_sw_readable and not node.is_sw_writable %}
