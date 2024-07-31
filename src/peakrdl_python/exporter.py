@@ -285,7 +285,7 @@ class PythonExporter:
             stream = template.stream(template_context)
             stream.dump(fp)
 
-    def __export_reg_model(self,
+    def __export_reg_model(self,  # pylint: disable=too-many-arguments
                            top_block: AddrmapNode,
                            package: _Package,
                            skip_lib_copy: bool,
@@ -431,7 +431,7 @@ class PythonExporter:
                                      target_name='_' + top_block.inst_name + '_sim_test_base.py',
                                      template_context=context)
 
-    def __export_tests(self,
+    def __export_tests(self,  # pylint: disable=too-many-arguments
                        top_block: AddrmapNode,
                        package: _Package,
                        skip_lib_copy: bool,

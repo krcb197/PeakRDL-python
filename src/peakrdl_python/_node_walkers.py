@@ -44,6 +44,7 @@ class AddressMaps(RDLListener):
         return self.__address_maps.__iter__()
 
 
+# pylint: disable=too-many-instance-attributes
 class OwnedbyAddressMap(RDLListener):
     """
     class intended to be used as part of the walker/listener protocol to find all the items owned
@@ -121,7 +122,7 @@ class OwnedbyAddressMap(RDLListener):
     @property
     def hidden_nodes(self) -> List[Union[RegNode, MemNode, FieldNode, AddrmapNode, RegfileNode]]:
         """
-        All the nodes owned by the address map, including:
+        All the 1st tier nodes owned by the address map which are hidden, including:
         - address maps
         - register files
         - registers
@@ -136,6 +137,9 @@ class OwnedbyAddressMap(RDLListener):
 
     @property
     def has_hidden_nodes(self) -> bool:
+        """
+        If there are 1st tier hidden nodes in the address map
+        """
         return len(self.hidden_nodes) > 0
 
     @property
@@ -151,3 +155,4 @@ class OwnedbyAddressMap(RDLListener):
 
         """
         return self.addr_maps + self.reg_files + self.memories + self.registers
+# pylint: enable=too-many-instance-attributes
