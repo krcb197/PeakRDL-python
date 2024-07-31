@@ -1275,7 +1275,7 @@ class {{fq_block_name}}_single_access({{top_node.type_name}}_TestCase): # type: 
                 self.dut.{{'.'.join(get_python_path_segments(node.parent))}}.get_child_by_system_rdl_name('{{node.inst_name}}')
             {% endif %}
             with self.assertRaises(AttributeError):
-                _ = self.dut.{{'.'.join(get_python_path_segments(node))}}
+                _ = self.dut.{{'.'.join(get_python_path_segments(node))}} # type: ignore[attr-defined]
         {% endfor %}
     {% endif %}
 
