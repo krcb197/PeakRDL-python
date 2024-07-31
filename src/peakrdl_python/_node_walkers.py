@@ -28,11 +28,15 @@ class AddressMaps(RDLListener):
     class intended to be used as part of the walker/listener protocol to find all the descendant
     address maps
     """
-    def __init__(self) -> None:
+    def __init__(self, show_hidden: bool) -> None:
         super().__init__()
         self.__address_maps: List[AddrmapNode] = []
+        self.__show_hidden = show_hidden
 
     def enter_Addrmap(self, node: AddrmapNode) -> Optional[WalkerAction]:
+        if node.get_property('python_hide', default=False) and not self.__show_hidden:
+            return WalkerAction.SkipDescendants
+
         self.__address_maps.append(node)
         return WalkerAction.Continue
 
@@ -45,7 +49,7 @@ class OwnedbyAddressMap(RDLListener):
     class intended to be used as part of the walker/listener protocol to find all the items owned
     by an address map but not the descendents of any address map
     """
-    def __init__(self) -> None:
+    def __init__(self, show_hidden: bool) -> None:
         super().__init__()
 
         self.registers: List[RegNode] = []
@@ -53,24 +57,49 @@ class OwnedbyAddressMap(RDLListener):
         self.memories: List[RegNode] = []
         self.addr_maps: List[AddrmapNode] = []
         self.reg_files: List[RegfileNode] = []
+        self._hidden_registers: List[RegNode] = []
+        self._hidden_fields: List[RegNode] = []
+        self._hidden_memories: List[RegNode] = []
+        self._hidden_addr_maps: List[AddrmapNode] = []
+        self._hidden_reg_files: List[RegfileNode] = []
+        self.__show_hidden = show_hidden
 
     def enter_Reg(self, node: RegNode) -> Optional[WalkerAction]:
+        if node.get_property('python_hide', default=False) and not self.__show_hidden:
+            self._hidden_registers.append(node)
+            return WalkerAction.SkipDescendants
+
         self.registers.append(node)
         return WalkerAction.Continue
 
     def enter_Mem(self, node: MemNode) -> Optional[WalkerAction]:
+        if node.get_property('python_hide', default=False) and not self.__show_hidden:
+            self._hidden_memories.append(node)
+            return WalkerAction.SkipDescendants
+
         self.memories.append(node)
         return WalkerAction.Continue
 
     def enter_Field(self, node: FieldNode) -> Optional[WalkerAction]:
+        if node.get_property('python_hide', default=False) and not self.__show_hidden:
+            self._hidden_fields.append(node)
+            return WalkerAction.SkipDescendants
+
         self.fields.append(node)
         return WalkerAction.Continue
 
     def enter_Addrmap(self, node: AddrmapNode) -> Optional[WalkerAction]:
-        self.addr_maps.append(node)
+        if not node.get_property('python_hide', default=False) or self.__show_hidden:
+            self.addr_maps.append(node)
+        else:
+            self._hidden_addr_maps.append(node)
         return WalkerAction.SkipDescendants
 
     def enter_Regfile(self, node: RegfileNode) -> Optional[WalkerAction]:
+        if node.get_property('python_hide', default=False) and not self.__show_hidden:
+            self._hidden_reg_files.append(node)
+            return WalkerAction.SkipDescendants
+
         self.reg_files.append(node)
         return WalkerAction.Continue
 
@@ -88,6 +117,26 @@ class OwnedbyAddressMap(RDLListener):
 
         """
         return self.addr_maps + self.reg_files + self.memories + self.registers + self.fields
+
+    @property
+    def hidden_nodes(self) -> List[Union[RegNode, MemNode, FieldNode, AddrmapNode, RegfileNode]]:
+        """
+        All the nodes owned by the address map, including:
+        - address maps
+        - register files
+        - registers
+        - memories
+        - fields
+
+        Returns: list of nodes
+
+        """
+        return self._hidden_addr_maps + self._hidden_reg_files + self._hidden_memories + \
+               self._hidden_registers + self._hidden_fields
+
+    @property
+    def has_hidden_nodes(self) -> bool:
+        return len(self.hidden_nodes) > 0
 
     @property
     def addressable_nodes(self) -> List[Union[RegNode, MemNode, AddrmapNode, RegfileNode]]:

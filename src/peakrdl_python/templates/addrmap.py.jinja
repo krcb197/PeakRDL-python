@@ -88,6 +88,7 @@ from {% if skip_lib_copy %}src.peakrdl_python.{% else %}..{% endif %}lib import 
 {% from 'reg_definitions.py.jinja' import child_register_getter with context %}
 
 {%- macro regfile_or_addr_instance(node) %}
+    {%- if not node.get_property('python_hide', default=False) or show_hidden %}
     {%- if isinstance(node, systemrdlRegNode) %}
         {{ register_class_attributes(node) }}
     {%- elif isinstance(node, systemrdlMemNode) %}
@@ -130,6 +131,7 @@ from {% if skip_lib_copy %}src.peakrdl_python.{% else %}..{% endif %}lib import 
                                                                             parent=self)
         {%- endif %}
     {%- endif %}
+    {%- endif %}
 {%- endmacro %}
 
 {%- macro regfile_class(node) %}
@@ -166,15 +168,16 @@ class {{get_fully_qualified_type_name(node)}}_cls({% if asyncoutput %}Async{% en
 
     # properties for Register and RegisterFiles
     {%- for child_node in node.children(unroll=False) %}
-        {%- if isinstance(child_node, systemrdlRegNode) or isinstance(child_node, systemrdlRegfileNode) %}
+        {%- if not child_node.get_property('python_hide', default=False) or show_hidden %}
+            {%- if isinstance(child_node, systemrdlRegNode) or isinstance(child_node, systemrdlRegfileNode) %}
     @property
-    {%- if isinstance(child_node, systemrdlRegNode) -%}
-    {%- set property_name = safe_node_name(child_node) -%}
-    {%- elif isinstance(child_node, systemrdlRegfileNode) -%}
-    {%- set property_name = safe_node_name(child_node) -%}
-    {% else %}
-    {{ raise_template_error('unexpected type') }}
-    {%- endif %}
+                {%- if isinstance(child_node, systemrdlRegNode) -%}
+                {%- set property_name = safe_node_name(child_node) -%}
+                {%- elif isinstance(child_node, systemrdlRegfileNode) -%}
+                {%- set property_name = safe_node_name(child_node) -%}
+                {% else %}
+                {{ raise_template_error('unexpected type') }}
+                 {%- endif %}
     def {{property_name}}(self) -> {% if child_node.is_array -%}{{get_fully_qualified_type_name(child_node)}}_array_cls{% else %}{{get_fully_qualified_type_name(child_node)}}_cls{%- endif -%}:
         """
         Property to access {{child_node.inst_name}} {% if child_node.is_array -%}array{% endif %}
@@ -182,6 +185,7 @@ class {{get_fully_qualified_type_name(node)}}_cls({% if asyncoutput %}Async{% en
         {{get_table_block(child_node) | indent(8)}}
         """
         return self.__{{child_node.inst_name}}
+            {%- endif %}
         {%- endif %}
     {% endfor %}
 
@@ -196,15 +200,17 @@ class {{get_fully_qualified_type_name(node)}}_cls({% if asyncoutput %}Async{% en
         """
         return {
             {%- for child_node in node.children(unroll=False) -%}
-            {%- if isinstance(child_node, systemrdlRegNode) -%}
+                {%- if not child_node.get_property('python_hide', default=False) or show_hidden %}
+                    {%- if isinstance(child_node, systemrdlRegNode) -%}
             '{{child_node.inst_name}}':'{{safe_node_name(child_node)}}',
-            {%- elif isinstance(child_node, systemrdlRegfileNode) -%}
+                    {%- elif isinstance(child_node, systemrdlRegfileNode) -%}
             '{{child_node.inst_name}}':'{{safe_node_name(child_node)}}',
-            {%- elif isinstance(child_node, systemrdlSignalNode) %}
+                    {%- elif isinstance(child_node, systemrdlSignalNode) %}
             # doing nothing with signal node: {{child_node.inst_name}}
-            {% else %}
+                    {% else %}
             {{ raise_template_error('unexpected type') }}
-            {%- endif %}
+                    {%- endif %}
+                {%- endif %}
             {%- endfor %}
             }
 
@@ -276,6 +282,7 @@ class {{get_fully_qualified_type_name(node)}}_cls({% if asyncoutput %}Async{% en
 
         {%- for child_node in node.children(unroll=False) -%}
             {%- if isinstance(child_node, systemrdlRegNode) or isinstance(child_node, systemrdlRegfileNode) or isinstance(child_node, systemrdlAddrmapNode) or isinstance(child_node, systemrdlMemNode) %}
+                {%- if not child_node.get_property('python_hide', default=False) or show_hidden %}
     @property
     {%- if isinstance(child_node, systemrdlRegNode) -%}
     {%- set property_name = safe_node_name(child_node) -%}
@@ -295,6 +302,7 @@ class {{get_fully_qualified_type_name(node)}}_cls({% if asyncoutput %}Async{% en
         {{get_table_block(child_node) | indent(8)}}
         """
         return self.__{{child_node.inst_name}}
+                {%- endif %}
             {%- endif %}
         {% endfor %}
 
@@ -309,19 +317,21 @@ class {{get_fully_qualified_type_name(node)}}_cls({% if asyncoutput %}Async{% en
         """
         return {
             {%- for child_node in node.children(unroll=False) -%}
-            {%- if isinstance(child_node, systemrdlRegNode) -%}
+                {%- if not child_node.get_property('python_hide', default=False) or show_hidden %}
+                    {%- if isinstance(child_node, systemrdlRegNode) -%}
             '{{child_node.inst_name}}':'{{safe_node_name(child_node)}}',
-            {%- elif isinstance(child_node, systemrdlRegfileNode) -%}
+                    {%- elif isinstance(child_node, systemrdlRegfileNode) -%}
             '{{child_node.inst_name}}':'{{safe_node_name(child_node)}}',
-            {%- elif isinstance(child_node, systemrdlAddrmapNode) -%}
+                    {%- elif isinstance(child_node, systemrdlAddrmapNode) -%}
             '{{child_node.inst_name}}':'{{safe_node_name(child_node)}}',
-            {%- elif isinstance(child_node, systemrdlMemNode) %}
+                    {%- elif isinstance(child_node, systemrdlMemNode) %}
             '{{child_node.inst_name}}':'{{safe_node_name(child_node)}}',
-            {%- elif isinstance(child_node, systemrdlSignalNode) %}
+                    {%- elif isinstance(child_node, systemrdlSignalNode) %}
             # doing nothing with signal node: {{child_node.inst_name}}
-            {% else %}
+                    {% else %}
             {{ raise_template_error('unexpected type') }}
-            {%- endif %}
+                    {%- endif %}
+                {%- endif %}
             {%- endfor %}
             }
 
@@ -365,29 +375,31 @@ class {{get_fully_qualified_type_name(node)}}_array_cls({% if asyncoutput %}Asyn
         """
         {% for child_node in node.children(unroll=False) -%}
             {%- if isinstance(child_node, child_rdltype) %}
+                {%- if not child_node.get_property('python_hide', default=False) or show_hidden %}
 
-                {%- if isinstance(child_node, systemrdlRegNode) -%}
-                {%- set property_name = safe_node_name(child_node) -%}
-                {%- elif isinstance(child_node, systemrdlRegfileNode) -%}
-                {%- set property_name = safe_node_name(child_node) -%}
-                {%- elif isinstance(child_node, systemrdlAddrmapNode) -%}
-                {%- set property_name = safe_node_name(child_node) -%}
-                {%- elif isinstance(child_node, systemrdlMemNode) %}
-                {%- set property_name = safe_node_name(child_node) -%}
-                {% else %}
-                {{ raise_template_error('unexpected type') }}
-                {%- endif %}
+                    {%- if isinstance(child_node, systemrdlRegNode) -%}
+                    {%- set property_name = safe_node_name(child_node) -%}
+                    {%- elif isinstance(child_node, systemrdlRegfileNode) -%}
+                    {%- set property_name = safe_node_name(child_node) -%}
+                    {%- elif isinstance(child_node, systemrdlAddrmapNode) -%}
+                    {%- set property_name = safe_node_name(child_node) -%}
+                    {%- elif isinstance(child_node, systemrdlMemNode) %}
+                    {%- set property_name = safe_node_name(child_node) -%}
+                    {% else %}
+                    {{ raise_template_error('unexpected type') }}
+                    {%- endif %}
 
 
-                {% if child_node.is_array %}
+                    {% if child_node.is_array %}
         if unroll:
             for child in self.{{property_name}}:
                 yield child
         else:
             yield self.{{property_name}}
-                 {% else %}
+                    {% else %}
         yield self.{{property_name}}
-                {%- endif %}
+                    {%- endif %}
+                {%- endif -%}
             {%- endif -%}
         {% endfor %}
 
@@ -413,16 +425,18 @@ class {{get_fully_qualified_enum_type(enum_needed, top_node.parent, owning_field
 
 # regfile, register and field definitions
 {%- for node in get_dependent_component(top_node.parent) -%}
-    {% if isinstance(node, systemrdlRegNode) %}
+    {% if not node.get_property('python_hide', default=False) or show_hidden %}
+        {% if isinstance(node, systemrdlRegNode) %}
         {{ register_class(node)  }}
-    {% elif isinstance(node, systemrdlRegfileNode) %}
+        {% elif isinstance(node, systemrdlRegfileNode) %}
         {{ regfile_class(node) }}
-    {% elif isinstance(node, systemrdlAddrmapNode) %}
+        {% elif isinstance(node, systemrdlAddrmapNode) %}
         {{ addrmap_class(node) }}
-    {% elif isinstance(node, systemrdlFieldNode) %}
+        {% elif isinstance(node, systemrdlFieldNode) %}
         {{ field_class(node)  }}
-    {% elif isinstance(node, systemrdlMemNode) %}
+        {% elif isinstance(node, systemrdlMemNode) %}
         {{ memory_class(node)  }}
+        {% endif %}
     {% endif %}
 {% endfor %}
 

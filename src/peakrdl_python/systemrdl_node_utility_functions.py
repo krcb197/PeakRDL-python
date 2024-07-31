@@ -222,7 +222,7 @@ def get_reg_max_value_hex_string(node: RegNode) -> str:
     max_value = ((2 ** (node.size * 8)) - 1)
     return f'0x{max_value:X}'
 
-def get_reg_writable_fields(node: RegNode) -> Iterable[FieldNode]:
+def get_reg_writable_fields(node: RegNode, show_hidden: bool) -> Iterable[FieldNode]:
     """
     Iterable that yields all the writable fields from the reg node
 
@@ -236,12 +236,15 @@ def get_reg_writable_fields(node: RegNode) -> Iterable[FieldNode]:
     if not isinstance(node, RegNode):
         raise TypeError(f'node is not a {type(RegNode)} got {type(node)}')
 
-    for field in node.fields():
-        if field.is_sw_writable is True:
-            yield field
+    writable_fields = filter(lambda x: x.is_sw_writable, node.fields())
+
+    if show_hidden:
+        return writable_fields
+
+    return filter(lambda x: not x.get_property('python_hide', default=False), writable_fields)
 
 
-def get_reg_readable_fields(node: RegNode) -> Iterable[FieldNode]:
+def get_reg_readable_fields(node: RegNode, show_hidden: bool) -> Iterable[FieldNode]:
     """
     Iterable that yields all the readable fields from the reg node
 
@@ -255,9 +258,13 @@ def get_reg_readable_fields(node: RegNode) -> Iterable[FieldNode]:
     if not isinstance(node, RegNode):
         raise TypeError(f'node is not a {type(RegNode)} got {type(node)}')
 
-    for field in node.fields():
-        if field.is_sw_readable is True:
-            yield field
+    readable_fields = filter(lambda x: x.is_sw_readable, node.fields())
+
+    if show_hidden:
+        return readable_fields
+
+    return filter(lambda x: not x.get_property('python_hide', default=False), readable_fields)
+
 
 def uses_memory(node: AddressableNode) -> bool:
     """

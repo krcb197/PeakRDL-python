@@ -436,7 +436,8 @@ class PythonExporter:
                        package: _Package,
                        skip_lib_copy: bool,
                        asyncoutput: bool,
-                       legacy_block_access: bool) -> None:
+                       legacy_block_access: bool,
+                       show_hidden: bool) -> None:
         """
 
         Args:
@@ -450,13 +451,13 @@ class PythonExporter:
         """
         #pylint: disable=too-many-locals
 
-        blocks = AddressMaps()
+        blocks = AddressMaps(show_hidden=show_hidden)
         # running the walker populated the blocks with all the address maps in within the
         # top block, including the top_block itself
         RDLWalker(unroll=True).walk(top_block, blocks, skip_top=False)
 
         for block in blocks:
-            owned_elements = OwnedbyAddressMap()
+            owned_elements = OwnedbyAddressMap(show_hidden=show_hidden)
             # running the walker populated the blocks with all the address maps in within the
             # top block, including the top_block itself
             RDLWalker(unroll=True).walk(block, owned_elements, skip_top=True)
@@ -472,7 +473,8 @@ class PythonExporter:
                 rolled_owned_reg += list(memory.registers(unroll=False))
 
             def is_reg_array(item: RegNode) -> bool:
-                return item.is_array
+                visible = not item.get_property('python_hide', default=False) or show_hidden
+                return item.is_array and visible
 
             rolled_owned_reg_array = list(filter(is_reg_array, rolled_owned_reg))
 
@@ -510,6 +512,7 @@ class PythonExporter:
                 'version': __version__,
                 'get_array_typecode' : get_array_typecode,
                 'legacy_block_access': legacy_block_access,
+                'show_hidden' : show_hidden
             }
 
 
@@ -599,7 +602,8 @@ class PythonExporter:
             # export the tests themselves, these are broken down to one file per addressmap
             self.__export_tests(top_block=top_block, package=package, asyncoutput=asyncoutput,
                                 skip_lib_copy=skip_library_copy,
-                                legacy_block_access=legacy_block_access)
+                                legacy_block_access=legacy_block_access,
+                                show_hidden=show_hidden)
 
         return top_block.inst_name
 
@@ -644,7 +648,6 @@ class PythonExporter:
                 self.node_type_name[child_inst] = cand_type_name + '_0x' + hex(hash(child_inst))
             else:
                 self.node_type_name[child_inst] = cand_type_name
-
 
     def _raise_template_error(self, message: str) -> NoReturn:
         """

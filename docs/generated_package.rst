@@ -124,6 +124,7 @@ Legacy Block Callback and Block Access
 
    If you really want to just keep on with the array based interface and make only minimal changes
    to existing code, there are two simple steps:
+
    1. The northbound interfaces that are provided by the generated package expect lists of integers
       rather than array. The old interfaces can be retained by using the ``legacy_block_access``
       build option.
@@ -131,8 +132,8 @@ Legacy Block Callback and Block Access
       ``read_block_callback`` and ``write_block_callback`` methods. If you want to continue to use
       the old scheme use the following callback classes which are part of the callbacks:
       * ``NormalCallbackSetLegacy`` for standard python function callbacks
-      * ``AsyncCallbackSetLegacy`` for async python function callbacks, these are called from the
-        library using ``await``
+      * ``AsyncCallbackSetLegacy`` for async python function callbacks, these are called from the library using ``await``
+
 
 Using the Register Access Layer
 ===============================
@@ -430,6 +431,55 @@ field from the example above
 .. literalinclude :: ../example/overridden_names/demo_over_ridden_names.py
    :language: python
 
+Hidden Elements
+===============
+
+Commonly come parts of the register map want to be hidden from some users, for example register
+included to reserve space or test functions.
+
+User Defined Property
+---------------------
+
+peakrdl-python supports a User Defined Propery (UDP): ``python_hide`` that can be used to hide
+items that should not appear in the generated python wrappers.
+
+In the following example, python wrapper generated would have the registers:
+
+* ``explictly_visible_reg``
+* ``implicitly_visible_reg``
+
+However the ``hidden_reg`` would not be included in the python wrappers
+
+.. code-block:: systemrdl
+
+   property python_hide { type = boolean; component = addrmap | regfile | reg | field | mem; };
+
+   addrmap my_addr_map {
+
+       reg {
+           default sw = rw;
+           default hw = r;
+           python_hide = true;
+           field { fieldwidth=1; } field_a;
+       } hidden_reg;
+
+      reg {
+           default sw = rw;
+           default hw = r;
+           python_hide = false;
+           field { fieldwidth=1; } field_a;
+       } explictly_visible_reg;
+
+      reg {
+           default sw = rw;
+           default hw = r;
+           field { fieldwidth=1; } field_a;
+       } implicitly_visible_reg;
+
+   };
+
+The ``python_hide`` property can be overridden with the ``show_hidden`` argument to the peakrdl
+command line tool or the ``export`` method.
 
 Autoformating
 =============
