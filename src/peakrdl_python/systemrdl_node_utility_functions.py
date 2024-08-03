@@ -30,7 +30,7 @@ from systemrdl.node import MemNode  # type: ignore
 from systemrdl.node import SignalNode  # type: ignore
 from systemrdl.node import AddrmapNode  # type: ignore
 from systemrdl.node import RegfileNode  # type: ignore
-from systemrdl.component import Component
+from systemrdl.component import Component  # type: ignore
 from systemrdl.rdltypes.user_enum import UserEnumMeta  # type: ignore
 from systemrdl import RDLListener, WalkerAction, RDLWalker  # type: ignore
 
