@@ -103,7 +103,7 @@ class {{get_fully_qualified_type_name(node)}}_cls(Reg{% if asyncoutput %}Async{%
 
     {% if not node.has_sw_readable %}
     {# if the register has no readable components, all the fields must be writen as one #}
-    {% if asyncoutput %}async {% endif %}def write_fields(self, {%- for child_node in node.fields() -%} {{safe_node_name(child_node)}} : {%- if 'encode' in child_node.list_properties() %}{{get_fully_qualified_enum_type(child_node.get_property('encode'), top_node.parent, child_node)}}_enumcls{% else %}int{% endif %}{%- if not loop.last -%},{%- endif -%}{%- endfor -%}) -> None: # type: ignore[override]
+    {% if asyncoutput %}async {% endif %}def write_fields(self, {%- for child_node in node.fields() -%} {{safe_node_name(child_node)}} : {%- if 'encode' in child_node.list_properties() %}{{get_fully_qualified_enum_type(child_node.get_property('encode'), top_node.parent, child_node, show_hidden)}}_enumcls{% else %}int{% endif %}{%- if not loop.last -%},{%- endif -%}{%- endfor -%}) -> None: # type: ignore[override]
         """
         Do a write to the register, updating all fields
         """
