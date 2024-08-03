@@ -424,7 +424,7 @@ class {{get_fully_qualified_enum_type(enum_needed, top_node.parent, owning_field
 
 
 # regfile, register and field definitions
-{%- for node in get_dependent_component(top_node.parent) -%}
+{%- for node in get_dependent_component(top_node.parent, show_hidden) -%}
     {% if not node.get_property('python_hide', default=False) or show_hidden %}
         {% if isinstance(node, systemrdlRegNode) %}
         {{ register_class(node)  }}

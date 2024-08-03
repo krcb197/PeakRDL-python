@@ -49,10 +49,12 @@ from .__about__ import __version__
 
 file_path = os.path.dirname(__file__)
 
+
 class PythonExportTemplateError(Exception):
     """
     Exception for hading errors in the templating
     """
+
 
 class _PythonPackage:
     """
@@ -191,7 +193,6 @@ class _Package(_PythonPackage):
         """
         return _CopiedPythonPackage(path=self.path / name, ref_package=ref_package)
 
-
     def create_empty_package(self, cleanup: bool, ) -> None:
         """
         create the directories and __init__.py files associated with the exported package
@@ -235,8 +236,7 @@ class PythonExporter:
         user_template_dir = kwargs.pop("user_template_dir", None)
         self.user_template_context = kwargs.pop("user_template_context",
                                                 {})
-        self.strict = False  # strict RDL rules rather than helpful implicit
-                             # behaviour
+        self.strict = False  # strict RDL rules rather than helpful implicit behaviour
 
         # Check for stray kwargs
         if kwargs:
@@ -326,12 +326,12 @@ class PythonExporter:
             'get_memory_max_entry_value_hex_string': get_memory_max_entry_value_hex_string,
             'get_memory_width_bytes': get_memory_width_bytes,
             'get_field_default_value': get_field_default_value,
-            'raise_template_error' : self._raise_template_error,
-            'get_python_path_segments' : get_python_path_segments,
-            'safe_node_name' : safe_node_name,
+            'raise_template_error': self._raise_template_error,
+            'get_python_path_segments': get_python_path_segments,
+            'safe_node_name': safe_node_name,
             'skip_lib_copy': skip_lib_copy,
-            'version' : __version__,
-            'legacy_block_access' : legacy_block_access,
+            'version': __version__,
+            'legacy_block_access': legacy_block_access,
             'show_hidden': show_hidden
         }
         if legacy_block_access is True:
@@ -359,7 +359,7 @@ class PythonExporter:
             'asyncoutput': asyncoutput,
             'skip_lib_copy': skip_lib_copy,
             'version': __version__,
-            'legacy_block_access' : legacy_block_access,
+            'legacy_block_access': legacy_block_access,
             }
 
         context.update(self.user_template_context)
@@ -384,7 +384,7 @@ class PythonExporter:
             'asyncoutput': asyncoutput,
             'skip_lib_copy': skip_lib_copy,
             'version': __version__,
-            'legacy_block_access' : legacy_block_access,
+            'legacy_block_access': legacy_block_access,
             }
 
         context.update(self.user_template_context)
@@ -510,9 +510,9 @@ class PythonExporter:
                 'uses_enum': uses_enum(block),
                 'skip_lib_copy': skip_lib_copy,
                 'version': __version__,
-                'get_array_typecode' : get_array_typecode,
+                'get_array_typecode': get_array_typecode,
                 'legacy_block_access': legacy_block_access,
-                'show_hidden' : show_hidden
+                'show_hidden': show_hidden
             }
 
 
@@ -532,7 +532,7 @@ class PythonExporter:
                delete_existing_package_content: bool = True,
                skip_library_copy: bool = False,
                legacy_block_access: bool = True,
-               show_hidden: bool =False) -> List[str]:
+               show_hidden: bool = False) -> List[str]:
         """
         Generated Python Code and Testbench
 
@@ -579,7 +579,7 @@ class PythonExporter:
                            include_libraries=not skip_library_copy)
         package.create_empty_package(cleanup=delete_existing_package_content)
 
-        self._build_node_type_table(top_block)
+        self._build_node_type_table(top_block, show_hidden)
 
         self.__export_reg_model(top_block=top_block, package=package, asyncoutput=asyncoutput,
                                 skip_lib_copy=skip_library_copy,
@@ -609,7 +609,7 @@ class PythonExporter:
 
     def _lookup_type_name(self, node: Node) -> str:
         """
-        Retreive the unique type name from the current lookup list
+        Retrieve the unique type name from the current lookup list
 
         Args:
             node: node to lookup
@@ -621,12 +621,13 @@ class PythonExporter:
 
         return self.node_type_name[node.inst]
 
-    def _build_node_type_table(self, node: AddressableNode) -> None:
+    def _build_node_type_table(self, node: AddressableNode, show_hidden: bool) -> None:
         """
         Populate the type name lookup dictionary
 
         Args:
             node: top node to work down from
+            show_hidden: force fields to be shown if they are marked as hidden
 
         Returns:
             None
@@ -635,7 +636,7 @@ class PythonExporter:
 
         self.node_type_name = {}
 
-        for child_node in get_dependent_component(node.parent):
+        for child_node in get_dependent_component(node.parent, show_hidden):
 
             child_inst = child_node.inst
             if child_inst in self.node_type_name:
