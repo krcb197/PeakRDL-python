@@ -571,6 +571,11 @@ class PythonExporter:
         else:
             top_block = node
 
+        # if the top level node is hidden the wrapper will be meaningless, rather then try to
+        # handle a special case this is treated as an error
+        if top_block.get_property('python_hide', default=False) and not show_hidden:
+            raise RuntimeError('PeakRDL Python can not export if the node is hidden')
+
         if not isinstance(path, str):
             raise TypeError(f'path should be a str but got {type(path)}')
         package = _Package(path=path,
