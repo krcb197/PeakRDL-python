@@ -38,7 +38,7 @@ At some point another software component called a Hardware Abstraction Layer (HA
 get produced that abstracts the device function providing functions to do more useful things.
 The RAL could be used as part of a HAL.
 
-.. note:: The Hardware Abstraction Layer (HAL) provides abstact functionality and allows
+.. note:: The Hardware Abstraction Layer (HAL) provides abstract functionality and allows
           people to use the device without needing a full knowledge of how it works.
 
 What does it do
@@ -91,7 +91,7 @@ manipulations
 .. warning:: A Register Access Layer (RAL) is not for everyone. Some engineers like to see the
              address of each register and the content of a register as a hex word. You may be quite
              happy with this, if that is you please stop, the overhead of an extra
-             layer, its opaque nature and inefficency will annoy you.
+             layer, its opaque nature and inefficiency will annoy you.
 
 In order to move on the systemRDL code for the registers needs to exist
 
@@ -111,7 +111,7 @@ Once built, a set of test cases can be run on the code to confirm its integrity,
 
    python -m unittest discover -s gpio\tests -t .
 
-Using the RAL allows for much simipler to understand code that does the function that was intended
+Using the RAL allows for much simpler to understand code that does the function that was intended
 
 .. literalinclude :: ../example/why_ral/with_ral.py
    :language: python

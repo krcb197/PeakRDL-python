@@ -8,7 +8,9 @@ on:
   push:
     branches: [ main ]
   pull_request:
-    branches: [ main ]
+    branches:
+    - main
+    - 0.9.0
   schedule:
     - cron: '00 6 1 * *'
   release:
@@ -152,10 +154,15 @@ jobs:
         run: |
 
           peakrdl python tests/testcases/basic.rdl -o peakrdl_out/raw/
+          peakrdl python tests/testcases/hidden_property.rdl -o peakrdl_out/raw/
+          peakrdl python tests/testcases/hidden_property.rdl -o peakrdl_out/raw/show_hidden/ --show_hidden
           peakrdl python tests/testcases/simple.xml tests/testcases/multifile.rdl -o peakrdl_out/raw
           peakrdl python tests/testcases/extended_memories.rdl -o peakrdl_out/raw/
           python -m unittest discover -s peakrdl_out/raw
+
           peakrdl python tests/testcases/basic.rdl -o peakrdl_out/raw_async/ --async
+          peakrdl python tests/testcases/hidden_property.rdl -o peakrdl_out/raw_async/ --async
+          peakrdl python tests/testcases/hidden_property.rdl -o peakrdl_out/raw_async/show_hidden/ --show_hidden --async
           python -m unittest discover -s peakrdl_out/raw_async
           peakrdl python tests/testcases/basic.rdl -o peakrdl_out/raw_legacy/ --legacy_block_access
           python -m unittest discover -s peakrdl_out/raw_legacy

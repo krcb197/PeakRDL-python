@@ -50,11 +50,14 @@ class {{get_fully_qualified_type_name(node)}}_cls(Memory{% if asyncoutput %}Asyn
                          parent=parent)
 
         {% for child_node in node.children(unroll=False) -%}
+                {%- if not child_node.get_property('python_hide', default=False) or show_hidden %}
             {{ register_class_attributes(child_node) | indent }}
+                {% endif %}
         {% endfor %}
 
         {%- for child_node in node.children(unroll=False) -%}
-            {%- if isinstance(child_node, systemrdlRegNode)  %}
+            {%-  if not child_node.get_property('python_hide', default=False) or show_hidden %}
+                {%- if isinstance(child_node, systemrdlRegNode) %}
     @property
     def {{safe_node_name(child_node)}}(self) -> {% if child_node.is_array -%}{{get_fully_qualified_type_name(child_node)}}_array_cls{% else %}{{get_fully_qualified_type_name(child_node)}}_cls{%- endif -%}:
         """
@@ -63,8 +66,9 @@ class {{get_fully_qualified_type_name(node)}}_cls(Memory{% if asyncoutput %}Asyn
         {{get_table_block(child_node) | indent(8)}}
         """
         return self.__{{child_node.inst_name}}
-            {% else %}
+                {% else %}
             {{ raise_template_error('unexpected type') }}
+                {%- endif %}
             {%- endif %}
         {% endfor %}
 
@@ -81,7 +85,9 @@ class {{get_fully_qualified_type_name(node)}}_cls(Memory{% if asyncoutput %}Asyn
         """
         return {
             {%- for child_node in node.children(unroll=False) -%}
+            {%- if not child_node.get_property('python_hide', default=False) or show_hidden %}
             '{{child_node.inst_name}}':'{{safe_node_name(child_node)}}',
+            {%- endif %}
             {%- endfor %}
             }
 

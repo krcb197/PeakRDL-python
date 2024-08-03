@@ -64,7 +64,7 @@ class Exporter(ExporterSubcommandPlugin):
                                     'files found in the directory where the package will be'
                                     ' generated. This is normally useful if the user is '
                                     'generating over the top of an existing package and prevents '
-                                    'problems when the strucutre of the register map changes. '
+                                    'problems when the structure of the register map changes. '
                                     'However, if additional python files are added by the user '
                                     '(not recommended) this cleanup will need to be suppressed '
                                     'and managed by the user')
@@ -72,6 +72,11 @@ class Exporter(ExporterSubcommandPlugin):
                                dest='legacy_block_access',
                                help='peakrdl python has two methods to hold blocks of data, the '
                                     'legacy mode based on array.array or the new mode using lists')
+        arg_group.add_argument('--show_hidden', action='store_true',
+                               dest='show_hidden',
+                               help='show addrmap, regfile, memory, register and fields that '
+                                    'have been given the python_hide user defined property and '
+                                    'would be removed from the build python by default')
 
     def do_export(self, top_node: 'AddrmapNode', options: 'argparse.Namespace') -> None:
         """
@@ -94,5 +99,6 @@ class Exporter(ExporterSubcommandPlugin):
             options.is_async,
             skip_test_case_generation=options.skip_test_case_generation,
             delete_existing_package_content=not options.suppress_cleanup,
-            legacy_block_access=options.legacy_block_access
+            legacy_block_access=options.legacy_block_access,
+            show_hidden=options.show_hidden
         )

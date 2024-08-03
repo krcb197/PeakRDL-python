@@ -49,10 +49,12 @@ from .__about__ import __version__
 
 file_path = os.path.dirname(__file__)
 
+
 class PythonExportTemplateError(Exception):
     """
     Exception for hading errors in the templating
     """
+
 
 class _PythonPackage:
     """
@@ -191,7 +193,6 @@ class _Package(_PythonPackage):
         """
         return _CopiedPythonPackage(path=self.path / name, ref_package=ref_package)
 
-
     def create_empty_package(self, cleanup: bool, ) -> None:
         """
         create the directories and __init__.py files associated with the exported package
@@ -235,8 +236,7 @@ class PythonExporter:
         user_template_dir = kwargs.pop("user_template_dir", None)
         self.user_template_context = kwargs.pop("user_template_context",
                                                 {})
-        self.strict = False  # strict RDL rules rather than helpful implicit
-                             # behaviour
+        self.strict = False  # strict RDL rules rather than helpful implicit behaviour
 
         # Check for stray kwargs
         if kwargs:
@@ -285,12 +285,13 @@ class PythonExporter:
             stream = template.stream(template_context)
             stream.dump(fp)
 
-    def __export_reg_model(self,
+    def __export_reg_model(self,  # pylint: disable=too-many-arguments
                            top_block: AddrmapNode,
                            package: _Package,
                            skip_lib_copy: bool,
                            asyncoutput: bool,
-                           legacy_block_access: bool) -> None:
+                           legacy_block_access: bool,
+                           show_hidden: bool) -> None:
 
         context = {
             'print': print,
@@ -325,12 +326,13 @@ class PythonExporter:
             'get_memory_max_entry_value_hex_string': get_memory_max_entry_value_hex_string,
             'get_memory_width_bytes': get_memory_width_bytes,
             'get_field_default_value': get_field_default_value,
-            'raise_template_error' : self._raise_template_error,
-            'get_python_path_segments' : get_python_path_segments,
-            'safe_node_name' : safe_node_name,
+            'raise_template_error': self._raise_template_error,
+            'get_python_path_segments': get_python_path_segments,
+            'safe_node_name': safe_node_name,
             'skip_lib_copy': skip_lib_copy,
-            'version' : __version__,
-            'legacy_block_access' : legacy_block_access,
+            'version': __version__,
+            'legacy_block_access': legacy_block_access,
+            'show_hidden': show_hidden
         }
         if legacy_block_access is True:
             context['get_array_typecode'] = get_array_typecode
@@ -357,7 +359,7 @@ class PythonExporter:
             'asyncoutput': asyncoutput,
             'skip_lib_copy': skip_lib_copy,
             'version': __version__,
-            'legacy_block_access' : legacy_block_access,
+            'legacy_block_access': legacy_block_access,
             }
 
         context.update(self.user_template_context)
@@ -382,7 +384,7 @@ class PythonExporter:
             'asyncoutput': asyncoutput,
             'skip_lib_copy': skip_lib_copy,
             'version': __version__,
-            'legacy_block_access' : legacy_block_access,
+            'legacy_block_access': legacy_block_access,
             }
 
         context.update(self.user_template_context)
@@ -429,12 +431,13 @@ class PythonExporter:
                                      target_name='_' + top_block.inst_name + '_sim_test_base.py',
                                      template_context=context)
 
-    def __export_tests(self,
+    def __export_tests(self,  # pylint: disable=too-many-arguments
                        top_block: AddrmapNode,
                        package: _Package,
                        skip_lib_copy: bool,
                        asyncoutput: bool,
-                       legacy_block_access: bool) -> None:
+                       legacy_block_access: bool,
+                       show_hidden: bool) -> None:
         """
 
         Args:
@@ -448,13 +451,13 @@ class PythonExporter:
         """
         #pylint: disable=too-many-locals
 
-        blocks = AddressMaps()
+        blocks = AddressMaps(show_hidden=show_hidden)
         # running the walker populated the blocks with all the address maps in within the
         # top block, including the top_block itself
         RDLWalker(unroll=True).walk(top_block, blocks, skip_top=False)
 
         for block in blocks:
-            owned_elements = OwnedbyAddressMap()
+            owned_elements = OwnedbyAddressMap(show_hidden=show_hidden)
             # running the walker populated the blocks with all the address maps in within the
             # top block, including the top_block itself
             RDLWalker(unroll=True).walk(block, owned_elements, skip_top=True)
@@ -470,7 +473,8 @@ class PythonExporter:
                 rolled_owned_reg += list(memory.registers(unroll=False))
 
             def is_reg_array(item: RegNode) -> bool:
-                return item.is_array
+                visible = not item.get_property('python_hide', default=False) or show_hidden
+                return item.is_array and visible
 
             rolled_owned_reg_array = list(filter(is_reg_array, rolled_owned_reg))
 
@@ -506,8 +510,9 @@ class PythonExporter:
                 'uses_enum': uses_enum(block),
                 'skip_lib_copy': skip_lib_copy,
                 'version': __version__,
-                'get_array_typecode' : get_array_typecode,
+                'get_array_typecode': get_array_typecode,
                 'legacy_block_access': legacy_block_access,
+                'show_hidden': show_hidden
             }
 
 
@@ -526,7 +531,8 @@ class PythonExporter:
                skip_test_case_generation: bool = False,
                delete_existing_package_content: bool = True,
                skip_library_copy: bool = False,
-               legacy_block_access: bool = True) -> List[str]:
+               legacy_block_access: bool = True,
+               show_hidden: bool = False) -> List[str]:
         """
         Generated Python Code and Testbench
 
@@ -549,6 +555,11 @@ class PythonExporter:
                                         systemRDL. The legacy mode with Arrays is still in
                                         the tool and will be turned on by default for a few
                                         releases.
+            show_hidden (bool) : By default any item (Address Map, Regfile, Register, Memory or
+                                 Field) with the systemRDL User Defined Property (UDP) python_hide
+                                 set to true will not be included in the generated python code.
+                                 This behaviour can be overridden by setting this property to
+                                 true.
 
         Returns:
             List[str] : modules that have been exported:
@@ -560,6 +571,11 @@ class PythonExporter:
         else:
             top_block = node
 
+        # if the top level node is hidden the wrapper will be meaningless, rather then try to
+        # handle a special case this is treated as an error
+        if top_block.get_property('python_hide', default=False) and not show_hidden:
+            raise RuntimeError('PeakRDL Python can not export if the node is hidden')
+
         if not isinstance(path, str):
             raise TypeError(f'path should be a str but got {type(path)}')
         package = _Package(path=path,
@@ -568,11 +584,11 @@ class PythonExporter:
                            include_libraries=not skip_library_copy)
         package.create_empty_package(cleanup=delete_existing_package_content)
 
-        self._build_node_type_table(top_block)
+        self._build_node_type_table(top_block, show_hidden)
 
         self.__export_reg_model(top_block=top_block, package=package, asyncoutput=asyncoutput,
                                 skip_lib_copy=skip_library_copy,
-                                legacy_block_access=legacy_block_access)
+                                legacy_block_access=legacy_block_access, show_hidden=show_hidden)
 
         self.__export_simulator(top_block=top_block, package=package, asyncoutput=asyncoutput,
                                 skip_lib_copy=skip_library_copy,
@@ -591,13 +607,14 @@ class PythonExporter:
             # export the tests themselves, these are broken down to one file per addressmap
             self.__export_tests(top_block=top_block, package=package, asyncoutput=asyncoutput,
                                 skip_lib_copy=skip_library_copy,
-                                legacy_block_access=legacy_block_access)
+                                legacy_block_access=legacy_block_access,
+                                show_hidden=show_hidden)
 
         return top_block.inst_name
 
     def _lookup_type_name(self, node: Node) -> str:
         """
-        Retreive the unique type name from the current lookup list
+        Retrieve the unique type name from the current lookup list
 
         Args:
             node: node to lookup
@@ -609,12 +626,13 @@ class PythonExporter:
 
         return self.node_type_name[node.inst]
 
-    def _build_node_type_table(self, node: AddressableNode) -> None:
+    def _build_node_type_table(self, node: AddressableNode, show_hidden: bool) -> None:
         """
         Populate the type name lookup dictionary
 
         Args:
             node: top node to work down from
+            show_hidden: force fields to be shown if they are marked as hidden
 
         Returns:
             None
@@ -623,7 +641,7 @@ class PythonExporter:
 
         self.node_type_name = {}
 
-        for child_node in get_dependent_component(node.parent):
+        for child_node in get_dependent_component(node.parent, show_hidden):
 
             child_inst = child_node.inst
             if child_inst in self.node_type_name:
@@ -636,7 +654,6 @@ class PythonExporter:
                 self.node_type_name[child_inst] = cand_type_name + '_0x' + hex(hash(child_inst))
             else:
                 self.node_type_name[child_inst] = cand_type_name
-
 
     def _raise_template_error(self, message: str) -> NoReturn:
         """
@@ -653,7 +670,8 @@ class PythonExporter:
     def _fully_qualified_enum_type(self,
                                    field_enum: UserEnumMeta,
                                    root_node: AddressableNode,
-                                   owning_field: FieldNode) -> str:
+                                   owning_field: FieldNode,
+                                   show_hidden: bool) -> str:
         """
         Returns the fully qualified class type name, for an enum
         """
@@ -672,7 +690,7 @@ class PythonExporter:
         if root_node.inst.original_def == parent_scope:
             return field_enum.__name__
 
-        dependent_components = get_dependent_component(root_node)
+        dependent_components = get_dependent_component(root_node, show_hidden)
 
         for component in dependent_components:
             if component.inst.original_def == parent_scope:
@@ -680,14 +698,11 @@ class PythonExporter:
 
         raise RuntimeError('Failed to find parent node to reference')
 
-    def _get_dependent_enum(self, node: AddressableNode) -> \
+    def _get_dependent_enum(self, node: AddressableNode, show_hidden: bool) -> \
             Iterable[Tuple[UserEnumMeta, FieldNode]]:
         """
         iterable of enums which is used by a descendant of the input node,
         this list is de-duplicated
-
-        :param node: node to analysis
-        :return: nodes that are dependent on the specified node
         """
         enum_needed = []
         for child_node in node.descendants():
@@ -698,7 +713,8 @@ class PythonExporter:
                     field_enum = child_node.get_property('encode')
                     fully_qualified_enum_name = self._fully_qualified_enum_type(field_enum,
                                                                                 node,
-                                                                                child_node)
+                                                                                child_node,
+                                                                                show_hidden)
 
                     if fully_qualified_enum_name not in enum_needed:
                         enum_needed.append(fully_qualified_enum_name)
