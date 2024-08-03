@@ -64,7 +64,7 @@ class Exporter(ExporterSubcommandPlugin):
                                     'files found in the directory where the package will be'
                                     ' generated. This is normally useful if the user is '
                                     'generating over the top of an existing package and prevents '
-                                    'problems when the strucutre of the register map changes. '
+                                    'problems when the structure of the register map changes. '
                                     'However, if additional python files are added by the user '
                                     '(not recommended) this cleanup will need to be suppressed '
                                     'and managed by the user')
@@ -75,7 +75,7 @@ class Exporter(ExporterSubcommandPlugin):
         arg_group.add_argument('--show_hidden', action='store_true',
                                dest='show_hidden',
                                help='show addrmap, regfile, memory, register and fields that '
-                                    'have been given the python_hide uder defined property and '
+                                    'have been given the python_hide user defined property and '
                                     'would be removed from the build python by default')
 
     def do_export(self, top_node: 'AddrmapNode', options: 'argparse.Namespace') -> None:
