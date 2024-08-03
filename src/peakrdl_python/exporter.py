@@ -665,7 +665,8 @@ class PythonExporter:
     def _fully_qualified_enum_type(self,
                                    field_enum: UserEnumMeta,
                                    root_node: AddressableNode,
-                                   owning_field: FieldNode) -> str:
+                                   owning_field: FieldNode,
+                                   show_hidden: bool) -> str:
         """
         Returns the fully qualified class type name, for an enum
         """
@@ -684,7 +685,7 @@ class PythonExporter:
         if root_node.inst.original_def == parent_scope:
             return field_enum.__name__
 
-        dependent_components = get_dependent_component(root_node)
+        dependent_components = get_dependent_component(root_node, show_hidden)
 
         for component in dependent_components:
             if component.inst.original_def == parent_scope:
@@ -692,14 +693,11 @@ class PythonExporter:
 
         raise RuntimeError('Failed to find parent node to reference')
 
-    def _get_dependent_enum(self, node: AddressableNode) -> \
+    def _get_dependent_enum(self, node: AddressableNode, show_hidden: bool) -> \
             Iterable[Tuple[UserEnumMeta, FieldNode]]:
         """
         iterable of enums which is used by a descendant of the input node,
         this list is de-duplicated
-
-        :param node: node to analysis
-        :return: nodes that are dependent on the specified node
         """
         enum_needed = []
         for child_node in node.descendants():
@@ -710,7 +708,8 @@ class PythonExporter:
                     field_enum = child_node.get_property('encode')
                     fully_qualified_enum_name = self._fully_qualified_enum_type(field_enum,
                                                                                 node,
-                                                                                child_node)
+                                                                                child_node,
+                                                                                show_hidden)
 
                     if fully_qualified_enum_name not in enum_needed:
                         enum_needed.append(fully_qualified_enum_name)

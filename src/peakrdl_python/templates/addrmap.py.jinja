@@ -412,9 +412,9 @@ class {{get_fully_qualified_type_name(node)}}_array_cls({% if asyncoutput %}Asyn
 
 {% if uses_enum %}
 # root level enum definitions
-{%- for enum_needed, owning_field in get_dependent_enum(top_node.parent) %}
+{%- for enum_needed, owning_field in get_dependent_enum(top_node.parent, show_hidden) %}
 @unique
-class {{get_fully_qualified_enum_type(enum_needed, top_node.parent, owning_field)}}_enumcls(IntEnum):
+class {{get_fully_qualified_enum_type(enum_needed, top_node.parent, owning_field, show_hidden)}}_enumcls(IntEnum):
 
     {% for value_of_enum_needed in enum_needed -%}
     {{ value_of_enum_needed.name.upper() }} = {{ value_of_enum_needed.value }}  {%- if value_of_enum_needed.rdl_desc is not none -%}# {{ value_of_enum_needed.rdl_desc }} {%- endif %}
@@ -425,18 +425,18 @@ class {{get_fully_qualified_enum_type(enum_needed, top_node.parent, owning_field
 
 # regfile, register and field definitions
 {%- for node in get_dependent_component(top_node.parent, show_hidden) -%}
-    {% if not node.get_property('python_hide', default=False) or show_hidden %}
-        {% if isinstance(node, systemrdlRegNode) %}
-        {{ register_class(node)  }}
-        {% elif isinstance(node, systemrdlRegfileNode) %}
-        {{ regfile_class(node) }}
-        {% elif isinstance(node, systemrdlAddrmapNode) %}
-        {{ addrmap_class(node) }}
-        {% elif isinstance(node, systemrdlFieldNode) %}
-        {{ field_class(node)  }}
-        {% elif isinstance(node, systemrdlMemNode) %}
-        {{ memory_class(node)  }}
-        {% endif %}
+{# the get_dependent_component already strips out hidden items so there is no need to check here
+   for hidden items #}
+    {% if isinstance(node, systemrdlRegNode) %}
+    {{ register_class(node)  }}
+    {% elif isinstance(node, systemrdlRegfileNode) %}
+    {{ regfile_class(node) }}
+    {% elif isinstance(node, systemrdlAddrmapNode) %}
+    {{ addrmap_class(node) }}
+    {% elif isinstance(node, systemrdlFieldNode) %}
+    {{ field_class(node)  }}
+    {% elif isinstance(node, systemrdlMemNode) %}
+    {{ memory_class(node)  }}
     {% endif %}
 {% endfor %}
 

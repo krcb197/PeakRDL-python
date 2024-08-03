@@ -71,8 +71,8 @@ def get_dependent_component(node: AddressableNode,
     """
     class UniqueComponents(RDLListener):
         """
-        class intended to be used as part of the walker/listener protocol to find all the items owned
-        by an address map but not the descendents of any address map
+        class intended to be used as part of the walker/listener protocol to find all the items
+        owned by an address map but not the descendents of any address map
         """
 
         def __init__(self, show_hidden: bool) -> None:
