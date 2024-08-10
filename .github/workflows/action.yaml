@@ -126,6 +126,11 @@ jobs:
 
           python -m generate_and_test --RDL_source_file tests/testcases/accelera-generic_example.rdl --root_node some_register_map
 
+          python -m generate_and_test --RDL_source_file tests/testcases/user_defined_properties.rdl --root_node user_defined_properties --udp bool_property_to_include
+          python -m generate_and_test --RDL_source_file tests/testcases/user_defined_properties.rdl --root_node user_defined_properties --udp bool_property_to_include enum_property_to_include
+          python -m generate_and_test --RDL_source_file tests/testcases/user_defined_properties.rdl --root_node user_defined_properties --udp bool_property_to_include enum_property_to_include int_property_to_include
+          python -m generate_and_test --RDL_source_file tests/testcases/user_defined_properties.rdl --root_node user_defined_properties --udp bool_property_to_include enum_property_to_include int_property_to_include str_property_to_include
+
   peakrdl_integration:
     needs:
       - mypy

@@ -16,6 +16,8 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #}
 
+{% from 'addrmap_udp_property.py.jinja' import udp_property with context %}
+
 {%- macro register_class(node) %}
     {%- if node.has_sw_readable and node.has_sw_writable %}
 class {{get_fully_qualified_type_name(node)}}_cls(Reg{% if asyncoutput %}Async{% endif %}ReadWrite):
@@ -155,6 +157,8 @@ class {{get_fully_qualified_type_name(node)}}_cls(Reg{% if asyncoutput %}Async{%
             {% endif %}
             {%- endfor %}
             }
+
+    {{ udp_property(node) }}
 
     {%- if node.is_array %}
         {%- if node.has_sw_readable and node.has_sw_writable %}

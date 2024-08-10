@@ -441,3 +441,19 @@ def get_enum_values(enum: UserEnumMeta) -> List[int]:
         raise TypeError(f'node is not a {type(UserEnumMeta)} got {type(enum)}')
 
     return [e.value for e in enum]
+
+
+def get_properties_to_include(node: Node, udp_to_include: List[str]) -> List[str]:
+    """
+
+
+    Args:
+        node: the system rdl node to examine the properties of
+        udp_to_include: list of property names to include in the system rdl
+
+    Returns:
+        list of properties
+    """
+
+    nodal_properties = node.list_properties(include_udp=True, include_native=False)
+    return list(filter(lambda x: x in udp_to_include, nodal_properties))

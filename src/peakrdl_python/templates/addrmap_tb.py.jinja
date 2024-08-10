@@ -40,6 +40,11 @@ from enum import IntEnum
 from {% if skip_lib_copy %}src.peakrdl_python.{% else %}..{% endif %}lib import RegisterWriteVerifyError, UnsupportedWidthError
 
 from ..reg_model.{{top_node.type_name}} import {{top_node.type_name}}_cls
+{% for property_enum in dependent_property_enum %}
+from ..reg_model.{{top_node.type_name}} import {{property_enum.type_name}}_property_enumcls
+{% endfor %}
+
+
 {% if asyncoutput %}
 from {% if skip_lib_copy %}src.peakrdl_python.{% else %}..{% endif %}lib import FieldAsyncReadOnly, FieldAsyncWriteOnly, FieldAsyncReadWrite
 from {% if skip_lib_copy %}src.peakrdl_python.{% else %}..{% endif %}lib import WritableAsyncRegister, ReadableAsyncRegister
@@ -161,6 +166,33 @@ class {{fq_block_name}}_single_access({{top_node.type_name}}_TestCase): # type: 
             self.assertEqual(fut.default,{{get_field_default_value(node)}})
                 {% endif %}
             self.assertEqual(fut.is_volatile,{{node.is_hw_writable}})
+        {% endfor %}
+
+    def test_user_defined_properties(self)  -> None:
+        """
+        Walk the address map and check user defined properties are correctly pulled up
+        """
+        {% for node in owned_elements.nodes -%}
+        with self.subTest(msg='register: {{'.'.join(node.get_path_segments())}}'):
+            {% if not udp_to_include %}
+            self.assertDictEqual(self.dut.{{'.'.join(get_python_path_segments(node))}}.udp,{})
+            {% else %}
+                {% set property_list = get_properties_to_include(node,udp_to_include) %}
+                {% if not property_list %}
+            self.assertDictEqual(self.dut.{{'.'.join(get_python_path_segments(node))}}.udp,{})
+                {% else %}
+                    {% for property_name in property_list %}
+                    {% set property_value = node.get_property(property_name) %}
+                        {% if isinstance(property_value, systemrdlUserEnum) %}
+            self.assertEqual(self.dut.{{'.'.join(get_python_path_segments(node))}}.udp['{{property_name}}'], {{ type(property_value).type_name }}_property_enumcls.{{ property_value.name.upper() }} )
+                         {% elif isinstance(property_value, str) %}
+            self.assertEqual(self.dut.{{'.'.join(get_python_path_segments(node))}}.udp['{{property_name}}'], "{{ property_value }}" )
+                        {% else %}
+            self.assertEqual(self.dut.{{'.'.join(get_python_path_segments(node))}}.udp['{{property_name}}'], {{ property_value }} )
+                        {% endif %}
+                    {% endfor %}
+                {% endif %}
+            {% endif %}
         {% endfor %}
 
     {% if asyncoutput %}async {% endif %}def test_register_read_and_write(self) -> None:

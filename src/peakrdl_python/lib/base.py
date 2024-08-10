@@ -28,6 +28,7 @@ from itertools import product, chain
 from functools import reduce
 from operator import mul
 import sys
+from enum import IntEnum
 
 from .callbacks import CallbackSet, CallbackSetLegacy
 from .callbacks import NormalCallbackSet, AsyncCallbackSet
@@ -49,6 +50,8 @@ if TYPE_CHECKING:
     from .register import ReadableRegisterArray, WriteableRegisterArray
     from .async_register import ReadableAsyncRegisterArray, WriteableAsyncRegisterArray
 
+UDPStruct = Dict[str, 'UDPType']
+UDPType = Union[str, int, bool, IntEnum, UDPStruct]
 
 class Base(ABC):
     """
@@ -107,6 +110,14 @@ class Base(ABC):
             return self.parent.full_inst_name + "." + self.inst_name
 
         return self.inst_name
+
+    @property
+    def udp(self) -> UDPStruct:
+        """
+        A dictionary of the user defined properties for the node
+        """
+        return {}
+
 
 
 class Node(Base, ABC):
