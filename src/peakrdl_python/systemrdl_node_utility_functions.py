@@ -443,7 +443,7 @@ def get_enum_values(enum: UserEnumMeta) -> List[int]:
     return [e.value for e in enum]
 
 
-def get_properties_to_include(node: Node, udp_to_include: List[str]) -> List[str]:
+def get_properties_to_include(node: Node, udp_to_include: Optional[List[str]]) -> List[str]:
     """
 
 
@@ -454,6 +454,7 @@ def get_properties_to_include(node: Node, udp_to_include: List[str]) -> List[str
     Returns:
         list of properties
     """
-
+    if udp_to_include is None:
+        return []
     nodal_properties = node.list_properties(include_udp=True, include_native=False)
     return list(filter(lambda x: x in udp_to_include, nodal_properties))
