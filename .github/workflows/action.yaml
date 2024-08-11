@@ -163,6 +163,7 @@ jobs:
           peakrdl python tests/testcases/hidden_property.rdl -o peakrdl_out/raw/show_hidden/ --show_hidden
           peakrdl python tests/testcases/simple.xml tests/testcases/multifile.rdl -o peakrdl_out/raw
           peakrdl python tests/testcases/extended_memories.rdl -o peakrdl_out/raw/
+          peakrdl python tests/testcases/user_defined_properties.rdl -o peakrdl_out/raw/ --udp bool_property_to_include
           python -m unittest discover -s peakrdl_out/raw
 
           peakrdl python tests/testcases/basic.rdl -o peakrdl_out/raw_async/ --async
