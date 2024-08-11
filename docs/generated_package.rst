@@ -383,6 +383,29 @@ worry if they are in an array or not.
 .. literalinclude :: ../example/tranversing_address_map/reseting_registers.py
    :language: python
 
+Exposing User Defined Properties
+--------------------------------
+
+SystemRDL allows properties to be added to any component (Field, Memory, Register, Register File,
+Address Map), so called *User Defined Properties (UDP)*.
+
+Consider the following systemRDL example with a user defined property: ``component_usage``
+
+.. literalinclude :: ../example/user_defined_properties/user_defined_properties.rdl
+   :language: systemrdl
+
+User Defined Properties are not automatically included they must be specified, as shown:
+
+.. code-block:: bash
+
+   peakrdl python chip_with_registers.rdl -o chip_with_registers
+
+The user defined properties are stored in a ``udp`` property of all component in the generated
+register access and can be accessed as follows:
+
+.. literalinclude :: ../example/user_defined_properties/demo_user_defined_properties.py
+   :language: python
+
 Python Safe Names
 =================
 
