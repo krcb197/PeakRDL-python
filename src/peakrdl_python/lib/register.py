@@ -195,6 +195,13 @@ class Reg(BaseReg, ABC):
 
         raise TypeError(f'unhandled parent callback type: {type(self.parent._callbacks)}')
 
+    @property
+    @abstractmethod
+    def fields(self) -> Iterator[Union['FieldReadOnly', 'FieldWriteOnly', 'FieldReadWrite']]:
+        """
+        generator that produces has all the fields within the register
+        """
+
 
 # pylint: disable-next=invalid-name
 BaseRegArrayElementType= TypeVar('BaseRegArrayElementType', bound=BaseReg)

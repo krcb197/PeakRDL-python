@@ -37,7 +37,7 @@ from .systemrdl_node_utility_functions import get_reg_readable_fields, get_reg_w
     get_field_max_value_hex_string, get_reg_max_value_hex_string, get_fully_qualified_type_name, \
     uses_enum, uses_memory, \
     get_memory_max_entry_value_hex_string, get_memory_width_bytes, \
-    get_field_default_value, get_enum_values, get_properties_to_include
+    get_field_default_value, get_enum_values, get_properties_to_include, get_reg_fields
 
 from .lib import get_array_typecode
 
@@ -326,6 +326,7 @@ class PythonExporter:
             'get_table_block': get_table_block,
             'get_reg_writable_fields': get_reg_writable_fields,
             'get_reg_readable_fields': get_reg_readable_fields,
+            'get_reg_fields' : get_reg_fields,
             'get_memory_max_entry_value_hex_string': get_memory_max_entry_value_hex_string,
             'get_memory_width_bytes': get_memory_width_bytes,
             'get_field_default_value': get_field_default_value,

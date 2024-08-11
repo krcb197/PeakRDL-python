@@ -78,6 +78,17 @@ class {{get_fully_qualified_type_name(node)}}_cls(Reg{% if asyncoutput %}Async{%
             {%- endif -%}
         {%- endfor %}
 
+    @property
+    def fields(self) -> Iterator[Union[Field{% if asyncoutput %}Async{% endif %}ReadOnly, Field{% if asyncoutput %}Async{% endif %}WriteOnly,Field{% if asyncoutput %}Async{% endif %}ReadWrite]]:
+        """
+        generator that produces has all the fields within the register
+        """
+        {% for child_node in get_reg_fields(node, show_hidden) -%}
+        yield self.{{safe_node_name(child_node)}}
+        {% endfor %}
+        # Empty generator in case there are no children of this type
+        if False: yield
+
     {% if node.has_sw_readable %}
     @property
     def readable_fields(self) -> Iterator[Union[Field{% if asyncoutput %}Async{% endif %}ReadOnly, Field{% if asyncoutput %}Async{% endif %}ReadWrite]]:

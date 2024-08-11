@@ -1198,6 +1198,7 @@ class {{fq_block_name}}_single_access({{top_node.type_name}}_TestCase): # type: 
         {% if asyncoutput %}
         expected_writable_fields: List[Union[FieldAsyncWriteOnly, FieldAsyncReadWrite]]
         expected_readable_fields: List[Union[FieldAsyncReadOnly, FieldAsyncReadWrite]]
+        expected_fields: List[Union[FieldAsyncWriteOnly, FieldAsyncReadOnly, FieldAsyncReadWrite]]
         expected_writable_regs: List[WritableAsyncRegister]
         expected_readable_regs: List[ReadableAsyncRegister]
         expected_memories:List[Union[MemoryAsyncReadOnly{% if legacy_block_access %}Legacy{% endif %}, MemoryAsyncWriteOnly{% if legacy_block_access %}Legacy{% endif %}, MemoryAsyncReadWrite{% if legacy_block_access %}Legacy{% endif %}]]
@@ -1205,6 +1206,7 @@ class {{fq_block_name}}_single_access({{top_node.type_name}}_TestCase): # type: 
         {% else %}
         expected_writable_fields: List[Union[FieldWriteOnly, FieldReadWrite]]
         expected_readable_fields: List[Union[FieldReadOnly, FieldReadWrite]]
+        expected_fields: List[Union[FieldWriteOnly, FieldReadOnly, FieldReadWrite]]
         expected_writable_regs: List[WritableRegister]
         expected_readable_regs: List[ReadableRegister]
         expected_memories:List[Union[MemoryReadOnly{% if legacy_block_access %}Legacy{% endif %}, MemoryWriteOnly{% if legacy_block_access %}Legacy{% endif %}, MemoryReadWrite{% if legacy_block_access %}Legacy{% endif %}]]
@@ -1215,6 +1217,16 @@ class {{fq_block_name}}_single_access({{top_node.type_name}}_TestCase): # type: 
         {% for node in owned_elements.registers -%}
         with self.subTest(msg='register: {{'.'.join(node.get_path_segments())}}'):
                 {# a register can only have fields beneath it #}
+            expected_fields = [ {%- for child_node in node.children(unroll=True) -%}
+                                            {%- if not child_node.get_property('python_hide', default=False) or show_hidden -%}
+                                         self.dut.{{'.'.join(get_python_path_segments(child_node))}}, # type: ignore[union-attr,list-item]
+                                            {% endif %}
+                                         {% endfor %}
+                                         ]
+            fields = []
+            for field in self.dut.{{'.'.join(get_python_path_segments(node))}}.fields:  # type: ignore[union-attr]
+                fields.append(field)
+            self.assertCountEqual(expected_fields, fields)
                 {% if node.has_sw_writable %}
             expected_writable_fields = [ {%- for child_node in node.children(unroll=True) -%}
                                             {%- if not child_node.get_property('python_hide', default=False) or show_hidden -%}

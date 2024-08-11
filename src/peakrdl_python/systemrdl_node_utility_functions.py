@@ -301,6 +301,26 @@ def get_reg_max_value_hex_string(node: RegNode) -> str:
     max_value = ((2 ** (node.size * 8)) - 1)
     return f'0x{max_value:X}'
 
+def get_reg_fields(node: RegNode, show_hidden: bool) -> Iterable[FieldNode]:
+    """
+    Iterable that yields all the fields from the reg node
+
+    Args:
+        node: node to be analysed
+        show_hidden: force fields to be shown if they are marked as hidden
+
+    Yields:
+        fields
+
+    """
+    if not isinstance(node, RegNode):
+        raise TypeError(f'node is not a {type(RegNode)} got {type(node)}')
+
+    if show_hidden:
+        return node.fields()
+
+    return filter(lambda x: not x.get_property('python_hide', default=False), node.fields())
+
 
 def get_reg_writable_fields(node: RegNode, show_hidden: bool) -> Iterable[FieldNode]:
     """
@@ -317,12 +337,7 @@ def get_reg_writable_fields(node: RegNode, show_hidden: bool) -> Iterable[FieldN
     if not isinstance(node, RegNode):
         raise TypeError(f'node is not a {type(RegNode)} got {type(node)}')
 
-    writable_fields = filter(lambda x: x.is_sw_writable, node.fields())
-
-    if show_hidden:
-        return writable_fields
-
-    return filter(lambda x: not x.get_property('python_hide', default=False), writable_fields)
+    return filter(lambda x: x.is_sw_writable, get_reg_fields(node=node, show_hidden=show_hidden))
 
 
 def get_reg_readable_fields(node: RegNode, show_hidden: bool) -> Iterable[FieldNode]:
@@ -340,12 +355,7 @@ def get_reg_readable_fields(node: RegNode, show_hidden: bool) -> Iterable[FieldN
     if not isinstance(node, RegNode):
         raise TypeError(f'node is not a {type(RegNode)} got {type(node)}')
 
-    readable_fields = filter(lambda x: x.is_sw_readable, node.fields())
-
-    if show_hidden:
-        return readable_fields
-
-    return filter(lambda x: not x.get_property('python_hide', default=False), readable_fields)
+    return filter(lambda x: x.is_sw_readable, get_reg_fields(node=node, show_hidden=show_hidden))
 
 
 def uses_memory(node: AddressableNode) -> bool:
