@@ -30,6 +30,7 @@ from systemrdl.node import FieldNode, MemNode, AddressableNode # type: ignore
 from systemrdl.node import SignalNode # type: ignore
 from systemrdl.rdltypes import OnReadType, OnWriteType, PropertyReference  # type: ignore
 from systemrdl.rdltypes.user_enum import UserEnum, UserEnumMeta  # type: ignore
+from systemrdl.rdltypes.user_struct import UserStruct  # type: ignore
 
 from .systemrdl_node_utility_functions import get_reg_readable_fields, get_reg_writable_fields, \
     get_table_block, get_dependent_component, \
@@ -306,6 +307,7 @@ class PythonExporter:
             'systemrdlAddressableNode': AddressableNode,
             'systemrdlSignalNode': SignalNode,
             'systemrdlUserEnum': UserEnum,
+            'systemrdlUserStruct': UserStruct,
             'asyncoutput': asyncoutput,
             'OnWriteType': OnWriteType,
             'OnReadType': OnReadType,
@@ -503,6 +505,7 @@ class PythonExporter:
                 'systemrdlRegfileNode': RegfileNode,
                 'systemrdlAddrmapNode': AddrmapNode,
                 'systemrdlUserEnum': UserEnum,
+                'systemrdlUserStruct': UserStruct,
                 'isinstance': isinstance,
                 'type': type,
                 'str': str,
@@ -773,12 +776,25 @@ class PythonExporter:
         enum_needed = []
 
         def update_enum_list(node_to_process: AddressableNode) -> None:
+
+            def walk_property_struct_node(value: Any) -> None:
+                if isinstance(value, UserEnum) and type(value) not in enum_needed:
+                    enum_needed.append(type(value))
+
+                if isinstance(value, UserStruct):
+                    for sub_value in value.members.values():
+                        walk_property_struct_node(sub_value)
+
             node_properties = get_properties_to_include(node=node_to_process,
                                                         udp_to_include=udp_to_include)
             for node_property_name in node_properties:
                 node_property = node_to_process.get_property(node_property_name)
                 if isinstance(node_property, UserEnum) and type(node_property) not in enum_needed:
                     enum_needed.append(type(node_property))
+
+                if isinstance(node_property, UserStruct):
+                    for sub_value in node_property.members.values():
+                        walk_property_struct_node(sub_value)
 
         update_enum_list(node_to_process=node)
 

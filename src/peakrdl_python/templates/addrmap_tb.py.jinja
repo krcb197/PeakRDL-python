@@ -74,6 +74,8 @@ from {% if skip_lib_copy %}src.peakrdl_python.{% else %}..{% endif %}lib import 
 from ._{{top_node.inst_name}}_test_base import {{top_node.type_name}}_TestCase, {{top_node.type_name}}_TestCase_BlockAccess, {{top_node.type_name}}_TestCase_AltBlockAccess
 from ._{{top_node.inst_name}}_test_base import __name__ as base_name
 
+{% from 'addrmap_udp_property.py.jinja' import udp_property_dict_entry with context %}
+
 class {{fq_block_name}}_single_access({{top_node.type_name}}_TestCase): # type: ignore[valid-type,misc]
 
     def test_inst_name(self)  -> None:
@@ -183,7 +185,11 @@ class {{fq_block_name}}_single_access({{top_node.type_name}}_TestCase): # type: 
                 {% else %}
                     {% for property_name in property_list %}
                     {% set property_value = node.get_property(property_name) %}
-                        {% if isinstance(property_value, systemrdlUserEnum) %}
+                        {% if isinstance(property_value, systemrdlUserStruct) %}
+            self.assertDictEqual(self.dut.{{'.'.join(get_python_path_segments(node))}}.udp['{{property_name}}'], {    # type: ignore[arg-type]
+                {% for sub_name, sub_value in property_value.members.items() %} {{udp_property_dict_entry(sub_name, sub_value)}} {% endfor %}
+                } )
+                        {% elif isinstance(property_value, systemrdlUserEnum) %}
             self.assertEqual(self.dut.{{'.'.join(get_python_path_segments(node))}}.udp['{{property_name}}'], {{ type(property_value).type_name }}_property_enumcls.{{ property_value.name.upper() }} )
                          {% elif isinstance(property_value, str) %}
             self.assertEqual(self.dut.{{'.'.join(get_python_path_segments(node))}}.udp['{{property_name}}'], "{{ property_value }}" )
