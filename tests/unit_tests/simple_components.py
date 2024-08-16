@@ -6,7 +6,6 @@ from unittest.mock import NonCallableMagicMock
 from typing import List, Iterator, Dict, Type, Any, Union
 from abc import ABC
 import logging
-from array import array as Array
 
 # pylint: disable-next=unused-wildcard-import, wildcard-import
 from peakrdl_python.lib import *

@@ -14,11 +14,16 @@ from itertools import chain, permutations
 
 from contextlib import contextmanager
 
-from peakrdl_python import PythonExporter
 from systemrdl import RDLCompiler
+
+from peakrdl_python import PythonExporter
+
 
 
 class TestExportHidden(unittest.TestCase):
+    """
+    Test class for the export of hidden and force not hidden (show hidden)
+    """
 
     test_case_path = 'tests/testcases'
     test_case_name = 'hidden_property.rdl'
@@ -27,6 +32,10 @@ class TestExportHidden(unittest.TestCase):
 
     @contextmanager
     def build_python_wrappers_and_make_instance(self, show_hidden):
+        """
+        Context manager to build the python wrappers for a value of show_hidden, then import them
+        and clean up afterwards
+        """
 
         # compile the code for the test
         rdlc = RDLCompiler()
@@ -81,6 +90,9 @@ class TestExportHidden(unittest.TestCase):
             sys.path.remove(tmpdirname)
 
     def test_hidden(self):
+        """
+        Simple test to make sure that the fields marks as hidden are not generated
+        """
         with self.build_python_wrappers_and_make_instance(show_hidden=False) as dut:
             self.assertFalse(dut.reg_hidden_fields.property_unhidden_field.read())
             self.assertFalse(dut.reg_hidden_fields.no_property_field.read())
@@ -88,6 +100,10 @@ class TestExportHidden(unittest.TestCase):
                 _ = dut.reg_hidden_fields.property_hidden_field.read()
 
     def test_show_hidden(self):
+        """
+        Simple test to make sure that the fields marks as hidden are generated, when show_hidden
+        is set
+        """
         with self.build_python_wrappers_and_make_instance(show_hidden=True) as dut:
             self.assertFalse(dut.reg_hidden_fields.property_unhidden_field.read())
             self.assertFalse(dut.reg_hidden_fields.no_property_field.read())
@@ -95,6 +111,9 @@ class TestExportHidden(unittest.TestCase):
 
 
 class TestExportUDP(unittest.TestCase):
+    """
+    Tests for including the UDPs in the generated RAL
+    """
 
     test_case_path = 'tests/testcases'
     test_case_name = 'user_defined_properties.rdl'
@@ -103,6 +122,10 @@ class TestExportUDP(unittest.TestCase):
 
     @contextmanager
     def build_python_wrappers_and_make_instance(self, udp_list:List[str]):
+        """
+        Context manager to build the python wrappers for a value of show_hidden, then import them
+        and clean up afterwards
+        """
 
         # compile the code for the test
         rdlc = RDLCompiler()
@@ -154,33 +177,55 @@ class TestExportUDP(unittest.TestCase):
             sys.path.remove(tmpdirname)
 
     def test_str_property(self):
+        """
+        Check a str property is correctly generated in all the places, this is based on a the
+        systemRDL test case having set the property to the fully qualified node name
+        """
+
         # in the code the property str_property_to_include is always sent to the fully qualified
-        # node name, arrays have to have heterogeneous properties in the python systemRDL compiler
+        # node name, arrays have to have homogeneous properties in the python systemRDL compiler
         # so the array designators are not present in the UDP
 
         def walk_child_registers(node):
             for register in node.get_registers(unroll=True):
-                self.assertIn('str_property_to_include', register.udp, msg=f'{register.full_inst_name} missing str_property_to_include')
-                self.assertEqual(register.udp['str_property_to_include'], re.sub(r'\[\d+\]','',register.full_inst_name))
+                self.assertIn('str_property_to_include',
+                              register.udp,
+                              msg=f'{register.full_inst_name} missing str_property_to_include')
+                self.assertEqual(register.udp['str_property_to_include'],
+                                 re.sub(r'\[\d+\]','',register.full_inst_name))
                 for field in register.fields:
-                    self.assertEqual(field.udp['str_property_to_include'],re.sub(r'\[\d+\]','',field.full_inst_name))
+                    self.assertEqual(field.udp['str_property_to_include'],
+                                     re.sub(r'\[\d+\]','',field.full_inst_name))
 
         def walk_child_sections(node):
             for section in node.get_sections(unroll=True):
-                self.assertEqual(section.udp['str_property_to_include'], re.sub(r'\[\d+\]','',section.full_inst_name))
+                self.assertEqual(section.udp['str_property_to_include'],
+                                 re.sub(r'\[\d+\]','',section.full_inst_name))
                 walk_child_sections(section)
                 walk_child_registers(section)
 
-        with self.build_python_wrappers_and_make_instance(udp_list=['str_property_to_include']) as dut:
+        with self.build_python_wrappers_and_make_instance(udp_list=['str_property_to_include']) as\
+                dut:
             self.assertEqual(dut.udp['str_property_to_include'], dut.full_inst_name)
             walk_child_sections(dut)
             walk_child_registers(dut)
 
     def test_selective_property_export(self):
+        """
+        Check all the permutations of the available UDPs to make sure only the correct ones get
+        generated in each case
+        """
 
-        full_property_list = ['bool_property_to_include','struct_property_to_include', 'enum_property_to_include', 'int_property_to_include', 'str_property_to_include', 'int_property_to_exclude']
-        for udp_to_include in chain.from_iterable([permutations(full_property_list, r) for r in range(len(full_property_list))]):
-            with self.build_python_wrappers_and_make_instance(udp_list=list(udp_to_include)) as dut:
+        full_property_list = ['bool_property_to_include',
+                              'struct_property_to_include',
+                              'enum_property_to_include',
+                              'int_property_to_include',
+                              'str_property_to_include',
+                              'int_property_to_exclude']
+        for udp_to_include in chain.from_iterable(
+                [permutations(full_property_list, r) for r in range(len(full_property_list))]):
+            with self.build_python_wrappers_and_make_instance(udp_list=list(udp_to_include)) as \
+                    dut:
                 for udp in full_property_list:
                     if udp in list(udp_to_include):
                         self.assertIn(udp, dut.reg_a.field_a.udp)

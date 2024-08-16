@@ -37,9 +37,11 @@ jobs:
           python -m pip install .
           python -m pip install -U pylint
 
-      - name: Run Lint
-        #run: pylint --rcfile tests/pylint.rc src/peakrdl_python tests/unit_tests
+      - name: Run Main code Lint
         run: pylint --rcfile tests/pylint.rc src/peakrdl_python
+
+      - name: Run unit tests Lint
+        run: pylint --rcfile tests/pylint.rc src/peakrdl_python tests/unit_tests
 
   mypy:
     runs-on: ubuntu-latest
