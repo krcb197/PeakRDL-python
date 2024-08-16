@@ -1224,10 +1224,12 @@ class {{fq_block_name}}_single_access({{top_node.type_name}}_TestCase): # type: 
         with self.subTest(msg='register: {{'.'.join(node.get_path_segments())}}'):
                 {# a register can only have fields beneath it #}
             expected_fields = [ {%- for child_node in node.children(unroll=True) -%}
-                                            {%- if not child_node.get_property('python_hide', default=False) or show_hidden -%}
-                                         self.dut.{{'.'.join(get_python_path_segments(child_node))}}, # type: ignore[union-attr,list-item]
-                                            {% endif %}
-                                         {% endfor %}
+                                    {% if isinstance(child_node, systemrdlFieldNode) %}
+                                        {%- if not child_node.get_property('python_hide', default=False) or show_hidden -%}
+                                    self.dut.{{'.'.join(get_python_path_segments(child_node))}}, # type: ignore[union-attr,list-item]
+                                        {% endif %}
+                                    {% endif %}
+                                 {% endfor %}
                                          ]
             fields = []
             for field in self.dut.{{'.'.join(get_python_path_segments(node))}}.fields:  # type: ignore[union-attr]
@@ -1236,7 +1238,7 @@ class {{fq_block_name}}_single_access({{top_node.type_name}}_TestCase): # type: 
                 {% if node.has_sw_writable %}
             expected_writable_fields = [ {%- for child_node in node.children(unroll=True) -%}
                                             {%- if not child_node.get_property('python_hide', default=False) or show_hidden -%}
-                                         {% if child_node.is_sw_writable %}self.dut.{{'.'.join(get_python_path_segments(child_node))}}, # type: ignore[union-attr,list-item] {% endif %}
+                                         {% if isinstance(child_node, systemrdlFieldNode) %}{% if child_node.is_sw_writable %}self.dut.{{'.'.join(get_python_path_segments(child_node))}}, # type: ignore[union-attr,list-item] {% endif %}{% endif %}
                                             {% endif %}
                                          {% endfor %}
                                          ]
