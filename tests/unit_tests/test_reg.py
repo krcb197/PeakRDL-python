@@ -511,9 +511,16 @@ class TestReadWrite(RegTestBase):
                                                 width=self.dut.width,
                                                 accesswidth=self.dut.accesswidth, data=1)
 
+
 class TestRegWidthUtility(unittest.TestCase):
+    """
+    Test for the register width calculations
+    """
 
     def test_legal_reg_width(self):
+        """
+        Test the register widths
+        """
         self.assertFalse(legal_register_width(-1))
         self.assertFalse(legal_register_width(0))
         self.assertFalse(legal_register_width(4))
@@ -522,5 +529,3 @@ class TestRegWidthUtility(unittest.TestCase):
             self.assertTrue(legal_register_width(reg_width))
             self.assertFalse(legal_register_width(reg_width + 1))
             self.assertFalse(legal_register_width(reg_width - 1))
-
-

@@ -77,6 +77,8 @@ class Exporter(ExporterSubcommandPlugin):
                                help='show addrmap, regfile, memory, register and fields that '
                                     'have been given the python_hide user defined property and '
                                     'would be removed from the build python by default')
+        arg_group.add_argument('--udp', dest='udp', nargs='*', type=str,
+                               help='any user defined properties to include in the reg_model')
 
     def do_export(self, top_node: 'AddrmapNode', options: 'argparse.Namespace') -> None:
         """
@@ -100,5 +102,6 @@ class Exporter(ExporterSubcommandPlugin):
             skip_test_case_generation=options.skip_test_case_generation,
             delete_existing_package_content=not options.suppress_cleanup,
             legacy_block_access=options.legacy_block_access,
-            show_hidden=options.show_hidden
+            show_hidden=options.show_hidden,
+            user_defined_properties_to_include=options.udp
         )

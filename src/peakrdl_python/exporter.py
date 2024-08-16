@@ -20,7 +20,7 @@ Main Classes for the peakrdl-python
 import os
 from pathlib import Path
 from shutil import copy
-from typing import List, NoReturn, Iterable, Tuple, Dict, Any
+from typing import List, NoReturn, Iterable, Tuple, Dict, Any, Optional
 
 import jinja2 as jj
 from systemrdl import RDLWalker # type: ignore
@@ -29,7 +29,8 @@ from systemrdl.node import RootNode, Node, RegNode, AddrmapNode, RegfileNode # t
 from systemrdl.node import FieldNode, MemNode, AddressableNode # type: ignore
 from systemrdl.node import SignalNode # type: ignore
 from systemrdl.rdltypes import OnReadType, OnWriteType, PropertyReference  # type: ignore
-from systemrdl.rdltypes.user_enum import UserEnumMeta  # type: ignore
+from systemrdl.rdltypes.user_enum import UserEnum, UserEnumMeta  # type: ignore
+from systemrdl.rdltypes.user_struct import UserStruct  # type: ignore
 
 from .systemrdl_node_utility_functions import get_reg_readable_fields, get_reg_writable_fields, \
     get_table_block, get_dependent_component, \
@@ -37,7 +38,7 @@ from .systemrdl_node_utility_functions import get_reg_readable_fields, get_reg_w
     get_field_max_value_hex_string, get_reg_max_value_hex_string, get_fully_qualified_type_name, \
     uses_enum, uses_memory, \
     get_memory_max_entry_value_hex_string, get_memory_width_bytes, \
-    get_field_default_value, get_enum_values
+    get_field_default_value, get_enum_values, get_properties_to_include, get_reg_fields
 
 from .lib import get_array_typecode
 
@@ -291,7 +292,8 @@ class PythonExporter:
                            skip_lib_copy: bool,
                            asyncoutput: bool,
                            legacy_block_access: bool,
-                           show_hidden: bool) -> None:
+                           show_hidden: bool,
+                           udp_to_include: Optional[List[str]]) -> None:
 
         context = {
             'print': print,
@@ -304,11 +306,14 @@ class PythonExporter:
             'systemrdlMemNode': MemNode,
             'systemrdlAddressableNode': AddressableNode,
             'systemrdlSignalNode': SignalNode,
+            'systemrdlUserEnum': UserEnum,
+            'systemrdlUserStruct': UserStruct,
             'asyncoutput': asyncoutput,
             'OnWriteType': OnWriteType,
             'OnReadType': OnReadType,
             'PropertyReference': PropertyReference,
             'isinstance': isinstance,
+            'str': str,
             'uses_enum' : uses_enum(top_block),
             'uses_memory' : uses_memory(top_block),
             'get_fully_qualified_type_name': self._lookup_type_name,
@@ -323,6 +328,7 @@ class PythonExporter:
             'get_table_block': get_table_block,
             'get_reg_writable_fields': get_reg_writable_fields,
             'get_reg_readable_fields': get_reg_readable_fields,
+            'get_reg_fields' : get_reg_fields,
             'get_memory_max_entry_value_hex_string': get_memory_max_entry_value_hex_string,
             'get_memory_width_bytes': get_memory_width_bytes,
             'get_field_default_value': get_field_default_value,
@@ -332,7 +338,12 @@ class PythonExporter:
             'skip_lib_copy': skip_lib_copy,
             'version': __version__,
             'legacy_block_access': legacy_block_access,
-            'show_hidden': show_hidden
+            'show_hidden': show_hidden,
+            'udp_to_include': udp_to_include,
+            'get_properties_to_include': get_properties_to_include,
+            'dependent_property_enum':
+                self._get_dependent_property_enum(node=top_block,
+                                                  udp_to_include=udp_to_include)
         }
         if legacy_block_access is True:
             context['get_array_typecode'] = get_array_typecode
@@ -437,7 +448,8 @@ class PythonExporter:
                        skip_lib_copy: bool,
                        asyncoutput: bool,
                        legacy_block_access: bool,
-                       show_hidden: bool) -> None:
+                       show_hidden: bool,
+                       udp_to_include: Optional[List[str]]) -> None:
         """
 
         Args:
@@ -492,7 +504,11 @@ class PythonExporter:
                 'systemrdlMemNode': MemNode,
                 'systemrdlRegfileNode': RegfileNode,
                 'systemrdlAddrmapNode': AddrmapNode,
+                'systemrdlUserEnum': UserEnum,
+                'systemrdlUserStruct': UserStruct,
                 'isinstance': isinstance,
+                'type': type,
+                'str': str,
                 'get_python_path_segments': get_python_path_segments,
                 'safe_node_name': safe_node_name,
                 'uses_memory': (len(owned_elements.memories) > 0),
@@ -512,7 +528,12 @@ class PythonExporter:
                 'version': __version__,
                 'get_array_typecode': get_array_typecode,
                 'legacy_block_access': legacy_block_access,
-                'show_hidden': show_hidden
+                'show_hidden': show_hidden,
+                'udp_to_include': udp_to_include,
+                'get_properties_to_include': get_properties_to_include,
+                'dependent_property_enum':
+                    self._get_dependent_property_enum(node=top_block,
+                                                      udp_to_include=udp_to_include)
             }
 
 
@@ -532,7 +553,8 @@ class PythonExporter:
                delete_existing_package_content: bool = True,
                skip_library_copy: bool = False,
                legacy_block_access: bool = True,
-               show_hidden: bool = False) -> List[str]:
+               show_hidden: bool = False,
+               user_defined_properties_to_include: Optional[List[str]] = None) -> List[str]:
         """
         Generated Python Code and Testbench
 
@@ -560,6 +582,9 @@ class PythonExporter:
                                  set to true will not be included in the generated python code.
                                  This behaviour can be overridden by setting this property to
                                  true.
+            user_defined_properties_to_include : A list of strings of the names of user-defined
+                                                 properties to include. Set to None for nothing
+                                                 to appear.
 
         Returns:
             List[str] : modules that have been exported:
@@ -584,11 +609,28 @@ class PythonExporter:
                            include_libraries=not skip_library_copy)
         package.create_empty_package(cleanup=delete_existing_package_content)
 
+        if user_defined_properties_to_include is not None:
+            # the list of user defined properties may not include the names used by peakrdl python
+            # for control behaviours
+            if not isinstance(user_defined_properties_to_include, list):
+                raise TypeError(f'The user_defined_properties_to_include must be a list, got '
+                                f'{type(user_defined_properties_to_include)}')
+            for entry in user_defined_properties_to_include:
+                if not isinstance(entry, str):
+                    raise TypeError('The entries in the user_defined_properties_to_include must '
+                                    f'be a str, got {type(entry)}')
+            reserved_names = ['python_hide', 'python_name']
+            for reserved_name in reserved_names:
+                if reserved_name in user_defined_properties_to_include:
+                    raise RuntimeError('It is not permitted to expose a property name used to'
+                                       ' build the peakrdl-python wrappers: '+reserved_name)
+
         self._build_node_type_table(top_block, show_hidden)
 
         self.__export_reg_model(top_block=top_block, package=package, asyncoutput=asyncoutput,
                                 skip_lib_copy=skip_library_copy,
-                                legacy_block_access=legacy_block_access, show_hidden=show_hidden)
+                                legacy_block_access=legacy_block_access, show_hidden=show_hidden,
+                                udp_to_include=user_defined_properties_to_include)
 
         self.__export_simulator(top_block=top_block, package=package, asyncoutput=asyncoutput,
                                 skip_lib_copy=skip_library_copy,
@@ -608,7 +650,8 @@ class PythonExporter:
             self.__export_tests(top_block=top_block, package=package, asyncoutput=asyncoutput,
                                 skip_lib_copy=skip_library_copy,
                                 legacy_block_access=legacy_block_access,
-                                show_hidden=show_hidden)
+                                show_hidden=show_hidden,
+                                udp_to_include=user_defined_properties_to_include)
 
         return top_block.inst_name
 
@@ -719,3 +762,43 @@ class PythonExporter:
                     if fully_qualified_enum_name not in enum_needed:
                         enum_needed.append(fully_qualified_enum_name)
                         yield field_enum, child_node
+
+    def _get_dependent_property_enum(self, node: AddressableNode,
+                                     udp_to_include: Optional[List[str]]) -> \
+            List[UserEnumMeta]:
+        """
+        iterable of enums which is used by a descendant of the input node,
+        this list is de-duplicated
+        """
+        if udp_to_include is None:
+            return []
+
+        enum_needed = []
+
+        def update_enum_list(node_to_process: AddressableNode) -> None:
+
+            def walk_property_struct_node(value: Any) -> None:
+                if isinstance(value, UserEnum) and type(value) not in enum_needed:
+                    enum_needed.append(type(value))
+
+                if isinstance(value, UserStruct):
+                    for sub_value in value.members.values():
+                        walk_property_struct_node(sub_value)
+
+            node_properties = get_properties_to_include(node=node_to_process,
+                                                        udp_to_include=udp_to_include)
+            for node_property_name in node_properties:
+                node_property = node_to_process.get_property(node_property_name)
+                if isinstance(node_property, UserEnum) and type(node_property) not in enum_needed:
+                    enum_needed.append(type(node_property))
+
+                if isinstance(node_property, UserStruct):
+                    for sub_value in node_property.members.values():
+                        walk_property_struct_node(sub_value)
+
+        update_enum_list(node_to_process=node)
+
+        for child_node in node.descendants():
+            update_enum_list(node_to_process=child_node)
+
+        return enum_needed

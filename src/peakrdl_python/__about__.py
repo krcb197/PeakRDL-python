@@ -17,4 +17,4 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 Variables that describes the peakrdl-python Package
 """
-__version__ = "0.9.0.rc3"
+__version__ = "0.9.0-rc4"

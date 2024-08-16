@@ -83,6 +83,9 @@ CommandLineParser.add_argument('--legacy_block_access', action='store_true',
                                dest='legacy_block_access',
                                help='peakrdl python has two methods to hold blocks of data, the '
                                     'legacy mode based on Array or the new mode using lists')
+CommandLineParser.add_argument('--udp', dest='udp', nargs='*',
+                               type=str, help='any user defined properties to include in the '
+                                              'reg_model')
 
 
 def build_logging_cong(logfilepath:str):
@@ -168,7 +171,8 @@ if __name__ == '__main__':
                     asyncoutput=CommandLineArgs.asyncoutput,
                     delete_existing_package_content=not CommandLineArgs.suppress_cleanup,
                     skip_library_copy=not CommandLineArgs.copy_libraries,
-                    legacy_block_access=CommandLineArgs.legacy_block_access)
+                    legacy_block_access=CommandLineArgs.legacy_block_access,
+                    user_defined_properties_to_include=CommandLineArgs.udp)
     print(f'generation time {time.time() - start_time}s')
 
     if not CommandLineArgs.export_only:

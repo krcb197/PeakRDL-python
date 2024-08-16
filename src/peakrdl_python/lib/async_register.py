@@ -96,6 +96,14 @@ class AsyncReg(BaseReg, ABC):
 
         raise TypeError(f'unhandled parent callback type: {type(self.parent._callbacks)}')
 
+    @property
+    @abstractmethod
+    def fields(self) -> \
+            Iterator[Union['FieldAsyncReadOnly','FieldAsyncWriteOnly', 'FieldAsyncReadWrite']]:
+        """
+        generator that produces has all the fields within the register
+        """
+
 
 class RegAsyncReadOnly(AsyncReg, ABC):
     """

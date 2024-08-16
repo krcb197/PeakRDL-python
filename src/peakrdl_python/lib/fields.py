@@ -876,11 +876,13 @@ class FieldEnumAsyncReadWrite(FieldAsyncReadWrite, FieldEnum, ABC):
         # this cast is OK because an explict typing check was done in the __init__
         return cast(RegAsyncReadWrite, self.parent)
 
+
 class FieldEnumAsyncReadOnly(FieldAsyncReadOnly, FieldEnum, ABC):
     """
     class for an async read only register field with an enumerated value
     """
     __slots__: List[str] = []
+
 
 class FieldEnumAsyncWriteOnly(FieldAsyncWriteOnly, FieldEnum, ABC):
     """
