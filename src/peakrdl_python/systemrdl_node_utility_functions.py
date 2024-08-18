@@ -369,7 +369,8 @@ def get_reg_writable_fields(node: RegNode,
     if not isinstance(node, RegNode):
         raise TypeError(f'node is not a {type(RegNode)} got {type(node)}')
 
-    return filter(lambda x: x.is_sw_writable, get_reg_fields(node=node, hide_node_callback=hide_node_callback))
+    return filter(lambda x: x.is_sw_writable,
+                  get_reg_fields(node=node, hide_node_callback=hide_node_callback))
 
 
 def get_reg_readable_fields(node: RegNode,
@@ -379,7 +380,7 @@ def get_reg_readable_fields(node: RegNode,
 
     Args:
         node: node to be analysed
-        show_hidden: force fields to be shown if they are marked as hidden
+        hide_node_callback: callback to determine if the node should be hidden
 
     Yields:
         readable fields
@@ -388,7 +389,8 @@ def get_reg_readable_fields(node: RegNode,
     if not isinstance(node, RegNode):
         raise TypeError(f'node is not a {type(RegNode)} got {type(node)}')
 
-    return filter(lambda x: x.is_sw_readable, get_reg_fields(node=node, hide_node_callback=hide_node_callback))
+    return filter(lambda x: x.is_sw_readable,
+                  get_reg_fields(node=node, hide_node_callback=hide_node_callback))
 
 
 def uses_memory(node: AddressableNode) -> bool:

@@ -24,11 +24,11 @@ from shutil import copy
 from typing import List, NoReturn, Iterable, Tuple, Dict, Any, Optional
 
 import jinja2 as jj
-from systemrdl import RDLWalker # type: ignore
+from systemrdl import RDLWalker  # type: ignore
 
-from systemrdl.node import RootNode, Node, RegNode, AddrmapNode, RegfileNode # type: ignore
-from systemrdl.node import FieldNode, MemNode, AddressableNode # type: ignore
-from systemrdl.node import SignalNode # type: ignore
+from systemrdl.node import RootNode, Node, RegNode, AddrmapNode, RegfileNode  # type: ignore
+from systemrdl.node import FieldNode, MemNode, AddressableNode  # type: ignore
+from systemrdl.node import SignalNode  # type: ignore
 from systemrdl.rdltypes import OnReadType, OnWriteType, PropertyReference  # type: ignore
 from systemrdl.rdltypes.user_enum import UserEnum, UserEnumMeta  # type: ignore
 from systemrdl.rdltypes.user_struct import UserStruct  # type: ignore
@@ -63,6 +63,7 @@ class _PythonPackage:
     """
     Class to represent a python package
     """
+
     def __init__(self, path: Path):
         self._path = path
 
@@ -131,6 +132,7 @@ class _CopiedPythonPackage(_PythonPackage):
     """
     Class to represent a python package, which is copied from another
     """
+
     def __init__(self, path: Path, ref_package: _PythonPackage):
         super().__init__(path=path)
         self._ref_package = ref_package
@@ -166,7 +168,7 @@ class _Package(_PythonPackage):
     template_lib_package = _PythonPackage(Path(__file__).parent / 'lib')
     template_sim_lib_package = _PythonPackage(Path(__file__).parent / 'sim_lib')
 
-    def __init__(self, path:str, package_name: str, include_tests: bool, include_libraries: bool):
+    def __init__(self, path: str, package_name: str, include_tests: bool, include_libraries: bool):
         super().__init__(Path(path) / package_name)
 
         self._include_tests = include_tests
@@ -183,7 +185,7 @@ class _Package(_PythonPackage):
             self.sim_lib = self.child_ref_package('sim_lib', self.template_sim_lib_package)
         self.sim = self.child_package('sim')
 
-    def child_ref_package(self, name: str, ref_package:_PythonPackage) -> '_CopiedPythonPackage':
+    def child_ref_package(self, name: str, ref_package: _PythonPackage) -> '_CopiedPythonPackage':
         """
         provide a child package within the current package
 
@@ -249,9 +251,9 @@ class PythonExporter:
             loader = jj.ChoiceLoader([
                 jj.FileSystemLoader(user_template_dir),
                 jj.FileSystemLoader(os.path.join(file_path, "templates")),
-                jj.PrefixLoader({ 'user': jj.FileSystemLoader(user_template_dir),
-                                  'base': jj.FileSystemLoader(os.path.join(file_path, "templates"))
-                                },
+                jj.PrefixLoader({'user': jj.FileSystemLoader(user_template_dir),
+                                 'base': jj.FileSystemLoader(os.path.join(file_path, "templates"))
+                                 },
                                 delimiter=":")
             ])
         else:
@@ -298,10 +300,10 @@ class PythonExporter:
                            hide_node_func: HideNodeCallback) -> None:
 
         # write out text file of all the nodes names, this can be used to debug regex issues
-        with package.reg_model.path.joinpath('full_inst_name.txt').open('w', encoding='utf-8') as fid:
+        with package.reg_model.path.joinpath('full_inst_name.txt').open('w', encoding='utf-8') as \
+                fid:
             for child in top_block.descendants(unroll=True):
-                 fid.write('.'.join(child.get_path_segments()) + '\n')
-
+                fid.write('.'.join(child.get_path_segments()) + '\n')
 
         context = {
             'print': print,
@@ -322,8 +324,8 @@ class PythonExporter:
             'PropertyReference': PropertyReference,
             'isinstance': isinstance,
             'str': str,
-            'uses_enum' : uses_enum(top_block),
-            'uses_memory' : uses_memory(top_block),
+            'uses_enum': uses_enum(top_block),
+            'uses_memory': uses_memory(top_block),
             'get_fully_qualified_type_name': self._lookup_type_name,
             'get_dependent_component': get_dependent_component,
             'get_dependent_enum': self._get_dependent_enum,
@@ -336,7 +338,7 @@ class PythonExporter:
             'get_table_block': get_table_block,
             'get_reg_writable_fields': get_reg_writable_fields,
             'get_reg_readable_fields': get_reg_readable_fields,
-            'get_reg_fields' : get_reg_fields,
+            'get_reg_fields': get_reg_fields,
             'get_memory_max_entry_value_hex_string': get_memory_max_entry_value_hex_string,
             'get_memory_width_bytes': get_memory_width_bytes,
             'get_field_default_value': get_field_default_value,
@@ -379,7 +381,7 @@ class PythonExporter:
             'skip_lib_copy': skip_lib_copy,
             'version': __version__,
             'legacy_block_access': legacy_block_access,
-            }
+        }
 
         context.update(self.user_template_context)
 
@@ -404,7 +406,7 @@ class PythonExporter:
             'skip_lib_copy': skip_lib_copy,
             'version': __version__,
             'legacy_block_access': legacy_block_access,
-            }
+        }
 
         context.update(self.user_template_context)
 
@@ -435,7 +437,7 @@ class PythonExporter:
             'asyncoutput': asyncoutput,
             'skip_lib_copy': skip_lib_copy,
             'version': __version__,
-            'legacy_block_access' : legacy_block_access,
+            'legacy_block_access': legacy_block_access,
         }
 
         context.update(self.user_template_context)
@@ -469,7 +471,7 @@ class PythonExporter:
         Returns:
 
         """
-        #pylint: disable=too-many-locals
+        # pylint: disable=too-many-locals
 
         blocks = AddressMaps(hide_node_callback=hide_node_func)
         # running the walker populated the blocks with all the address maps in within the
@@ -493,8 +495,7 @@ class PythonExporter:
                 rolled_owned_reg += list(memory.registers(unroll=False))
 
             def is_reg_array(item: RegNode) -> bool:
-                visible = not item.get_property('python_hide', default=False) or show_hidden
-                return item.is_array and visible
+                return item.is_array and hide_node_func(item)
 
             rolled_owned_reg_array = list(filter(is_reg_array, rolled_owned_reg))
 
@@ -544,7 +545,6 @@ class PythonExporter:
                 'hide_node_func': hide_node_func
             }
 
-
             self.__stream_jinja_template(template_name="addrmap_tb.py.jinja",
                                          target_package=package.tests,
                                          target_name='test_' + fq_block_name + '.py',
@@ -554,6 +554,23 @@ class PythonExporter:
                                          target_package=package.tests,
                                          target_name='test_sim_' + fq_block_name + '.py',
                                          template_context=context)
+
+    def _validate_udp_to_include(self, udp_to_include: Optional[List[str]]) -> None:
+        if udp_to_include is not None:
+            # the list of user defined properties may not include the names used by peakrdl python
+            # for control behaviours
+            if not isinstance(udp_to_include, list):
+                raise TypeError(f'The user_defined_properties_to_include must be a list, got '
+                                f'{type(udp_to_include)}')
+            for entry in udp_to_include:
+                if not isinstance(entry, str):
+                    raise TypeError('The entries in the user_defined_properties_to_include must '
+                                    f'be a str, got {type(entry)}')
+            reserved_names = ['python_hide', 'python_name']
+            for reserved_name in reserved_names:
+                if reserved_name in udp_to_include:
+                    raise RuntimeError('It is not permitted to expose a property name used to'
+                                       ' build the peakrdl-python wrappers: ' + reserved_name)
 
     def export(self, node: Node, path: str,  # pylint: disable=too-many-arguments
                asyncoutput: bool = False,
@@ -587,10 +604,10 @@ class PythonExporter:
                                         the tool and will be turned on by default for a few
                                         releases.
             show_hidden (bool) : By default any item (Address Map, Regfile, Register, Memory or
-                                 Field) with the systemRDL User Defined Property (UDP) ``python_hide``
-                                 set to true will not be included in the generated python code.
-                                 This behaviour can be overridden by setting this property to
-                                 true.
+                                 Field) with the systemRDL User Defined Property (UDP)
+                                 ``python_hide`` set to true will not be included in the generated
+                                 python code. This behaviour can be overridden by setting this
+                                 property to true.
             user_defined_properties_to_include : A list of strings of the names of user-defined
                                                  properties to include. Set to None for nothing
                                                  to appear.
@@ -617,33 +634,26 @@ class PythonExporter:
                            include_libraries=not skip_library_copy)
         package.create_empty_package(cleanup=delete_existing_package_content)
 
-        if user_defined_properties_to_include is not None:
-            # the list of user defined properties may not include the names used by peakrdl python
-            # for control behaviours
-            if not isinstance(user_defined_properties_to_include, list):
-                raise TypeError(f'The user_defined_properties_to_include must be a list, got '
-                                f'{type(user_defined_properties_to_include)}')
-            for entry in user_defined_properties_to_include:
-                if not isinstance(entry, str):
-                    raise TypeError('The entries in the user_defined_properties_to_include must '
-                                    f'be a str, got {type(entry)}')
-            reserved_names = ['python_hide', 'python_name']
-            for reserved_name in reserved_names:
-                if reserved_name in user_defined_properties_to_include:
-                    raise RuntimeError('It is not permitted to expose a property name used to'
-                                       ' build the peakrdl-python wrappers: '+reserved_name)
+        self._validate_udp_to_include(udp_to_include=user_defined_properties_to_include)
 
         if hidden_inst_name_regex is not None:
-            hidden_inst_name_regex = re.compile(hidden_inst_name_regex)
+            hidden_inst_name_regex_re = re.compile(hidden_inst_name_regex)
 
-            def hide_node_func(node: Node):
+            def hide_node_func(node: Node) -> bool:
+                """
+                Returns True if the node should be hidden based on either the python property or
+                regex match to the name
+                """
                 if hide_based_on_property(node=node, show_hidden=show_hidden):
                     return True
 
-                result = hidden_inst_name_regex.match('.'.join(node.get_path_segments()))
+                result = hidden_inst_name_regex_re.match('.'.join(node.get_path_segments()))
                 return result is not None
         else:
-            def hide_node_func(node: Node):
+            def hide_node_func(node: Node) -> bool:
+                """
+                Returns True if the node should be hidden based on either the python property
+                """
                 return hide_based_on_property(node=node, show_hidden=show_hidden)
 
         # if the top level node is hidden the wrapper will be meaningless, rather then try to
@@ -664,15 +674,14 @@ class PythonExporter:
                                 legacy_block_access=legacy_block_access)
 
         self.__export_example(top_block=top_block, package=package, asyncoutput=asyncoutput,
-                                skip_lib_copy=skip_library_copy,
-                                legacy_block_access=legacy_block_access)
+                              skip_lib_copy=skip_library_copy,
+                              legacy_block_access=legacy_block_access)
 
         if not skip_test_case_generation:
-
             # export the baseclasses for the tests
             self.__export_base_tests(top_block=top_block, package=package, asyncoutput=asyncoutput,
-                                skip_lib_copy=skip_library_copy,
-                                legacy_block_access=legacy_block_access)
+                                     skip_lib_copy=skip_library_copy,
+                                     legacy_block_access=legacy_block_access)
             # export the tests themselves, these are broken down to one file per addressmap
             self.__export_tests(top_block=top_block, package=package, asyncoutput=asyncoutput,
                                 skip_lib_copy=skip_library_copy,
@@ -761,7 +770,7 @@ class PythonExporter:
         if root_node.inst.original_def == parent_scope:
             return field_enum.__name__
 
-        dependent_components = get_dependent_component(root_node, show_hidden)
+        dependent_components = get_dependent_component(root_node, hide_node_func)
 
         for component in dependent_components:
             if component.inst.original_def == parent_scope:
@@ -785,7 +794,7 @@ class PythonExporter:
                     fully_qualified_enum_name = self._fully_qualified_enum_type(field_enum,
                                                                                 node,
                                                                                 child_node,
-                                                                                show_hidden)
+                                                                                hide_node_func)
 
                     if fully_qualified_enum_name not in enum_needed:
                         enum_needed.append(fully_qualified_enum_name)
