@@ -299,12 +299,6 @@ class PythonExporter:
                            udp_to_include: Optional[List[str]],
                            hide_node_func: HideNodeCallback) -> None:
 
-        # write out text file of all the nodes names, this can be used to debug regex issues
-        with package.reg_model.path.joinpath('full_inst_name.txt').open('w', encoding='utf-8') as \
-                fid:
-            for child in top_block.descendants(unroll=True):
-                fid.write('.'.join(child.get_path_segments()) + '\n')
-
         context = {
             'print': print,
             'type': type,

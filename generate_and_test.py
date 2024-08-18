@@ -89,6 +89,10 @@ CommandLineParser.add_argument('--udp', dest='udp', nargs='*',
 CommandLineParser.add_argument('--hide_regex', dest='hide_regex', type=str,
                                help='A regex that will cause any matching fully qualified node to '
                                     'be hidden')
+CommandLineParser.add_argument('--full_inst_file', dest='full_inst_file',
+                               type=pathlib.Path, required=False,
+                               help='export a text file with a list of the all qualified instance'
+                                    'names in the systemRDL')
 
 
 def build_logging_cong(logfilepath:str):
@@ -167,6 +171,12 @@ if __name__ == '__main__':
     for node in spec.descendants(unroll=True):
         node_list.append(node)
         print(node.inst_name)
+
+    # write out text file of all the nodes names, this can be used to debug regex issues
+    if CommandLineArgs.full_inst_file is not None:
+        with CommandLineArgs.full_inst_file.open('w', encoding='utf-8') as fid:
+            for child in spec.descendants(unroll=True):
+                fid.write('.'.join(child.get_path_segments()) + '\n')
 
     exporter = PythonExporter()
     start_time = time.time()
