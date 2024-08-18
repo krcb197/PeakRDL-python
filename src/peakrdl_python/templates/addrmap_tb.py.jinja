@@ -609,7 +609,7 @@ class {{fq_block_name}}_single_access({{top_node.type_name}}_TestCase): # type: 
                 reference_read_fields = { {% for child_node in node.children() -%}
                                             {% if isinstance(child_node, systemrdlFieldNode) %}
                                                 {%- if child_node.is_sw_readable %}
-                                                    {%- if not child_node.get_property('python_hide', default=False) or show_hidden %}
+                                                    {%- if not hide_node_func(child_node) %}
                                           '{{ child_node.inst_name }}' : {% if asyncoutput %}await {%endif %}self.dut.{{'.'.join(get_python_path_segments(child_node))}}.read(){%- if not loop.last -%}, {%- endif %} # type: ignore[union-attr]
                                                     {%- endif -%}
                                                 {%- endif -%}
@@ -666,7 +666,7 @@ class {{fq_block_name}}_single_access({{top_node.type_name}}_TestCase): # type: 
                 reference_read_fields = { {% for field in node.children() -%}
                                           {%- if isinstance(field, systemrdlFieldNode) -%}
                                           {%- if field.is_sw_readable %}
-                                          {%- if not field.get_property('python_hide', default=False) or show_hidden %}
+                                          {%- if not hide_node_func(field) %}
                                           '{{ field.inst_name }}' : {%if asyncoutput %}await {% endif %}self.dut.{{'.'.join(get_python_path_segments(field))}}.read(){%- if not loop.last -%}, {%- endif %}  # type: ignore[union-attr]
                                           {%- endif -%}
                                           {%- endif -%}
@@ -683,7 +683,7 @@ class {{fq_block_name}}_single_access({{top_node.type_name}}_TestCase): # type: 
                     {% for field in node.children() -%}
                     {%- if isinstance(field, systemrdlFieldNode) -%}
                     {%- if field.is_sw_readable %}
-                    {%- if not field.get_property('python_hide', default=False) or show_hidden %}
+                    {%- if not hide_node_func(field) %}
                     self.assertEqual(reference_read_fields['{{ field.inst_name }}'],
                                      {% if asyncoutput %} await {% endif %}reg_context.get_child_by_system_rdl_name('{{ field.inst_name }}').read()  # type: ignore[attr-defined,union-attr]
                                      )
@@ -778,7 +778,7 @@ class {{fq_block_name}}_single_access({{top_node.type_name}}_TestCase): # type: 
             if not isinstance(rut, Reg{% if asyncoutput %}Async{% endif %}ReadWrite):
                 raise TypeError('Failed to find read/write register')
             {% if asyncoutput %}await {% endif %}write_field_cominbinations(reg=rut,
-                               writable_fields = [ {% for field in get_reg_writable_fields(node, show_hidden) -%}
+                               writable_fields = [ {% for field in get_reg_writable_fields(node, hide_node_func) -%}
                                                    '{{ safe_node_name(field) }}' {%- if not loop.last -%},{%- endif %}
                                                    {% endfor -%} ])
         {%- endif %}
@@ -837,13 +837,13 @@ class {{fq_block_name}}_single_access({{top_node.type_name}}_TestCase): # type: 
             if not isinstance(rut, Reg{% if asyncoutput %}Async{% endif %}ReadWrite):
                 raise TypeError('Failed to find read/write register')
             {% if asyncoutput %}await {% endif %}write_field_cominbinations(reg=rut,
-                                       writable_fields = [ {% for field in get_reg_writable_fields(node, show_hidden) -%}
+                                       writable_fields = [ {% for field in get_reg_writable_fields(node, hide_node_func) -%}
                                                            '{{ safe_node_name(field) }}' {%- if not loop.last -%},{%- endif %}
                                                            {% endfor -%} ])
             {% else %}
             kwargs = {} # type: ignore[var-annotated]
             expected_value = 0
-            {% for field in get_reg_writable_fields(node, show_hidden) %}
+            {% for field in get_reg_writable_fields(node, hide_node_func) %}
             {%- if 'encode' in field.list_properties() %}
             rand_enum_value = random.choice(list(self.dut.{{'.'.join(get_python_path_segments(field))}}.enum_cls))
             rand_field_value = rand_enum_value.value   # type: ignore[attr-defined]
@@ -1008,7 +1008,7 @@ class {{fq_block_name}}_single_access({{top_node.type_name}}_TestCase): # type: 
 
         # check the readable registers
         expected_readable_regs = [ {%- for child_node in top_node.children(unroll=True) %}
-                                       {%- if not child_node.get_property('python_hide', default=False) or show_hidden %}
+                                       {%- if not hide_node_func(child_node) %}
                                     {%- if isinstance(child_node, systemrdlRegNode) %}{% if child_node.has_sw_readable %}self.dut.{{'.'.join(get_python_path_segments(child_node))}}, # type: ignore[union-attr,list-item] {% endif %}{% endif %}
                                         {% endif %}
                                     {% endfor %} ]
@@ -1019,7 +1019,7 @@ class {{fq_block_name}}_single_access({{top_node.type_name}}_TestCase): # type: 
         self.assertCountEqual(expected_readable_regs, readable_regs)
         {# check the rolled case second #}
         expected_readable_regs = [ {%- for child_node in top_node.children(unroll=False) %}
-                                       {%- if not child_node.get_property('python_hide', default=False) or show_hidden %}
+                                       {%- if not hide_node_func(child_node) %}
                                    {%- if isinstance(child_node, systemrdlRegNode) %}{% if child_node.has_sw_readable %}self.dut.{{'.'.join(get_python_path_segments(child_node))}}, # type: ignore[union-attr,list-item] {% endif %}{% endif %}
                                        {% endif %}
                                    {% endfor %} ]
@@ -1030,7 +1030,7 @@ class {{fq_block_name}}_single_access({{top_node.type_name}}_TestCase): # type: 
 
         # check the writable registers
         expected_writable_regs = [ {%- for child_node in top_node.children(unroll=True) %}
-                                       {%- if not child_node.get_property('python_hide', default=False) or show_hidden %}
+                                       {%- if not hide_node_func(child_node) %}
                                    {%- if isinstance(child_node, systemrdlRegNode) %}{% if child_node.has_sw_writable %}self.dut.{{'.'.join(get_python_path_segments(child_node))}}, # type: ignore[union-attr,list-item] {% endif %}{% endif %}
                                        {% endif %}
                                    {% endfor %} ]
@@ -1041,7 +1041,7 @@ class {{fq_block_name}}_single_access({{top_node.type_name}}_TestCase): # type: 
         self.assertCountEqual(expected_writable_regs, writable_regs)
         {# check the rolled case second #}
         expected_writable_regs = [ {%- for child_node in top_node.children(unroll=False) %}
-                                       {%- if not child_node.get_property('python_hide', default=False) or show_hidden %}
+                                       {%- if not hide_node_func(child_node) %}
                                    {%- if isinstance(child_node, systemrdlRegNode) %}{% if child_node.has_sw_writable %}self.dut.{{'.'.join(get_python_path_segments(child_node))}}, # type: ignore[union-attr,list-item] {% endif %}{% endif %}
                                        {% endif %}
                                    {% endfor %} ]
@@ -1052,7 +1052,7 @@ class {{fq_block_name}}_single_access({{top_node.type_name}}_TestCase): # type: 
 
         # check the sections
         expected_sections = [ {%- for child_node in top_node.children(unroll=True) %}
-                                  {%- if not child_node.get_property('python_hide', default=False) or show_hidden %}
+                                  {%- if not hide_node_func(child_node) %}
                               {%- if isinstance(child_node, (systemrdlAddrmapNode, systemrdlRegfileNode)) %}self.dut.{{'.'.join(get_python_path_segments(child_node))}}, # type: ignore[union-attr,list-item] {% endif %}
                                   {% endif %}
                               {% endfor %} ]
@@ -1063,7 +1063,7 @@ class {{fq_block_name}}_single_access({{top_node.type_name}}_TestCase): # type: 
         self.assertCountEqual(expected_sections, sections)
         {# check the rolled case second #}
         expected_sections = [ {%- for child_node in top_node.children(unroll=False) %}
-                                  {%- if not child_node.get_property('python_hide', default=False) or show_hidden %}
+                                  {%- if not hide_node_func(child_node) %}
                               {%- if isinstance(child_node, (systemrdlAddrmapNode, systemrdlRegfileNode)) %}self.dut.{{'.'.join(get_python_path_segments(child_node))}},  # type: ignore[union-attr,list-item] {% endif %}
                                   {% endif %}
                               {% endfor %} ]
@@ -1074,7 +1074,7 @@ class {{fq_block_name}}_single_access({{top_node.type_name}}_TestCase): # type: 
 
         # check the memories
         expected_memories = [ {%- for child_node in top_node.children(unroll=True) %}
-                                  {%- if not child_node.get_property('python_hide', default=False) or show_hidden %}
+                                  {%- if not hide_node_func(child_node) %}
                               {%- if isinstance(child_node, systemrdlMemNode) %}self.dut.{{'.'.join(get_python_path_segments(child_node))}}, # type: ignore[union-attr,list-item] {% endif %}
                                   {% endif %}
                               {% endfor %} ]
@@ -1085,7 +1085,7 @@ class {{fq_block_name}}_single_access({{top_node.type_name}}_TestCase): # type: 
         self.assertCountEqual(expected_memories, memories)
         {# check the rolled case second #}
         expected_memories = [ {%- for child_node in top_node.children(unroll=False) %}
-                                  {%- if not child_node.get_property('python_hide', default=False) or show_hidden %}
+                                  {%- if not hide_node_func(child_node) %}
                               {%- if isinstance(child_node, systemrdlMemNode) %}self.dut.{{'.'.join(get_python_path_segments(child_node))}}, # type: ignore[union-attr,list-item] {% endif %}
                                   {% endif %}
                               {% endfor %} ]
@@ -1100,7 +1100,7 @@ class {{fq_block_name}}_single_access({{top_node.type_name}}_TestCase): # type: 
     {% macro check_readable_register_iterators(node) %}
         {# check the unrolled case first #}
         expected_readable_regs = [ {%- for child_node in node.children(unroll=True) %}
-                                       {%- if not child_node.get_property('python_hide', default=False) or show_hidden %}
+                                       {%- if not hide_node_func(child_node) %}
                                     {%- if isinstance(child_node, systemrdlRegNode) %}{% if child_node.has_sw_readable %}self.dut.{{'.'.join(get_python_path_segments(child_node))}}, # type: ignore[union-attr,list-item] {% endif %}{% endif %}
                                         {% endif %}
                                     {% endfor %} ]
@@ -1111,7 +1111,7 @@ class {{fq_block_name}}_single_access({{top_node.type_name}}_TestCase): # type: 
         self.assertCountEqual(expected_readable_regs, readable_regs)
         {# check the rolled case second #}
         expected_readable_regs = [ {%- for child_node in node.children(unroll=False) %}
-                                      {%- if not child_node.get_property('python_hide', default=False) or show_hidden %}
+                                      {%- if not hide_node_func(child_node) %}
                                    {%- if isinstance(child_node, systemrdlRegNode) %}{% if child_node.has_sw_readable %}self.dut.{{'.'.join(get_python_path_segments(child_node))}}, # type: ignore[union-attr,list-item] {% endif %}{% endif %}
                                        {% endif %}
                                    {% endfor %} ]
@@ -1125,7 +1125,7 @@ class {{fq_block_name}}_single_access({{top_node.type_name}}_TestCase): # type: 
     {% macro check_writable_register_iterators(node) %}
         {# check the unrolled case first #}
         expected_writable_regs = [ {%- for child_node in node.children(unroll=True) %}
-                                       {%- if not child_node.get_property('python_hide', default=False) or show_hidden %}
+                                       {%- if not hide_node_func(child_node) %}
                                    {%- if isinstance(child_node, systemrdlRegNode) %}{% if child_node.has_sw_writable %}self.dut.{{'.'.join(get_python_path_segments(child_node))}}, # type: ignore[union-attr,list-item] {% endif %}{% endif %}
                                        {% endif %}
                                    {% endfor %} ]
@@ -1136,7 +1136,7 @@ class {{fq_block_name}}_single_access({{top_node.type_name}}_TestCase): # type: 
         self.assertCountEqual(expected_writable_regs, writable_regs)
         {# check the rolled case second #}
         expected_writable_regs = [ {%- for child_node in node.children(unroll=False) %}
-                                      {%- if not child_node.get_property('python_hide', default=False) or show_hidden %}
+                                      {%- if not hide_node_func(child_node) %}
                                    {%- if isinstance(child_node, systemrdlRegNode) %}{% if child_node.has_sw_writable %}self.dut.{{'.'.join(get_python_path_segments(child_node))}}, # type: ignore[union-attr,list-item] {% endif %}{% endif %}
                                        {% endif %}
                                    {% endfor %} ]
@@ -1150,7 +1150,7 @@ class {{fq_block_name}}_single_access({{top_node.type_name}}_TestCase): # type: 
     {% macro check_section_iterators(node) %}
         {# check the unrolled case first #}
         expected_sections = [ {%- for child_node in node.children(unroll=True) %}
-                                  {%- if not child_node.get_property('python_hide', default=False) or show_hidden %}
+                                  {%- if not hide_node_func(child_node) %}
                               {%- if isinstance(child_node, (systemrdlAddrmapNode, systemrdlRegfileNode)) %}self.dut.{{'.'.join(get_python_path_segments(child_node))}}, # type: ignore[union-attr,list-item] {% endif %}
                                   {% endif %}
                               {% endfor %} ]
@@ -1161,7 +1161,7 @@ class {{fq_block_name}}_single_access({{top_node.type_name}}_TestCase): # type: 
         self.assertCountEqual(expected_sections, sections)
         {# check the rolled case second #}
         expected_sections = [ {%- for child_node in node.children(unroll=False) %}
-                                  {%- if not child_node.get_property('python_hide', default=False) or show_hidden %}
+                                  {%- if not hide_node_func(child_node) %}
                               {%- if isinstance(child_node, (systemrdlAddrmapNode, systemrdlRegfileNode)) %}self.dut.{{'.'.join(get_python_path_segments(child_node))}},  # type: ignore[union-attr,list-item] {% endif %}
                                   {% endif %}
                               {% endfor %} ]
@@ -1175,7 +1175,7 @@ class {{fq_block_name}}_single_access({{top_node.type_name}}_TestCase): # type: 
     {% macro check_memory_iterators(node) %}
         {# check the unrolled case first #}
         expected_memories = [ {%- for child_node in node.children(unroll=True) %}
-                                  {%- if not child_node.get_property('python_hide', default=False) or show_hidden %}
+                                  {%- if not hide_node_func(child_node) %}
                               {%- if isinstance(child_node, systemrdlMemNode) %}self.dut.{{'.'.join(get_python_path_segments(child_node))}}, # type: ignore[union-attr,list-item] {% endif %}
                                   {% endif %}
                               {% endfor %} ]
@@ -1186,7 +1186,7 @@ class {{fq_block_name}}_single_access({{top_node.type_name}}_TestCase): # type: 
         self.assertCountEqual(expected_memories, memories)
         {# check the rolled case second #}
         expected_memories = [ {%- for child_node in node.children(unroll=False) %}
-                                  {%- if not child_node.get_property('python_hide', default=False) or show_hidden %}
+                                  {%- if not hide_node_func(child_node) %}
                               {%- if isinstance(child_node, systemrdlMemNode) %}self.dut.{{'.'.join(get_python_path_segments(child_node))}}, # type: ignore[union-attr,list-item] {% endif %}
                                   {% endif %}
                               {% endfor %} ]
@@ -1225,7 +1225,7 @@ class {{fq_block_name}}_single_access({{top_node.type_name}}_TestCase): # type: 
                 {# a register can only have fields beneath it #}
             expected_fields = [ {%- for child_node in node.children(unroll=True) -%}
                                     {% if isinstance(child_node, systemrdlFieldNode) %}
-                                        {%- if not child_node.get_property('python_hide', default=False) or show_hidden -%}
+                                        {%- if not hide_node_func(child_node) -%}
                                     self.dut.{{'.'.join(get_python_path_segments(child_node))}}, # type: ignore[union-attr,list-item]
                                         {% endif %}
                                     {% endif %}
@@ -1237,7 +1237,7 @@ class {{fq_block_name}}_single_access({{top_node.type_name}}_TestCase): # type: 
             self.assertCountEqual(expected_fields, fields)
                 {% if node.has_sw_writable %}
             expected_writable_fields = [ {%- for child_node in node.children(unroll=True) -%}
-                                            {%- if not child_node.get_property('python_hide', default=False) or show_hidden -%}
+                                            {%- if not hide_node_func(child_node) -%}
                                          {% if isinstance(child_node, systemrdlFieldNode) %}{% if child_node.is_sw_writable %}self.dut.{{'.'.join(get_python_path_segments(child_node))}}, # type: ignore[union-attr,list-item] {% endif %}{% endif %}
                                             {% endif %}
                                          {% endfor %}
@@ -1252,7 +1252,7 @@ class {{fq_block_name}}_single_access({{top_node.type_name}}_TestCase): # type: 
                     {% endif %}
                     {% if node.has_sw_readable %}
             expected_readable_fields = [ {%- for child_node in node.children(unroll=True) -%}
-                                            {%- if not child_node.get_property('python_hide', default=False) or show_hidden -%}
+                                            {%- if not hide_node_func(child_node) -%}
                                          {% if isinstance(child_node, systemrdlFieldNode) %}{% if child_node.is_sw_readable %}self.dut.{{'.'.join(get_python_path_segments(child_node))}}, # type: ignore[union-attr,list-item] {% endif %}{% endif %}
                                             {% endif %}
                                          {% endfor %}
@@ -1305,7 +1305,7 @@ class {{fq_block_name}}_single_access({{top_node.type_name}}_TestCase): # type: 
         {% for node in owned_elements.nodes -%}
         {% for child_node in node.children(unroll=False) %}
         {% if not isinstance(child_node, systemrdlSignalNode) %}
-        {%- if not child_node.get_property('python_hide', default=False) or show_hidden %}
+        {%- if not hide_node_func(child_node) %}
         self.assertEqual(self.dut.{{'.'.join(get_python_path_segments(node))}}.get_child_by_system_rdl_name('{{child_node.inst_name}}').inst_name, '{{child_node.inst_name}}')  # type: ignore[union-attr]
         {% endif %}
         {% endif %}

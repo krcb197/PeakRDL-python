@@ -86,6 +86,9 @@ CommandLineParser.add_argument('--legacy_block_access', action='store_true',
 CommandLineParser.add_argument('--udp', dest='udp', nargs='*',
                                type=str, help='any user defined properties to include in the '
                                               'reg_model')
+CommandLineParser.add_argument('--hide_regex', dest='hide_regex', type=str,
+                               help='A regex that will cause any matching fully qualified node to '
+                                    'be hidden')
 
 
 def build_logging_cong(logfilepath:str):
@@ -172,7 +175,8 @@ if __name__ == '__main__':
                     delete_existing_package_content=not CommandLineArgs.suppress_cleanup,
                     skip_library_copy=not CommandLineArgs.copy_libraries,
                     legacy_block_access=CommandLineArgs.legacy_block_access,
-                    user_defined_properties_to_include=CommandLineArgs.udp)
+                    user_defined_properties_to_include=CommandLineArgs.udp,
+                    hidden_inst_name_regex=CommandLineArgs.hide_regex)
     print(f'generation time {time.time() - start_time}s')
 
     if not CommandLineArgs.export_only:

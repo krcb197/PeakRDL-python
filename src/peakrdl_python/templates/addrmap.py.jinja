@@ -91,7 +91,7 @@ from {% if skip_lib_copy %}src.peakrdl_python.{% else %}..{% endif %}lib import 
 {% from 'addrmap_udp_property.py.jinja' import udp_property with context %}
 
 {%- macro regfile_or_addr_instance(node) %}
-    {%- if not node.get_property('python_hide', default=False) or show_hidden %}
+    {%- if not hide_node_func(node) %}
     {%- if isinstance(node, systemrdlRegNode) %}
         {{ register_class_attributes(node) }}
     {%- elif isinstance(node, systemrdlMemNode) %}
@@ -171,7 +171,7 @@ class {{get_fully_qualified_type_name(node)}}_cls({% if asyncoutput %}Async{% en
 
     # properties for Register and RegisterFiles
     {%- for child_node in node.children(unroll=False) %}
-        {%- if not child_node.get_property('python_hide', default=False) or show_hidden %}
+        {%- if not hide_node_func(child_node) %}
             {%- if isinstance(child_node, systemrdlRegNode) or isinstance(child_node, systemrdlRegfileNode) %}
     @property
                 {%- if isinstance(child_node, systemrdlRegNode) -%}
@@ -203,7 +203,7 @@ class {{get_fully_qualified_type_name(node)}}_cls({% if asyncoutput %}Async{% en
         """
         return {
             {%- for child_node in node.children(unroll=False) -%}
-                {%- if not child_node.get_property('python_hide', default=False) or show_hidden %}
+                {%- if not hide_node_func(child_node) %}
                     {%- if isinstance(child_node, systemrdlRegNode) -%}
             '{{child_node.inst_name}}':'{{safe_node_name(child_node)}}',
                     {%- elif isinstance(child_node, systemrdlRegfileNode) -%}
@@ -287,7 +287,7 @@ class {{get_fully_qualified_type_name(node)}}_cls({% if asyncoutput %}Async{% en
 
         {%- for child_node in node.children(unroll=False) -%}
             {%- if isinstance(child_node, systemrdlRegNode) or isinstance(child_node, systemrdlRegfileNode) or isinstance(child_node, systemrdlAddrmapNode) or isinstance(child_node, systemrdlMemNode) %}
-                {%- if not child_node.get_property('python_hide', default=False) or show_hidden %}
+                {%- if not hide_node_func(child_node) %}
     @property
     {%- if isinstance(child_node, systemrdlRegNode) -%}
     {%- set property_name = safe_node_name(child_node) -%}
@@ -322,7 +322,7 @@ class {{get_fully_qualified_type_name(node)}}_cls({% if asyncoutput %}Async{% en
         """
         return {
             {%- for child_node in node.children(unroll=False) -%}
-                {%- if not child_node.get_property('python_hide', default=False) or show_hidden %}
+                {%- if not hide_node_func(child_node) %}
                     {%- if isinstance(child_node, systemrdlRegNode) -%}
             '{{child_node.inst_name}}':'{{safe_node_name(child_node)}}',
                     {%- elif isinstance(child_node, systemrdlRegfileNode) -%}
@@ -382,7 +382,7 @@ class {{get_fully_qualified_type_name(node)}}_array_cls({% if asyncoutput %}Asyn
         """
         {% for child_node in node.children(unroll=False) -%}
             {%- if isinstance(child_node, child_rdltype) %}
-                {%- if not child_node.get_property('python_hide', default=False) or show_hidden %}
+                {%- if not hide_node_func(child_node) %}
 
                     {%- if isinstance(child_node, systemrdlRegNode) -%}
                     {%- set property_name = safe_node_name(child_node) -%}
@@ -425,9 +425,9 @@ class {{property_enum.type_name}}_property_enumcls(IntEnum):
 
 {% if uses_enum %}
 # root level enum definitions
-{%- for enum_needed, owning_field in get_dependent_enum(top_node.parent, show_hidden) %}
+{%- for enum_needed, owning_field in get_dependent_enum(top_node.parent, hide_node_func) %}
 @unique
-class {{get_fully_qualified_enum_type(enum_needed, top_node.parent, owning_field, show_hidden)}}_enumcls(IntEnum):
+class {{get_fully_qualified_enum_type(enum_needed, top_node.parent, owning_field, hide_node_func)}}_enumcls(IntEnum):
 
     {% for value_of_enum_needed in enum_needed -%}
     {{ value_of_enum_needed.name.upper() }} = {{ value_of_enum_needed.value }}  {%- if value_of_enum_needed.rdl_desc is not none -%}# {{ value_of_enum_needed.rdl_desc }} {%- endif %}
@@ -437,7 +437,7 @@ class {{get_fully_qualified_enum_type(enum_needed, top_node.parent, owning_field
 
 
 # regfile, register and field definitions
-{%- for node in get_dependent_component(top_node.parent, show_hidden) -%}
+{%- for node in get_dependent_component(top_node.parent, hide_node_func) -%}
 {# the get_dependent_component already strips out hidden items so there is no need to check here
    for hidden items #}
     {% if isinstance(node, systemrdlRegNode) %}

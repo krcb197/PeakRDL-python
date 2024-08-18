@@ -58,9 +58,7 @@ class {{get_fully_qualified_type_name(node)}}_cls(Reg{% if asyncoutput %}Async{%
                          parent=parent)
 
         # build the field attributes
-        {%- for child_node in node.fields() %}
-            {%- if isinstance(child_node, systemrdlFieldNode) %}
-                {% if not child_node.get_property('python_hide', default=False) or show_hidden %}
+        {% for child_node in get_reg_fields(node, hide_node_func) %}
         self.__{{child_node.inst_name}}:{{get_fully_qualified_type_name(child_node)}}_cls = {{get_fully_qualified_type_name(child_node)}}_cls(
             parent_register=self,
             size_props=FieldSizeProps(
@@ -74,8 +72,6 @@ class {{get_fully_qualified_type_name(node)}}_cls(Reg{% if asyncoutput %}Async{%
                 is_volatile={{child_node.is_hw_writable}}),
             logger_handle=logger_handle+'.{{child_node.inst_name}}',
             inst_name='{{child_node.inst_name}}')
-                {%- endif -%}
-            {%- endif -%}
         {%- endfor %}
 
     @property
@@ -83,7 +79,7 @@ class {{get_fully_qualified_type_name(node)}}_cls(Reg{% if asyncoutput %}Async{%
         """
         generator that produces has all the fields within the register
         """
-        {% for child_node in get_reg_fields(node, show_hidden) -%}
+        {% for child_node in get_reg_fields(node, hide_node_func) -%}
         yield self.{{safe_node_name(child_node)}}
         {% endfor %}
         # Empty generator in case there are no children of this type
@@ -95,7 +91,7 @@ class {{get_fully_qualified_type_name(node)}}_cls(Reg{% if asyncoutput %}Async{%
         """
         generator that produces has all the readable fields within the register
         """
-        {% for child_node in get_reg_readable_fields(node, show_hidden) -%}
+        {% for child_node in get_reg_readable_fields(node, hide_node_func) -%}
         yield self.{{safe_node_name(child_node)}}
         {% endfor %}
         # Empty generator in case there are no children of this type
@@ -108,7 +104,7 @@ class {{get_fully_qualified_type_name(node)}}_cls(Reg{% if asyncoutput %}Async{%
         """
         generator that produces has all the writable fields within the register
         """
-        {% for child_node in get_reg_writable_fields(node, show_hidden) -%}
+        {% for child_node in get_reg_writable_fields(node, hide_node_func) -%}
         yield self.{{safe_node_name(child_node)}}
         {% endfor %}
         # Empty generator in case there are no children of this type
@@ -116,7 +112,7 @@ class {{get_fully_qualified_type_name(node)}}_cls(Reg{% if asyncoutput %}Async{%
 
     {% if not node.has_sw_readable %}
     {# if the register has no readable components, all the fields must be writen as one #}
-    {% if asyncoutput %}async {% endif %}def write_fields(self, {%- for child_node in node.fields() -%} {{safe_node_name(child_node)}} : {%- if 'encode' in child_node.list_properties() %}{{get_fully_qualified_enum_type(child_node.get_property('encode'), top_node.parent, child_node, show_hidden)}}_enumcls{% else %}int{% endif %}{%- if not loop.last -%},{%- endif -%}{%- endfor -%}) -> None: # type: ignore[override]
+    {% if asyncoutput %}async {% endif %}def write_fields(self, {%- for child_node in node.fields() -%} {{safe_node_name(child_node)}} : {%- if 'encode' in child_node.list_properties() %}{{get_fully_qualified_enum_type(child_node.get_property('encode'), top_node.parent, child_node, hide_node_func)}}_enumcls{% else %}int{% endif %}{%- if not loop.last -%},{%- endif -%}{%- endfor -%}) -> None: # type: ignore[override]
         """
         Do a write to the register, updating all fields
         """
@@ -131,9 +127,7 @@ class {{get_fully_qualified_type_name(node)}}_cls(Reg{% if asyncoutput %}Async{%
     {% endif %}
 
     # build the properties for the fields
-    {%- for child_node in node.children(unroll=False) -%}
-        {%- if isinstance(child_node, systemrdlFieldNode) %}
-            {% if not child_node.get_property('python_hide', default=False) or show_hidden %}
+    {% for child_node in get_reg_fields(node, hide_node_func) %}
     @property
     def {{safe_node_name(child_node)}}(self) -> {{get_fully_qualified_type_name(child_node)}}_cls:
         """
@@ -142,8 +136,6 @@ class {{get_fully_qualified_type_name(node)}}_cls(Reg{% if asyncoutput %}Async{%
         {{get_table_block(child_node) | indent(8)}}
         """
         return self.__{{child_node.inst_name}}
-            {% endif %}
-        {% endif %}
     {%- endfor %}
 
     @property
@@ -158,7 +150,7 @@ class {{get_fully_qualified_type_name(node)}}_cls(Reg{% if asyncoutput %}Async{%
         return {
             {%- for child_node in node.children(unroll=False) -%}
             {%- if isinstance(child_node, systemrdlFieldNode) %}
-                {% if not child_node.get_property('python_hide', default=False) or show_hidden %}
+                {% if not hide_node_func(child_node) %}
             '{{child_node.inst_name}}':'{{safe_node_name(child_node)}}',
                 {% endif %}
             {%- elif isinstance(child_node, systemrdlSignalNode) %}

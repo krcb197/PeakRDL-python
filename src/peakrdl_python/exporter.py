@@ -18,6 +18,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 Main Classes for the peakrdl-python
 """
 import os
+import re
 from pathlib import Path
 from shutil import copy
 from typing import List, NoReturn, Iterable, Tuple, Dict, Any, Optional
@@ -38,7 +39,8 @@ from .systemrdl_node_utility_functions import get_reg_readable_fields, get_reg_w
     get_field_max_value_hex_string, get_reg_max_value_hex_string, get_fully_qualified_type_name, \
     uses_enum, uses_memory, \
     get_memory_max_entry_value_hex_string, get_memory_width_bytes, \
-    get_field_default_value, get_enum_values, get_properties_to_include, get_reg_fields
+    get_field_default_value, get_enum_values, get_properties_to_include, get_reg_fields, \
+    HideNodeCallback, hide_based_on_property
 
 from .lib import get_array_typecode
 
@@ -292,8 +294,14 @@ class PythonExporter:
                            skip_lib_copy: bool,
                            asyncoutput: bool,
                            legacy_block_access: bool,
-                           show_hidden: bool,
-                           udp_to_include: Optional[List[str]]) -> None:
+                           udp_to_include: Optional[List[str]],
+                           hide_node_func: HideNodeCallback) -> None:
+
+        # write out text file of all the nodes names, this can be used to debug regex issues
+        with package.reg_model.path.joinpath('full_inst_name.txt').open('w', encoding='utf-8') as fid:
+            for child in top_block.descendants(unroll=True):
+                 fid.write('.'.join(child.get_path_segments()) + '\n')
+
 
         context = {
             'print': print,
@@ -338,12 +346,12 @@ class PythonExporter:
             'skip_lib_copy': skip_lib_copy,
             'version': __version__,
             'legacy_block_access': legacy_block_access,
-            'show_hidden': show_hidden,
             'udp_to_include': udp_to_include,
             'get_properties_to_include': get_properties_to_include,
             'dependent_property_enum':
                 self._get_dependent_property_enum(node=top_block,
-                                                  udp_to_include=udp_to_include)
+                                                  udp_to_include=udp_to_include),
+            'hide_node_func': hide_node_func
         }
         if legacy_block_access is True:
             context['get_array_typecode'] = get_array_typecode
@@ -448,8 +456,8 @@ class PythonExporter:
                        skip_lib_copy: bool,
                        asyncoutput: bool,
                        legacy_block_access: bool,
-                       show_hidden: bool,
-                       udp_to_include: Optional[List[str]]) -> None:
+                       udp_to_include: Optional[List[str]],
+                       hide_node_func: HideNodeCallback) -> None:
         """
 
         Args:
@@ -463,13 +471,13 @@ class PythonExporter:
         """
         #pylint: disable=too-many-locals
 
-        blocks = AddressMaps(show_hidden=show_hidden)
+        blocks = AddressMaps(hide_node_callback=hide_node_func)
         # running the walker populated the blocks with all the address maps in within the
         # top block, including the top_block itself
         RDLWalker(unroll=True).walk(top_block, blocks, skip_top=False)
 
         for block in blocks:
-            owned_elements = OwnedbyAddressMap(show_hidden=show_hidden)
+            owned_elements = OwnedbyAddressMap(hide_node_callback=hide_node_func)
             # running the walker populated the blocks with all the address maps in within the
             # top block, including the top_block itself
             RDLWalker(unroll=True).walk(block, owned_elements, skip_top=True)
@@ -528,12 +536,12 @@ class PythonExporter:
                 'version': __version__,
                 'get_array_typecode': get_array_typecode,
                 'legacy_block_access': legacy_block_access,
-                'show_hidden': show_hidden,
                 'udp_to_include': udp_to_include,
                 'get_properties_to_include': get_properties_to_include,
                 'dependent_property_enum':
                     self._get_dependent_property_enum(node=top_block,
-                                                      udp_to_include=udp_to_include)
+                                                      udp_to_include=udp_to_include),
+                'hide_node_func': hide_node_func
             }
 
 
@@ -554,7 +562,8 @@ class PythonExporter:
                skip_library_copy: bool = False,
                legacy_block_access: bool = True,
                show_hidden: bool = False,
-               user_defined_properties_to_include: Optional[List[str]] = None) -> List[str]:
+               user_defined_properties_to_include: Optional[List[str]] = None,
+               hidden_inst_name_regex: Optional[str] = None) -> List[str]:
         """
         Generated Python Code and Testbench
 
@@ -578,13 +587,17 @@ class PythonExporter:
                                         the tool and will be turned on by default for a few
                                         releases.
             show_hidden (bool) : By default any item (Address Map, Regfile, Register, Memory or
-                                 Field) with the systemRDL User Defined Property (UDP) python_hide
+                                 Field) with the systemRDL User Defined Property (UDP) ``python_hide``
                                  set to true will not be included in the generated python code.
                                  This behaviour can be overridden by setting this property to
                                  true.
             user_defined_properties_to_include : A list of strings of the names of user-defined
                                                  properties to include. Set to None for nothing
                                                  to appear.
+            hidden_inst_name_regex (str) : A regular expression which will hide any fully
+                                           qualified instance name that matches, set to None to
+                                           for this to have no effect
+
 
         Returns:
             List[str] : modules that have been exported:
@@ -595,11 +608,6 @@ class PythonExporter:
             top_block = node.top
         else:
             top_block = node
-
-        # if the top level node is hidden the wrapper will be meaningless, rather then try to
-        # handle a special case this is treated as an error
-        if top_block.get_property('python_hide', default=False) and not show_hidden:
-            raise RuntimeError('PeakRDL Python can not export if the node is hidden')
 
         if not isinstance(path, str):
             raise TypeError(f'path should be a str but got {type(path)}')
@@ -625,12 +633,31 @@ class PythonExporter:
                     raise RuntimeError('It is not permitted to expose a property name used to'
                                        ' build the peakrdl-python wrappers: '+reserved_name)
 
-        self._build_node_type_table(top_block, show_hidden)
+        if hidden_inst_name_regex is not None:
+            hidden_inst_name_regex = re.compile(hidden_inst_name_regex)
+
+            def hide_node_func(node: Node):
+                if hide_based_on_property(node=node, show_hidden=show_hidden):
+                    return True
+
+                result = hidden_inst_name_regex.match('.'.join(node.get_path_segments()))
+                return result is not None
+        else:
+            def hide_node_func(node: Node):
+                return hide_based_on_property(node=node, show_hidden=show_hidden)
+
+        # if the top level node is hidden the wrapper will be meaningless, rather then try to
+        # handle a special case this is treated as an error
+        if hide_node_func(top_block):
+            raise RuntimeError('PeakRDL Python can not export if the node is hidden')
+
+        self._build_node_type_table(top_block, hide_node_func)
 
         self.__export_reg_model(top_block=top_block, package=package, asyncoutput=asyncoutput,
                                 skip_lib_copy=skip_library_copy,
-                                legacy_block_access=legacy_block_access, show_hidden=show_hidden,
-                                udp_to_include=user_defined_properties_to_include)
+                                legacy_block_access=legacy_block_access,
+                                udp_to_include=user_defined_properties_to_include,
+                                hide_node_func=hide_node_func)
 
         self.__export_simulator(top_block=top_block, package=package, asyncoutput=asyncoutput,
                                 skip_lib_copy=skip_library_copy,
@@ -650,8 +677,8 @@ class PythonExporter:
             self.__export_tests(top_block=top_block, package=package, asyncoutput=asyncoutput,
                                 skip_lib_copy=skip_library_copy,
                                 legacy_block_access=legacy_block_access,
-                                show_hidden=show_hidden,
-                                udp_to_include=user_defined_properties_to_include)
+                                udp_to_include=user_defined_properties_to_include,
+                                hide_node_func=hide_node_func)
 
         return top_block.inst_name
 
@@ -669,13 +696,14 @@ class PythonExporter:
 
         return self.node_type_name[node.inst]
 
-    def _build_node_type_table(self, node: AddressableNode, show_hidden: bool) -> None:
+    def _build_node_type_table(self, node: AddressableNode,
+                               hide_node_func: HideNodeCallback) -> None:
         """
         Populate the type name lookup dictionary
 
         Args:
             node: top node to work down from
-            show_hidden: force fields to be shown if they are marked as hidden
+            hide_node_func: callback which returns True if the node should be hidden
 
         Returns:
             None
@@ -684,7 +712,7 @@ class PythonExporter:
 
         self.node_type_name = {}
 
-        for child_node in get_dependent_component(node.parent, show_hidden):
+        for child_node in get_dependent_component(node.parent, hide_node_func):
 
             child_inst = child_node.inst
             if child_inst in self.node_type_name:
@@ -714,7 +742,7 @@ class PythonExporter:
                                    field_enum: UserEnumMeta,
                                    root_node: AddressableNode,
                                    owning_field: FieldNode,
-                                   show_hidden: bool) -> str:
+                                   hide_node_func: HideNodeCallback) -> str:
         """
         Returns the fully qualified class type name, for an enum
         """
@@ -741,7 +769,7 @@ class PythonExporter:
 
         raise RuntimeError('Failed to find parent node to reference')
 
-    def _get_dependent_enum(self, node: AddressableNode, show_hidden: bool) -> \
+    def _get_dependent_enum(self, node: AddressableNode, hide_node_func: HideNodeCallback) -> \
             Iterable[Tuple[UserEnumMeta, FieldNode]]:
         """
         iterable of enums which is used by a descendant of the input node,

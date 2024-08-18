@@ -19,6 +19,8 @@ A set of utility functions that perform supplementary processing on a node in a 
 system RDL dataset.
 """
 from typing import Iterable, Optional, List
+import sys
+from itertools import filterfalse
 
 import textwrap
 
@@ -33,6 +35,25 @@ from systemrdl.node import RegfileNode  # type: ignore
 from systemrdl.component import Component  # type: ignore
 from systemrdl.rdltypes.user_enum import UserEnumMeta  # type: ignore
 from systemrdl import RDLListener, WalkerAction, RDLWalker  # type: ignore
+
+if sys.version_info >= (3, 8):
+    # Python 3.8 introduced the Protocol class to the typing module which is more powerful than the
+    # previous method because it also check the argument names
+
+    from typing import Protocol
+
+    class HideNodeCallback(Protocol):
+        """
+        Callback function that determines whether a node should be hidden or not, this is intended
+        to be used with the RegEX check on the node name
+        """
+        # pylint: disable=too-few-public-methods
+        def __call__(self, node: Node) -> bool:
+            pass
+else:
+    from typing import Callable
+
+    HideNodeCallback=Callable[[Node], bool]
 
 
 def get_fully_qualified_type_name(node: Node) -> str:
@@ -55,8 +76,22 @@ def get_fully_qualified_type_name(node: Node) -> str:
     return scope_path + '_' + inst_type_name
 
 
+def hide_based_on_property(node: Node, show_hidden: bool) -> bool:
+    """
+    Used to determine if a node should be hidden based on the ''python_hide'' User Defined Property
+
+    Args:
+        node: a system RDL node
+        show_hidden: a boolean to indicate that the property should be ingored
+
+    Returns:
+        True if the node should be hidden
+    """
+    return node.get_property('python_hide', default=False) and not show_hidden
+
+
 def get_dependent_component(node: AddressableNode,
-                            show_hidden: bool) -> Iterable[Node]:
+                            hide_node_callback: HideNodeCallback) -> Iterable[Node]:
     """
     iterable of nodes that have a component which is used by a
     descendant, this list is de-duplicated and reversed to components
@@ -64,27 +99,26 @@ def get_dependent_component(node: AddressableNode,
 
     Args:
         node: node to be analysed
-        show_hidden: force fields to be shown if they are marked as hidden
+        hide_node_callback: callback to determine if the node should be hidden
 
-    Yields:
-        writeable fields
+
     """
     class UniqueComponents(RDLListener):
         """
         class intended to be used as part of the walker/listener protocol to find all the items
-        owned by an address map but not the descendents of any address map
+        non-hidden nodes
         """
 
-        def __init__(self, show_hidden: bool) -> None:
+        def __init__(self, hide_node_callback: HideNodeCallback) -> None:
             super().__init__()
 
-            self.__show_hidden = show_hidden
+            self.__hide_node_callback = hide_node_callback
             self.__components_needed: list[Component] = []
             self.nodes: list[Node] = []
 
 
         def enter_Reg(self, node: RegNode) -> Optional[WalkerAction]:
-            if node.get_property('python_hide', default=False) and not self.__show_hidden:
+            if self.__hide_node_callback(node):
                 return WalkerAction.SkipDescendants
 
             if node.inst in self.__components_needed:
@@ -95,7 +129,7 @@ def get_dependent_component(node: AddressableNode,
             return WalkerAction.Continue
 
         def enter_Mem(self, node: MemNode) -> Optional[WalkerAction]:
-            if node.get_property('python_hide', default=False) and not self.__show_hidden:
+            if self.__hide_node_callback(node):
                 return WalkerAction.SkipDescendants
 
             if node.inst in self.__components_needed:
@@ -106,7 +140,7 @@ def get_dependent_component(node: AddressableNode,
             return WalkerAction.Continue
 
         def enter_Field(self, node: FieldNode) -> Optional[WalkerAction]:
-            if node.get_property('python_hide', default=False) and not self.__show_hidden:
+            if self.__hide_node_callback(node):
                 return WalkerAction.SkipDescendants
 
             if node.inst in self.__components_needed:
@@ -117,7 +151,7 @@ def get_dependent_component(node: AddressableNode,
             return WalkerAction.Continue
 
         def enter_Addrmap(self, node: AddrmapNode) -> Optional[WalkerAction]:
-            if node.get_property('python_hide', default=False) and not self.__show_hidden:
+            if self.__hide_node_callback(node):
                 return WalkerAction.SkipDescendants
 
             if node.inst in self.__components_needed:
@@ -128,7 +162,7 @@ def get_dependent_component(node: AddressableNode,
             return WalkerAction.Continue
 
         def enter_Regfile(self, node: RegfileNode) -> Optional[WalkerAction]:
-            if node.get_property('python_hide', default=False) and not self.__show_hidden:
+            if self.__hide_node_callback(node):
                 return WalkerAction.SkipDescendants
 
             if node.inst in self.__components_needed:
@@ -138,7 +172,7 @@ def get_dependent_component(node: AddressableNode,
             self.nodes.append(node)
             return WalkerAction.Continue
 
-    unique_component_walker = UniqueComponents(show_hidden=show_hidden)
+    unique_component_walker = UniqueComponents(hide_node_callback=hide_node_callback)
     # running the walker populated the blocks with all the address maps in within the
     # top block, including the top_block itself
     RDLWalker(unroll=True).walk(node, unique_component_walker, skip_top=False)
@@ -301,13 +335,13 @@ def get_reg_max_value_hex_string(node: RegNode) -> str:
     max_value = ((2 ** (node.size * 8)) - 1)
     return f'0x{max_value:X}'
 
-def get_reg_fields(node: RegNode, show_hidden: bool) -> Iterable[FieldNode]:
+def get_reg_fields(node: RegNode, hide_node_callback: HideNodeCallback) -> Iterable[FieldNode]:
     """
     Iterable that yields all the fields from the reg node
 
     Args:
         node: node to be analysed
-        show_hidden: force fields to be shown if they are marked as hidden
+        hide_node_callback: callback to determine if the node should be hidden
 
     Yields:
         fields
@@ -316,19 +350,17 @@ def get_reg_fields(node: RegNode, show_hidden: bool) -> Iterable[FieldNode]:
     if not isinstance(node, RegNode):
         raise TypeError(f'node is not a {type(RegNode)} got {type(node)}')
 
-    if show_hidden:
-        return node.fields()
-
-    return filter(lambda x: not x.get_property('python_hide', default=False), node.fields())
+    return filterfalse(hide_node_callback, node.fields())
 
 
-def get_reg_writable_fields(node: RegNode, show_hidden: bool) -> Iterable[FieldNode]:
+def get_reg_writable_fields(node: RegNode,
+                            hide_node_callback: HideNodeCallback) -> Iterable[FieldNode]:
     """
     Iterable that yields all the writable fields from the reg node
 
     Args:
         node: node to be analysed
-        show_hidden: force fields to be shown if they are marked as hidden
+        hide_node_callback: callback to determine if the node should be hidden
 
     Yields:
         writeable fields
@@ -337,10 +369,11 @@ def get_reg_writable_fields(node: RegNode, show_hidden: bool) -> Iterable[FieldN
     if not isinstance(node, RegNode):
         raise TypeError(f'node is not a {type(RegNode)} got {type(node)}')
 
-    return filter(lambda x: x.is_sw_writable, get_reg_fields(node=node, show_hidden=show_hidden))
+    return filter(lambda x: x.is_sw_writable, get_reg_fields(node=node, hide_node_callback=hide_node_callback))
 
 
-def get_reg_readable_fields(node: RegNode, show_hidden: bool) -> Iterable[FieldNode]:
+def get_reg_readable_fields(node: RegNode,
+                            hide_node_callback: HideNodeCallback) -> Iterable[FieldNode]:
     """
     Iterable that yields all the readable fields from the reg node
 
@@ -355,7 +388,7 @@ def get_reg_readable_fields(node: RegNode, show_hidden: bool) -> Iterable[FieldN
     if not isinstance(node, RegNode):
         raise TypeError(f'node is not a {type(RegNode)} got {type(node)}')
 
-    return filter(lambda x: x.is_sw_readable, get_reg_fields(node=node, show_hidden=show_hidden))
+    return filter(lambda x: x.is_sw_readable, get_reg_fields(node=node, hide_node_callback=hide_node_callback))
 
 
 def uses_memory(node: AddressableNode) -> bool:

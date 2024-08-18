@@ -42,7 +42,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
         generator that produces all the registers of this node
         """
         {% for child_node in node.children(unroll=False) -%}
-            {%- if not child_node.get_property('python_hide', default=False) or show_hidden %}
+            {%- if not hide_node_func(child_node) %}
                 {%- if isinstance(child_node, systemrdlRegNode) %}
                     {% if child_node.is_array %}
         if unroll:

@@ -508,6 +508,11 @@ However the ``hidden_reg`` would not be included in the python wrappers
 The ``python_hide`` property can be overridden with the ``show_hidden`` argument to the peakrdl
 command line tool or the ``export`` method.
 
+Regular Expression
+------------------
+
+
+
 Autoformating
 =============
 

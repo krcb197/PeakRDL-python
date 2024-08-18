@@ -33,7 +33,7 @@ class {{get_fully_qualified_type_name(node)}}_cls(Field{%- if 'encode' in node.l
     """
 
         {%- if 'encode' in node.list_properties() %}
-        {%- set enumcls_name = get_fully_qualified_enum_type(node.get_property('encode'), top_node.parent, node, show_hidden) + '_enumcls' %}
+        {%- set enumcls_name = get_fully_qualified_enum_type(node.get_property('encode'), top_node.parent, node, hide_node_func) + '_enumcls' %}
     __enum_cls = {{enumcls_name}}
         {% endif %}
 
