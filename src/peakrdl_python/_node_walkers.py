@@ -22,19 +22,21 @@ from typing import Optional, List, Union, Iterator
 from systemrdl import RDLListener, WalkerAction # type: ignore
 from systemrdl.node import RegNode, MemNode, FieldNode, AddrmapNode, RegfileNode # type: ignore
 
+from .systemrdl_node_utility_functions import HideNodeCallback
+
 
 class AddressMaps(RDLListener):
     """
     class intended to be used as part of the walker/listener protocol to find all the descendant
     address maps
     """
-    def __init__(self, show_hidden: bool) -> None:
+    def __init__(self, hide_node_callback: HideNodeCallback) -> None:
         super().__init__()
         self.__address_maps: List[AddrmapNode] = []
-        self.__show_hidden = show_hidden
+        self.__hide_node_callback = hide_node_callback
 
     def enter_Addrmap(self, node: AddrmapNode) -> Optional[WalkerAction]:
-        if node.get_property('python_hide', default=False) and not self.__show_hidden:
+        if self.__hide_node_callback(node):
             return WalkerAction.SkipDescendants
 
         self.__address_maps.append(node)
@@ -50,7 +52,7 @@ class OwnedbyAddressMap(RDLListener):
     class intended to be used as part of the walker/listener protocol to find all the items owned
     by an address map but not the descendents of any address map
     """
-    def __init__(self, show_hidden: bool) -> None:
+    def __init__(self, hide_node_callback: HideNodeCallback) -> None:
         super().__init__()
 
         self.registers: List[RegNode] = []
@@ -63,10 +65,10 @@ class OwnedbyAddressMap(RDLListener):
         self._hidden_memories: List[RegNode] = []
         self._hidden_addr_maps: List[AddrmapNode] = []
         self._hidden_reg_files: List[RegfileNode] = []
-        self.__show_hidden = show_hidden
+        self.__hide_node_callback = hide_node_callback
 
     def enter_Reg(self, node: RegNode) -> Optional[WalkerAction]:
-        if node.get_property('python_hide', default=False) and not self.__show_hidden:
+        if self.__hide_node_callback(node):
             self._hidden_registers.append(node)
             return WalkerAction.SkipDescendants
 
@@ -74,7 +76,7 @@ class OwnedbyAddressMap(RDLListener):
         return WalkerAction.Continue
 
     def enter_Mem(self, node: MemNode) -> Optional[WalkerAction]:
-        if node.get_property('python_hide', default=False) and not self.__show_hidden:
+        if self.__hide_node_callback(node):
             self._hidden_memories.append(node)
             return WalkerAction.SkipDescendants
 
@@ -82,7 +84,7 @@ class OwnedbyAddressMap(RDLListener):
         return WalkerAction.Continue
 
     def enter_Field(self, node: FieldNode) -> Optional[WalkerAction]:
-        if node.get_property('python_hide', default=False) and not self.__show_hidden:
+        if self.__hide_node_callback(node):
             self._hidden_fields.append(node)
             return WalkerAction.SkipDescendants
 
@@ -90,14 +92,14 @@ class OwnedbyAddressMap(RDLListener):
         return WalkerAction.Continue
 
     def enter_Addrmap(self, node: AddrmapNode) -> Optional[WalkerAction]:
-        if not node.get_property('python_hide', default=False) or self.__show_hidden:
+        if not self.__hide_node_callback(node):
             self.addr_maps.append(node)
         else:
             self._hidden_addr_maps.append(node)
         return WalkerAction.SkipDescendants
 
     def enter_Regfile(self, node: RegfileNode) -> Optional[WalkerAction]:
-        if node.get_property('python_hide', default=False) and not self.__show_hidden:
+        if self.__hide_node_callback(node):
             self._hidden_reg_files.append(node)
             return WalkerAction.SkipDescendants
 

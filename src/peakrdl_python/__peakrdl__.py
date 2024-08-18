@@ -79,6 +79,9 @@ class Exporter(ExporterSubcommandPlugin):
                                     'would be removed from the build python by default')
         arg_group.add_argument('--udp', dest='udp', nargs='*', type=str,
                                help='any user defined properties to include in the reg_model')
+        arg_group.add_argument('--hide_regex', dest='hide_regex', type=str,
+                               help='A regex that will cause any matching fully qualified node to '
+                                    'be hidden')
 
     def do_export(self, top_node: 'AddrmapNode', options: 'argparse.Namespace') -> None:
         """
@@ -103,5 +106,6 @@ class Exporter(ExporterSubcommandPlugin):
             delete_existing_package_content=not options.suppress_cleanup,
             legacy_block_access=options.legacy_block_access,
             show_hidden=options.show_hidden,
-            user_defined_properties_to_include=options.udp
+            user_defined_properties_to_include=options.udp,
+            hidden_inst_name_regex=options.hide_regex
         )

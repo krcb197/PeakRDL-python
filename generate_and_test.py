@@ -86,6 +86,13 @@ CommandLineParser.add_argument('--legacy_block_access', action='store_true',
 CommandLineParser.add_argument('--udp', dest='udp', nargs='*',
                                type=str, help='any user defined properties to include in the '
                                               'reg_model')
+CommandLineParser.add_argument('--hide_regex', dest='hide_regex', type=str,
+                               help='A regex that will cause any matching fully qualified node to '
+                                    'be hidden')
+CommandLineParser.add_argument('--full_inst_file', dest='full_inst_file',
+                               type=pathlib.Path, required=False,
+                               help='export a text file with a list of the all qualified instance'
+                                    'names in the systemRDL')
 
 
 def build_logging_cong(logfilepath:str):
@@ -165,6 +172,12 @@ if __name__ == '__main__':
         node_list.append(node)
         print(node.inst_name)
 
+    # write out text file of all the nodes names, this can be used to debug regex issues
+    if CommandLineArgs.full_inst_file is not None:
+        with CommandLineArgs.full_inst_file.open('w', encoding='utf-8') as fid:
+            for child in spec.descendants(unroll=True):
+                fid.write('.'.join(child.get_path_segments()) + '\n')
+
     exporter = PythonExporter()
     start_time = time.time()
     exporter.export(node=spec, path=str(CommandLineArgs.output_path / 'generate_and_test_output'),
@@ -172,7 +185,8 @@ if __name__ == '__main__':
                     delete_existing_package_content=not CommandLineArgs.suppress_cleanup,
                     skip_library_copy=not CommandLineArgs.copy_libraries,
                     legacy_block_access=CommandLineArgs.legacy_block_access,
-                    user_defined_properties_to_include=CommandLineArgs.udp)
+                    user_defined_properties_to_include=CommandLineArgs.udp,
+                    hidden_inst_name_regex=CommandLineArgs.hide_regex)
     print(f'generation time {time.time() - start_time}s')
 
     if not CommandLineArgs.export_only:
