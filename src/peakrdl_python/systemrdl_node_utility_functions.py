@@ -19,14 +19,42 @@ A set of utility functions that perform supplementary processing on a node in a 
 system RDL dataset.
 """
 from typing import Iterable, Optional, List
+import sys
+from itertools import filterfalse
 
 import textwrap
 
-from systemrdl.node import Node, RegNode  # type: ignore
-from systemrdl.node import FieldNode, AddressableNode  # type: ignore
+from systemrdl.node import Node  # type: ignore
+from systemrdl.node import RegNode  # type: ignore
+from systemrdl.node import AddressableNode  # type: ignore
+from systemrdl.node import FieldNode  # type: ignore
 from systemrdl.node import MemNode  # type: ignore
 from systemrdl.node import SignalNode  # type: ignore
+from systemrdl.node import AddrmapNode  # type: ignore
+from systemrdl.node import RegfileNode  # type: ignore
+from systemrdl.component import Component  # type: ignore
 from systemrdl.rdltypes.user_enum import UserEnumMeta  # type: ignore
+from systemrdl import RDLListener, WalkerAction, RDLWalker  # type: ignore
+
+if sys.version_info >= (3, 8):
+    # Python 3.8 introduced the Protocol class to the typing module which is more powerful than the
+    # previous method because it also check the argument names
+
+    from typing import Protocol
+
+    class HideNodeCallback(Protocol):
+        """
+        Callback function that determines whether a node should be hidden or not, this is intended
+        to be used with the RegEX check on the node name
+        """
+        # pylint: disable=too-few-public-methods
+        def __call__(self, node: Node) -> bool:
+            pass
+else:
+    from typing import Callable
+
+    HideNodeCallback=Callable[[Node], bool]
+
 
 def get_fully_qualified_type_name(node: Node) -> str:
     """
@@ -38,7 +66,6 @@ def get_fully_qualified_type_name(node: Node) -> str:
     #      need to generate a unique instance, if it has not documentation
     #      properties
 
-
     inst_type_name = node.inst.type_name
     if inst_type_name is None:
         inst_type_name = node.inst_name
@@ -48,30 +75,114 @@ def get_fully_qualified_type_name(node: Node) -> str:
 
     return scope_path + '_' + inst_type_name
 
-def get_dependent_component(node: AddressableNode) -> Iterable[Node]:
+
+def hide_based_on_property(node: Node, show_hidden: bool) -> bool:
+    """
+    Used to determine if a node should be hidden based on the ''python_hide'' User Defined Property
+
+    Args:
+        node: a system RDL node
+        show_hidden: a boolean to indicate that the property should be ingored
+
+    Returns:
+        True if the node should be hidden
+    """
+    return node.get_property('python_hide', default=False) and not show_hidden
+
+
+def get_dependent_component(node: AddressableNode,
+                            hide_node_callback: HideNodeCallback) -> Iterable[Node]:
     """
     iterable of nodes that have a component which is used by a
     descendant, this list is de-duplicated and reversed to components
     are declared before their parents who use them
 
-    :param node: node to analysis
-    :return: nodes that are dependent on the specified node
+    Args:
+        node: node to be analysed
+        hide_node_callback: callback to determine if the node should be hidden
+
+
     """
-    components_needed = []
-    for child_node in node.descendants(in_post_order=True):
-        child_inst = child_node.inst
+    class UniqueComponents(RDLListener):
+        """
+        class intended to be used as part of the walker/listener protocol to find all the items
+        non-hidden nodes
+        """
 
-        if child_inst in components_needed:
-            # already covered the component
-            continue
+        def __init__(self, hide_node_callback: HideNodeCallback) -> None:
+            super().__init__()
 
-        components_needed.append(child_inst)
+            self.__hide_node_callback = hide_node_callback
+            self.__components_needed: list[Component] = []
+            self.nodes: list[Node] = []
 
-        yield child_node
+
+        def enter_Reg(self, node: RegNode) -> Optional[WalkerAction]:
+            if self.__hide_node_callback(node):
+                return WalkerAction.SkipDescendants
+
+            if node.inst in self.__components_needed:
+                return WalkerAction.SkipDescendants
+
+            self.__components_needed.append(node.inst)
+            self.nodes.append(node)
+            return WalkerAction.Continue
+
+        def enter_Mem(self, node: MemNode) -> Optional[WalkerAction]:
+            if self.__hide_node_callback(node):
+                return WalkerAction.SkipDescendants
+
+            if node.inst in self.__components_needed:
+                return WalkerAction.SkipDescendants
+
+            self.__components_needed.append(node.inst)
+            self.nodes.append(node)
+            return WalkerAction.Continue
+
+        def enter_Field(self, node: FieldNode) -> Optional[WalkerAction]:
+            if self.__hide_node_callback(node):
+                return WalkerAction.SkipDescendants
+
+            if node.inst in self.__components_needed:
+                return WalkerAction.SkipDescendants
+
+            self.__components_needed.append(node.inst)
+            self.nodes.append(node)
+            return WalkerAction.Continue
+
+        def enter_Addrmap(self, node: AddrmapNode) -> Optional[WalkerAction]:
+            if self.__hide_node_callback(node):
+                return WalkerAction.SkipDescendants
+
+            if node.inst in self.__components_needed:
+                return WalkerAction.SkipDescendants
+
+            self.__components_needed.append(node.inst)
+            self.nodes.append(node)
+            return WalkerAction.Continue
+
+        def enter_Regfile(self, node: RegfileNode) -> Optional[WalkerAction]:
+            if self.__hide_node_callback(node):
+                return WalkerAction.SkipDescendants
+
+            if node.inst in self.__components_needed:
+                return WalkerAction.SkipDescendants
+
+            self.__components_needed.append(node.inst)
+            self.nodes.append(node)
+            return WalkerAction.Continue
+
+    unique_component_walker = UniqueComponents(hide_node_callback=hide_node_callback)
+    # running the walker populated the blocks with all the address maps in within the
+    # top block, including the top_block itself
+    RDLWalker(unroll=True).walk(node, unique_component_walker, skip_top=False)
+
+    return reversed(unique_component_walker.nodes)
+
 
 def get_table_block(node: Node) -> str:
     """
-    Converts the documentation for a systemRDL node into a nicely formated table that can be
+    Converts the documentation for a systemRDL node into a nicely formatted table that can be
     inserted into the docstring of the class
 
     Args:
@@ -116,6 +227,7 @@ def get_table_block(node: Node) -> str:
 
     return return_string
 
+
 def get_field_bitmask_int(node: FieldNode) -> int:
     """
     Integer bitmask for a field
@@ -132,6 +244,7 @@ def get_field_bitmask_int(node: FieldNode) -> int:
         raise TypeError(f'node is not a {type(FieldNode)} got {type(node)}')
 
     return sum(2 ** x for x in range(node.low, node.high + 1))
+
 
 def get_field_bitmask_hex_string(node: FieldNode) -> str:
     """
@@ -222,12 +335,32 @@ def get_reg_max_value_hex_string(node: RegNode) -> str:
     max_value = ((2 ** (node.size * 8)) - 1)
     return f'0x{max_value:X}'
 
-def get_reg_writable_fields(node: RegNode) -> Iterable[FieldNode]:
+def get_reg_fields(node: RegNode, hide_node_callback: HideNodeCallback) -> Iterable[FieldNode]:
+    """
+    Iterable that yields all the fields from the reg node
+
+    Args:
+        node: node to be analysed
+        hide_node_callback: callback to determine if the node should be hidden
+
+    Yields:
+        fields
+
+    """
+    if not isinstance(node, RegNode):
+        raise TypeError(f'node is not a {type(RegNode)} got {type(node)}')
+
+    return filterfalse(hide_node_callback, node.fields())
+
+
+def get_reg_writable_fields(node: RegNode,
+                            hide_node_callback: HideNodeCallback) -> Iterable[FieldNode]:
     """
     Iterable that yields all the writable fields from the reg node
 
     Args:
         node: node to be analysed
+        hide_node_callback: callback to determine if the node should be hidden
 
     Yields:
         writeable fields
@@ -236,17 +369,18 @@ def get_reg_writable_fields(node: RegNode) -> Iterable[FieldNode]:
     if not isinstance(node, RegNode):
         raise TypeError(f'node is not a {type(RegNode)} got {type(node)}')
 
-    for field in node.fields():
-        if field.is_sw_writable is True:
-            yield field
+    return filter(lambda x: x.is_sw_writable,
+                  get_reg_fields(node=node, hide_node_callback=hide_node_callback))
 
 
-def get_reg_readable_fields(node: RegNode) -> Iterable[FieldNode]:
+def get_reg_readable_fields(node: RegNode,
+                            hide_node_callback: HideNodeCallback) -> Iterable[FieldNode]:
     """
     Iterable that yields all the readable fields from the reg node
 
     Args:
         node: node to be analysed
+        hide_node_callback: callback to determine if the node should be hidden
 
     Yields:
         readable fields
@@ -255,9 +389,9 @@ def get_reg_readable_fields(node: RegNode) -> Iterable[FieldNode]:
     if not isinstance(node, RegNode):
         raise TypeError(f'node is not a {type(RegNode)} got {type(node)}')
 
-    for field in node.fields():
-        if field.is_sw_readable is True:
-            yield field
+    return filter(lambda x: x.is_sw_readable,
+                  get_reg_fields(node=node, hide_node_callback=hide_node_callback))
+
 
 def uses_memory(node: AddressableNode) -> bool:
     """
@@ -276,6 +410,7 @@ def uses_memory(node: AddressableNode) -> bool:
         return_value = False
 
     return return_value
+
 
 def get_memory_max_entry_value_hex_string(node: MemNode) -> str:
     """
@@ -309,7 +444,7 @@ def get_memory_width_bytes(node: MemNode) -> int:
     if not isinstance(node, MemNode):
         raise TypeError(f'node is not a {type(MemNode)} got {type(node)}')
 
-    return node.get_property('memwidth') >> 3
+    return node.size // node.get_property('mementries')
 
 
 def get_field_default_value(node: FieldNode) -> Optional[int]:
@@ -351,3 +486,20 @@ def get_enum_values(enum: UserEnumMeta) -> List[int]:
         raise TypeError(f'node is not a {type(UserEnumMeta)} got {type(enum)}')
 
     return [e.value for e in enum]
+
+
+def get_properties_to_include(node: Node, udp_to_include: Optional[List[str]]) -> List[str]:
+    """
+
+
+    Args:
+        node: the system rdl node to examine the properties of
+        udp_to_include: list of property names to include in the system rdl
+
+    Returns:
+        list of properties
+    """
+    if udp_to_include is None:
+        return []
+    nodal_properties = node.list_properties(include_udp=True, include_native=False)
+    return list(filter(lambda x: x in udp_to_include, nodal_properties))

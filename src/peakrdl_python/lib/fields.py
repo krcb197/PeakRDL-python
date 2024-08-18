@@ -355,6 +355,7 @@ class Field(Base, ABC):
         # this cast is OK because an explict typing check was done in the __init__
         return cast(BaseReg, self.parent)
 
+
 class _FieldReadOnlyFramework(Field, ABC):
     """
     base class for a async or normal read only register field
@@ -406,6 +407,7 @@ class _FieldReadOnlyFramework(Field, ABC):
         # this cast is OK because an explict typing check was done in the __init__
         return cast(BaseReg, self.parent)
 
+
 class FieldReadOnly(_FieldReadOnlyFramework, ABC):
     """
     class for a read only register field
@@ -455,6 +457,7 @@ class FieldReadOnly(_FieldReadOnlyFramework, ABC):
 
         # this cast is OK because an explict typing check was done in the __init__
         return cast(ReadableRegister, self.parent)
+
 
 class _FieldWriteOnlyFramework(Field, ABC):
     """
@@ -873,11 +876,13 @@ class FieldEnumAsyncReadWrite(FieldAsyncReadWrite, FieldEnum, ABC):
         # this cast is OK because an explict typing check was done in the __init__
         return cast(RegAsyncReadWrite, self.parent)
 
+
 class FieldEnumAsyncReadOnly(FieldAsyncReadOnly, FieldEnum, ABC):
     """
     class for an async read only register field with an enumerated value
     """
     __slots__: List[str] = []
+
 
 class FieldEnumAsyncWriteOnly(FieldAsyncWriteOnly, FieldEnum, ABC):
     """

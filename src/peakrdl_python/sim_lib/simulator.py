@@ -171,7 +171,20 @@ class BaseSimulator(ABC):
                 potential_memory.memory.write(offset=potential_memory.memory_offset(addr),
                                               data=data)
 
-    def _read_block(self, addr: int, width: int, accesswidth: int, length: int) -> Array:
+    def _read_block_legacy(self, addr: int, width: int, accesswidth: int, length: int) -> Array:
+        """
+        function to simulate a device block read, this needs to match the protocol for the
+        callbacks
+
+        This currently uses a simplified implementation of converting all the block operations
+        to discrete operations, a future enhancement could be to access slices of memories
+        """
+        return Array(get_array_typecode(width),self._read_block(addr=addr,
+                                                                width=width,
+                                                                accesswidth=accesswidth,
+                                                                length=length))
+
+    def _read_block(self, addr: int, width: int, accesswidth: int, length: int) -> List:
         """
         function to simulate a device block read, this needs to match the protocol for the
         callbacks
@@ -180,11 +193,12 @@ class BaseSimulator(ABC):
         to discrete operations, a future enhancement could be to access slices of memories
         """
         addresses = self._block_access_addresses(start_address=addr, width=width, length=length)
-        data = [self._read(element_addr, width=width, accesswidth=accesswidth)
-                for element_addr in addresses]
-        return Array(get_array_typecode(width),data)
+        return [self._read(element_addr,
+                           width=width,
+                           accesswidth=accesswidth) for element_addr in addresses]
 
-    def _write_block(self, addr: int, width: int, accesswidth: int, data: Array) -> None:
+    def _write_block(self, addr: int, width: int, accesswidth: int,
+                     data: Union[List, Array]) -> None:
         """
         function to simulate a device block write, this needs to match the protocol for the
         callbacks
@@ -212,7 +226,10 @@ class BaseSimulator(ABC):
 
         Returns: range iterator for the addresses in the block
         """
-        address_increment = width >> 3
+        def roundup_pow2(x: int) -> int:
+            return 1 << (x - 1).bit_length()
+
+        address_increment = roundup_pow2(width) // 8
         end_address = start_address + (length * address_increment)
         return range(start_address, end_address, address_increment)
 
@@ -295,7 +312,7 @@ class Simulator(BaseSimulator, ABC):
         """
         return self._write(addr, width, accesswidth, data)
 
-    def read_block(self, addr: int, width: int, accesswidth: int, length: int) -> Array:
+    def read_block(self, addr: int, width: int, accesswidth: int, length: int) -> List:
         """
         function to simulate a device block read, this needs to match the protocol for the
         callbacks
@@ -304,6 +321,47 @@ class Simulator(BaseSimulator, ABC):
         to discrete operations, a future enhancement could be to access slices of memories
         """
         return self._read_block(addr, width, accesswidth, length)
+
+    def write_block(self, addr: int, width: int, accesswidth: int, data: List) -> None:
+        """
+        function to simulate a device block write, this needs to match the protocol for the
+        callbacks
+
+        This currently uses a simplified implementation of converting all the block operations
+        to discrete operations, a future enhancement could be to access slices of memories
+        """
+        return self._write_block(addr, width, accesswidth, data)
+
+
+class SimulatorLegacy(BaseSimulator, ABC):
+    """
+    Base class of a simple simulator that uses non-async callbacks that can be used to test and
+    debug peakrdl-python generated register access layer (RAL)
+    """
+
+    def read(self, addr: int,
+             width: int, # pylint: disable=unused-argument
+             accesswidth: int) -> int: # pylint: disable=unused-argument
+        """
+        function to simulate a device read, this needs to match the protocol for the callbacks
+        """
+        return self._read(addr, width, accesswidth)
+
+    def write(self, addr: int, width: int, accesswidth: int, data: int) -> None:
+        """
+        function to simulate a device write, this needs to match the protocol for the callbacks
+        """
+        return self._write(addr, width, accesswidth, data)
+
+    def read_block(self, addr: int, width: int, accesswidth: int, length: int) -> Array:
+        """
+        function to simulate a device block read, this needs to match the protocol for the
+        callbacks
+
+        This currently uses a simplified implementation of converting all the block operations
+        to discrete operations, a future enhancement could be to access slices of memories
+        """
+        return self._read_block_legacy(addr, width, accesswidth, length)
 
     def write_block(self, addr: int, width: int, accesswidth: int, data: Array) -> None:
         """
@@ -338,7 +396,7 @@ class AsyncSimulator(BaseSimulator, ABC):
         await asyncio.sleep(0)
         return self._write(addr, width, accesswidth, data)
 
-    async def read_block(self, addr: int, width: int, accesswidth: int, length: int) -> Array:
+    async def read_block(self, addr: int, width: int, accesswidth: int, length: int) -> List:
         """
         function to simulate a device block read, this needs to match the protocol for the
         callbacks
@@ -348,6 +406,51 @@ class AsyncSimulator(BaseSimulator, ABC):
         """
         await asyncio.sleep(0)
         return self._read_block(addr, width, accesswidth, length)
+
+    async def write_block(self, addr: int, width: int, accesswidth: int, data: List) -> None:
+        """
+        function to simulate a device block write, this needs to match the protocol for the
+        callbacks
+
+        This currently uses a simplified implementation of converting all the block operations
+        to discrete operations, a future enhancement could be to access slices of memories
+        """
+        await asyncio.sleep(0)
+        return self._write_block(addr, width, accesswidth, data)
+
+
+class AsyncSimulatorLegacy(BaseSimulator, ABC):
+    """
+    Base class of a simple simulator that uses async callbacks that can be used to test and
+    debug peakrdl-python generated register access layer (RAL)
+    """
+
+    async def read(self, addr: int,
+                   width: int,  # pylint: disable=unused-argument
+                   accesswidth: int) -> int:  # pylint: disable=unused-argument
+        """
+        function to simulate a device read, this needs to match the protocol for the callbacks
+        """
+        await asyncio.sleep(0)
+        return self._read(addr, width, accesswidth)
+
+    async def write(self, addr: int, width: int, accesswidth: int, data: int) -> None:
+        """
+        function to simulate a device write, this needs to match the protocol for the callbacks
+        """
+        await asyncio.sleep(0)
+        return self._write(addr, width, accesswidth, data)
+
+    async def read_block(self, addr: int, width: int, accesswidth: int, length: int) -> Array:
+        """
+        function to simulate a device block read, this needs to match the protocol for the
+        callbacks
+
+        This currently uses a simplified implementation of converting all the block operations
+        to discrete operations, a future enhancement could be to access slices of memories
+        """
+        await asyncio.sleep(0)
+        return self._read_block_legacy(addr, width, accesswidth, length)
 
     async def write_block(self, addr: int, width: int, accesswidth: int, data: Array) -> None:
         """

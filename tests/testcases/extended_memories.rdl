@@ -1,0 +1,28 @@
+addrmap extended_memories {
+    external mem {
+        mementries = 5;
+        memwidth = 128;
+    } mem_5_128;
+
+    external mem {
+        mementries = 10;
+        memwidth = 36;
+    } mem_10_36;
+
+    external mem {
+        mementries = 4;
+        memwidth = 12;
+    } mem_4_12;
+
+    external mem {
+        mementries = 3;
+        memwidth = 24;
+    } mem_3_24;
+
+
+
+    external mem {
+        mementries = 10;
+        memwidth = 36;
+    } mem_10_36_array[4];
+};

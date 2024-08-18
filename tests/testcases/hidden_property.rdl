@@ -1,0 +1,117 @@
+property python_hide { type = boolean; component = addrmap | regfile | reg | field | mem; };
+
+addrmap hidden_property {
+
+    reg def_reg_with_fields  {
+        default sw = rw;
+        default hw = r;
+        field { python_hide=true; fieldwidth=1; } property_hidden_field;
+        field { python_hide=false; fieldwidth=1; } property_unhidden_field;
+        field { fieldwidth=1; } no_property_field;
+    };
+
+    reg  {
+        default sw = rw;
+        default hw = r;
+        field { python_hide=true; fieldwidth=1; } property_hidden_field;
+    } reg_all_fields_hidden;
+
+    def_reg_with_fields reg_hidden_fields;
+
+    reg def_reg_opt_hidden #(boolean hidden=true) {
+        default sw = rw;
+        default hw = r;
+        python_hide = hidden;
+        field { fieldwidth=1; } field_a;
+    };
+
+    def_reg_opt_hidden #(.hidden(true)) reg_hidden;
+    def_reg_opt_hidden #(.hidden(false)) reg_unhidden;
+    def_reg_opt_hidden #(.hidden(true)) reg_hidden_array[2];
+    def_reg_opt_hidden #(.hidden(false)) reg_unhidden_array[2];
+
+    regfile def_hidden_regfile #(boolean hidden=true) {
+        python_hide = hidden;
+        def_reg_opt_hidden #(.hidden(true)) reg_hidden;
+        def_reg_opt_hidden #(.hidden(false)) reg_unhidden;
+        def_reg_opt_hidden #(.hidden(true)) reg_hidden_array[2];
+        def_reg_opt_hidden #(.hidden(false)) reg_unhidden_array[2];
+    };
+
+    def_hidden_regfile #(.hidden(true)) regfile_hidden;
+    def_hidden_regfile #(.hidden(false)) regfile_unhidden;
+    def_hidden_regfile #(.hidden(true)) regfile_hidden_array[2];
+    def_hidden_regfile #(.hidden(false)) regfile_unhidden_array[2];
+
+    external mem {
+        mementries = 10;
+        memwidth = 32;
+        python_hide = true;
+    } hidden_mem;
+
+    external mem {
+        mementries = 10;
+        memwidth = 32;
+        python_hide = false;
+    } unhidden_mem;
+
+    external mem {
+        mementries = 10;
+        memwidth = 32;
+    } no_property_mem;
+
+    external mem {
+        mementries = 10;
+        memwidth = 32;
+        python_hide = true;
+
+        def_reg_opt_hidden #(.hidden(true)) reg_hidden;
+        def_reg_opt_hidden #(.hidden(false)) reg_unhidden;
+        def_reg_opt_hidden #(.hidden(true)) reg_hidden_array[2];
+        def_reg_opt_hidden #(.hidden(false)) reg_unhidden_array[2];
+
+    } hidden_mem_with_reg;
+
+    external mem {
+        mementries = 10;
+        memwidth = 32;
+        python_hide = false;
+
+        def_reg_opt_hidden #(.hidden(true)) reg_hidden;
+        def_reg_opt_hidden #(.hidden(false)) reg_unhidden;
+        def_reg_opt_hidden #(.hidden(true)) reg_hidden_array[2];
+        def_reg_opt_hidden #(.hidden(false)) reg_unhidden_array[2];
+
+    } unhidden_mem_with_reg;
+
+    external mem {
+        mementries = 10;
+        memwidth = 32;
+
+        def_reg_opt_hidden #(.hidden(true)) reg_hidden;
+        def_reg_opt_hidden #(.hidden(false)) reg_unhidden;
+        def_reg_opt_hidden #(.hidden(true)) reg_hidden_array[2];
+        def_reg_opt_hidden #(.hidden(false)) reg_unhidden_array[2];
+
+    } no_property_mem_with_reg;
+
+    addrmap def_hidden_addrmap #(boolean hidden=true) {
+        python_hide = hidden;
+        def_reg_opt_hidden #(.hidden(true)) reg_hidden;
+        def_reg_opt_hidden #(.hidden(false)) reg_unhidden;
+        def_reg_opt_hidden #(.hidden(true)) reg_hidden_array[2];
+        def_reg_opt_hidden #(.hidden(false)) reg_unhidden_array[2];
+        def_hidden_regfile #(.hidden(true)) regfile_hidden;
+        def_hidden_regfile #(.hidden(false)) regfile_unhidden;
+        def_hidden_regfile #(.hidden(true)) regfile_hidden_array[2];
+        def_hidden_regfile #(.hidden(false)) regfile_unhidden_array[2];
+    };
+
+    def_hidden_addrmap #(.hidden(true)) addrmap_hidden;
+    def_hidden_addrmap #(.hidden(false)) addrmap_unhidden;
+    def_hidden_addrmap #(.hidden(true)) addrmap_hidden_array[2];
+    def_hidden_addrmap #(.hidden(false)) addrmap_unhidden_array[2];
+
+
+
+};

@@ -1,0 +1,77 @@
+
+addrmap reserved_elements {
+
+    reg def_reg_with_fields  {
+        default sw = rw;
+        default hw = r;
+        field { fieldwidth=1; } reserved;
+        field { fieldwidth=1; } RSVD;
+        field { fieldwidth=1; } show;
+    };
+
+    reg  {
+        default sw = rw;
+        default hw = r;
+        field { fieldwidth=1; } reserved;
+    } show_single;
+
+    def_reg_with_fields reserved;
+    def_reg_with_fields RSVD;
+    def_reg_with_fields show;
+    def_reg_with_fields array_reserved[2];
+    def_reg_with_fields array_RSVD[2];
+    def_reg_with_fields array_show[2];
+
+    regfile def_hidden_regfile {
+        def_reg_with_fields reserved;
+        def_reg_with_fields RSVD;
+        def_reg_with_fields show;
+    };
+
+    def_hidden_regfile regfile_reserved;
+    def_hidden_regfile regfile_RSVD;
+    def_hidden_regfile regfile_show;
+    def_hidden_regfile regfile_array_reserved[2];
+    def_hidden_regfile regfile_array_RSVD[2];
+    def_hidden_regfile regfile_array_show[2];
+
+    external mem {
+        mementries = 10;
+        memwidth = 32;
+    } mem_RSVD;
+
+    external mem {
+        mementries = 10;
+        memwidth = 32;
+
+        def_reg_with_fields reserved;
+        def_reg_with_fields RSVD;
+        def_reg_with_fields show;
+        def_reg_with_fields array_reserved[2];
+        def_reg_with_fields array_RSVD[2];
+        def_reg_with_fields array_show[2];
+
+    } mem_with_reg;
+
+    addrmap def_hidden_addrmap {
+        def_reg_with_fields reserved;
+        def_reg_with_fields RSVD;
+        def_reg_with_fields show;
+        def_reg_with_fields array_reserved[2];
+        def_reg_with_fields array_RSVD[2];
+        def_reg_with_fields array_show[2];
+        def_hidden_regfile regfile_reserved;
+        def_hidden_regfile regfile_RSVD;
+        def_hidden_regfile regfile_show;
+        def_hidden_regfile regfile_array_reserved[2];
+        def_hidden_regfile regfile_array_RSVD[2];
+        def_hidden_regfile regfile_array_show[2];
+    };
+
+    def_hidden_addrmap addrmap_reserved;
+    def_hidden_addrmap addrmap_RSVD;
+    def_hidden_addrmap addrmap_show;
+    def_hidden_addrmap addrmap_hidden_array[2];
+    def_hidden_addrmap addrmap_unhidden_array[2];
+
+};

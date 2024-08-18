@@ -1,0 +1,17 @@
+enum component_type {
+			test_function = 0 { name = "test the design"; };
+			device_configuration = 1 { name = "configuring_the_device"; };
+			normal_use = 2 { desc="normal device usage"; };
+		};
+
+property component_usage { type = component_type; component = addrmap | regfile | reg | field | mem; };
+
+addrmap user_defined_property {
+
+    reg  {
+        field { fieldwidth=4; component_usage=component_type::test_function;  } data_loop_back;
+        field { fieldwidth=1; component_usage=component_type::device_configuration; } power_control;
+        field { fieldwidth=1; component_usage=component_type::normal_use;  } led_control;
+    } control_register;
+
+};

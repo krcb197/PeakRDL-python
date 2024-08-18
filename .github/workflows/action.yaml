@@ -8,7 +8,9 @@ on:
   push:
     branches: [ main ]
   pull_request:
-    branches: [ main ]
+    branches:
+    - main
+    - 0.9.0
   schedule:
     - cron: '00 6 1 * *'
   release:
@@ -35,9 +37,11 @@ jobs:
           python -m pip install .
           python -m pip install -U pylint
 
-      - name: Run Lint
-        #run: pylint --rcfile tests/pylint.rc src/peakrdl_python tests/unit_tests
+      - name: Run Main code Lint
         run: pylint --rcfile tests/pylint.rc src/peakrdl_python
+
+      - name: Run unit tests Lint
+        run: pylint --rcfile tests/pylint.rc src/peakrdl_python tests/unit_tests
 
   mypy:
     runs-on: ubuntu-latest
@@ -124,6 +128,14 @@ jobs:
 
           python -m generate_and_test --RDL_source_file tests/testcases/accelera-generic_example.rdl --root_node some_register_map
 
+          python -m generate_and_test --RDL_source_file tests/testcases/user_defined_properties.rdl --root_node user_defined_properties --udp bool_property_to_include
+          python -m generate_and_test --RDL_source_file tests/testcases/user_defined_properties.rdl --root_node user_defined_properties --udp bool_property_to_include enum_property_to_include
+          python -m generate_and_test --RDL_source_file tests/testcases/user_defined_properties.rdl --root_node user_defined_properties --udp bool_property_to_include enum_property_to_include int_property_to_include
+          python -m generate_and_test --RDL_source_file tests/testcases/user_defined_properties.rdl --root_node user_defined_properties --udp bool_property_to_include enum_property_to_include int_property_to_include str_property_to_include
+          python -m generate_and_test --RDL_source_file tests/testcases/user_defined_properties.rdl --root_node user_defined_properties --udp bool_property_to_include enum_property_to_include int_property_to_include str_property_to_include struct_property_to_include double_layer_struct_property_to_include
+
+          python -m generate_and_test --RDL_source_file tests/testcases/reserved_elements.rdl --root_node reserved_elements --hide_regex "(?:[\w_\[\]]+\.)+RSVD"
+
   peakrdl_integration:
     needs:
       - mypy
@@ -152,10 +164,20 @@ jobs:
         run: |
 
           peakrdl python tests/testcases/basic.rdl -o peakrdl_out/raw/
+          peakrdl python tests/testcases/hidden_property.rdl -o peakrdl_out/raw/
+          peakrdl python tests/testcases/hidden_property.rdl -o peakrdl_out/raw/show_hidden/ --show_hidden
           peakrdl python tests/testcases/simple.xml tests/testcases/multifile.rdl -o peakrdl_out/raw
+          peakrdl python tests/testcases/extended_memories.rdl -o peakrdl_out/raw/
+          peakrdl python tests/testcases/user_defined_properties.rdl -o peakrdl_out/raw/ --udp bool_property_to_include
+          peakrdl python tests/testcases/reserved_elements.rdl -o peakrdl_out/raw/ --hide_regex "(?:[\w_\[\]]+\.)+RSVD"
           python -m unittest discover -s peakrdl_out/raw
+
           peakrdl python tests/testcases/basic.rdl -o peakrdl_out/raw_async/ --async
+          peakrdl python tests/testcases/hidden_property.rdl -o peakrdl_out/raw_async/ --async
+          peakrdl python tests/testcases/hidden_property.rdl -o peakrdl_out/raw_async/show_hidden/ --show_hidden --async
           python -m unittest discover -s peakrdl_out/raw_async
+          peakrdl python tests/testcases/basic.rdl -o peakrdl_out/raw_legacy/ --legacy_block_access
+          python -m unittest discover -s peakrdl_out/raw_legacy
 
           peakrdl python tests/testcases/basic.rdl -o peakrdl_out/no_test/ --skip_test_case_generation
 
@@ -248,17 +270,58 @@ jobs:
 
         python -m unittest discover -s testcase_output
 
+  autoformating:
+    needs:
+      - integration_tests
+
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        # reduced matrix because the autoformatter was having issues with python 3.8 so we will
+        # limit this to modern versions of python only
+        python-version: [3.8, 3.9, "3.10", "3.11", "3.12"]
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ matrix.python-version }}
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        python -m pip install .
+        python -m pip install mypy
+        # one of the test cases uses IPxact so we need the importer
+        python -m pip install peakrdl-ipxact
+        # black is the autoformatter used for this this testing
+        python -m pip install black
+
+        # retrieve the example code from the systemRDL compiler
+        wget -L https://raw.githubusercontent.com/SystemRDL/systemrdl-compiler/main/examples/accelera-generic_example.rdl -O tests/testcases/accelera-generic_example.rdl
+
+    - name: Generate testcases
+      run: |
+        # black will ignore files in the .gitingore by default, so we need to ensure that the
+        # content is generated with a different name
+        python generate_testcases.py --output autoformatted_output --test_case accelera-generic_example.rdl
+        # no need to check them as they are tested in the previous test
+
     - name: Test Autoformating
       run: |
-        python -m pip install black
-        cp testcase_output autoformatted_testcase_output -r
-        black autoformatted_testcase_output --line-length 120
-        python -m unittest discover -s autoformatted_testcase_output
+        # run the autoformatting
+        black autoformatted_output --line-length 120
+        # check the files are correct with mypy and unittesting
+        mypy autoformatted_output --config-file=tests/.mypy.ini
+        python -m unittest discover -s autoformatted_output
 
   #-------------------------------------------------------------------------------
   build:
     needs:
       - integration_tests
+      - autoformating
       - dev_runner
       - peakrdl_integration
     name: Build source distribution

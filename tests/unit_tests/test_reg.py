@@ -1,12 +1,14 @@
 """
 Test for basic register reading
 """
+import unittest
 from typing import Tuple, Optional, Iterator, Union, Dict, Type, cast
 from abc import ABC, abstractmethod
 from unittest.mock import patch
 
 # pylint: disable-next=unused-wildcard-import,wildcard-import
 from peakrdl_python.lib import *
+from peakrdl_python.lib.utility_functions import legal_register_width
 
 from .simple_components import ReadOnlyRegisterToTest, WriteOnlyRegisterToTest, \
     ReadWriteRegisterToTest, CallBackTestWrapper
@@ -508,3 +510,22 @@ class TestReadWrite(RegTestBase):
             write_patch.assert_called_once_with(addr=0,
                                                 width=self.dut.width,
                                                 accesswidth=self.dut.accesswidth, data=1)
+
+
+class TestRegWidthUtility(unittest.TestCase):
+    """
+    Test for the register width calculations
+    """
+
+    def test_legal_reg_width(self):
+        """
+        Test the register widths
+        """
+        self.assertFalse(legal_register_width(-1))
+        self.assertFalse(legal_register_width(0))
+        self.assertFalse(legal_register_width(4))
+        for width_power in range(3, 20):
+            reg_width = 1 << width_power
+            self.assertTrue(legal_register_width(reg_width))
+            self.assertFalse(legal_register_width(reg_width + 1))
+            self.assertFalse(legal_register_width(reg_width - 1))
