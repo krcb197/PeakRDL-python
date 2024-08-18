@@ -43,6 +43,7 @@ from systemrdl import RDLCompiler
 
 sys.path.append('src')
 from peakrdl_python import PythonExporter
+from peakrdl_python import PythonInstNameUDP, PythonHideUDP
 
 CommandLineParser = argparse.ArgumentParser(description='Test the framework')
 CommandLineParser.add_argument('--RDL_source_file', dest='root_RDL_file',
@@ -151,6 +152,9 @@ if __name__ == '__main__':
     logging.config.dictConfig(logfile_path)
 
     rdlc = RDLCompiler()
+    rdlc.register_udp(PythonHideUDP)
+    rdlc.register_udp(PythonInstNameUDP)
+
 
     if CommandLineArgs.ipxact is not None:
 

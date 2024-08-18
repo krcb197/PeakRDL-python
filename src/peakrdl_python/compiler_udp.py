@@ -18,18 +18,17 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 Defined the compiler classes that are used
 """
 from systemrdl.udp import UDPDefinition
-from systemrdl.components import Field, Signal
-
+from systemrdl.component import Field, Reg, Regfile, Mem, Addrmap
 
 class PythonInstNameUDP(UDPDefinition):
     name = "python_inst_name"
-    valid_components = {Field, Signal}
-    valid_type = int
+    valid_components = {Field, Reg, Regfile, Mem, Addrmap}
+    valid_type = str
 
 
 class PythonHideUDP(UDPDefinition):
     name = "python_hide"
-    valid_components = {Field, Signal}
+    valid_components = {Field, Reg, Regfile, Mem, Addrmap}
     valid_type = bool
 
 
