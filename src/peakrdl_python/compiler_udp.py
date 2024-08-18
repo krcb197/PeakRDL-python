@@ -15,7 +15,21 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+Defined the compiler classes that are used
 """
-from .exporter import PythonExporter
+from systemrdl.udp import UDPDefinition
+from systemrdl.components import Field, Signal
 
-from .compiler_udp import PythonHideUDP, PythonInstNameUDP
+
+class PythonInstNameUDP(UDPDefinition):
+    name = "python_inst_name"
+    valid_components = {Field, Signal}
+    valid_type = int
+
+
+class PythonHideUDP(UDPDefinition):
+    name = "python_hide"
+    valid_components = {Field, Signal}
+    valid_type = bool
+
+
