@@ -307,7 +307,7 @@ class TestRegexExportHidden(unittest.TestCase):
         """
         regex = r'reserved_elements'
         with self.assertRaises(RuntimeError):
-            with self.build_python_wrappers_and_make_instance(hidden_inst_name_regex=regex) as dut:
+            with self.build_python_wrappers_and_make_instance(hidden_inst_name_regex=regex):
                 pass
 
     def test_hide_nothing(self):
@@ -324,6 +324,7 @@ class TestRegexExportHidden(unittest.TestCase):
             self.assertIn('reserved', dir(dut.show))
             self.assertIn('show', dir(dut.show))
 
+    # pylint: disable-next=invalid-name
     def test_hid_RSVD(self):
         """
         This test should hide any node with a whole name match on 'RSVD':register, field, regfile,
@@ -339,6 +340,7 @@ class TestRegexExportHidden(unittest.TestCase):
             self.assertIn('reserved', dir(dut.show))
             self.assertIn('show', dir(dut.show))
 
+    # pylint: disable-next=invalid-name
     def test_hid_RSVD_or_reserved(self):
         """
         This test should hide any node with a whole name match on 'RSVD':register, field, regfile,
