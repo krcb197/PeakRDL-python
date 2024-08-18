@@ -495,7 +495,7 @@ class PythonExporter:
                 rolled_owned_reg += list(memory.registers(unroll=False))
 
             def is_reg_array(item: RegNode) -> bool:
-                return item.is_array and hide_node_func(item)
+                return item.is_array and not hide_node_func(item)
 
             rolled_owned_reg_array = list(filter(is_reg_array, rolled_owned_reg))
 
