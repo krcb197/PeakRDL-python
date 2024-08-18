@@ -467,7 +467,7 @@ included to reserve space or test functions.
 User Defined Property
 ---------------------
 
-PeakRDL Python supports a User Defined Propery (UDP): ``python_hide`` that can be used to hide
+PeakRDL Python supports a User Defined Property (UDP): ``python_hide`` that can be used to hide
 items that should not appear in the generated python wrappers.
 
 In the following example, python wrapper generated would have the registers:
@@ -511,10 +511,15 @@ command line tool or the ``export`` method.
 Regular Expression
 ------------------
 
+PeakRDL Python supports hiding elements of the based on a regular expression.
+
+.. note:: The expression uses the python re.match, for example to hide all fields, registers,
+          regfiles, address maps or memories  with the name ``RSVD``, the regular expression
+          must match on the full name e.g. ``(?:[\w_\[\]]+\.)+RSVD``
 
 
-Autoformating
-=============
+Autoformatting
+==============
 
 The generated code is not perfect it often has lots of spare black lines, over time this will
 improve but the quickest way to resolve these issue is to include an autoformatter
