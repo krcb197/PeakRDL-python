@@ -14,9 +14,10 @@ from itertools import chain, permutations
 
 from contextlib import contextmanager
 
-from systemrdl import RDLCompiler
+from systemrdl import RDLCompileError
 
 from peakrdl_python import PythonExporter
+from peakrdl_python import compiler_with_udp_registers
 
 
 
@@ -38,7 +39,7 @@ class TestExportHidden(unittest.TestCase):
         """
 
         # compile the code for the test
-        rdlc = RDLCompiler()
+        rdlc = compiler_with_udp_registers()
         rdlc.compile_file(os.path.join(self.test_case_path, self.test_case_name))
         spec = rdlc.elaborate(top_def_name=self.test_case_top_level).top
 
@@ -128,7 +129,7 @@ class TestExportUDP(unittest.TestCase):
         """
 
         # compile the code for the test
-        rdlc = RDLCompiler()
+        rdlc = compiler_with_udp_registers()
         rdlc.compile_file(os.path.join(self.test_case_path, self.test_case_name))
         spec = rdlc.elaborate(top_def_name=self.test_case_top_level).top
 
@@ -251,7 +252,7 @@ class TestRegexExportHidden(unittest.TestCase):
         """
 
         # compile the code for the test
-        rdlc = RDLCompiler()
+        rdlc = compiler_with_udp_registers()
         rdlc.compile_file(os.path.join(self.test_case_path, self.test_case_name))
         spec = rdlc.elaborate(top_def_name=self.test_case_top_level).top
 
@@ -358,6 +359,84 @@ class TestRegexExportHidden(unittest.TestCase):
             self.assertNotIn('RSVD', dir(dut.array_show[0]))
             self.assertNotIn('reserved', dir(dut.array_show[0]))
             self.assertIn('show', dir(dut.array_show[0]))
+
+
+class TestUDPDeclarations(unittest.TestCase):
+    """
+    Test class for the export of hidden and force not hidden (show hidden)
+    """
+
+    @contextmanager
+    def build_python_wrappers_and_make_instance(self, system_rdl_content, top_name):
+        """
+        Context manager to build the python wrappers for a value of show_hidden, then import them
+        and clean up afterwards
+        """
+
+        # compile the code for the test
+        rdlc = compiler_with_udp_registers()
+
+        with tempfile.TemporaryDirectory() as tmpdirname:
+            with open(os.path.join(tmpdirname, 'system_rdl.rdl'), 'w', encoding='utf-8') as fid:
+                fid.write(system_rdl_content)
+
+            rdlc.compile_file(os.path.join(tmpdirname, 'system_rdl.rdl'))
+
+
+    def test_bad_property_type_declaration(self):
+        """
+        Test that the property not being defined as a string causes a problem
+        """
+        system_rdl_code = \
+            'property python_inst_name { type = number; component = addrmap | regfile | reg | field | mem; };' +\
+            'addrmap name_of_addrmap { ' +\
+            'reg {' +\
+            '    python_inst_name="overidden_reg_a";'+\
+            '    field { python_inst_name="overridden_field_a";  } field_a[31:0];'+\
+            '} reg_a;'+\
+            '};'
+
+        with self.assertRaises(RDLCompileError):
+            with self.build_python_wrappers_and_make_instance(system_rdl_content=system_rdl_code,
+                                                                  top_name='name_of_addrmap'):
+                pass
+
+    def test_bad_property_component_declaration(self):
+        """
+        Test that the property not being defined as a string causes a problem
+        """
+        system_rdl_code = \
+            'property python_inst_name { type = number; component = signal | reg; };' +\
+            'addrmap name_of_addrmap { ' +\
+            'reg {' +\
+            '    python_inst_name="overidden_reg_a";'+\
+            '    field { python_inst_name="overridden_field_a";  } field_a[31:0];'+\
+            '} reg_a;'+\
+            '};'
+
+        with self.assertRaises(RDLCompileError):
+            with self.build_python_wrappers_and_make_instance(system_rdl_content=system_rdl_code,
+                                                                  top_name='name_of_addrmap'):
+                pass
+
+    def test_bad_property_name_declaration(self):
+        """
+        Test that the property setting to a python keyname causes an error
+        """
+        system_rdl_code = \
+            'property python_inst_name { type = number; component = signal | reg; };' +\
+            'addrmap name_of_addrmap { ' +\
+            'reg {' +\
+            '    python_inst_name="in";'+\
+            '    field { python_inst_name="overridden_field_a";  } field_a[31:0];'+\
+            '} reg_a;'+\
+            '};'
+
+        with self.assertRaises(RDLCompileError):
+            with self.build_python_wrappers_and_make_instance(system_rdl_content=system_rdl_code,
+                                                                  top_name='name_of_addrmap'):
+                pass
+
 
 
 if __name__ == '__main__':

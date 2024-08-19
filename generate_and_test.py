@@ -37,13 +37,11 @@ from unittest import TextTestRunner
 
 #from coverage import Coverage
 
-from systemrdl import RDLCompiler
-
 #from peakrdl_ipxact import IPXACTImporter
 
 sys.path.append('src')
 from peakrdl_python import PythonExporter
-from peakrdl_python import PythonInstNameUDP, PythonHideUDP
+from peakrdl_python import compiler_with_udp_registers
 
 CommandLineParser = argparse.ArgumentParser(description='Test the framework')
 CommandLineParser.add_argument('--RDL_source_file', dest='root_RDL_file',
@@ -151,10 +149,7 @@ if __name__ == '__main__':
     logfile_path = build_logging_cong(CommandLineArgs.output_path / f'{__file__}.log')
     logging.config.dictConfig(logfile_path)
 
-    rdlc = RDLCompiler()
-    rdlc.register_udp(PythonHideUDP)
-    rdlc.register_udp(PythonInstNameUDP)
-
+    rdlc = compiler_with_udp_registers()
 
     if CommandLineArgs.ipxact is not None:
 
