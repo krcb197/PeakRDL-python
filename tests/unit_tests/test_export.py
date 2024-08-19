@@ -373,7 +373,6 @@ class TestUDPDeclarations(unittest.TestCase):
         and clean up afterwards
         """
 
-        # compile the code for the test
         rdlc = compiler_with_udp_registers()
 
         with tempfile.TemporaryDirectory() as tmpdirname:
@@ -381,6 +380,9 @@ class TestUDPDeclarations(unittest.TestCase):
                 fid.write(system_rdl_content)
 
             rdlc.compile_file(os.path.join(tmpdirname, 'system_rdl.rdl'))
+            spec = rdlc.elaborate(top_def_name=top_name).top
+
+            yield spec
 
 
     def test_bad_property_type_declaration(self):
@@ -388,7 +390,8 @@ class TestUDPDeclarations(unittest.TestCase):
         Test that the property not being defined as a string causes a problem
         """
         system_rdl_code = \
-            'property python_inst_name { type = number; component = addrmap | regfile | reg | field | mem; };' +\
+            'property python_inst_name { type = number; ' +\
+            'component = addrmap | regfile | reg | field | mem; };' +\
             'addrmap name_of_addrmap { ' +\
             'reg {' +\
             '    python_inst_name="overidden_reg_a";'+\
