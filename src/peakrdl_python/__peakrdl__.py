@@ -28,6 +28,7 @@ from peakrdl.config import schema  # type: ignore[import]
 #pylint: enable=no-name-in-module,import-error
 
 from .exporter import PythonExporter
+from .compiler_udp import PythonHideUDP, PythonInstNameUDP
 
 if TYPE_CHECKING:
     import argparse
@@ -40,6 +41,7 @@ class Exporter(ExporterSubcommandPlugin):
     """
     short_desc = "Generater Python Wrappers"
     long_desc = "Generate Python Wrappers for the Register Model"
+    udp_definitions = [PythonHideUDP, PythonInstNameUDP]
 
     cfg_schema = {
         "user_template_dir": schema.DirectoryPath(),
