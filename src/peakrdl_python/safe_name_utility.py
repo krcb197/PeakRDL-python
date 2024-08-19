@@ -90,6 +90,8 @@ def is_safe_field_name(node: FieldNode, proposed_name: Optional[str] = None) -> 
 
     Args:
         node: A System RDL Field Node
+        proposed_name (str): proposed node name to check, leave as None to use the name from the
+                             systemRDL code
 
     Returns: True if safe to use
 
@@ -138,10 +140,13 @@ def is_safe_register_name(node: RegNode, proposed_name: Optional[str] = None) ->
 
     Args:
         node: A System RDL Register Node
+        proposed_name (str): proposed node name to check, leave as None to use the name from the
+                     systemRDL code
 
     Returns: True if safe to use
 
     """
+    # pylint: disable=too-many-branches
     if not isinstance(node, RegNode):
         raise TypeError(f'node should be a RegNode but got {type(node)}')
 
@@ -188,6 +193,8 @@ def is_safe_memory_name(node: MemNode, proposed_name: Optional[str] = None) -> b
 
     Args:
         node: A System RDL Memory Node
+        proposed_name (str): proposed node name to check, leave as None to use the name from the
+                     systemRDL code
 
     Returns: True if safe to use
 
@@ -229,6 +236,8 @@ def is_safe_regfile_name(node: RegfileNode, proposed_name: Optional[str] = None)
 
     Args:
         node: A System RDL Register File
+        proposed_name (str): proposed node name to check, leave as None to use the name from the
+                     systemRDL code
 
     Returns: True if safe to use
 
@@ -270,6 +279,8 @@ def is_safe_addrmap_name(node: AddrmapNode, proposed_name: Optional[str] = None)
 
     Args:
         node: A System RDL Address Map
+        proposed_name (str): proposed node name to check, leave as None to use the name from the
+                     systemRDL code
 
     Returns: True if safe to use
 

@@ -17,16 +17,18 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 Defined the compiler classes that are used
 """
-from systemrdl import RDLCompiler
-from systemrdl.udp import UDPDefinition
-from systemrdl.component import Field, Reg, Regfile, Mem, Addrmap
-from systemrdl.node import FieldNode, RegNode, RegfileNode, MemNode, AddrmapNode, Node
+from typing import Any
+from systemrdl import RDLCompiler  # type: ignore
+from systemrdl.udp import UDPDefinition  # type: ignore
+from systemrdl.component import Field, Reg, Regfile, Mem, Addrmap # type: ignore
+from systemrdl.node import FieldNode, RegNode, RegfileNode, MemNode, AddrmapNode  # type: ignore
+from systemrdl.node import Node  # type: ignore
 
 from .safe_name_utility import is_safe_field_name, is_safe_memory_name, is_safe_addrmap_name, \
     is_safe_regfile_name, is_safe_register_name
 
 
-def compiler_with_udp_registers(**kwargs) -> RDLCompiler:
+def compiler_with_udp_registers(**kwargs: Any) -> RDLCompiler:
     """
     Factory function to create an instance of the systemRDL compiler with the UDP registrations
     """
@@ -38,11 +40,14 @@ def compiler_with_udp_registers(**kwargs) -> RDLCompiler:
 
 
 class PythonInstNameUDP(UDPDefinition):
+    """
+    Definition of the class for the ``python_inst_name`` systemRDL property used by peakrdl-python
+    """
     name = "python_inst_name"
     valid_components = {Field, Reg, Regfile, Mem, Addrmap}
     valid_type = str
 
-    def validate(self, node: Node, value: str):
+    def validate(self, node: Node, value: str) -> None:
         if isinstance(node, FieldNode):
             if not is_safe_field_name(node, value):
                 self.msg.error(
@@ -86,8 +91,9 @@ class PythonInstNameUDP(UDPDefinition):
 
 
 class PythonHideUDP(UDPDefinition):
+    """
+    Definition of the class for the ``python_hide`` systemRDL property used by peakrdl-python
+    """
     name = "python_hide"
     valid_components = {Field, Reg, Regfile, Mem, Addrmap}
     valid_type = bool
-
-
