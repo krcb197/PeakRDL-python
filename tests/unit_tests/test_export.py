@@ -22,6 +22,13 @@ from peakrdl_python import PythonExporter
 from peakrdl_python import compiler_with_udp_registers
 from peakrdl_python.__about__ import __version__ as peakrdl_version
 
+if sys.version_info[0:2] < (3, 11):
+    # Prior to py3.11, tomllib is a 3rd party package
+    import tomli as tomllib
+else:
+    # py3.11 and onwards, tomli was absorbed into the standard library as tomllib
+    import tomllib
+
 # this assumes the current file is in the unit_test folder under tests
 test_path = Path(__file__).parent.parent
 test_cases = test_path / 'testcases'
@@ -470,7 +477,7 @@ class TestAlternativeTemplates(unittest.TestCase):
         spec = rdlc.elaborate(top_def_name=self.test_case_top_level).top
 
         if context is None:
-            exporter = PythonExporter(user_template_dir=template_path.resolve())
+            exporter = PythonExporter(user_template_dir=template_path)
         else:
             exporter = PythonExporter(user_template_dir=template_path,
                                       user_template_context=context)
@@ -513,11 +520,13 @@ class TestAlternativeTemplates(unittest.TestCase):
         This test uses the static templates to test building with alternative headers and then
         reads the documentation back out of the built module
         """
-        template_path = test_cases.with_name('alternative_templates')
-        with self.build_python_wrappers_and_make_instance(template_path=template_path) as dut:
-            doc_string = dut.simple.__doc__
+        toml_file = test_cases.with_name('alternative_templates_toml') / 'peakrdl.toml'
+        with open(toml_file , 'rb') as fid:
+            config = tomllib.load(fid)
 
-        # build the same jinja template outside
+        template_path = config['python']['user_template_dir']
+
+        # build the same jinja template outside this confirms it is valis
         loader = jj.ChoiceLoader([
             jj.FileSystemLoader(template_path),
             jj.PrefixLoader({'base': jj.FileSystemLoader(template_path)}, delimiter=":")])
@@ -529,6 +538,9 @@ class TestAlternativeTemplates(unittest.TestCase):
         result = template.render({'top_node':{'inst_name':'simple'},
                                   'version': peakrdl_version })
 
+        with self.build_python_wrappers_and_make_instance(template_path=template_path) as dut:
+            doc_string = dut.simple.__doc__
+
         self.assertEqual('"""' + doc_string + '"""',result)
 
     def test_dynamic_template(self):
@@ -536,8 +548,13 @@ class TestAlternativeTemplates(unittest.TestCase):
         This test uses the templates with dynamic content to test building with alternative
         headers and then reads the documentation back out of the built module
         """
-        template_path = test_cases.with_name('alternative_templates_dynamic')
-        context = {'extra_param_1': 'Bill', 'extra_param_2': 'Johny'}
+        toml_file = test_cases.with_name('alternative_templates_dynamic_toml') / 'peakrdl.toml'
+        with open(toml_file , 'rb') as fid:
+            config = tomllib.load(fid)
+
+        template_path = config['python']['user_template_dir']
+        context = config['python']['user_template_context']
+
         with self.build_python_wrappers_and_make_instance(template_path=template_path,
                                                           context=context) as dut:
             doc_string = dut.simple.__doc__

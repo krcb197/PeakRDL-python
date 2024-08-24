@@ -81,7 +81,9 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          python -m pip install .
+          # the unit tests need the development version of installer as tomllib may be needed
+          # for older versions of python
+          python -m pip install .[dev]
 
       - name: Run Unit Tests
         run: |
