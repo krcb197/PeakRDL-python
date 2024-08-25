@@ -39,7 +39,7 @@ class Exporter(ExporterSubcommandPlugin):
     """
     PeakRDL export class, see PeakRDL for more details
     """
-    short_desc = "Generator Python Wrappers"
+    short_desc = "Generate Python Wrappers"
     long_desc = "Generate Python Wrappers for the Register Model"
     udp_definitions = [PythonHideUDP, PythonInstNameUDP]
 
