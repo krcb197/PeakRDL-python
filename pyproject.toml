@@ -62,4 +62,10 @@ dev = [
     "coverage",
     "peakrdl-ipxact"
 ]
-peakrdl = ["peakrdl"]
+peakrdl = [
+    "peakrdl"
+]
+unit_test = [
+    "peakrdl",
+    "tomli;python_version<'3.11'"
+]

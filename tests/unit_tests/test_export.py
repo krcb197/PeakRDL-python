@@ -17,10 +17,12 @@ from contextlib import contextmanager
 
 import jinja2 as jj
 from systemrdl import RDLCompileError
+from peakrdl.config import schema
 
 from peakrdl_python import PythonExporter
 from peakrdl_python import compiler_with_udp_registers
 from peakrdl_python.__about__ import __version__ as peakrdl_version
+from peakrdl_python.__peakrdl__ import Exporter as PeakRDLPythonExported
 
 if sys.version_info[0:2] < (3, 11):
     # Prior to py3.11, tomllib is a 3rd party package
@@ -514,6 +516,14 @@ class TestAlternativeTemplates(unittest.TestCase):
             yield reg_model_module
 
             sys.path.remove(tmpdirname)
+
+    def test_schema(self):
+        """
+        test the schema in the __peakrdl__ exports will process correctly
+        """
+
+        _ = schema.normalize(PeakRDLPythonExported.cfg_schema)
+
 
     def test_static_template(self):
         """

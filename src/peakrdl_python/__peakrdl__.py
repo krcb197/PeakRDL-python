@@ -39,12 +39,13 @@ class Exporter(ExporterSubcommandPlugin):
     """
     PeakRDL export class, see PeakRDL for more details
     """
-    short_desc = "Generater Python Wrappers"
+    short_desc = "Generator Python Wrappers"
     long_desc = "Generate Python Wrappers for the Register Model"
     udp_definitions = [PythonHideUDP, PythonInstNameUDP]
 
     cfg_schema = {
         "user_template_dir": schema.DirectoryPath(),
+        "user_template_context": { "*" : schema.AnyType() }
     }
 
     def add_exporter_arguments(self, arg_group: 'argparse._ActionsContainer') -> None:
@@ -97,8 +98,14 @@ class Exporter(ExporterSubcommandPlugin):
 
         """
         templates = self.cfg['user_template_dir']
-        peakrdl_exporter = \
-            PythonExporter(user_template_dir=templates)  # type: ignore[no-untyped-call]
+        user_template_context = self.cfg['user_template_context']
+        if user_template_context is None:
+            peakrdl_exporter = \
+                PythonExporter(user_template_dir=templates)  # type: ignore[no-untyped-call]
+        else:
+            peakrdl_exporter = \
+                PythonExporter(user_template_dir=templates, # type: ignore[no-untyped-call]
+                               user_template_context=user_template_context)
 
         peakrdl_exporter.export(
             top_node,
