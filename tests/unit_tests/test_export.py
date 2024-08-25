@@ -530,13 +530,14 @@ class TestAlternativeTemplates(unittest.TestCase):
         This test uses the static templates to test building with alternative headers and then
         reads the documentation back out of the built module
         """
-        toml_file = test_cases.with_name('alternative_templates_toml') / 'peakrdl.toml'
+        toml_path = test_cases.with_name('alternative_templates_toml')
+        toml_file =  toml_path / 'peakrdl.toml'
         with open(toml_file , 'rb') as fid:
             config = tomllib.load(fid)
 
-        template_path = config['python']['user_template_dir']
+        template_path = toml_path / Path(config['python']['user_template_dir'])
 
-        # build the same jinja template outside this confirms it is valis
+        # build the same jinja template outside this confirms it is valid
         loader = jj.ChoiceLoader([
             jj.FileSystemLoader(template_path),
             jj.PrefixLoader({'base': jj.FileSystemLoader(template_path)}, delimiter=":")])
@@ -558,11 +559,13 @@ class TestAlternativeTemplates(unittest.TestCase):
         This test uses the templates with dynamic content to test building with alternative
         headers and then reads the documentation back out of the built module
         """
-        toml_file = test_cases.with_name('alternative_templates_dynamic_toml') / 'peakrdl.toml'
+        toml_path = test_cases.with_name('alternative_templates_dynamic_toml')
+        toml_file =  toml_path / 'peakrdl.toml'
         with open(toml_file , 'rb') as fid:
             config = tomllib.load(fid)
 
-        template_path = config['python']['user_template_dir']
+        # peakrdl always interprets the paths as being relative to the toml files itself
+        template_path = toml_path / Path(config['python']['user_template_dir'])
         context = config['python']['user_template_context']
 
         with self.build_python_wrappers_and_make_instance(template_path=template_path,

@@ -1,2 +1,2 @@
 [python]
-user_template_dir = "tests/alternative_templates"
+user_template_dir = "../alternative_templates"
