@@ -361,12 +361,31 @@ jobs:
           path: |
             dist/*.tar.gz
             dist/*.whl
-          
 
+  #-------------------------------------------------------------------------------
+  documentation:
+    needs:
+      # the documentation relies on examples so these must be prechecked
+      # as part of the dependency
+      - peakrdl_integration
+    name: Build the sphinx documentation
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v1
+      # Standard drop-in approach that should work for most people.
+      - uses: ammaraskar/sphinx-action@master
+        with:
+          docs-folder: "docs/"
+      # Create an artifact of the html output.
+      - uses: actions/upload-artifact@v1
+        with:
+          name: DocumentationHTML
+          path: docs/_build/html/
   #-------------------------------------------------------------------------------
   deploy:
     needs:
       - build
+      - documentation
 
     runs-on: ubuntu-latest
 
