@@ -40,6 +40,10 @@ jobs:
       - name: Run Main code Lint
         run: pylint --rcfile tests/pylint.rc src/peakrdl_python
 
+      - name: Install dependencies for unit tests
+        run: |
+          python -m pip install .[unit_test] -U
+
       - name: Run unit tests Lint
         run: pylint --rcfile tests/pylint.rc src/peakrdl_python tests/unit_tests
 
