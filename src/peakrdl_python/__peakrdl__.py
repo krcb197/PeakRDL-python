@@ -42,6 +42,7 @@ class Exporter(ExporterSubcommandPlugin):
     short_desc = "Generate Python Wrappers"
     long_desc = "Generate Python Wrappers for the Register Model"
     udp_definitions = [PythonHideUDP, PythonInstNameUDP]
+    generates_output_file = True
 
     cfg_schema = {
         "user_template_dir": schema.DirectoryPath(),
