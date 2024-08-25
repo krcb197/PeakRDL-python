@@ -137,7 +137,7 @@ class TestExportUDP(unittest.TestCase):
     test_case_reg_model_cls = test_case_top_level + '_cls'
 
     @contextmanager
-    def build_python_wrappers_and_make_instance(self, udp_list:List[str]):
+    def build_wrappers_and_import(self, udp_list:List[str]):
         """
         Context manager to build the python wrappers for a value of show_hidden, then import them
         and clean up afterwards
@@ -220,8 +220,7 @@ class TestExportUDP(unittest.TestCase):
                 walk_child_sections(section)
                 walk_child_registers(section)
 
-        with self.build_python_wrappers_and_make_instance(udp_list=['str_property_to_include']) as\
-                dut:
+        with self.build_wrappers_and_import(udp_list=['str_property_to_include']) as dut:
             self.assertEqual(dut.udp['str_property_to_include'], dut.full_inst_name)
             walk_child_sections(dut)
             walk_child_registers(dut)
@@ -239,16 +238,15 @@ class TestExportUDP(unittest.TestCase):
                               'str_property_to_include']
         for udp_to_include in chain.from_iterable(
                 [permutations(full_property_list, r) for r in range(len(full_property_list))]):
-            with self.subTest(udp_to_include=udp_to_include):
-                with self.build_python_wrappers_and_make_instance(udp_list=list(udp_to_include)) as \
-                        dut:
-                    for udp in full_property_list:
-                        if udp in list(udp_to_include):
-                            self.assertIn(udp, dut.reg_a.field_a.udp)
-                        else:
-                            self.assertNotIn(udp, dut.reg_a.field_a.udp)
+            with self.subTest(udp_to_include=udp_to_include), \
+                    self.build_wrappers_and_import(udp_list=list(udp_to_include)) as dut:
+                for udp in full_property_list:
+                    if udp in list(udp_to_include):
+                        self.assertIn(udp, dut.reg_a.field_a.udp)
+                    else:
+                        self.assertNotIn(udp, dut.reg_a.field_a.udp)
 
-                    self.assertNotIn('int_property_to_exclude', dut.reg_a.field_a.udp)
+                self.assertNotIn('int_property_to_exclude', dut.reg_a.field_a.udp)
 
 
 class TestRegexExportHidden(unittest.TestCase):
