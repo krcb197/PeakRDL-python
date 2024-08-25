@@ -11,13 +11,29 @@ import sys
 from typing import List
 import re
 from itertools import chain, permutations
+from pathlib import Path
 
 from contextlib import contextmanager
 
-from systemrdl import RDLCompiler
+import jinja2 as jj
+from systemrdl import RDLCompileError
+from peakrdl.config import schema
 
 from peakrdl_python import PythonExporter
+from peakrdl_python import compiler_with_udp_registers
+from peakrdl_python.__about__ import __version__ as peakrdl_version
+from peakrdl_python.__peakrdl__ import Exporter as PeakRDLPythonExported
 
+if sys.version_info[0:2] < (3, 11):
+    # Prior to py3.11, tomllib is a 3rd party package
+    import tomli as tomllib
+else:
+    # py3.11 and onwards, tomli was absorbed into the standard library as tomllib
+    import tomllib
+
+# this assumes the current file is in the unit_test folder under tests
+test_path = Path(__file__).parent.parent
+test_cases = test_path / 'testcases'
 
 
 class TestExportHidden(unittest.TestCase):
@@ -25,7 +41,7 @@ class TestExportHidden(unittest.TestCase):
     Test class for the export of hidden and force not hidden (show hidden)
     """
 
-    test_case_path = 'tests/testcases'
+    test_case_path = test_cases
     test_case_name = 'hidden_property.rdl'
     test_case_top_level = 'hidden_property'
     test_case_reg_model_cls = test_case_top_level + '_cls'
@@ -38,7 +54,7 @@ class TestExportHidden(unittest.TestCase):
         """
 
         # compile the code for the test
-        rdlc = RDLCompiler()
+        rdlc = compiler_with_udp_registers()
         rdlc.compile_file(os.path.join(self.test_case_path, self.test_case_name))
         spec = rdlc.elaborate(top_def_name=self.test_case_top_level).top
 
@@ -115,7 +131,7 @@ class TestExportUDP(unittest.TestCase):
     Tests for including the UDPs in the generated RAL
     """
 
-    test_case_path = 'tests/testcases'
+    test_case_path = test_cases
     test_case_name = 'user_defined_properties.rdl'
     test_case_top_level = 'user_defined_properties'
     test_case_reg_model_cls = test_case_top_level + '_cls'
@@ -128,7 +144,7 @@ class TestExportUDP(unittest.TestCase):
         """
 
         # compile the code for the test
-        rdlc = RDLCompiler()
+        rdlc = compiler_with_udp_registers()
         rdlc.compile_file(os.path.join(self.test_case_path, self.test_case_name))
         spec = rdlc.elaborate(top_def_name=self.test_case_top_level).top
 
@@ -238,7 +254,7 @@ class TestRegexExportHidden(unittest.TestCase):
     Test class for the export of hidden and force not hidden (show hidden)
     """
 
-    test_case_path = 'tests/testcases'
+    test_case_path = test_cases
     test_case_name = 'reserved_elements.rdl'
     test_case_top_level = 'reserved_elements'
     test_case_reg_model_cls = test_case_top_level + '_cls'
@@ -251,7 +267,7 @@ class TestRegexExportHidden(unittest.TestCase):
         """
 
         # compile the code for the test
-        rdlc = RDLCompiler()
+        rdlc = compiler_with_udp_registers()
         rdlc.compile_file(os.path.join(self.test_case_path, self.test_case_name))
         spec = rdlc.elaborate(top_def_name=self.test_case_top_level).top
 
@@ -358,6 +374,218 @@ class TestRegexExportHidden(unittest.TestCase):
             self.assertNotIn('RSVD', dir(dut.array_show[0]))
             self.assertNotIn('reserved', dir(dut.array_show[0]))
             self.assertIn('show', dir(dut.array_show[0]))
+
+
+class TestUDPDeclarations(unittest.TestCase):
+    """
+    Test class for the export of hidden and force not hidden (show hidden)
+    """
+
+    @contextmanager
+    def build_python_wrappers_and_make_instance(self, system_rdl_content, top_name):
+        """
+        Context manager to build the python wrappers for a value of show_hidden, then import them
+        and clean up afterwards
+        """
+
+        rdlc = compiler_with_udp_registers()
+
+        with tempfile.TemporaryDirectory() as tmpdirname:
+            with open(os.path.join(tmpdirname, 'system_rdl.rdl'), 'w', encoding='utf-8') as fid:
+                fid.write(system_rdl_content)
+
+            rdlc.compile_file(os.path.join(tmpdirname, 'system_rdl.rdl'))
+            spec = rdlc.elaborate(top_def_name=top_name).top
+
+            yield spec
+
+
+    def test_bad_property_type_declaration(self):
+        """
+        Test that the property not being defined as a string causes a problem
+        """
+        system_rdl_code = \
+            'property python_inst_name { type = number; ' +\
+            'component = addrmap | regfile | reg | field | mem; };' +\
+            'addrmap name_of_addrmap { ' +\
+            'reg {' +\
+            '    python_inst_name="overidden_reg_a";'+\
+            '    field { python_inst_name="overridden_field_a";  } field_a[31:0];'+\
+            '} reg_a;'+\
+            '};'
+
+        with self.assertRaises(RDLCompileError):
+            with self.build_python_wrappers_and_make_instance(system_rdl_content=system_rdl_code,
+                                                                  top_name='name_of_addrmap'):
+                pass
+
+    def test_bad_property_component_declaration(self):
+        """
+        Test that the property not being defined as a string causes a problem
+        """
+        system_rdl_code = \
+            'property python_inst_name { type = number; component = signal | reg; };' +\
+            'addrmap name_of_addrmap { ' +\
+            'reg {' +\
+            '    python_inst_name="overidden_reg_a";'+\
+            '    field { python_inst_name="overridden_field_a";  } field_a[31:0];'+\
+            '} reg_a;'+\
+            '};'
+
+        with self.assertRaises(RDLCompileError):
+            with self.build_python_wrappers_and_make_instance(system_rdl_content=system_rdl_code,
+                                                                  top_name='name_of_addrmap'):
+                pass
+
+    def test_bad_property_name_declaration(self):
+        """
+        Test that the property setting to a python keyname causes an error
+        """
+        system_rdl_code = \
+            'property python_inst_name { type = number; component = signal | reg; };' +\
+            'addrmap name_of_addrmap { ' +\
+            'reg {' +\
+            '    python_inst_name="in";'+\
+            '    field { python_inst_name="overridden_field_a";  } field_a[31:0];'+\
+            '} reg_a;'+\
+            '};'
+
+        with self.assertRaises(RDLCompileError):
+            with self.build_python_wrappers_and_make_instance(system_rdl_content=system_rdl_code,
+                                                                  top_name='name_of_addrmap'):
+                pass
+
+
+class TestAlternativeTemplates(unittest.TestCase):
+    """
+    Test class for the export of hidden and force not hidden (show hidden)
+    """
+
+    test_case_path = test_cases
+    test_case_name = 'simple.rdl'
+    test_case_top_level = 'simple'
+    test_case_reg_model_cls = test_case_top_level + '_cls'
+
+    @contextmanager
+    def build_python_wrappers_and_make_instance(self, template_path, context=None):
+        """
+        Context manager to build the python wrappers for a value of show_hidden, then import them
+        and clean up afterwards
+        """
+
+        # compile the code for the test
+        rdlc = compiler_with_udp_registers()
+        rdlc.compile_file(os.path.join(self.test_case_path, self.test_case_name))
+        spec = rdlc.elaborate(top_def_name=self.test_case_top_level).top
+
+        if context is None:
+            exporter = PythonExporter(user_template_dir=template_path)
+        else:
+            exporter = PythonExporter(user_template_dir=template_path,
+                                      user_template_context=context)
+
+        with tempfile.TemporaryDirectory() as tmpdirname:
+            # the temporary package, within which the real package is placed is needed to ensure
+            # that there are two separate entries in the python import cache and this avoids the
+            # test failing for strange reasons
+            temp_package_name = 'dir_' + str(hash(template_path))
+            fq_package_path = os.path.join(tmpdirname, temp_package_name)
+            os.makedirs(fq_package_path)
+            with open(os.path.join(fq_package_path, '__init__.py'), 'w', encoding='utf-8') as fid:
+                fid.write('pass\n')
+
+            exporter.export(node=spec,
+                            path=fq_package_path,
+                            asyncoutput=False,
+                            delete_existing_package_content=False,
+                            skip_library_copy=False,
+                            skip_test_case_generation=True,
+                            legacy_block_access=False,
+                            show_hidden=False)
+
+            # add the temp directory to the python path so that it can be imported from
+            sys.path.append(tmpdirname)
+
+            reg_model_module = __import__( temp_package_name + '.' + self.test_case_top_level +
+                '.reg_model',
+                globals(), locals(), [self.test_case_top_level], 0)
+
+
+            # no read/write are attempted so this can yield out a version with no callbacks
+            # configured
+            yield reg_model_module
+
+            sys.path.remove(tmpdirname)
+
+    def test_schema(self):
+        """
+        test the schema in the __peakrdl__ exports will process correctly
+        """
+
+        _ = schema.normalize(PeakRDLPythonExported.cfg_schema)
+
+
+    def test_static_template(self):
+        """
+        This test uses the static templates to test building with alternative headers and then
+        reads the documentation back out of the built module
+        """
+        toml_path = test_cases.with_name('alternative_templates_toml')
+        toml_file =  toml_path / 'peakrdl.toml'
+        with open(toml_file , 'rb') as fid:
+            config = tomllib.load(fid)
+
+        template_path = toml_path / Path(config['python']['user_template_dir'])
+
+        # build the same jinja template outside this confirms it is valid
+        loader = jj.ChoiceLoader([
+            jj.FileSystemLoader(template_path),
+            jj.PrefixLoader({'base': jj.FileSystemLoader(template_path)}, delimiter=":")])
+        jj_env = jj.Environment(
+            loader=loader,
+            undefined=jj.StrictUndefined
+        )
+        template = jj_env.get_template('header.py.jinja')
+        result = template.render({'top_node':{'inst_name':'simple'},
+                                  'version': peakrdl_version })
+
+        with self.build_python_wrappers_and_make_instance(template_path=template_path) as dut:
+            doc_string = dut.simple.__doc__
+
+        self.assertEqual('"""' + doc_string + '"""',result)
+
+    def test_dynamic_template(self):
+        """
+        This test uses the templates with dynamic content to test building with alternative
+        headers and then reads the documentation back out of the built module
+        """
+        toml_path = test_cases.with_name('alternative_templates_dynamic_toml')
+        toml_file =  toml_path / 'peakrdl.toml'
+        with open(toml_file , 'rb') as fid:
+            config = tomllib.load(fid)
+
+        # peakrdl always interprets the paths as being relative to the toml files itself
+        template_path = toml_path / Path(config['python']['user_template_dir'])
+        context = config['python']['user_template_context']
+
+        with self.build_python_wrappers_and_make_instance(template_path=template_path,
+                                                          context=context) as dut:
+            doc_string = dut.simple.__doc__
+
+        # build the same jinja template outside
+        loader = jj.ChoiceLoader([
+            jj.FileSystemLoader(template_path),
+            jj.PrefixLoader({'base': jj.FileSystemLoader(template_path)}, delimiter=":")])
+        jj_env = jj.Environment(
+            loader=loader,
+            undefined=jj.StrictUndefined
+        )
+        template = jj_env.get_template('header.py.jinja')
+        context.update({'top_node':{'inst_name':'simple'},
+                                  'version': peakrdl_version })
+        result = template.render(context)
+
+        self.assertEqual('"""' + doc_string + '"""',result)
 
 
 if __name__ == '__main__':
