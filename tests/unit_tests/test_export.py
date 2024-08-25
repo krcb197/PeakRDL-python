@@ -236,17 +236,19 @@ class TestExportUDP(unittest.TestCase):
                               'struct_property_to_include',
                               'enum_property_to_include',
                               'int_property_to_include',
-                              'str_property_to_include',
-                              'int_property_to_exclude']
+                              'str_property_to_include']
         for udp_to_include in chain.from_iterable(
                 [permutations(full_property_list, r) for r in range(len(full_property_list))]):
-            with self.build_python_wrappers_and_make_instance(udp_list=list(udp_to_include)) as \
-                    dut:
-                for udp in full_property_list:
-                    if udp in list(udp_to_include):
-                        self.assertIn(udp, dut.reg_a.field_a.udp)
-                    else:
-                        self.assertNotIn(udp, dut.reg_a.field_a.udp)
+            with self.subTest(udp_to_include=udp_to_include):
+                with self.build_python_wrappers_and_make_instance(udp_list=list(udp_to_include)) as \
+                        dut:
+                    for udp in full_property_list:
+                        if udp in list(udp_to_include):
+                            self.assertIn(udp, dut.reg_a.field_a.udp)
+                        else:
+                            self.assertNotIn(udp, dut.reg_a.field_a.udp)
+
+                    self.assertNotIn('int_property_to_exclude', dut.reg_a.field_a.udp)
 
 
 class TestRegexExportHidden(unittest.TestCase):
