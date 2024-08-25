@@ -358,7 +358,6 @@ jobs:
   #-------------------------------------------------------------------------------
   build:
     needs:
-      - integration_tests
       - autoformating
       - dev_runner
       - documentation
