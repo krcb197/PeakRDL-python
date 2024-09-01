@@ -608,6 +608,7 @@ class TestCallbackAndLegacyTemplates(unittest.TestCase):
         Context manager to build the python wrappers for a value of show_hidden, then import them
         and clean up afterwards
         """
+        # pylint: disable=too-many-locals
 
         # compile the code for the test
         rdlc = compiler_with_udp_registers()
@@ -684,14 +685,17 @@ class TestCallbackAndLegacyTemplates(unittest.TestCase):
             sys.path.remove(tmpdirname)
 
     def test_combinations(self):
+        """
+        Test all the expected permutations of legacy and normal mixtures
+        """
 
-        for legacy_dummy_block_read, legacy_call_back, legacy_block_access in product([True, False],
-                                                                                      [True, False],
-                                                                                      [True, False]):
-            with self.generate_dut(legacy_dummy_block_read=legacy_dummy_block_read,
+        for legacy_dummy_block, legacy_call_back, legacy_block_access in product([True, False],
+                                                                                 [True, False],
+                                                                                 [True, False]):
+            with self.generate_dut(legacy_dummy_block_read=legacy_dummy_block,
                                    legacy_call_back=legacy_call_back,
                                    legacy_block_access=legacy_block_access) as dut, \
-                    self.subTest(legacy_dummy_block_read=legacy_dummy_block_read,
+                    self.subTest(legacy_dummy_block_read=legacy_dummy_block,
                                  legacy_call_back=legacy_call_back,
                                  legacy_block_access=legacy_block_access):
 
@@ -699,7 +703,7 @@ class TestCallbackAndLegacyTemplates(unittest.TestCase):
                 self.assertEqual(dut.simple_reg_a.read(), 0)
 
                 # block access will fail in some cases
-                if legacy_call_back != legacy_dummy_block_read:
+                if legacy_call_back != legacy_dummy_block:
                     with self.assertRaises(TypeError):
                         _ = dut.simple_memory_a.read(0,4)
                 else:
@@ -708,7 +712,7 @@ class TestCallbackAndLegacyTemplates(unittest.TestCase):
                         self.assertIsInstance(mem_block_read, Array)
                     else:
                         self.assertIsInstance(mem_block_read, list)
-                    self.assertEquals(len(mem_block_read), 4)
+                    self.assertEqual(len(mem_block_read), 4)
                     self.assertEqual(mem_block_read[0], 0)
 
                 if legacy_block_access:
@@ -718,8 +722,6 @@ class TestCallbackAndLegacyTemplates(unittest.TestCase):
                                                     [0, 0, 0, 0]))
                 else:
                     dut.simple_memory_a.write(0, [0, 0, 0, 0])
-
-
 
 
 if __name__ == '__main__':
