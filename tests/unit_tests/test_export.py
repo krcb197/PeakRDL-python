@@ -601,9 +601,9 @@ class TestCallbackAndLegacyTemplates(unittest.TestCase):
 
     @contextmanager
     def generate_dut(self,
-                                                legacy_block_access: bool,
-                                                legacy_call_back: bool,
-                                                legacy_dummy_block_read: bool):
+                     legacy_block_access: bool,
+                     legacy_call_back: bool,
+                     legacy_dummy_block_read: bool):
         """
         Context manager to build the python wrappers for a value of show_hidden, then import them
         and clean up afterwards
