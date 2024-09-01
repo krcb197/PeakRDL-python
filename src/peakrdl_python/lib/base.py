@@ -119,7 +119,6 @@ class Base(ABC):
         return {}
 
 
-
 class Node(Base, ABC):
     """
     base class of for all types with an address i.e. not fields
@@ -478,7 +477,6 @@ class BaseSection(Node, ABC):
         """
 
 
-
 class Section(BaseSection, ABC):
     """
     base class of non-async sections (AddressMaps and RegFile)
@@ -528,11 +526,6 @@ class Section(BaseSection, ABC):
         Args:
             unroll: Whether to unroll child array or not
         """
-
-    @property
-    @abstractmethod
-    def _callbacks(self) -> Union[NormalCallbackSet, NormalCallbackSetLegacy]:
-        ...
 
 
 class AddressMap(Section, ABC):

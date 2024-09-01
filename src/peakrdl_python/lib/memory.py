@@ -75,7 +75,7 @@ class BaseMemory(Node, ABC):
             callbacks: set of callback to be used for accessing the hardware or simulator
             address: address of the register
             width: width of the register in bits
-            logger_handle: name to be used logging messages associate with thisobject
+            logger_handle: name to be used logging messages associate with this object
         """
         super().__init__(address=address,
                          logger_handle=logger_handle,
@@ -194,7 +194,7 @@ class Memory(BaseMemory, ABC):
             callbacks: set of callback to be used for accessing the hardware or simulator
             address: address of the register
             width: width of the register in bits
-            logger_handle: name to be used logging messages associate with thisobject
+            logger_handle: name to be used logging messages associate with this object
         """
         if not isinstance(parent, (AddressMap,
                                    MemoryWriteOnlyArray, MemoryReadOnlyArray,
