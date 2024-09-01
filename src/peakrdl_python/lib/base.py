@@ -53,6 +53,7 @@ if TYPE_CHECKING:
 UDPStruct = Dict[str, 'UDPType']
 UDPType = Union[str, int, bool, IntEnum, UDPStruct]
 
+
 class Base(ABC):
     """
     base class of for all types
@@ -117,7 +118,6 @@ class Base(ABC):
         A dictionary of the user defined properties for the node
         """
         return {}
-
 
 
 class Node(Base, ABC):
@@ -478,7 +478,6 @@ class BaseSection(Node, ABC):
         """
 
 
-
 class Section(BaseSection, ABC):
     """
     base class of non-async sections (AddressMaps and RegFile)
@@ -529,11 +528,6 @@ class Section(BaseSection, ABC):
             unroll: Whether to unroll child array or not
         """
 
-    @property
-    @abstractmethod
-    def _callbacks(self) -> Union[NormalCallbackSet, NormalCallbackSetLegacy]:
-        ...
-
 
 class AddressMap(Section, ABC):
     """
@@ -555,9 +549,12 @@ class AddressMap(Section, ABC):
         # only the top-level address map should have callbacks assigned, everything else should
         # use its parent callback
         if parent is None:
-            if not isinstance(callbacks, (NormalCallbackSet, NormalCallbackSetLegacy)):
-                raise TypeError(f'callback type wrong, got {type(callbacks)}')
-            if isinstance(callbacks, NormalCallbackSetLegacy):
+            if self._legacy_callbacks is False:
+                if not isinstance(callbacks, NormalCallbackSet):
+                    raise TypeError(f'callback type wrong, got {type(callbacks)}')
+            else:
+                if not isinstance(callbacks, NormalCallbackSetLegacy):
+                    raise TypeError(f'callback type wrong, got {type(callbacks)}')
                 warnings.warn('Support for the legacy callback using the array types will be '
                               'withdrawn in the future, please consider changing to the list '
                               'versions', category=DeprecationWarning)
@@ -655,7 +652,6 @@ class AsyncSection(BaseSection, ABC):
             return item._is_readable
 
         return filter(is_readable, self.get_registers(unroll=unroll))
-
 
     @abstractmethod
     def get_registers(self, unroll: bool = False) -> \

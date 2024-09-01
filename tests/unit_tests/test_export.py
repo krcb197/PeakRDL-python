@@ -10,8 +10,9 @@ import tempfile
 import sys
 from typing import List
 import re
-from itertools import chain, permutations
+from itertools import chain, permutations, product
 from pathlib import Path
+from array import array as Array
 
 from contextlib import contextmanager
 
@@ -23,6 +24,7 @@ from peakrdl_python import PythonExporter
 from peakrdl_python import compiler_with_udp_registers
 from peakrdl_python.__about__ import __version__ as peakrdl_version
 from peakrdl_python.__peakrdl__ import Exporter as PeakRDLPythonExported
+from peakrdl_python.lib.utility_functions import get_array_typecode
 
 if sys.version_info[0:2] < (3, 11):
     # Prior to py3.11, tomllib is a 3rd party package
@@ -586,6 +588,138 @@ class TestAlternativeTemplates(unittest.TestCase):
         result = template.render(context)
 
         self.assertEqual('"""' + doc_string + '"""',result)
+
+
+class TestCallbackAndLegacyTemplates(unittest.TestCase):
+    """
+    Test class for the export of hidden and force not hidden (show hidden)
+    """
+    test_case_path = test_cases
+    test_case_name = 'simple.rdl'
+    test_case_top_level = 'simple'
+    test_case_reg_model_cls = test_case_top_level + '_cls'
+
+    @contextmanager
+    def generate_dut(self,
+                                                legacy_block_access: bool,
+                                                legacy_call_back: bool,
+                                                legacy_dummy_block_read: bool):
+        """
+        Context manager to build the python wrappers for a value of show_hidden, then import them
+        and clean up afterwards
+        """
+
+        # compile the code for the test
+        rdlc = compiler_with_udp_registers()
+        rdlc.compile_file(os.path.join(self.test_case_path, self.test_case_name))
+        spec = rdlc.elaborate(top_def_name=self.test_case_top_level).top
+
+        exporter = PythonExporter()
+
+        with tempfile.TemporaryDirectory() as tmpdirname:
+            # the temporary package, within which the real package is placed is needed to ensure
+            # that there are two separate entries in the python import cache and this avoids the
+            # test failing for strange reasons
+
+            temp_package_name = 'dir_'
+            if legacy_block_access:
+                temp_package_name += '_legacy_build_option'
+            else:
+                temp_package_name += '_normal_build_option'
+            if legacy_call_back:
+                temp_package_name += '_legacy_call_back'
+            else:
+                temp_package_name += '_normal_call_back'
+            if legacy_dummy_block_read:
+                temp_package_name += '_legacy_dummy_read'
+            else:
+                temp_package_name += '_normal_dummy_read'
+
+            fq_package_path = os.path.join(tmpdirname, temp_package_name)
+            os.makedirs(fq_package_path)
+            with open(os.path.join(fq_package_path, '__init__.py'), 'w', encoding='utf-8') as fid:
+                fid.write('pass\n')
+
+            exporter.export(node=spec,
+                            path=fq_package_path,
+                            asyncoutput=False,
+                            delete_existing_package_content=False,
+                            skip_library_copy=False,
+                            skip_test_case_generation=True,
+                            legacy_block_access=legacy_block_access,
+                            show_hidden=False)
+
+            # add the temp directory to the python path so that it can be imported from
+            sys.path.append(tmpdirname)
+
+            reg_model_module = __import__(temp_package_name + '.' + self.test_case_top_level +
+                                          '.reg_model.' + self.test_case_top_level,
+                                          globals(), locals(), [self.test_case_reg_model_cls], 0)
+            dut_cls = getattr(reg_model_module, self.test_case_reg_model_cls)
+            peakrdl_python_package = __import__(temp_package_name + '.' +
+                                                self.test_case_top_level + '.lib',
+                                                globals(), locals(), ['CallbackSet'], 0)
+            if legacy_call_back:
+                callbackset_cls = getattr(peakrdl_python_package, 'NormalCallbackSetLegacy')
+            else:
+                callbackset_cls = getattr(peakrdl_python_package, 'NormalCallbackSet')
+            dummy_operations_module = __import__(temp_package_name + '.' +
+                                                 self.test_case_top_level +
+                                                 '.sim_lib.dummy_callbacks',
+                                                 globals(), locals(),
+                                                 ['dummy_read_block',
+                                                  'dummy_read_block_legacy'], 0)
+            if legacy_dummy_block_read:
+                dummy_read = getattr(dummy_operations_module, 'dummy_read_block_legacy')
+                dummy_write = getattr(dummy_operations_module, 'dummy_write_block_legacy')
+            else:
+                dummy_read = getattr(dummy_operations_module, 'dummy_read_block')
+                dummy_write = getattr(dummy_operations_module, 'dummy_write_block')
+
+            # no read/write are attempted so this can yield out a version with no callbacks
+            # configured
+            yield dut_cls(callbacks=callbackset_cls(read_block_callback=dummy_read,
+                                                    write_block_callback=dummy_write))
+
+            sys.path.remove(tmpdirname)
+
+    def test_combinations(self):
+
+        for legacy_dummy_block_read, legacy_call_back, legacy_block_access in product([True, False],
+                                                                                      [True, False],
+                                                                                      [True, False]):
+            with self.generate_dut(legacy_dummy_block_read=legacy_dummy_block_read,
+                                   legacy_call_back=legacy_call_back,
+                                   legacy_block_access=legacy_block_access) as dut, \
+                    self.subTest(legacy_dummy_block_read=legacy_dummy_block_read,
+                                 legacy_call_back=legacy_call_back,
+                                 legacy_block_access=legacy_block_access):
+
+                # single register accesses should be function in all cases
+                self.assertEqual(dut.simple_reg_a.read(), 0)
+
+                # block access will fail in some cases
+                if legacy_call_back != legacy_dummy_block_read:
+                    with self.assertRaises(TypeError):
+                        _ = dut.simple_memory_a.read(0,4)
+                else:
+                    mem_block_read = dut.simple_memory_a.read(0,4)
+                    if legacy_block_access:
+                        self.assertIsInstance(mem_block_read, Array)
+                    else:
+                        self.assertIsInstance(mem_block_read, list)
+                    self.assertEquals(len(mem_block_read), 4)
+                    self.assertEqual(mem_block_read[0], 0)
+
+                if legacy_block_access:
+                    dut.simple_memory_a.write(0,
+                                              Array(get_array_typecode(
+                                                  dut.simple_memory_a.width),
+                                                    [0, 0, 0, 0]))
+                else:
+                    dut.simple_memory_a.write(0, [0, 0, 0, 0])
+
+
 
 
 if __name__ == '__main__':

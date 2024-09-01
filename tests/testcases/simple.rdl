@@ -19,4 +19,10 @@ addrmap simple {
         } reg_b[2];
     } simple_regfile_b;
 
+    external mem {
+        mementries = 10;
+        memwidth = 32;
+        sw = rw;
+    } simple_memory_a;
+
 };
