@@ -548,12 +548,9 @@ class AddressMap(Section, ABC):
         # only the top-level address map should have callbacks assigned, everything else should
         # use its parent callback
         if parent is None:
-            if self._legacy_callbacks is False:
-                if not isinstance(callbacks, NormalCallbackSet):
-                    raise TypeError(f'callback type wrong, got {type(callbacks)}')
-            else:
-                if not isinstance(callbacks, NormalCallbackSetLegacy):
-                    raise TypeError(f'callback type wrong, got {type(callbacks)}')
+            if not isinstance(callbacks, (NormalCallbackSet, NormalCallbackSetLegacy)):
+                raise TypeError(f'callback type wrong, got {type(callbacks)}')
+            if isinstance(callbacks, NormalCallbackSetLegacy):
                 warnings.warn('Support for the legacy callback using the array types will be '
                               'withdrawn in the future, please consider changing to the list '
                               'versions', category=DeprecationWarning)
