@@ -18,7 +18,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 {% include "header_tb.py.jinja" with context %}
 
-from array import array as Array
+{% if legacy_block_access %}from array import array as Array{% endif %}
 from typing import List, Union, Dict, cast
 {% if asyncoutput %}
 import sys
@@ -297,14 +297,14 @@ class {{fq_block_name}}_single_access({{top_node.type_name}}_SimTestCase): # typ
             # in each case check a 0, max value and random value being read
             for entry in [0, random.randint(0,{{node.get_property('mementries')-1}}), {{node.get_property('mementries')-1}}]:
                 self.assertEqual({% if asyncoutput %}await {%endif %}self.dut.{{'.'.join(get_python_path_segments(node))}}.read(start_entry=entry, number_entries=1), # type: ignore[union-attr]
-                                                         Array('{{get_array_typecode(node.get_property('memwidth'))}}', [0]))
+                                                         {% if legacy_block_access %}Array('{{get_array_typecode(node.get_property('memwidth'))}}', [0]){% else %}[0]{% endif %})
 
             # check a multi-entry read, if the memory is small do the entire memory, however, if
             # it is large limit the number of entries to 10
             entries_to_test = {% if node.get_property('mementries') > 10 %}10{% else %}{{node.get_property('mementries')}}{% endif %}
 
             self.assertEqual({% if asyncoutput %}await {%endif %}self.dut.{{'.'.join(get_python_path_segments(node))}}.read(start_entry=0, number_entries=entries_to_test), # type: ignore[union-attr]
-                             Array('{{get_array_typecode(node.get_property('memwidth'))}}', [0 for _ in range(entries_to_test)]))
+                             {% if legacy_block_access %}Array('{{get_array_typecode(node.get_property('memwidth'))}}', [0 for _ in range(entries_to_test)]){% else %}[0 for _ in range(entries_to_test)]{% endif %})
             {% endif %}
 
             {% if node.is_sw_writable -%}
@@ -312,17 +312,21 @@ class {{fq_block_name}}_single_access({{top_node.type_name}}_SimTestCase): # typ
             # in each case check a 0, max value and random value being read
             for entry in [0, random.randint(0,{{node.get_property('mementries')-1}}), {{node.get_property('mementries')-1}}]:
                 for value in [0, random.randint(0,{{get_memory_max_entry_value_hex_string(node)}}), {{get_memory_max_entry_value_hex_string(node)}}]:
-                    {% if asyncoutput %}await {%endif %}self.dut.{{'.'.join(get_python_path_segments(node))}}.write(start_entry=entry, data=Array('{{get_array_typecode(node.get_property('memwidth'))}}', [value])) # type: ignore[union-attr]
+                    {% if asyncoutput %}await {%endif %}self.dut.{{'.'.join(get_python_path_segments(node))}}.write(start_entry=entry, data={% if legacy_block_access %}Array('{{get_array_typecode(node.get_property('memwidth'))}}', [value]){% else %}[value]{% endif %}) # type: ignore[union-attr]
                     {% if node.is_sw_readable -%}
                     self.assertEqual({% if asyncoutput %}await {%endif %}self.dut.{{'.'.join(get_python_path_segments(node))}}.read(start_entry=entry, number_entries=1), # type: ignore[union-attr]
-                                     Array('{{get_array_typecode(node.get_property('memwidth'))}}', [value]))
+                                     {% if legacy_block_access %}Array('{{get_array_typecode(node.get_property('memwidth'))}}', [value]){% else %}[value]{% endif %})
                     {% endif %}
 
             # check a multi-entry read, if the memory is small do the entire memory, however, if
             # it is large limit the number of entries to 10
             entries_to_test = {% if node.get_property('mementries') > 10 %}10{% else %}{{node.get_property('mementries')}}{% endif %}
+            {% if legacy_block_access %}
             random_data = Array('{{get_array_typecode(node.get_property('memwidth'))}}',
                                 [random.randint(0,{{get_memory_max_entry_value_hex_string(node)}}) for x in range(entries_to_test)])
+            {% else %}
+            random_data = [random.randint(0,{{get_memory_max_entry_value_hex_string(node)}}) for x in range(entries_to_test)]
+            {% endif %}
             {% if asyncoutput %}await {%endif %}self.dut.{{'.'.join(get_python_path_segments(node))}}.write(start_entry=0, data=random_data) # type: ignore[union-attr]
             {% if node.is_sw_readable -%}
             self.assertEqual({% if asyncoutput %}await {%endif %}self.dut.{{'.'.join(get_python_path_segments(node))}}.read(start_entry=0, number_entries=entries_to_test), # type: ignore[union-attr]
@@ -356,15 +360,20 @@ class {{fq_block_name}}_block_access({{top_node.type_name}}_SimTestCase_BlockAcc
         for entry in [0, random.randint(0,{{node.get_property('mementries')-1}}), {{node.get_property('mementries')-1}}]:
 
             self.assertEqual({% if asyncoutput %}await {%endif %}self.dut.{{'.'.join(get_python_path_segments(node))}}.read(start_entry=entry, number_entries=1), # type: ignore[union-attr]
-                                                     Array('{{get_array_typecode(node.get_property('memwidth'))}}', [0]))
+                                                     {% if legacy_block_access %}Array('{{get_array_typecode(node.get_property('memwidth'))}}', [0]){% else %}[0]{% endif %})
 
         # check a multi-entry read, if the memory is small do the entire memory, however, if
         # it is large limit the number of entries to 10
         entries_to_test = {% if node.get_property('mementries') > 10 %}10{% else %}{{node.get_property('mementries')}}{% endif %}
-
+        {% if legacy_block_access %}
         self.assertEqual({% if asyncoutput %}await {%endif %}self.dut.{{'.'.join(get_python_path_segments(node))}}.read(start_entry=0, # type: ignore[union-attr]
                                       number_entries=entries_to_test),
                                       Array('{{get_array_typecode(node.get_property('memwidth'))}}', [0 for _ in range(entries_to_test)]))
+        {% else %}
+        self.assertEqual({% if asyncoutput %}await {%endif %}self.dut.{{'.'.join(get_python_path_segments(node))}}.read(start_entry=0, # type: ignore[union-attr]
+                                      number_entries=entries_to_test),
+                                      [0 for _ in range(entries_to_test)])
+        {% endif %}
         {% endif %}
 
         {% if node.is_sw_writable -%}
@@ -372,17 +381,21 @@ class {{fq_block_name}}_block_access({{top_node.type_name}}_SimTestCase_BlockAcc
         # in each case check a 0, max value and random value being read
         for entry in [0, random.randint(0,{{node.get_property('mementries')-1}}), {{node.get_property('mementries')-1}}]:
             for value in [0, random.randint(0,{{get_memory_max_entry_value_hex_string(node)}}), {{get_memory_max_entry_value_hex_string(node)}}]:
-                {% if asyncoutput %}await {%endif %}self.dut.{{'.'.join(get_python_path_segments(node))}}.write(start_entry=entry, data=Array('{{get_array_typecode(node.get_property('memwidth'))}}', [value])) # type: ignore[union-attr]
+                {% if asyncoutput %}await {%endif %}self.dut.{{'.'.join(get_python_path_segments(node))}}.write(start_entry=entry, data={% if legacy_block_access %}Array('{{get_array_typecode(node.get_property('memwidth'))}}', [value]){% else %}[value]{% endif %}) # type: ignore[union-attr]
                 {% if node.is_sw_readable -%}
                 self.assertEqual({% if asyncoutput %}await {%endif %}self.dut.{{'.'.join(get_python_path_segments(node))}}.read(start_entry=entry, number_entries=1), # type: ignore[union-attr]
-                                 Array('{{get_array_typecode(node.get_property('memwidth'))}}', [value]))
+                                 {% if legacy_block_access %}Array('{{get_array_typecode(node.get_property('memwidth'))}}', [value]){% else %}[value]{% endif %})
                 {% endif %}
 
         # check a multi-entry read, if the memory is small do the entire memory, however, if
         # it is large limit the number of entries to 10
         entries_to_test = {% if node.get_property('mementries') > 10 %}10{% else %}{{node.get_property('mementries')}}{% endif %}
+        {% if legacy_block_access %}
         random_data = Array('{{get_array_typecode(node.get_property('memwidth'))}}',
                             [random.randint(0,{{get_memory_max_entry_value_hex_string(node)}}) for x in range(entries_to_test)])
+        {% else %}
+        random_data = [random.randint(0,{{get_memory_max_entry_value_hex_string(node)}}) for x in range(entries_to_test)]
+        {% endif %}
         {% if asyncoutput %}await {%endif %}self.dut.{{'.'.join(get_python_path_segments(node))}}.write(start_entry=0, data=random_data) # type: ignore[union-attr]
         {% if node.is_sw_readable -%}
         self.assertEqual({% if asyncoutput %}await {%endif %}self.dut.{{'.'.join(get_python_path_segments(node))}}.read(start_entry=0, number_entries=entries_to_test), # type: ignore[union-attr]

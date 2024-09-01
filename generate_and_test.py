@@ -37,12 +37,11 @@ from unittest import TextTestRunner
 
 #from coverage import Coverage
 
-from systemrdl import RDLCompiler
-
 #from peakrdl_ipxact import IPXACTImporter
 
 sys.path.append('src')
 from peakrdl_python import PythonExporter
+from peakrdl_python import compiler_with_udp_registers
 
 CommandLineParser = argparse.ArgumentParser(description='Test the framework')
 CommandLineParser.add_argument('--RDL_source_file', dest='root_RDL_file',
@@ -79,6 +78,21 @@ CommandLineParser.add_argument('--copy_libraries', action='store_true', dest='co
                                     'and debugging as multiple copies of the libraries can cause'
                                     'confusion. Therefore by default this script does not copy '
                                     'them over.')
+CommandLineParser.add_argument('--legacy_block_access', action='store_true',
+                               dest='legacy_block_access',
+                               help='peakrdl python has two methods to hold blocks of data, the '
+                                    'legacy mode based on Array or the new mode using lists')
+CommandLineParser.add_argument('--udp', dest='udp', nargs='*',
+                               type=str, help='any user defined properties to include in the '
+                                              'reg_model')
+CommandLineParser.add_argument('--hide_regex', dest='hide_regex', type=str,
+                               help='A regex that will cause any matching fully qualified node to '
+                                    'be hidden')
+CommandLineParser.add_argument('--full_inst_file', dest='full_inst_file',
+                               type=pathlib.Path, required=False,
+                               help='export a text file with a list of the all qualified instance'
+                                    'names in the systemRDL')
+
 
 def build_logging_cong(logfilepath:str):
     return {
@@ -127,6 +141,7 @@ def build_logging_cong(logfilepath:str):
         }
     }
 
+
 if __name__ == '__main__':
 
     CommandLineArgs = CommandLineParser.parse_args()
@@ -134,7 +149,7 @@ if __name__ == '__main__':
     logfile_path = build_logging_cong(CommandLineArgs.output_path / f'{__file__}.log')
     logging.config.dictConfig(logfile_path)
 
-    rdlc = RDLCompiler()
+    rdlc = compiler_with_udp_registers()
 
     if CommandLineArgs.ipxact is not None:
 
@@ -156,12 +171,21 @@ if __name__ == '__main__':
         node_list.append(node)
         print(node.inst_name)
 
+    # write out text file of all the nodes names, this can be used to debug regex issues
+    if CommandLineArgs.full_inst_file is not None:
+        with CommandLineArgs.full_inst_file.open('w', encoding='utf-8') as fid:
+            for child in spec.descendants(unroll=True):
+                fid.write('.'.join(child.get_path_segments()) + '\n')
+
     exporter = PythonExporter()
     start_time = time.time()
     exporter.export(node=spec, path=str(CommandLineArgs.output_path / 'generate_and_test_output'),
                     asyncoutput=CommandLineArgs.asyncoutput,
                     delete_existing_package_content=not CommandLineArgs.suppress_cleanup,
-                    skip_library_copy=not CommandLineArgs.copy_libraries)
+                    skip_library_copy=not CommandLineArgs.copy_libraries,
+                    legacy_block_access=CommandLineArgs.legacy_block_access,
+                    user_defined_properties_to_include=CommandLineArgs.udp,
+                    hidden_inst_name_regex=CommandLineArgs.hide_regex)
     print(f'generation time {time.time() - start_time}s')
 
     if not CommandLineArgs.export_only:
@@ -190,9 +214,15 @@ if __name__ == '__main__':
                                                 globals(), locals(), ['CallbackSet'], 0)
 
         if CommandLineArgs.asyncoutput is True:
-            callbackset_cls = getattr(peakrdl_python_package, 'AsyncCallbackSet')
+            if CommandLineArgs.legacy_block_access is True:
+                callbackset_cls = getattr(peakrdl_python_package, 'AsyncCallbackSetLegacy')
+            else:
+                callbackset_cls = getattr(peakrdl_python_package, 'AsyncCallbackSet')
         else:
-            callbackset_cls = getattr(peakrdl_python_package, 'NormalCallbackSet')
+            if CommandLineArgs.legacy_block_access is True:
+                callbackset_cls = getattr(peakrdl_python_package, 'NormalCallbackSetLegacy')
+            else:
+                callbackset_cls = getattr(peakrdl_python_package, 'NormalCallbackSet')
 
         sim_cls = getattr(sim_module, sim_class_name)
         sim = sim_cls(address=0)
@@ -209,7 +239,5 @@ if __name__ == '__main__':
         if CommandLineArgs.coverage_report:
             cov.stop()
             cov.html_report(directory=str(CommandLineArgs.coverage_report_path / CommandLineArgs.root_node))
-
-        sim.memory_for_address(64)
 
 

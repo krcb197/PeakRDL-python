@@ -18,13 +18,15 @@ Example
 The following example shows the compiling an SystemRDL file and then generating
 the python register access layer using PeakRDL Python.
 
+
+
 .. code-block:: python
 
-    from systemrdl import RDLCompiler
+    from peakrdl_python import compiler_with_udp_registers
     from peakrdl_python.exporter import PythonExporter
 
     # compile the systemRDL
-    rdlc = RDLCompiler()
+    rdlc = compiler_with_udp_registers()
     rdlc.compile_file('basic.rdl')
     spec = rdlc.elaborate(top_def_name='basic').top
 
@@ -36,6 +38,25 @@ the python register access layer using PeakRDL Python.
 PythonExporter
 ==============
 
+The main exported class used to build the python register access layer:
+
 .. autoclass:: peakrdl_python.exporter.PythonExporter
     :members:
     :special-members: __init__
+
+Compiler Extensions
+-------------------
+
+PeakRDL Python uses two User Defined Properties to help the generation, there are definitions of
+these available to register with a the Compiler
+
+.. autoclass:: peakrdl_python.PythonHideUDP
+    :members:
+
+
+.. autoclass:: peakrdl_python.PythonInstNameUDP
+    :members:
+
+The compiler factory function will generate an instance of the compiler with these registered
+
+.. autofunction:: peakrdl_python.compiler_with_udp_registers

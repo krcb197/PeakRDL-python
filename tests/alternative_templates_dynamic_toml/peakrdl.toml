@@ -1,0 +1,3 @@
+[python]
+user_template_dir = "../alternative_templates_dynamic"
+user_template_context = { extra_param_1 = 'Bill', extra_param_2 = 'Johny'}

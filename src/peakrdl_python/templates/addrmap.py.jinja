@@ -17,7 +17,8 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #}
 
 {% include "header.py.jinja" with context %}
-{% if uses_enum %}from enum import EnumMeta, IntEnum, unique{% endif %}
+{% if uses_enum %}from enum import EnumMeta{% endif %}
+from enum import IntEnum, unique
 from typing import Tuple
 from typing import Iterator
 from typing import List
@@ -31,11 +32,13 @@ from typing import AsyncGenerator
 from typing import Generator
 {% endif %}
 import warnings
+{% if legacy_block_access %}from array import array as Array{% endif %}
 
 
 from contextlib import {% if asyncoutput %}async{% endif %}contextmanager
 
 from {% if skip_lib_copy %}src.peakrdl_python.{% else %}..{% endif %}lib import Node
+from {% if skip_lib_copy %}src.peakrdl_python.{% else %}..{% endif %}lib import UDPStruct
 
 from {% if skip_lib_copy %}src.peakrdl_python.{% else %}..{% endif %}lib  import AddressMapArray, RegFileArray
 {% if asyncoutput -%}
@@ -44,7 +47,7 @@ from {% if skip_lib_copy %}src.peakrdl_python.{% else %}..{% endif %}lib import 
 from {% if skip_lib_copy %}src.peakrdl_python.{% else %}..{% endif %}lib import AsyncRegFile
 from {% if skip_lib_copy %}src.peakrdl_python.{% else %}..{% endif %}lib  import AsyncAddressMapArray
 from {% if skip_lib_copy %}src.peakrdl_python.{% else %}..{% endif %}lib  import AsyncRegFileArray
-from {% if skip_lib_copy %}src.peakrdl_python.{% else %}..{% endif %}lib import MemoryAsyncReadOnly, MemoryAsyncWriteOnly, MemoryAsyncReadWrite
+from {% if skip_lib_copy %}src.peakrdl_python.{% else %}..{% endif %}lib import MemoryAsyncReadOnly{% if legacy_block_access %}Legacy{% endif %}, MemoryAsyncWriteOnly{% if legacy_block_access %}Legacy{% endif %}, MemoryAsyncReadWrite{% if legacy_block_access %}Legacy{% endif %}
 from {% if skip_lib_copy %}src.peakrdl_python.{% else %}..{% endif %}lib import MemoryAsyncReadOnlyArray, MemoryAsyncWriteOnlyArray, MemoryAsyncReadWriteArray
 from {% if skip_lib_copy %}src.peakrdl_python.{% else %}..{% endif %}lib import AsyncReg, AsyncRegArray
 from {% if skip_lib_copy %}src.peakrdl_python.{% else %}..{% endif %}lib import RegAsyncReadOnly, RegAsyncWriteOnly, RegAsyncReadWrite
@@ -52,7 +55,7 @@ from {% if skip_lib_copy %}src.peakrdl_python.{% else %}..{% endif %}lib import 
 from {% if skip_lib_copy %}src.peakrdl_python.{% else %}..{% endif %}lib import FieldAsyncReadOnly, FieldAsyncWriteOnly, FieldAsyncReadWrite, Field
 {% if uses_enum %}from {% if skip_lib_copy %}src.peakrdl_python.{% else %}..{% endif %}lib import FieldEnumAsyncReadOnly, FieldEnumAsyncWriteOnly, FieldEnumAsyncReadWrite{% endif %}
 from {% if skip_lib_copy %}src.peakrdl_python.{% else %}..{% endif %}lib import ReadableAsyncRegister, WritableAsyncRegister
-from {% if skip_lib_copy %}src.peakrdl_python.{% else %}..{% endif %}lib import ReadableAsyncMemory, WritableAsyncMemory
+from {% if skip_lib_copy %}src.peakrdl_python.{% else %}..{% endif %}lib import ReadableAsyncMemory{% if legacy_block_access %}Legacy{% endif %}, WritableAsyncMemory{% if legacy_block_access %}Legacy{% endif %}
 from {% if skip_lib_copy %}src.peakrdl_python.{% else %}..{% endif %}lib import ReadableAsyncRegisterArray, WriteableAsyncRegisterArray
 {%- else -%}
 from {% if skip_lib_copy %}src.peakrdl_python.{% else %}..{% endif %}lib import Memory, MemoryArray
@@ -60,7 +63,7 @@ from {% if skip_lib_copy %}src.peakrdl_python.{% else %}..{% endif %}lib import 
 from {% if skip_lib_copy %}src.peakrdl_python.{% else %}..{% endif %}lib import RegFile
 from {% if skip_lib_copy %}src.peakrdl_python.{% else %}..{% endif %}lib  import AddressMapArray
 from {% if skip_lib_copy %}src.peakrdl_python.{% else %}..{% endif %}lib  import RegFileArray
-from {% if skip_lib_copy %}src.peakrdl_python.{% else %}..{% endif %}lib import MemoryReadOnly, MemoryWriteOnly, MemoryReadWrite
+from {% if skip_lib_copy %}src.peakrdl_python.{% else %}..{% endif %}lib import MemoryReadOnly{% if legacy_block_access %}Legacy{% endif %}, MemoryWriteOnly{% if legacy_block_access %}Legacy{% endif %}, MemoryReadWrite{% if legacy_block_access %}Legacy{% endif %}
 from {% if skip_lib_copy %}src.peakrdl_python.{% else %}..{% endif %}lib import MemoryReadOnlyArray, MemoryWriteOnlyArray, MemoryReadWriteArray
 from {% if skip_lib_copy %}src.peakrdl_python.{% else %}..{% endif %}lib import Reg, RegArray
 from {% if skip_lib_copy %}src.peakrdl_python.{% else %}..{% endif %}lib import RegReadOnly, RegWriteOnly, RegReadWrite
@@ -68,15 +71,15 @@ from {% if skip_lib_copy %}src.peakrdl_python.{% else %}..{% endif %}lib import 
 from {% if skip_lib_copy %}src.peakrdl_python.{% else %}..{% endif %}lib import FieldReadOnly, FieldWriteOnly, FieldReadWrite, Field
 {% if uses_enum %}from {% if skip_lib_copy %}src.peakrdl_python.{% else %}..{% endif %}lib import FieldEnumReadOnly, FieldEnumWriteOnly, FieldEnumReadWrite{% endif %}
 from {% if skip_lib_copy %}src.peakrdl_python.{% else %}..{% endif %}lib import ReadableRegister, WritableRegister
-from {% if skip_lib_copy %}src.peakrdl_python.{% else %}..{% endif %}lib import ReadableMemory, WritableMemory
+from {% if skip_lib_copy %}src.peakrdl_python.{% else %}..{% endif %}lib import ReadableMemory{% if legacy_block_access %}Legacy{% endif %}, WritableMemory{% if legacy_block_access %}Legacy{% endif %}
 from {% if skip_lib_copy %}src.peakrdl_python.{% else %}..{% endif %}lib import ReadableRegisterArray, WriteableRegisterArray
 {%- endif %}
 from {% if skip_lib_copy %}src.peakrdl_python.{% else %}..{% endif %}lib import FieldSizeProps, FieldMiscProps
 
 {% if asyncoutput %}
-from {% if skip_lib_copy %}src.peakrdl_python.{% else %}..{% endif %}lib import AsyncCallbackSet
+from {% if skip_lib_copy %}src.peakrdl_python.{% else %}..{% endif %}lib import AsyncCallbackSet, AsyncCallbackSetLegacy
 {% else %}
-from {% if skip_lib_copy %}src.peakrdl_python.{% else %}..{% endif %}lib import NormalCallbackSet
+from {% if skip_lib_copy %}src.peakrdl_python.{% else %}..{% endif %}lib import NormalCallbackSet, NormalCallbackSetLegacy
 {% endif %}
 
 
@@ -85,8 +88,10 @@ from {% if skip_lib_copy %}src.peakrdl_python.{% else %}..{% endif %}lib import 
 {% from 'addrmap_memory.py.jinja' import memory_class with context %}
 {% from 'reg_definitions.py.jinja' import register_class_attributes with context %}
 {% from 'reg_definitions.py.jinja' import child_register_getter with context %}
+{% from 'addrmap_udp_property.py.jinja' import udp_property with context %}
 
 {%- macro regfile_or_addr_instance(node) %}
+    {%- if not hide_node_func(node) %}
     {%- if isinstance(node, systemrdlRegNode) %}
         {{ register_class_attributes(node) }}
     {%- elif isinstance(node, systemrdlMemNode) %}
@@ -129,6 +134,7 @@ from {% if skip_lib_copy %}src.peakrdl_python.{% else %}..{% endif %}lib import 
                                                                             parent=self)
         {%- endif %}
     {%- endif %}
+    {%- endif %}
 {%- endmacro %}
 
 {%- macro regfile_class(node) %}
@@ -165,15 +171,16 @@ class {{get_fully_qualified_type_name(node)}}_cls({% if asyncoutput %}Async{% en
 
     # properties for Register and RegisterFiles
     {%- for child_node in node.children(unroll=False) %}
-        {%- if isinstance(child_node, systemrdlRegNode) or isinstance(child_node, systemrdlRegfileNode) %}
+        {%- if not hide_node_func(child_node) %}
+            {%- if isinstance(child_node, systemrdlRegNode) or isinstance(child_node, systemrdlRegfileNode) %}
     @property
-    {%- if isinstance(child_node, systemrdlRegNode) -%}
-    {%- set property_name = safe_node_name(child_node) -%}
-    {%- elif isinstance(child_node, systemrdlRegfileNode) -%}
-    {%- set property_name = safe_node_name(child_node) -%}
-    {% else %}
-    {{ raise_template_error('unexpected type') }}
-    {%- endif %}
+                {%- if isinstance(child_node, systemrdlRegNode) -%}
+                {%- set property_name = safe_node_name(child_node) -%}
+                {%- elif isinstance(child_node, systemrdlRegfileNode) -%}
+                {%- set property_name = safe_node_name(child_node) -%}
+                {% else %}
+                {{ raise_template_error('unexpected type') }}
+                 {%- endif %}
     def {{property_name}}(self) -> {% if child_node.is_array -%}{{get_fully_qualified_type_name(child_node)}}_array_cls{% else %}{{get_fully_qualified_type_name(child_node)}}_cls{%- endif -%}:
         """
         Property to access {{child_node.inst_name}} {% if child_node.is_array -%}array{% endif %}
@@ -181,6 +188,7 @@ class {{get_fully_qualified_type_name(node)}}_cls({% if asyncoutput %}Async{% en
         {{get_table_block(child_node) | indent(8)}}
         """
         return self.__{{child_node.inst_name}}
+            {%- endif %}
         {%- endif %}
     {% endfor %}
 
@@ -195,17 +203,21 @@ class {{get_fully_qualified_type_name(node)}}_cls({% if asyncoutput %}Async{% en
         """
         return {
             {%- for child_node in node.children(unroll=False) -%}
-            {%- if isinstance(child_node, systemrdlRegNode) -%}
+                {%- if not hide_node_func(child_node) %}
+                    {%- if isinstance(child_node, systemrdlRegNode) -%}
             '{{child_node.inst_name}}':'{{safe_node_name(child_node)}}',
-            {%- elif isinstance(child_node, systemrdlRegfileNode) -%}
+                    {%- elif isinstance(child_node, systemrdlRegfileNode) -%}
             '{{child_node.inst_name}}':'{{safe_node_name(child_node)}}',
-            {%- elif isinstance(child_node, systemrdlSignalNode) %}
+                    {%- elif isinstance(child_node, systemrdlSignalNode) %}
             # doing nothing with signal node: {{child_node.inst_name}}
-            {% else %}
+                    {% else %}
             {{ raise_template_error('unexpected type') }}
-            {%- endif %}
+                    {%- endif %}
+                {%- endif %}
             {%- endfor %}
             }
+
+    {{ udp_property(node) }}
 
     {{ child_register_getter(node) }}
 
@@ -252,8 +264,12 @@ class {{get_fully_qualified_type_name(node)}}_cls({% if asyncoutput %}Async{% en
                  address:int {%- if node == top_node -%}={{top_node.absolute_address}}{%- endif -%},
                  logger_handle:str {%- if node == top_node -%}='reg_model.{{top_node.get_path()}}'{%- endif -%},
                  inst_name:str{%- if node == top_node -%}='{{node.inst_name}}'{%- endif -%},
-                 callbacks: Optional[{% if asyncoutput %}AsyncCallbackSet{% else %}NormalCallbackSet{% endif %}]=None,
+                 callbacks: Optional[Union[{% if asyncoutput %}Async{% else %}Normal{% endif %}CallbackSet, {% if asyncoutput %}Async{% else %}Normal{% endif %}CallbackSetLegacy]]=None,
                  parent:Optional[{% if asyncoutput %}Async{% endif %}AddressMap]=None):
+
+        if callbacks is not None:
+            if not isinstance(callbacks, ({% if asyncoutput %}Async{% else %}Normal{% endif %}CallbackSet, {% if asyncoutput %}Async{% else %}Normal{% endif %}CallbackSetLegacy)):
+                raise TypeError(f'callbacks should be {% if asyncoutput %}Async{% else %}Normal{% endif %}CallbackSet, {% if asyncoutput %}Async{% else %}Normal{% endif %}CallbackSetLegacy got {type(callbacks)}')
 
         super().__init__(callbacks=callbacks,
                          address=address,
@@ -271,6 +287,7 @@ class {{get_fully_qualified_type_name(node)}}_cls({% if asyncoutput %}Async{% en
 
         {%- for child_node in node.children(unroll=False) -%}
             {%- if isinstance(child_node, systemrdlRegNode) or isinstance(child_node, systemrdlRegfileNode) or isinstance(child_node, systemrdlAddrmapNode) or isinstance(child_node, systemrdlMemNode) %}
+                {%- if not hide_node_func(child_node) %}
     @property
     {%- if isinstance(child_node, systemrdlRegNode) -%}
     {%- set property_name = safe_node_name(child_node) -%}
@@ -290,6 +307,7 @@ class {{get_fully_qualified_type_name(node)}}_cls({% if asyncoutput %}Async{% en
         {{get_table_block(child_node) | indent(8)}}
         """
         return self.__{{child_node.inst_name}}
+                {%- endif %}
             {%- endif %}
         {% endfor %}
 
@@ -304,21 +322,25 @@ class {{get_fully_qualified_type_name(node)}}_cls({% if asyncoutput %}Async{% en
         """
         return {
             {%- for child_node in node.children(unroll=False) -%}
-            {%- if isinstance(child_node, systemrdlRegNode) -%}
+                {%- if not hide_node_func(child_node) %}
+                    {%- if isinstance(child_node, systemrdlRegNode) -%}
             '{{child_node.inst_name}}':'{{safe_node_name(child_node)}}',
-            {%- elif isinstance(child_node, systemrdlRegfileNode) -%}
+                    {%- elif isinstance(child_node, systemrdlRegfileNode) -%}
             '{{child_node.inst_name}}':'{{safe_node_name(child_node)}}',
-            {%- elif isinstance(child_node, systemrdlAddrmapNode) -%}
+                    {%- elif isinstance(child_node, systemrdlAddrmapNode) -%}
             '{{child_node.inst_name}}':'{{safe_node_name(child_node)}}',
-            {%- elif isinstance(child_node, systemrdlMemNode) %}
+                    {%- elif isinstance(child_node, systemrdlMemNode) %}
             '{{child_node.inst_name}}':'{{safe_node_name(child_node)}}',
-            {%- elif isinstance(child_node, systemrdlSignalNode) %}
+                    {%- elif isinstance(child_node, systemrdlSignalNode) %}
             # doing nothing with signal node: {{child_node.inst_name}}
-            {% else %}
+                    {% else %}
             {{ raise_template_error('unexpected type') }}
-            {%- endif %}
+                    {%- endif %}
+                {%- endif %}
             {%- endfor %}
             }
+
+    {{ udp_property(node) }}
 
     {{ child_register_getter(node) }}
     {% if asyncoutput %}
@@ -360,29 +382,31 @@ class {{get_fully_qualified_type_name(node)}}_array_cls({% if asyncoutput %}Asyn
         """
         {% for child_node in node.children(unroll=False) -%}
             {%- if isinstance(child_node, child_rdltype) %}
+                {%- if not hide_node_func(child_node) %}
 
-                {%- if isinstance(child_node, systemrdlRegNode) -%}
-                {%- set property_name = safe_node_name(child_node) -%}
-                {%- elif isinstance(child_node, systemrdlRegfileNode) -%}
-                {%- set property_name = safe_node_name(child_node) -%}
-                {%- elif isinstance(child_node, systemrdlAddrmapNode) -%}
-                {%- set property_name = safe_node_name(child_node) -%}
-                {%- elif isinstance(child_node, systemrdlMemNode) %}
-                {%- set property_name = safe_node_name(child_node) -%}
-                {% else %}
-                {{ raise_template_error('unexpected type') }}
-                {%- endif %}
+                    {%- if isinstance(child_node, systemrdlRegNode) -%}
+                    {%- set property_name = safe_node_name(child_node) -%}
+                    {%- elif isinstance(child_node, systemrdlRegfileNode) -%}
+                    {%- set property_name = safe_node_name(child_node) -%}
+                    {%- elif isinstance(child_node, systemrdlAddrmapNode) -%}
+                    {%- set property_name = safe_node_name(child_node) -%}
+                    {%- elif isinstance(child_node, systemrdlMemNode) %}
+                    {%- set property_name = safe_node_name(child_node) -%}
+                    {% else %}
+                    {{ raise_template_error('unexpected type') }}
+                    {%- endif %}
 
 
-                {% if child_node.is_array %}
+                    {% if child_node.is_array %}
         if unroll:
             for child in self.{{property_name}}:
                 yield child
         else:
             yield self.{{property_name}}
-                 {% else %}
+                    {% else %}
         yield self.{{property_name}}
-                {%- endif %}
+                    {%- endif %}
+                {%- endif -%}
             {%- endif -%}
         {% endfor %}
 
@@ -391,13 +415,19 @@ class {{get_fully_qualified_type_name(node)}}_array_cls({% if asyncoutput %}Asyn
 {%- endmacro %}
 
 
-
+{% for property_enum in dependent_property_enum %}
+@unique
+class {{property_enum.type_name}}_property_enumcls(IntEnum):
+    {% for value_of_enum_needed in property_enum -%}
+    {{ value_of_enum_needed.name.upper() }} = {{ value_of_enum_needed.value }}  {%- if value_of_enum_needed.rdl_desc is not none -%}# {{ value_of_enum_needed.rdl_desc }} {%- endif %}
+    {% endfor %}
+{% endfor %}
 
 {% if uses_enum %}
 # root level enum definitions
-{%- for enum_needed, owning_field in get_dependent_enum(top_node.parent) %}
+{%- for enum_needed, owning_field in get_dependent_enum(top_node.parent, hide_node_func) %}
 @unique
-class {{get_fully_qualified_enum_type(enum_needed, top_node.parent, owning_field)}}_enumcls(IntEnum):
+class {{get_fully_qualified_enum_type(enum_needed, top_node.parent, owning_field, hide_node_func)}}_enumcls(IntEnum):
 
     {% for value_of_enum_needed in enum_needed -%}
     {{ value_of_enum_needed.name.upper() }} = {{ value_of_enum_needed.value }}  {%- if value_of_enum_needed.rdl_desc is not none -%}# {{ value_of_enum_needed.rdl_desc }} {%- endif %}
@@ -407,17 +437,19 @@ class {{get_fully_qualified_enum_type(enum_needed, top_node.parent, owning_field
 
 
 # regfile, register and field definitions
-{%- for node in get_dependent_component(top_node.parent) -%}
+{%- for node in get_dependent_component(top_node.parent, hide_node_func) -%}
+{# the get_dependent_component already strips out hidden items so there is no need to check here
+   for hidden items #}
     {% if isinstance(node, systemrdlRegNode) %}
-        {{ register_class(node)  }}
+    {{ register_class(node)  }}
     {% elif isinstance(node, systemrdlRegfileNode) %}
-        {{ regfile_class(node) }}
+    {{ regfile_class(node) }}
     {% elif isinstance(node, systemrdlAddrmapNode) %}
-        {{ addrmap_class(node) }}
+    {{ addrmap_class(node) }}
     {% elif isinstance(node, systemrdlFieldNode) %}
-        {{ field_class(node)  }}
+    {{ field_class(node)  }}
     {% elif isinstance(node, systemrdlMemNode) %}
-        {{ memory_class(node)  }}
+    {{ memory_class(node)  }}
     {% endif %}
 {% endfor %}
 
@@ -463,5 +495,5 @@ if __name__ == '__main__':
         print('write data:0x%X to address:0x%X'%(data, addr))
 
     # create an instance of the class
-    {{top_node.inst_name}} = {{get_fully_qualified_type_name(top_node)}}_cls(callbacks = {% if asyncoutput %}AsyncCallbackSet{% else %}NormalCallbackSet{% endif %}(read_callback=read_addr_space,
+    {{top_node.inst_name}} = {{get_fully_qualified_type_name(top_node)}}_cls(callbacks = {% if asyncoutput %}AsyncCallbackSet{% else %}NormalCallbackSet{% endif %}{% if legacy_block_access %}Legacy{% endif %}(read_callback=read_addr_space,
                                                                                                      write_callback=write_addr_space))

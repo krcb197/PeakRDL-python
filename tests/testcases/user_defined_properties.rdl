@@ -1,0 +1,175 @@
+
+enum property_enum {
+			value1 = 0 { name = "Value 1"; };
+			value2 = 14;
+			value3 = 10 { name = "Value 3"; desc="Does something"; };
+		};
+
+enum inner_property_enum {
+			value0 = 0 { name = "Value 1"; };
+		};
+
+struct property_struct {
+    boolean a_bool;
+    longint unsigned a_number;
+    string a_string;
+    inner_property_enum a_enum;
+};
+
+struct property_outer_struct {
+    boolean a_bool;
+    property_struct inner_struct;
+};
+
+
+property bool_property_to_include { type = boolean; component = addrmap | regfile | reg | field | mem; };
+property struct_property_to_include { type = property_struct; component = addrmap | regfile | reg | field | mem; };
+property double_layer_struct_property_to_include { type = property_outer_struct; component = addrmap | regfile | reg | field | mem; };
+property enum_property_to_include { type = property_enum; component = addrmap | regfile | reg | field | mem; };
+property int_property_to_include { type = number; component = addrmap | regfile | reg | field | mem; };
+property str_property_to_include { type = string; component = addrmap | regfile | reg | field | mem; };
+property int_property_to_exclude { type = number; component = addrmap | regfile | reg | field | mem; };
+
+addrmap user_defined_properties {
+
+    str_property_to_include = "user_defined_properties";
+
+    field field_with_properties {
+        fieldwidth = 1;
+        bool_property_to_include = true;
+        enum_property_to_include = property_enum::value1;
+        str_property_to_include = "invalid";
+        struct_property_to_include = property_struct'{a_bool:true, a_string:"hello", a_number:10, a_enum:inner_property_enum::value0};
+        double_layer_struct_property_to_include = property_outer_struct'{a_bool:true, inner_struct:property_struct'{a_bool:true, a_string:"inner", a_number:11, a_enum:inner_property_enum::value0} };
+        int_property_to_include = 10;
+        int_property_to_exclude = 15;
+    };
+
+    reg register_with_properties {
+        default sw = rw;
+        default hw = r;
+        bool_property_to_include = false;
+        str_property_to_include = "invalid";
+        enum_property_to_include = property_enum::value1;
+        field_with_properties field_a;
+    };
+
+    register_with_properties reg_a;
+    reg_a->str_property_to_include = "user_defined_properties.reg_a";
+    reg_a.field_a->str_property_to_include = "user_defined_properties.reg_a.field_a";
+    register_with_properties reg_b[3];
+    reg_b->str_property_to_include = "user_defined_properties.reg_b";
+    reg_b.field_a->str_property_to_include = "user_defined_properties.reg_b.field_a";
+
+    regfile regfile_with_properties {
+        bool_property_to_include = true;
+        enum_property_to_include = property_enum::value1;
+        str_property_to_include = "invalid";
+        struct_property_to_include = property_struct'{a_bool:true, a_string:"hello", a_number:10, a_enum:inner_property_enum::value0};
+        int_property_to_include = 10;
+        int_property_to_exclude = 15;
+        register_with_properties reg_a;
+        register_with_properties reg_b[3];
+    };
+
+    regfile_with_properties reg_file_a;
+    reg_file_a->str_property_to_include = "user_defined_properties.reg_file_a";
+    reg_file_a.reg_a->str_property_to_include = "user_defined_properties.reg_file_a.reg_a";
+    reg_file_a.reg_a.field_a->str_property_to_include = "user_defined_properties.reg_file_a.reg_a.field_a";
+    reg_file_a.reg_b->str_property_to_include = "user_defined_properties.reg_file_a.reg_b";
+    reg_file_a.reg_b.field_a->str_property_to_include = "user_defined_properties.reg_file_a.reg_b.field_a";
+
+    regfile_with_properties reg_file_b[2];
+
+    reg_file_b->str_property_to_include = "user_defined_properties.reg_file_b";
+    reg_file_b.reg_a->str_property_to_include = "user_defined_properties.reg_file_b.reg_a";
+    reg_file_b.reg_a.field_a->str_property_to_include = "user_defined_properties.reg_file_b.reg_a.field_a";
+    reg_file_b.reg_b->str_property_to_include = "user_defined_properties.reg_file_b.reg_b";
+    reg_file_b.reg_b.field_a->str_property_to_include = "user_defined_properties.reg_file_b.reg_b.field_a";
+
+    external mem {
+        mementries = 10;
+        memwidth = 32;
+        bool_property_to_include = true;
+        enum_property_to_include = property_enum::value1;
+        str_property_to_include = "invalid";
+        struct_property_to_include = property_struct'{a_bool:true, a_string:"hello", a_number:10, a_enum:inner_property_enum::value0};
+        int_property_to_include = 10;
+        int_property_to_exclude = 15;
+    } mem_with_properties;
+
+    external mem {
+        mementries = 10;
+        memwidth = 32;
+        bool_property_to_include = true;
+        enum_property_to_include = property_enum::value1;
+        str_property_to_include = "invalid";
+        struct_property_to_include = property_struct'{a_bool:true, a_string:"hello", a_number:10, a_enum:inner_property_enum::value0};
+        int_property_to_include = 10;
+        int_property_to_exclude = 15;
+    } mem_with_properties_array[2];
+
+    external mem {
+        mementries = 10;
+        memwidth = 32;
+        bool_property_to_include = true;
+        enum_property_to_include = property_enum::value1;
+        str_property_to_include = "invalid";
+        struct_property_to_include = property_struct'{a_bool:true, a_string:"hello", a_number:10, a_enum:inner_property_enum::value0};
+        int_property_to_include = 10;
+        int_property_to_exclude = 15;
+
+        register_with_properties reg_a;
+
+    } mem_with_reg;
+
+    addrmap addr_with_properties  {
+        bool_property_to_include = true;
+        enum_property_to_include = property_enum::value1;
+        str_property_to_include = "invalid";
+        struct_property_to_include = property_struct'{a_bool:true, a_string:"hello", a_number:10, a_enum:inner_property_enum::value0};
+        int_property_to_include = 10;
+        int_property_to_exclude = 15;
+        regfile_with_properties reg_file_a;
+        regfile_with_properties reg_file_b[2];
+        register_with_properties reg_a;
+        register_with_properties reg_b[3];
+    };
+
+    addr_with_properties addrmap_a;
+
+    addrmap_a->str_property_to_include = "user_defined_properties.addrmap_a";
+    addrmap_a.reg_a->str_property_to_include = "user_defined_properties.addrmap_a.reg_a";
+    addrmap_a.reg_a.field_a->str_property_to_include = "user_defined_properties.addrmap_a.reg_a.field_a";
+    addrmap_a.reg_b->str_property_to_include = "user_defined_properties.addrmap_a.reg_b";
+    addrmap_a.reg_b.field_a->str_property_to_include = "user_defined_properties.addrmap_a.reg_b.field_a";
+    addrmap_a.reg_file_a->str_property_to_include = "user_defined_properties.addrmap_a.reg_file_a";
+    addrmap_a.reg_file_a.reg_a->str_property_to_include = "user_defined_properties.addrmap_a.reg_file_a.reg_a";
+    addrmap_a.reg_file_a.reg_a.field_a->str_property_to_include = "user_defined_properties.addrmap_a.reg_file_a.reg_a.field_a";
+    addrmap_a.reg_file_a.reg_b->str_property_to_include = "user_defined_properties.addrmap_a.reg_file_a.reg_b";
+    addrmap_a.reg_file_a.reg_b.field_a->str_property_to_include = "user_defined_properties.addrmap_a.reg_file_a.reg_b.field_a";
+    addrmap_a.reg_file_b->str_property_to_include = "user_defined_properties.addrmap_a.reg_file_b";
+    addrmap_a.reg_file_b.reg_a->str_property_to_include = "user_defined_properties.addrmap_a.reg_file_b.reg_a";
+    addrmap_a.reg_file_b.reg_a.field_a->str_property_to_include = "user_defined_properties.addrmap_a.reg_file_b.reg_a.field_a";
+    addrmap_a.reg_file_b.reg_b->str_property_to_include = "user_defined_properties.addrmap_a.reg_file_b.reg_b";
+    addrmap_a.reg_file_b.reg_b.field_a->str_property_to_include = "user_defined_properties.addrmap_a.reg_file_b.reg_b.field_a";
+
+    addr_with_properties addrmap_b[2];
+
+    addrmap_b->str_property_to_include = "user_defined_properties.addrmap_b";
+    addrmap_b.reg_a->str_property_to_include = "user_defined_properties.addrmap_b.reg_a";
+    addrmap_b.reg_a.field_a->str_property_to_include = "user_defined_properties.addrmap_b.reg_a.field_a";
+    addrmap_b.reg_b->str_property_to_include = "user_defined_properties.addrmap_b.reg_b";
+    addrmap_b.reg_b.field_a->str_property_to_include = "user_defined_properties.addrmap_b.reg_b.field_a";
+    addrmap_b.reg_file_a->str_property_to_include = "user_defined_properties.addrmap_b.reg_file_a";
+    addrmap_b.reg_file_a.reg_a->str_property_to_include = "user_defined_properties.addrmap_b.reg_file_a.reg_a";
+    addrmap_b.reg_file_a.reg_a.field_a->str_property_to_include = "user_defined_properties.addrmap_b.reg_file_a.reg_a.field_a";
+    addrmap_b.reg_file_a.reg_b->str_property_to_include = "user_defined_properties.addrmap_b.reg_file_a.reg_b";
+    addrmap_b.reg_file_a.reg_b.field_a->str_property_to_include = "user_defined_properties.addrmap_b.reg_file_a.reg_b.field_a";
+    addrmap_b.reg_file_b->str_property_to_include = "user_defined_properties.addrmap_b.reg_file_b";
+    addrmap_b.reg_file_b.reg_a->str_property_to_include = "user_defined_properties.addrmap_b.reg_file_b.reg_a";
+    addrmap_b.reg_file_b.reg_a.field_a->str_property_to_include = "user_defined_properties.addrmap_b.reg_file_b.reg_a.field_a";
+    addrmap_b.reg_file_b.reg_b->str_property_to_include = "user_defined_properties.addrmap_b.reg_file_b.reg_b";
+    addrmap_b.reg_file_b.reg_b.field_a->str_property_to_include = "user_defined_properties.addrmap_b.reg_file_b.reg_b.field_a";
+
+};

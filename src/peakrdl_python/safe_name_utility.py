@@ -18,7 +18,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 utility functions for turning potentially unsafe names from the system RDL and making them safe
 """
 import keyword
-from typing import List, Union, Type, Callable, Dict
+from typing import List, Union, Type, Callable, Dict, Optional
 from dataclasses import dataclass
 
 from systemrdl.node import RegNode  # type: ignore
@@ -80,7 +80,7 @@ def _python_name_checks(instance_name: str) -> bool:
     return True
 
 
-def is_safe_field_name(node: FieldNode) -> bool:
+def is_safe_field_name(node: FieldNode, proposed_name: Optional[str] = None) -> bool:
     """
     takes in instance name for a systemRDL node and determines if it safe for use in PeakRDL-Python
     there are three for an unsafe name:
@@ -90,6 +90,8 @@ def is_safe_field_name(node: FieldNode) -> bool:
 
     Args:
         node: A System RDL Field Node
+        proposed_name (str): proposed node name to check, leave as None to use the name from the
+                             systemRDL code
 
     Returns: True if safe to use
 
@@ -97,7 +99,13 @@ def is_safe_field_name(node: FieldNode) -> bool:
     if not isinstance(node, FieldNode):
         raise TypeError(f'node should be a FieldNode but got {type(node)}')
 
-    if _python_name_checks(node.inst_name) is False:
+    if proposed_name is not None:
+        if not isinstance(proposed_name, str):
+            raise TypeError(f'proposed_name should be a str but got {type(proposed_name)}')
+    else:
+        proposed_name = node.inst_name
+
+    if _python_name_checks(proposed_name) is False:
         return False
 
     parent_node = node.parent
@@ -116,13 +124,13 @@ def is_safe_field_name(node: FieldNode) -> bool:
     else:
         raise RuntimeError
 
-    if node.inst_name in method_list:
+    if proposed_name in method_list:
         return False
 
     return True
 
 
-def is_safe_register_name(node: RegNode) -> bool:
+def is_safe_register_name(node: RegNode, proposed_name: Optional[str] = None) -> bool:
     """
     takes in instance name for a systemRDL node and determines if it safe for use in PeakRDL-Python
     there are three for an unsafe name:
@@ -132,14 +140,23 @@ def is_safe_register_name(node: RegNode) -> bool:
 
     Args:
         node: A System RDL Register Node
+        proposed_name (str): proposed node name to check, leave as None to use the name from the
+                     systemRDL code
 
     Returns: True if safe to use
 
     """
+    # pylint: disable=too-many-branches
     if not isinstance(node, RegNode):
         raise TypeError(f'node should be a RegNode but got {type(node)}')
 
-    if _python_name_checks(node.inst_name) is False:
+    if proposed_name is not None:
+        if not isinstance(proposed_name, str):
+            raise TypeError(f'proposed_name should be a str but got {type(proposed_name)}')
+    else:
+        proposed_name = node.inst_name
+
+    if _python_name_checks(proposed_name) is False:
         return False
 
     parent_node = node.parent
@@ -160,13 +177,13 @@ def is_safe_register_name(node: RegNode) -> bool:
     else:
         raise TypeError(f'Unhandled type: {type(parent_node)}')
 
-    if node.inst_name in method_list:
+    if proposed_name in method_list:
         return False
 
     return True
 
 
-def is_safe_memory_name(node: MemNode) -> bool:
+def is_safe_memory_name(node: MemNode, proposed_name: Optional[str] = None) -> bool:
     """
     takes in instance name for a systemRDL node and determines if it safe for use in PeakRDL-Python
     there are three for an unsafe name:
@@ -176,6 +193,8 @@ def is_safe_memory_name(node: MemNode) -> bool:
 
     Args:
         node: A System RDL Memory Node
+        proposed_name (str): proposed node name to check, leave as None to use the name from the
+                     systemRDL code
 
     Returns: True if safe to use
 
@@ -183,7 +202,13 @@ def is_safe_memory_name(node: MemNode) -> bool:
     if not isinstance(node, MemNode):
         raise TypeError(f'node should be a MemNode but got {type(node)}')
 
-    if _python_name_checks(node.inst_name) is False:
+    if proposed_name is not None:
+        if not isinstance(proposed_name, str):
+            raise TypeError(f'proposed_name should be a str but got {type(proposed_name)}')
+    else:
+        proposed_name = node.inst_name
+
+    if _python_name_checks(proposed_name) is False:
         return False
 
     parent_node = node.parent
@@ -195,13 +220,13 @@ def is_safe_memory_name(node: MemNode) -> bool:
     else:
         raise TypeError(f'Unhandled type: {type(parent_node)}')
 
-    if node.inst_name in method_list:
+    if proposed_name in method_list:
         return False
 
     return True
 
 
-def is_safe_regfile_name(node: RegfileNode) -> bool:
+def is_safe_regfile_name(node: RegfileNode, proposed_name: Optional[str] = None) -> bool:
     """
     takes in instance name for a systemRDL node and determines if it safe for use in PeakRDL-Python
     there are three for an unsafe name:
@@ -211,6 +236,8 @@ def is_safe_regfile_name(node: RegfileNode) -> bool:
 
     Args:
         node: A System RDL Register File
+        proposed_name (str): proposed node name to check, leave as None to use the name from the
+                     systemRDL code
 
     Returns: True if safe to use
 
@@ -218,7 +245,13 @@ def is_safe_regfile_name(node: RegfileNode) -> bool:
     if not isinstance(node, RegfileNode):
         raise TypeError(f'node should be a RegfileNode but got {type(node)}')
 
-    if _python_name_checks(node.inst_name) is False:
+    if proposed_name is not None:
+        if not isinstance(proposed_name, str):
+            raise TypeError(f'proposed_name should be a str but got {type(proposed_name)}')
+    else:
+        proposed_name = node.inst_name
+
+    if _python_name_checks(proposed_name) is False:
         return False
 
     parent_node = node.parent
@@ -230,13 +263,13 @@ def is_safe_regfile_name(node: RegfileNode) -> bool:
     else:
         raise TypeError(f'Unhandled type: {type(parent_node)}')
 
-    if node.inst_name in method_list:
+    if proposed_name in method_list:
         return False
 
     return True
 
 
-def is_safe_addrmap_name(node: AddrmapNode) -> bool:
+def is_safe_addrmap_name(node: AddrmapNode, proposed_name: Optional[str] = None) -> bool:
     """
     takes in instance name for a systemRDL node and determines if it safe for use in PeakRDL-Python
     there are three for an unsafe name:
@@ -246,6 +279,8 @@ def is_safe_addrmap_name(node: AddrmapNode) -> bool:
 
     Args:
         node: A System RDL Address Map
+        proposed_name (str): proposed node name to check, leave as None to use the name from the
+                     systemRDL code
 
     Returns: True if safe to use
 
@@ -253,10 +288,16 @@ def is_safe_addrmap_name(node: AddrmapNode) -> bool:
     if not isinstance(node, AddrmapNode):
         raise TypeError(f'node should be a AddrmapNode but got {type(node)}')
 
-    if _python_name_checks(node.inst_name) is False:
+    if proposed_name is not None:
+        if not isinstance(proposed_name, str):
+            raise TypeError(f'proposed_name should be a str but got {type(proposed_name)}')
+    else:
+        proposed_name = node.inst_name
+
+    if _python_name_checks(proposed_name) is False:
         return False
 
-    if node.inst_name in addr_map_method_list:
+    if proposed_name in addr_map_method_list:
         return False
 
     return True

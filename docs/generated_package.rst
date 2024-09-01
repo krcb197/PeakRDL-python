@@ -104,6 +104,37 @@ The callbacks are passed into the register access layer using either:
 * ``AsyncCallbackSet`` for async python function callbacks, these are called from the library using
   ``await``
 
+Legacy Block Callback and Block Access
+--------------------------------------
+
+.. versionchanged:: 0.9.0
+
+   Previous versions of PeakRDL Python used the python ``array.array`` for efficiently moving blocks
+   of data. This was changed in version 0.9.0 in order to accommodate memories which were larger
+   than 64 bit wide which could not be supported as the array type only support entries of up to
+   64 bit.
+
+   .. warning::
+      The developers apologise for making a breaking change, however, not being able to fully the
+      systemRDL specification was determined to be a major limitation that needed to be addressed.
+
+      It could have left this as a future compatibility mode before making a breaking change but
+      that would just delay the pain it was felt to be better to get as many users onto the new
+      API as soon as possible whilst PeakRDL Python is in beta.
+
+   If you really want to just keep on with the array based interface and make only minimal changes
+   to existing code, there are two simple steps:
+
+   1. The northbound interfaces that are provided by the generated package expect lists of integers
+      rather than array. The old interfaces can be retained by using the ``legacy_block_access``
+      build option.
+   2. The southbound interfaces into the callbacks again need to use lists for the
+      ``read_block_callback`` and ``write_block_callback`` methods. If you want to continue to use
+      the old scheme use the following callback classes which are part of the callbacks:
+      * ``NormalCallbackSetLegacy`` for standard python function callbacks
+      * ``AsyncCallbackSetLegacy`` for async python function callbacks, these are called from the library using ``await``
+
+
 Using the Register Access Layer
 ===============================
 
@@ -170,7 +201,9 @@ The following example shows the usage of the enumeration
 Array Access
 ------------
 
-SystemRDL supports multi-dimensional arrays, the following example shows an definition with an 1D and 3D array with various methods to access individual elements of the array and use of the iterators to walk through elements in loops
+SystemRDL supports multi-dimensional arrays, the following example shows an definition with an 1D
+and 3D array with various methods to access individual elements of the array and use of the
+iterators to walk through elements in loops
 
 .. literalinclude :: ../example/array_access/array_access.rdl
    :language: systemrdl
@@ -350,13 +383,38 @@ worry if they are in an array or not.
 .. literalinclude :: ../example/tranversing_address_map/reseting_registers.py
    :language: python
 
+Exposing User Defined Properties
+--------------------------------
+
+SystemRDL allows properties to be added to any component (Field, Memory, Register, Register File,
+Address Map), so called *User Defined Properties (UDP)*.
+
+Consider the following systemRDL example with a user defined property: ``component_usage``
+
+.. literalinclude :: ../example/user_defined_properties/user_defined_properties.rdl
+   :language: systemrdl
+
+User Defined Properties are not automatically included they must be specified, as shown:
+
+.. code-block:: bash
+
+   peakrdl python chip_with_registers.rdl -o chip_with_registers
+
+The user defined properties are stored in a ``udp`` property of all component in the generated
+register access and can be accessed as follows:
+
+.. literalinclude :: ../example/user_defined_properties/demo_user_defined_properties.py
+   :language: python
+
 Python Safe Names
 =================
 
 The systemRDL structure is converted to a python class structure, there are two concerns:
 
 * if any systemRDL node name is a python keyname
-* if any systemRDL node name clashes with part of the peakrdl_standard types, for example all register nodes have an ``address`` property that would clash with a field of that register called ``address``
+* if any systemRDL node name clashes with part of the peakrdl_standard types, for example all
+  register nodes have an ``address`` property that would clash with a field of that register
+  called ``address``
 
 consider the following example:
 
@@ -400,9 +458,68 @@ field from the example above
 .. literalinclude :: ../example/overridden_names/demo_over_ridden_names.py
    :language: python
 
+Hidden Elements
+===============
 
-Autoformating
-=============
+Commonly some parts of the register map want to be hidden from some users, for example register
+included to reserve space or test functions.
+
+User Defined Property
+---------------------
+
+PeakRDL Python supports a User Defined Property (UDP): ``python_hide`` that can be used to hide
+items that should not appear in the generated python wrappers.
+
+In the following example, python wrapper generated would have the registers:
+
+* ``explictly_visible_reg``
+* ``implicitly_visible_reg``
+
+However the ``hidden_reg`` would not be included in the python wrappers
+
+.. code-block:: systemrdl
+
+   property python_hide { type = boolean; component = addrmap | regfile | reg | field | mem; };
+
+   addrmap my_addr_map {
+
+       reg {
+           default sw = rw;
+           default hw = r;
+           python_hide = true;
+           field { fieldwidth=1; } field_a;
+       } hidden_reg;
+
+      reg {
+           default sw = rw;
+           default hw = r;
+           python_hide = false;
+           field { fieldwidth=1; } field_a;
+       } explictly_visible_reg;
+
+      reg {
+           default sw = rw;
+           default hw = r;
+           field { fieldwidth=1; } field_a;
+       } implicitly_visible_reg;
+
+   };
+
+The ``python_hide`` property can be overridden with the ``show_hidden`` argument to the peakrdl
+command line tool or the ``export`` method.
+
+Regular Expression
+------------------
+
+PeakRDL Python supports hiding elements of the based on a regular expression.
+
+.. note:: The expression uses the python re.match, for example to hide all fields, registers,
+          regfiles, address maps or memories  with the name ``RSVD``, the regular expression
+          must match on the full name e.g. ``(?:[\w_\[\]]+\.)+RSVD``
+
+
+Autoformatting
+==============
 
 The generated code is not perfect it often has lots of spare black lines, over time this will
 improve but the quickest way to resolve these issue is to include an autoformatter
@@ -424,7 +541,7 @@ PeakRDL Python also generates an simulator, this can be used to test and develop
 generated package. The simulator is used in a the examples shown earlier in this section. The
 simulator has the option to attach a callback to the read and write operations of either a
 register or field. In addition there is a ``value`` property that allows access to the register
-or feild content, this allows the contents to be accessed or updated without activating the
+or field content, this allows the contents to be accessed or updated without activating the
 callbacks, this is intended to allow the simulator to be extended with behaviour that is not
 fully described by the systemRDL.
 

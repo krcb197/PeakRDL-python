@@ -135,7 +135,10 @@ class Memory(Base):
 
     @property
     def _width_in_bytes(self) -> int:
-        return self.__width >> 3
+        def roundup_pow2(x: int) -> int:
+            return 1 << (x - 1).bit_length()
+
+        return roundup_pow2(self.__width) // 8
 
     def byte_offset_to_word_offset(self, byte_offset: int) -> int:
         """

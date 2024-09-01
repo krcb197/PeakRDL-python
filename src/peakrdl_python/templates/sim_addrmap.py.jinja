@@ -25,12 +25,12 @@ from {% if skip_lib_copy %}src.peakrdl_python.{% else %}..{% endif %}sim_lib.mem
 from {% if skip_lib_copy %}src.peakrdl_python.{% else %}..{% endif %}sim_lib.simulator import MemoryEntry
 from {% if skip_lib_copy %}src.peakrdl_python.{% else %}..{% endif %}sim_lib.field import FieldDefinition
 {% if asyncoutput -%}
-from {%if skip_lib_copy %}src.peakrdl_python.{% else %}..{% endif %}sim_lib.simulator import AsyncSimulator as Simulator
+from {%if skip_lib_copy %}src.peakrdl_python.{% else %}..{% endif %}sim_lib.simulator import AsyncSimulator{% if legacy_block_access %}Legacy{% endif %} as Simulator{% if legacy_block_access %}Legacy{% endif %}
 {% else %}
-from {% if skip_lib_copy %}src.peakrdl_python.{% else %}..{% endif %}sim_lib.simulator import Simulator
+from {% if skip_lib_copy %}src.peakrdl_python.{% else %}..{% endif %}sim_lib.simulator import Simulator{% if legacy_block_access %}Legacy{% endif %}
 {%- endif %}
 
-class {{top_node.inst_name}}_simulator_cls(Simulator):
+class {{top_node.inst_name}}_simulator_cls(Simulator{% if legacy_block_access %}Legacy{% endif %}):
 
     def _build_registers(self) -> Dict[int, Union[MemoryRegister, Register]]:
         return {

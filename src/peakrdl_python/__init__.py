@@ -17,3 +17,6 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 """
 from .exporter import PythonExporter
+
+from .compiler_udp import PythonHideUDP, PythonInstNameUDP
+from .compiler_udp import compiler_with_udp_registers
