@@ -53,7 +53,6 @@ class ArrayBase(CallBackTestWrapper, ABC):
         address based on array index
         """
 
-
     def setUp(self) -> None:
 
         class DUTWrapper(AddressMap):
@@ -62,14 +61,13 @@ class ArrayBase(CallBackTestWrapper, ABC):
             """
 
             # pylint: disable=too-many-arguments,duplicate-code
-            def __init__(self,
+            def __init__(self, *,
                          callbacks: Optional[CallbackSet],
                          address: int,
                          logger_handle: str,
                          inst_name: str,
                          dut_stride : int,
                          dut_dimensions : Tuple[int, ...]):
-
 
                 super().__init__(callbacks=callbacks, address=address, logger_handle=logger_handle,
                                  inst_name=inst_name, parent=None )
@@ -187,6 +185,7 @@ class Test1DArray(ArrayBase):
                 with self.assertRaises(IndexError):
                     _ = subset_slice[index]
 
+
 class Test2DArray(ArrayBase):
     """
     Test for 2D arrays
@@ -256,6 +255,7 @@ class Test2DArray(ArrayBase):
         chunk = self.dut[2:-2, 3:-3]
         for index, entry in zip(product(range(2,8), range(3,9)), chunk):
             self.assertEqual(entry.address, self.calculate_address(index))
+
 
 if __name__ == '__main__':
     unittest.main()

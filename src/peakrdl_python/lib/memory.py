@@ -231,8 +231,8 @@ class _MemoryReadOnly(Memory, ABC):
 
     __slots__: List[str] = []
 
-    # pylint: disable=too-many-arguments
-    def __init__(self,
+    # pylint: disable-next=too-many-arguments
+    def __init__(self, *,
                  address: int,
                  width: int,
                  accesswidth: int,
@@ -500,8 +500,8 @@ class _MemoryWriteOnly(Memory, ABC):
     """
     __slots__: List[str] = []
 
-    # pylint: disable=too-many-arguments
-    def __init__(self,
+    # pylint: disable-next=too-many-arguments
+    def __init__(self, *,
                  address: int,
                  width: int,
                  accesswidth: int,

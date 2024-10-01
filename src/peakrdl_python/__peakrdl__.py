@@ -109,9 +109,9 @@ class Exporter(ExporterSubcommandPlugin):
                                user_template_context=user_template_context)
 
         peakrdl_exporter.export(
-            top_node,
-            options.output,
-            options.is_async,
+            node=top_node,
+            path=options.output,
+            asyncoutput=options.is_async,
             skip_test_case_generation=options.skip_test_case_generation,
             delete_existing_package_content=not options.suppress_cleanup,
             legacy_block_access=options.legacy_block_access,
