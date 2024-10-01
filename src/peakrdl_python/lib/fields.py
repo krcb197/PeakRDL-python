@@ -44,7 +44,8 @@ class FieldSizeProps:
     """
     __slots__ = ['__msb', '__lsb', '__width', '__high', '__low']
 
-    def __init__(self, width: int, msb: int, lsb: int, high: int, low: int): #pylint: disable=too-many-arguments
+    # pylint: disable-next=too-many-arguments
+    def __init__(self, *, width: int, msb: int, lsb: int, high: int, low: int):
         self.__width = width
         self.__msb = msb
         self.__lsb = lsb
