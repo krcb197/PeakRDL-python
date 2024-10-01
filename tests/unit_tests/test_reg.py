@@ -45,7 +45,7 @@ class RegTestBase(CallBackTestWrapper, ABC):
             """
 
             # pylint: disable=duplicate-code
-            def __init__(self,
+            def __init__(self, *,
                          callbacks: Optional[CallbackSet],
                          address: int,
                          logger_handle: str,
@@ -103,6 +103,7 @@ class RegTestBase(CallBackTestWrapper, ABC):
                                       logger_handle='dut_wrapper', inst_name='dut_wrapper',
                                       reg_type=self.reg_type)
 
+
 class TestReadOnly(RegTestBase):
     """
     Test for read only register
@@ -128,7 +129,6 @@ class TestReadOnly(RegTestBase):
         Register under test
         """
         return cast(ReadOnlyRegisterToTest, self.dut_wrapper.dut)
-
 
     def test_register_read(self) -> None:
         """
@@ -182,6 +182,7 @@ class TestReadOnly(RegTestBase):
 
             write_patch.assert_not_called()
 
+
 class TestWrite(RegTestBase):
     """
     Test for write only register
@@ -231,6 +232,7 @@ class TestWrite(RegTestBase):
                                                width=self.dut.width,
                                                accesswidth=self.dut.accesswidth, data=1)
             read_patch.assert_not_called()
+
 
 class TestReadWrite(RegTestBase):
     """
@@ -424,7 +426,6 @@ class TestReadWrite(RegTestBase):
                                                width=self.dut.width,
                                                accesswidth=self.dut.accesswidth)
             write_patch.assert_not_called()
-
 
     def test_context_manager_read(self) -> None:
         """
