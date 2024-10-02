@@ -62,7 +62,6 @@ class ArrayBase(CallBackTestWrapper, ABC):
         address based on array index
         """
 
-
     def setUp(self) -> None:
 
         class DUTWrapper(AddressMap):
@@ -71,7 +70,7 @@ class ArrayBase(CallBackTestWrapper, ABC):
             """
 
             # pylint: disable=too-many-arguments,duplicate-code
-            def __init__(self,
+            def __init__(self, *,
                          callbacks: Optional[CallbackSet],
                          address: int,
                          logger_handle: str,
@@ -80,18 +79,17 @@ class ArrayBase(CallBackTestWrapper, ABC):
                          dut_dimensions : Tuple[int, ...],
                          RegisterArrayType):
 
-
                 super().__init__(callbacks=callbacks, address=address, logger_handle=logger_handle,
                                  inst_name=inst_name, parent=None )
 
                 self.__dut = RegisterArrayType(logger_handle='dut',
-                                                 inst_name='dut',
-                                                 parent=self,
-                                                 address=address,
-                                                 accesswidth=32,
-                                                 width=32,
-                                                 stride=dut_stride,
-                                                 dimensions=dut_dimensions)
+                                               inst_name='dut',
+                                               parent=self,
+                                               address=address,
+                                               accesswidth=32,
+                                               width=32,
+                                               stride=dut_stride,
+                                               dimensions=dut_dimensions)
 
             def get_memories(self, unroll: bool = False) -> \
                     Iterator[Union[Memory, Tuple[Memory, ...]]]:
@@ -221,13 +219,12 @@ class Test1DArrayReadWrite(ArrayBase):
                 with self.dut.single_read_modify_write(verify=True) as dut_context:
                     dut_context[2].write(4)
 
-
-
     def test_blockless_context_manager(self):
         """
         test the context manager that will perform a set of read operation,
         modify write operations with optional read-verify
         """
+
 
 class Test1DArrayReadOnly(ArrayBase):
     """
@@ -288,6 +285,7 @@ class Test1DArrayReadOnly(ArrayBase):
         test the context manager that will perform a set of read operation,
         modify write operations with optional read-verify
         """
+
 
 class Test1DArrayWriteOnly(ArrayBase):
     """
@@ -352,7 +350,6 @@ class Test1DArrayWriteOnly(ArrayBase):
         test the context manager that will perform a set of read operation,
         modify write operations with optional read-verify
         """
-
 
 
 if __name__ == '__main__':

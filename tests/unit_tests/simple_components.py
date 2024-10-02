@@ -25,7 +25,7 @@ class ReadOnlyRegisterToTest(RegReadOnly):
         __slots__: List[str] = []
 
     # pylint: disable=duplicate-code,too-many-arguments
-    def __init__(self,
+    def __init__(self, *,
                  address: int,
                  accesswidth:int,
                  width:int,
@@ -89,6 +89,7 @@ class ReadOnlyRegisterToTest(RegReadOnly):
             'field': 'field',
         }
 
+
 class WriteOnlyRegisterToTest(RegWriteOnly):
     """
     Class to represent a register in the register model
@@ -102,7 +103,7 @@ class WriteOnlyRegisterToTest(RegWriteOnly):
         """
         __slots__: List[str] = []
 
-    def __init__(self,
+    def __init__(self, *,
                  address: int,
                  accesswidth: int,
                  width: int,
@@ -169,6 +170,7 @@ class WriteOnlyRegisterToTest(RegWriteOnly):
             'field': 'field',
         }
 
+
 class ReadWriteRegisterToTest(RegReadWrite):
     """
     Class to represent a register in the register model
@@ -182,7 +184,7 @@ class ReadWriteRegisterToTest(RegReadWrite):
         """
         __slots__: List[str] = []
 
-    def __init__(self,
+    def __init__(self, *,
                  address: int,
                  accesswidth: int,
                  width: int,
@@ -256,6 +258,7 @@ class ReadWriteRegisterToTest(RegReadWrite):
             'field': 'field',
         }
 
+
 class ReadOnlyRegisterArrayToTest(RegReadOnlyArray):
     """
     Class to represent a register array in the register model
@@ -266,6 +269,7 @@ class ReadOnlyRegisterArrayToTest(RegReadOnlyArray):
     def _element_datatype(self) -> Type[Node]:
         return ReadOnlyRegisterToTest
 
+
 class WriteOnlyRegisterArrayToTest(RegWriteOnlyArray):
     """
     Class to represent a register array in the register model
@@ -275,6 +279,7 @@ class WriteOnlyRegisterArrayToTest(RegWriteOnlyArray):
     @property
     def _element_datatype(self) -> Type[Node]:
         return WriteOnlyRegisterToTest
+
 
 class ReadWriteRegisterArrayToTest(RegReadWriteArray):
     """

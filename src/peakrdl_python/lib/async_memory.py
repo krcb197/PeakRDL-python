@@ -366,7 +366,7 @@ class _MemoryAsyncWriteOnly(AsyncMemory, ABC):
     __slots__: List[str] = []
 
     # pylint: disable=too-many-arguments
-    def __init__(self,
+    def __init__(self, *,
                  address: int,
                  width: int,
                  accesswidth: int,

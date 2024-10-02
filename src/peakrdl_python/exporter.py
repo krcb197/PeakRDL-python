@@ -290,7 +290,8 @@ class PythonExporter:
             stream = template.stream(template_context)
             stream.dump(fp)
 
-    def __export_reg_model(self,  # pylint: disable=too-many-arguments
+    # pylint: disable-next=too-many-arguments
+    def __export_reg_model(self, *,
                            top_block: AddrmapNode,
                            package: _Package,
                            skip_lib_copy: bool,
@@ -359,7 +360,7 @@ class PythonExporter:
                                      target_name=top_block.inst_name + '.py',
                                      template_context=context)
 
-    def __export_simulator(self,
+    def __export_simulator(self, *,
                            top_block: AddrmapNode,
                            package: _Package,
                            skip_lib_copy: bool,
@@ -384,7 +385,7 @@ class PythonExporter:
                                      target_name=top_block.inst_name + '.py',
                                      template_context=context)
 
-    def __export_example(self,
+    def __export_example(self, *,
                          top_block: AddrmapNode,
                          package: _Package,
                          skip_lib_copy: bool,
@@ -409,7 +410,7 @@ class PythonExporter:
                                      target_name='example.py',
                                      template_context=context)
 
-    def __export_base_tests(self,
+    def __export_base_tests(self, *,
                             top_block: AddrmapNode,
                             package: _Package,
                             skip_lib_copy: bool,
@@ -446,7 +447,8 @@ class PythonExporter:
                                      target_name='_' + top_block.inst_name + '_sim_test_base.py',
                                      template_context=context)
 
-    def __export_tests(self,  # pylint: disable=too-many-arguments
+    # pylint: disable-next=too-many-arguments
+    def __export_tests(self, *,
                        top_block: AddrmapNode,
                        package: _Package,
                        skip_lib_copy: bool,
@@ -566,7 +568,8 @@ class PythonExporter:
                     raise RuntimeError('It is not permitted to expose a property name used to'
                                        ' build the peakrdl-python wrappers: ' + reserved_name)
 
-    def export(self, node: Node, path: str,  # pylint: disable=too-many-arguments
+    # pylint: disable-next=too-many-arguments
+    def export(self, node: Node, path: str, *,
                asyncoutput: bool = False,
                skip_test_case_generation: bool = False,
                delete_existing_package_content: bool = True,
