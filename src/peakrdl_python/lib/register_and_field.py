@@ -542,11 +542,11 @@ class RegReadOnly(Reg, ABC):
         raise RuntimeError('This function does not have a useable callback')
 
     @property
-    @abstractmethod
     def readable_fields(self) -> Iterator[Union['FieldReadOnly', 'FieldReadWrite']]:
         """
         generator that produces has all the readable fields within the register
         """
+        return filter(lambda x: isinstance(x, (FieldReadOnly, FieldReadWrite)), self.fields)
 
     def read_fields(self) -> Dict['str', Union[bool, Enum, int]]:
         """
@@ -638,11 +638,11 @@ class RegWriteOnly(Reg, ABC):
             raise RuntimeError('This function does not have a useable callback')
 
     @property
-    @abstractmethod
     def writable_fields(self) -> Iterator[Union['FieldWriteOnly', 'FieldReadWrite']]:
         """
         generator that produces has all the readable fields within the register
         """
+        return filter(lambda x: isinstance(x, (FieldWriteOnly, FieldReadWrite)), self.fields)
 
     @abstractmethod
     def write_fields(self, **kwargs) -> None:  # type: ignore[no-untyped-def]

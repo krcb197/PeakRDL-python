@@ -189,11 +189,12 @@ class RegAsyncReadOnly(AsyncReg, ABC):
         raise RuntimeError('This function does not have a useable callback')
 
     @property
-    @abstractmethod
     def readable_fields(self) -> Iterator[Union['FieldAsyncReadOnly', 'FieldAsyncReadWrite']]:
         """
         generator that produces has all the readable fields within the register
         """
+        return filter(lambda x: isinstance(x, (FieldAsyncReadOnly, FieldAsyncReadWrite)),
+                      self.fields)
 
     async def read_fields(self) -> Dict['str', Union[bool, Enum, int]]:
         """
@@ -293,11 +294,12 @@ class RegAsyncWriteOnly(AsyncReg, ABC):
             raise RuntimeError('This function does not have a useable callback')
 
     @property
-    @abstractmethod
     def writable_fields(self) -> Iterator[Union['FieldAsyncWriteOnly', 'FieldAsyncReadWrite']]:
         """
         generator that produces has all the writable fields within the register
         """
+        return filter(lambda x: isinstance(x, (FieldAsyncWriteOnly, FieldAsyncReadWrite)),
+                      self.fields)
 
     @abstractmethod
     async def write_fields(self, **kwargs) -> None:  # type: ignore[no-untyped-def]
