@@ -37,52 +37,52 @@ from .base import AsyncRegFile
 from .base import AsyncAddressMapArray
 from .base import AsyncRegFileArray
 
-from .register import Reg
-from .register import RegArray
-from .register import RegisterWriteVerifyError
+from .register_and_field import Reg
+from .register_and_field import RegArray
+from .register_and_field import RegisterWriteVerifyError
 
-from .register import RegReadOnly
-from .register import RegWriteOnly
-from .register import RegReadWrite
-from .register import WritableRegister
-from .register import ReadableRegister
+from .register_and_field import RegReadOnly
+from .register_and_field import RegWriteOnly
+from .register_and_field import RegReadWrite
+from .register_and_field import WritableRegister
+from .register_and_field import ReadableRegister
 
-from .register import RegReadOnlyArray
-from .register import RegWriteOnlyArray
-from .register import RegReadWriteArray
-from .register import ReadableRegisterArray
-from .register import WriteableRegisterArray
+from .register_and_field import RegReadOnlyArray
+from .register_and_field import RegWriteOnlyArray
+from .register_and_field import RegReadWriteArray
+from .register_and_field import ReadableRegisterArray
+from .register_and_field import WriteableRegisterArray
 
-from .async_register import AsyncReg
-from .async_register import AsyncRegArray
-from .async_register import RegAsyncReadOnly
-from .async_register import RegAsyncWriteOnly
-from .async_register import RegAsyncReadWrite
-from .async_register import ReadableAsyncRegister
-from .async_register import WritableAsyncRegister
-from .async_register import RegAsyncReadOnlyArray
-from .async_register import RegAsyncWriteOnlyArray
-from .async_register import RegAsyncReadWriteArray
-from .async_register import ReadableAsyncRegisterArray
-from .async_register import WriteableAsyncRegisterArray
+from .async_register_and_field import AsyncReg
+from .async_register_and_field import AsyncRegArray
+from .async_register_and_field import RegAsyncReadOnly
+from .async_register_and_field import RegAsyncWriteOnly
+from .async_register_and_field import RegAsyncReadWrite
+from .async_register_and_field import ReadableAsyncRegister
+from .async_register_and_field import WritableAsyncRegister
+from .async_register_and_field import RegAsyncReadOnlyArray
+from .async_register_and_field import RegAsyncWriteOnlyArray
+from .async_register_and_field import RegAsyncReadWriteArray
+from .async_register_and_field import ReadableAsyncRegisterArray
+from .async_register_and_field import WriteableAsyncRegisterArray
 
-from .fields import FieldSizeProps
-from .fields import FieldMiscProps
-from .fields import FieldReadOnly
-from .fields import FieldWriteOnly
-from .fields import FieldReadWrite
-from .fields import Field
-from .fields import FieldEnumReadOnly
-from .fields import FieldEnumWriteOnly
-from .fields import FieldEnumReadWrite
-from .fields import FieldEnum
+from .base_field import FieldSizeProps
+from .base_field import FieldMiscProps
+from .register_and_field import FieldReadOnly
+from .register_and_field import FieldWriteOnly
+from .register_and_field import FieldReadWrite
+from .base_field import Field
+from .register_and_field import FieldEnumReadOnly
+from .register_and_field import FieldEnumWriteOnly
+from .register_and_field import FieldEnumReadWrite
+from .base_field import FieldEnum
 
-from .fields import FieldAsyncReadOnly
-from .fields import FieldAsyncWriteOnly
-from .fields import FieldAsyncReadWrite
-from .fields import FieldEnumAsyncReadOnly
-from .fields import FieldEnumAsyncWriteOnly
-from .fields import FieldEnumAsyncReadWrite
+from .async_register_and_field import FieldAsyncReadOnly
+from .async_register_and_field import FieldAsyncWriteOnly
+from .async_register_and_field import FieldAsyncReadWrite
+from .async_register_and_field import FieldEnumAsyncReadOnly
+from .async_register_and_field import FieldEnumAsyncWriteOnly
+from .async_register_and_field import FieldEnumAsyncReadWrite
 
 from .memory import MemoryReadOnly, MemoryReadOnlyLegacy
 from .memory import MemoryWriteOnly, MemoryWriteOnlyLegacy

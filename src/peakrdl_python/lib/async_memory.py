@@ -40,10 +40,9 @@ else:
 
 
 if TYPE_CHECKING:
-    from .async_register import AsyncReg, AsyncRegArray
-    from .async_register import ReadableAsyncRegister, WritableAsyncRegister
-    from .async_register import ReadableAsyncRegisterArray, WriteableAsyncRegisterArray
-
+    from .async_register_and_field import AsyncReg, AsyncRegArray
+    from .async_register_and_field import ReadableAsyncRegister, WritableAsyncRegister
+    from .async_register_and_field import ReadableAsyncRegisterArray, WriteableAsyncRegisterArray
 # pylint: disable=duplicate-code
 
 
