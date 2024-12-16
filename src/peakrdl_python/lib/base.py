@@ -43,12 +43,12 @@ else:
 if TYPE_CHECKING:
     from .memory import Memory, MemoryArray
     from .async_memory import AsyncMemory, AsyncMemoryArray
-    from .register import Reg, RegArray
-    from .register import WritableRegister, ReadableRegister
-    from .async_register import AsyncReg, AsyncRegArray
-    from .async_register import ReadableAsyncRegister, WritableAsyncRegister
-    from .register import ReadableRegisterArray, WriteableRegisterArray
-    from .async_register import ReadableAsyncRegisterArray, WriteableAsyncRegisterArray
+    from .register_and_field import Reg, RegArray
+    from .register_and_field import WritableRegister, ReadableRegister
+    from .async_register_and_field import AsyncReg, AsyncRegArray
+    from .async_register_and_field import ReadableAsyncRegister, WritableAsyncRegister
+    from .register_and_field import ReadableRegisterArray, WriteableRegisterArray
+    from .async_register_and_field import ReadableAsyncRegisterArray, WriteableAsyncRegisterArray
 
 UDPStruct = Dict[str, 'UDPType']
 UDPType = Union[str, int, bool, IntEnum, UDPStruct]
@@ -117,7 +117,6 @@ class Base(ABC):
         A dictionary of the user defined properties for the node
         """
         return {}
-
 
 
 class Node(Base, ABC):
@@ -478,7 +477,6 @@ class BaseSection(Node, ABC):
         """
 
 
-
 class Section(BaseSection, ABC):
     """
     base class of non-async sections (AddressMaps and RegFile)
@@ -528,11 +526,6 @@ class Section(BaseSection, ABC):
         Args:
             unroll: Whether to unroll child array or not
         """
-
-    @property
-    @abstractmethod
-    def _callbacks(self) -> Union[NormalCallbackSet, NormalCallbackSetLegacy]:
-        ...
 
 
 class AddressMap(Section, ABC):
