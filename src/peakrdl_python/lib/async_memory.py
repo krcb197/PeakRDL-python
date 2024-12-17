@@ -437,13 +437,12 @@ class _MemoryAsyncWriteOnly(AsyncMemory, ABC):
             if isinstance(self._callbacks, AsyncCallbackSetLegacy):
                 if isinstance(data, list):
                     # need to convert the data to an array before calling
-                    await self._callbacks.write_block_callback(addr=addr,
-                                                               width=self.width,
-                                                               accesswidth=self.width,
-                                                               data=Array(self.array_typecode, data))
-
+                    await self._callbacks.write_block_callback(
+                        addr=addr,
+                        width=self.width,
+                        accesswidth=self.width,
+                        data=Array(self.array_typecode, data))
                 else:
-
                     await self._callbacks.write_block_callback(addr=addr,
                                                                width=self.width,
                                                                accesswidth=self.width,
