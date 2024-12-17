@@ -71,7 +71,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: [ 3.7, 3.8, 3.9, "3.10", "3.11", "3.12", "3.13" ]
+        python-version: [ 3.9, "3.10", "3.11", "3.12", "3.13" ]
 
     steps:
       - uses: actions/checkout@v4
@@ -101,7 +101,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: [ 3.7, 3.8, 3.9, "3.10", "3.11", "3.12", "3.13" ]
+        python-version: [ 3.9, "3.10", "3.11", "3.12", "3.13" ]
 
     steps:
       - uses: actions/checkout@v4
@@ -150,7 +150,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: [ 3.7, 3.8, 3.9, "3.10", "3.11", "3.12", "3.13" ]
+        python-version: [ 3.9, "3.10", "3.11", "3.12", "3.13" ]
 
     steps:
       - uses: actions/checkout@v4
@@ -252,7 +252,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: [3.7, 3.8, 3.9, "3.10", "3.11", "3.12", "3.13"]
+        python-version: [3.9, "3.10", "3.11", "3.12", "3.13"]
 
     steps:
     - uses: actions/checkout@v4
@@ -291,9 +291,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        # reduced matrix because the autoformatter was having issues with python 3.8 so we will
-        # limit this to modern versions of python only
-        python-version: [3.8, 3.9, "3.10", "3.11", "3.12", "3.13"]
+        python-version: [3.9, "3.10", "3.11", "3.12", "3.13"]
 
     steps:
     - uses: actions/checkout@v4

@@ -18,8 +18,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 A set of utility functions that perform supplementary processing on a node in a compiled
 system RDL dataset.
 """
-from typing import Iterable, Optional, List
-import sys
+from typing import Iterable, Optional, List, Protocol
 from itertools import filterfalse
 
 import textwrap
@@ -36,24 +35,15 @@ from systemrdl.component import Component  # type: ignore
 from systemrdl.rdltypes.user_enum import UserEnumMeta  # type: ignore
 from systemrdl import RDLListener, WalkerAction, RDLWalker  # type: ignore
 
-if sys.version_info >= (3, 8):
-    # Python 3.8 introduced the Protocol class to the typing module which is more powerful than the
-    # previous method because it also check the argument names
 
-    from typing import Protocol
-
-    class HideNodeCallback(Protocol):
-        """
-        Callback function that determines whether a node should be hidden or not, this is intended
-        to be used with the RegEX check on the node name
-        """
-        # pylint: disable=too-few-public-methods
-        def __call__(self, node: Node) -> bool:
-            pass
-else:
-    from typing import Callable
-
-    HideNodeCallback=Callable[[Node], bool]
+class HideNodeCallback(Protocol):
+    """
+    Callback function that determines whether a node should be hidden or not, this is intended
+    to be used with the RegEX check on the node name
+    """
+    # pylint: disable=too-few-public-methods
+    def __call__(self, node: Node) -> bool:
+        pass
 
 
 def get_fully_qualified_type_name(node: Node) -> str:

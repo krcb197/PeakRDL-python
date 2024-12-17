@@ -178,20 +178,17 @@ class RegAsyncReadOnly(AsyncReg, ABC):
         # pylint: enable=duplicate-code
 
         if read_callback is not None:
-            # python 3.7 doesn't have the callback defined as protocol so mypy doesn't recognise
-            # the arguments in the call back functions
-            return await read_callback(addr=self.address,  # type: ignore[call-arg]
-                                       width=self.width,  # type: ignore[call-arg]
-                                       accesswidth=self.accesswidth)  # type: ignore[call-arg]
+
+            return await read_callback(addr=self.address,
+                                       width=self.width,
+                                       accesswidth=self.accesswidth)
 
         if read_block_callback is not None:
-            # python 3.7 doesn't have the callback defined as protocol so mypy doesn't recognise
-            # the arguments in the call back functions
             array_read_result = \
-                await read_block_callback(addr=self.address,  # type: ignore[call-arg]
-                                          width=self.width,  # type: ignore[call-arg]
-                                          accesswidth=self.accesswidth,  # type: ignore[call-arg]
-                                          length=1)  # type: ignore[call-arg]
+                await read_block_callback(addr=self.address,
+                                          width=self.width,
+                                          accesswidth=self.accesswidth,
+                                          length=1)
             return array_read_result[0]
 
         raise RuntimeError('This function does not have a useable callback')
@@ -272,35 +269,26 @@ class RegAsyncWriteOnly(AsyncReg, ABC):
         # pylint: enable=duplicate-code
 
         if self._callbacks.write_callback is not None:
-            # python 3.7 doesn't have the callback defined as protocol so mypy doesn't recognise
-            # the arguments in the call back functions
-            # pylint: disable=line-too-long
-            await self._callbacks.write_callback(addr=self.address,  # type: ignore[call-arg]
-                                                 width=self.width,  # type: ignore[call-arg]
-                                                 accesswidth=self.accesswidth,  # type: ignore[call-arg]
-                                                 data=data)  # type: ignore[call-arg]
-            # pylint: enable=line-too-long
+
+            await self._callbacks.write_callback(addr=self.address,
+                                                 width=self.width,
+                                                 accesswidth=self.accesswidth,
+                                                 data=data)
 
         elif self._callbacks.write_block_callback is not None:
-            # python 3.7 doesn't have the callback defined as protocol so mypy doesn't recognise
-            # the arguments in the call back functions
-            # pylint: disable-next=duplicate-code
+
             if isinstance(self._callbacks, AsyncCallbackSetLegacy):
                 data_as_array = Array(get_array_typecode(self.width), [data])
-                # pylint: disable=line-too-long
-                await self._callbacks.write_block_callback(addr=self.address,  # type: ignore[call-arg]
-                                                           width=self.width,  # type: ignore[call-arg]
-                                                           accesswidth=self.accesswidth,  # type: ignore[call-arg]
-                                                           data=data_as_array)  # type: ignore[call-arg]
-                # pylint: enable=line-too-long
+                await self._callbacks.write_block_callback(addr=self.address,
+                                                           width=self.width,
+                                                           accesswidth=self.accesswidth,
+                                                           data=data_as_array)
 
             if isinstance(self._callbacks, AsyncCallbackSet):
-                # pylint: disable=line-too-long
-                await self._callbacks.write_block_callback(addr=self.address,  # type: ignore[call-arg]
-                                                           width=self.width,  # type: ignore[call-arg]
-                                                           accesswidth=self.accesswidth,  # type: ignore[call-arg]
-                                                           data=[data])  # type: ignore[call-arg]
-                # pylint: enable=line-too-long
+                await self._callbacks.write_block_callback(addr=self.address,
+                                                           width=self.width,
+                                                           accesswidth=self.accesswidth,
+                                                           data=[data])
 
         else:
             # pylint: disable-next=duplicate-code
@@ -567,15 +555,11 @@ class AsyncRegArray(BaseRegArray, ABC):
         read_callback = self._callbacks.read_callback
 
         if read_block_callback is not None:
-            # python 3.7 doesn't have the callback defined as protocol so mypy doesn't recognise
-            # the arguments in the call back functions
-            # pylint: disable=line-too-long
-            data_read = \
-                await read_block_callback(addr=self.address,  # type: ignore[call-arg]
-                                          width=self.width,  # type: ignore[call-arg]
-                                          accesswidth=self.accesswidth,  # type: ignore[call-arg]
-                                          length=self.__number_cache_entries)  # type: ignore[call-arg]
-            # pylint: enable=line-too-long
+
+            data_read = await read_block_callback(addr=self.address,
+                                                  width=self.width,
+                                                  accesswidth=self.accesswidth,
+                                                  length=self.__number_cache_entries)
 
             if not isinstance(data_read, Array):
                 raise TypeError('The read block callback is expected to return an array')
@@ -590,13 +574,9 @@ class AsyncRegArray(BaseRegArray, ABC):
                 raise RuntimeError('This address array has not be initialised')
 
             for entry, address in enumerate(self.__register_address_array):
-                # python 3.7 doesn't have the callback defined as protocol so mypy doesn't
-                # recognise the arguments in the call back functions
-                # pylint: disable=line-too-long
-                data_entry = await read_callback(addr=address,  # type: ignore[call-arg]
-                                                 width=self.width,  # type: ignore[call-arg]
-                                                 accesswidth=self.accesswidth)  # type: ignore[call-arg]
-                # pylint: enable=line-too-long
+                data_entry = await read_callback(addr=address,
+                                                 width=self.width,
+                                                 accesswidth=self.accesswidth)
 
                 data_array[entry] = data_entry
 
@@ -615,12 +595,10 @@ class AsyncRegArray(BaseRegArray, ABC):
         write_callback = self._callbacks.write_callback
 
         if write_block_callback is not None:
-            # python 3.7 doesn't have the callback defined as protocol so mypy doesn't recognise
-            # the arguments in the call back functions
-            await write_block_callback(addr=self.address,  # type: ignore[call-arg]
-                                       width=self.width,  # type: ignore[call-arg]
-                                       accesswidth=self.width,  # type: ignore[call-arg]
-                                       data=data)  # type: ignore[call-arg]
+            await write_block_callback(addr=self.address,
+                                       width=self.width,
+                                       accesswidth=self.width,
+                                       data=data)
 
         elif write_callback is not None:
             # there is not write_block_callback defined so we must used individual write
@@ -630,12 +608,10 @@ class AsyncRegArray(BaseRegArray, ABC):
 
             for entry_index, entry_data in enumerate(data):
                 entry_address = self.__register_address_array[entry_index]
-                # python 3.7 doesn't have the callback defined as protocol so mypy doesn't
-                # recognise the arguments in the call back functions
-                await write_callback(addr=entry_address,  # type: ignore[call-arg]
-                                     width=self.width,  # type: ignore[call-arg]
-                                     accesswidth=self.accesswidth,  # type: ignore[call-arg]
-                                     data=entry_data)  # type: ignore[call-arg]
+                await write_callback(addr=entry_address,
+                                     width=self.width,
+                                     accesswidth=self.accesswidth,
+                                     data=entry_data)
 
         else:
             raise RuntimeError('No suitable callback')
@@ -656,15 +632,12 @@ class AsyncRegArray(BaseRegArray, ABC):
         read_callback = self._callbacks.read_callback
 
         if read_block_callback is not None:
-            # python 3.7 doesn't have the callback defined as protocol so mypy doesn't recognise
-            # the arguments in the call back functions
-            # pylint: disable=line-too-long
             data_read = \
-                await read_block_callback(addr=self.address,  # type: ignore[call-arg]
-                                          width=self.width,  # type: ignore[call-arg]
-                                          accesswidth=self.accesswidth,  # type: ignore[call-arg]
-                                          length=self.__number_cache_entries)  # type: ignore[call-arg]
-            # pylint: enable=line-too-long
+                await read_block_callback(addr=self.address,
+                                          width=self.width,
+                                          accesswidth=self.accesswidth,
+                                          length=self.__number_cache_entries)
+
 
             if not isinstance(data_read, List):
                 raise TypeError('The read block callback is expected to return an array')
@@ -679,11 +652,9 @@ class AsyncRegArray(BaseRegArray, ABC):
                 raise RuntimeError('This address array has not be initialised')
 
             for entry, address in enumerate(self.__register_address_array):
-                # python 3.7 doesn't have the callback defined as protocol so mypy doesn't
-                # recognise the arguments in the call back functions
-                data = await read_callback(addr=address,  # type: ignore[call-arg]
-                                           width=self.width,  # type: ignore[call-arg]
-                                           accesswidth=self.accesswidth)  # type: ignore[call-arg]
+                data = await read_callback(addr=address,
+                                           width=self.width,
+                                           accesswidth=self.accesswidth)
 
                 data_list[entry] = data
 
@@ -702,13 +673,10 @@ class AsyncRegArray(BaseRegArray, ABC):
         write_callback = self._callbacks.write_callback
 
         if write_block_callback is not None:
-            # python 3.7 doesn't have the callback defined as protocol so mypy doesn't recognise
-            # the arguments in the call back functions
-            await write_block_callback(addr=self.address,  # type: ignore[call-arg]
-                                       width=self.width,  # type: ignore[call-arg]
-                                       accesswidth=self.width,  # type: ignore[call-arg]
-                                       data=data)  # type: ignore[call-arg]
-
+            await write_block_callback(addr=self.address,
+                                       width=self.width,
+                                       accesswidth=self.width,
+                                       data=data)
         elif write_callback is not None:
             # there is not write_block_callback defined so we must used individual write
 
@@ -717,12 +685,10 @@ class AsyncRegArray(BaseRegArray, ABC):
 
             for entry_index, entry_data in enumerate(data):
                 entry_address = self.__register_address_array[entry_index]
-                # python 3.7 doesn't have the callback defined as protocol so mypy doesn't
-                # recognise the arguments in the call back functions
-                await write_callback(addr=entry_address,  # type: ignore[call-arg]
-                                     width=self.width,  # type: ignore[call-arg]
-                                     accesswidth=self.accesswidth,  # type: ignore[call-arg]
-                                     data=entry_data)  # type: ignore[call-arg]
+                await write_callback(addr=entry_address,
+                                     width=self.width,
+                                     accesswidth=self.accesswidth,
+                                     data=entry_data)
 
         else:
             raise RuntimeError('No suitable callback')
