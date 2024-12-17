@@ -101,13 +101,10 @@ class Memory(Base):
         self.__offset_range_check(offset)
         value = self.value[offset]
         if self.read_callback is not None:
-            # python 3.7 doesn't have the callback defined as protocol so mypy doesn't recognise
-            # the arguments in the call back functions
-
             # pylint does not recognise that the property is returning a callback therefore it
             # is legal to call it.
             # pylint: disable-next=not-callable
-            self.read_callback(offset=offset, value=value)  # type: ignore[call-arg]
+            self.read_callback(offset=offset, value=value)
         return value
 
     def write(self, offset: int, data: int) -> None:
@@ -124,13 +121,10 @@ class Memory(Base):
         """
         self.__offset_range_check(offset)
         if self.write_callback is not None:
-            # python 3.7 doesn't have the callback defined as protocol so mypy doesn't recognise
-            # the arguments in the call back functions
-
             # pylint does not recognise that the property is returning a callback therefore it
             # is legal to call it.
             # pylint: disable-next=not-callable
-            self.write_callback(offset=offset, value=data)  # type: ignore[call-arg]
+            self.write_callback(offset=offset, value=data)
         self.value[offset] = data
 
     @property

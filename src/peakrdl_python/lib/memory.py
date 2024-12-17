@@ -303,14 +303,12 @@ class _MemoryReadOnly(Memory, ABC):
         read_callback = self._callbacks.read_callback
 
         if read_block_callback is not None:
-            # python 3.7 doesn't have the callback defined as protocol so mypy doesn't recognise
-            # the arguments in the call back functions
             addr = self.address_lookup(entry=start_entry)
             data_read = \
-                read_block_callback(addr=addr,  # type: ignore[call-arg]
-                                    width=self.width,  # type: ignore[call-arg]
-                                    accesswidth=self.width,  # type: ignore[call-arg]
-                                    length=number_entries)  # type: ignore[call-arg]
+                read_block_callback(addr=addr,
+                                    width=self.width,
+                                    accesswidth=self.width,
+                                    length=number_entries)
 
             if isinstance(self._callbacks, NormalCallbackSet):
                 if not isinstance(data_read, List):
@@ -335,11 +333,9 @@ class _MemoryReadOnly(Memory, ABC):
 
             for entry in range(number_entries):
                 entry_address = self.address_lookup(entry=start_entry+entry)
-                # python 3.7 doesn't have the callback defined as protocol so mypy doesn't
-                # recognise the arguments in the call back functions
-                data_entry = read_callback(addr=entry_address,  # type: ignore[call-arg]
-                                           width=self.width,  # type: ignore[call-arg]
-                                           accesswidth=self.width)  # type: ignore[call-arg]
+                data_entry = read_callback(addr=entry_address,
+                                           width=self.width,
+                                           accesswidth=self.width)
 
                 data_read[entry] = data_entry
 
@@ -379,14 +375,12 @@ class _MemoryReadOnly(Memory, ABC):
         read_callback = self._callbacks.read_callback
 
         if read_block_callback is not None:
-            # python 3.7 doesn't have the callback defined as protocol so mypy doesn't recognise
-            # the arguments in the call back functions
             addr = self.address_lookup(entry=start_entry)
             data_read = \
-                read_block_callback(addr=addr,  # type: ignore[call-arg]
-                                    width=self.width,  # type: ignore[call-arg]
-                                    accesswidth=self.width,  # type: ignore[call-arg]
-                                    length=number_entries)  # type: ignore[call-arg]
+                read_block_callback(addr=addr,
+                                    width=self.width,
+                                    accesswidth=self.width,
+                                    length=number_entries)
 
             if isinstance(self._callbacks, NormalCallbackSet):
                 if not isinstance(data_read, List):
@@ -411,11 +405,9 @@ class _MemoryReadOnly(Memory, ABC):
 
             for entry in range(number_entries):
                 entry_address = self.address_lookup(entry=start_entry+entry)
-                # python 3.7 doesn't have the callback defined as protocol so mypy doesn't
-                # recognise the arguments in the call back functions
-                data_entry = read_callback(addr=entry_address,  # type: ignore[call-arg]
-                                           width=self.width,  # type: ignore[call-arg]
-                                           accesswidth=self.width)  # type: ignore[call-arg]
+                data_entry = read_callback(addr=entry_address,
+                                           width=self.width,
+                                           accesswidth=self.width)
 
                 data_read[entry] = data_entry
 
@@ -565,51 +557,39 @@ class _MemoryWriteOnly(Memory, ABC):
                              f'but got {len(data):d}')
 
         if self._callbacks.write_block_callback is not None:
-            # python 3.7 doesn't have the callback defined as protocol so mypy doesn't recognise
-            # the arguments in the call back functions
             addr = self.address_lookup(entry=start_entry)
             if isinstance(self._callbacks, NormalCallbackSet):
                 if isinstance(data, Array):
-                    # pylint: disable=line-too-long
-                    self._callbacks.write_block_callback(addr=addr,  # type: ignore[call-arg]
-                                                         width=self.width,  # type: ignore[call-arg]
-                                                         accesswidth=self.width,  # type: ignore[call-arg]
-                                                         data=data.tolist())  # type: ignore[call-arg]
-                    # pylint: enable=line-too-long
+                    self._callbacks.write_block_callback(addr=addr,
+                                                         width=self.width,
+                                                         accesswidth=self.width,
+                                                         data=data.tolist())
                 else:
-                    # pylint: disable=line-too-long
-                    self._callbacks.write_block_callback(addr=addr,  # type: ignore[call-arg]
-                                                         width=self.width,  # type: ignore[call-arg]
-                                                         accesswidth=self.width,  # type: ignore[call-arg]
-                                                         data=data)  # type: ignore[call-arg]
-                    # pylint: enable=line-too-long
+                    self._callbacks.write_block_callback(addr=addr,
+                                                         width=self.width,
+                                                         accesswidth=self.width,
+                                                         data=data)
             if isinstance(self._callbacks, NormalCallbackSetLegacy):
                 if isinstance(data, list):
                     # need to convert the data to an array before calling
-                    # pylint: disable=line-too-long
-                    self._callbacks.write_block_callback(addr=addr,  # type: ignore[call-arg]
-                                                         width=self.width,  # type: ignore[call-arg]
-                                                         accesswidth=self.width,  # type: ignore[call-arg]
-                                                         data=Array(self.array_typecode, data))  # type: ignore[call-arg]
-                    # pylint: enable=line-too-long
+                    self._callbacks.write_block_callback(addr=addr,
+                                                         width=self.width,
+                                                         accesswidth=self.width,
+                                                         data=Array(self.array_typecode, data))
                 else:
-                    # pylint: disable=line-too-long
-                    self._callbacks.write_block_callback(addr=addr,  # type: ignore[call-arg]
-                                                         width=self.width,  # type: ignore[call-arg]
-                                                         accesswidth=self.width,  # type: ignore[call-arg]
-                                                         data=data)  # type: ignore[call-arg]
-                    # pylint: enable=line-too-long
+                    self._callbacks.write_block_callback(addr=addr,
+                                                         width=self.width,
+                                                         accesswidth=self.width,
+                                                         data=data)
 
         elif self._callbacks.write_callback is not None:
             # there is not write_block_callback defined so we must used individual write
             for entry_index, entry_data in enumerate(data):
                 entry_address = self.address_lookup(entry=start_entry+entry_index)
-                # python 3.7 doesn't have the callback defined as protocol so mypy doesn't
-                # recognise the arguments in the call back functions
-                self._callbacks.write_callback(addr=entry_address,  # type: ignore[call-arg]
-                                               width=self.width,  # type: ignore[call-arg]
-                                               accesswidth=self.width,  # type: ignore[call-arg]
-                                               data=entry_data)  # type: ignore[call-arg]
+                self._callbacks.write_callback(addr=entry_address,
+                                               width=self.width,
+                                               accesswidth=self.width,
+                                               data=entry_data)
 
         else:
             raise RuntimeError('No suitable callback')

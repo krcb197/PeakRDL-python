@@ -23,12 +23,8 @@ from typing import List, Union, Dict, cast
 {% if asyncoutput %}
 import sys
 import asyncio
-if sys.version_info < (3, 8):
-    import asynctest  # type: ignore[import]
-    from asynctest.mock import Mock  # type: ignore[import]
-else:
-    import unittest
-    from unittest.mock import Mock
+import unittest
+from unittest.mock import Mock
 {% else %}
 import unittest
 from unittest.mock import Mock
