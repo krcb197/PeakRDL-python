@@ -3,7 +3,8 @@ Components to use in unit tests
 """
 import unittest
 from unittest.mock import NonCallableMagicMock
-from typing import List, Iterator, Dict, Type, Any, Union
+from collections.abc import Iterator
+from typing import Any, Union
 from abc import ABC
 import logging
 
@@ -16,13 +17,13 @@ class ReadOnlyRegisterToTest(RegReadOnly):
     """
     Class to represent a register in the register model
     """
-    __slots__: List[str] = ['__field']
+    __slots__: list[str] = ['__field']
 
     class FieldToTest(FieldReadOnly):
         """
         Class to represent a register field in the register model
         """
-        __slots__: List[str] = []
+        __slots__: list[str] = []
 
     # pylint: disable=duplicate-code,too-many-arguments
     def __init__(self, *,
@@ -77,7 +78,7 @@ class ReadOnlyRegisterToTest(RegReadOnly):
         return self.__field
 
     @property
-    def systemrdl_python_child_name_map(self) -> Dict[str, str]:
+    def systemrdl_python_child_name_map(self) -> dict[str, str]:
         """
         In some cases systemRDL names need to be converted make them python safe, this dictionary
         is used to map the original systemRDL names to the names of the python attributes of this
@@ -94,14 +95,14 @@ class WriteOnlyRegisterToTest(RegWriteOnly):
     """
     Class to represent a register in the register model
     """
-    __slots__: List[str] = ['__field']
+    __slots__: list[str] = ['__field']
 
     # pylint: disable=duplicate-code,too-many-arguments
     class FieldToTest(FieldWriteOnly):
         """
         Class to represent a register field in the register model
         """
-        __slots__: List[str] = []
+        __slots__: list[str] = []
 
     def __init__(self, *,
                  address: int,
@@ -158,7 +159,7 @@ class WriteOnlyRegisterToTest(RegWriteOnly):
         return self.__field
 
     @property
-    def systemrdl_python_child_name_map(self) -> Dict[str, str]:
+    def systemrdl_python_child_name_map(self) -> dict[str, str]:
         """
         In some cases systemRDL names need to be converted make them python safe, this dictionary
         is used to map the original systemRDL names to the names of the python attributes of this
@@ -175,14 +176,14 @@ class ReadWriteRegisterToTest(RegReadWrite):
     """
     Class to represent a register in the register model
     """
-    __slots__: List[str] = ['__field']
+    __slots__: list[str] = ['__field']
 
     # pylint: disable=duplicate-code,too-many-arguments
     class FieldToTest(FieldReadWrite):
         """
         Class to represent a register field in the register model
         """
-        __slots__: List[str] = []
+        __slots__: list[str] = []
 
     def __init__(self, *,
                  address: int,
@@ -246,7 +247,7 @@ class ReadWriteRegisterToTest(RegReadWrite):
         raise NotImplementedError('Not implemented for the purpose of tests')
 
     @property
-    def systemrdl_python_child_name_map(self) -> Dict[str, str]:
+    def systemrdl_python_child_name_map(self) -> dict[str, str]:
         """
         In some cases systemRDL names need to be converted make them python safe, this dictionary
         is used to map the original systemRDL names to the names of the python attributes of this
@@ -263,10 +264,10 @@ class ReadOnlyRegisterArrayToTest(RegReadOnlyArray):
     """
     Class to represent a register array in the register model
     """
-    __slots__: List[str] = []
+    __slots__: list[str] = []
 
     @property
-    def _element_datatype(self) -> Type[Node]:
+    def _element_datatype(self) -> type[Node]:
         return ReadOnlyRegisterToTest
 
 
@@ -274,10 +275,10 @@ class WriteOnlyRegisterArrayToTest(RegWriteOnlyArray):
     """
     Class to represent a register array in the register model
     """
-    __slots__: List[str] = []
+    __slots__: list[str] = []
 
     @property
-    def _element_datatype(self) -> Type[Node]:
+    def _element_datatype(self) -> type[Node]:
         return WriteOnlyRegisterToTest
 
 
@@ -285,10 +286,10 @@ class ReadWriteRegisterArrayToTest(RegReadWriteArray):
     """
     Class to represent a register array in the register model
     """
-    __slots__: List[str] = []
+    __slots__: list[str] = []
 
     @property
-    def _element_datatype(self) -> Type[Node]:
+    def _element_datatype(self) -> type[Node]:
         return ReadWriteRegisterToTest
 
 
@@ -336,7 +337,8 @@ class CallBackTestWrapper(unittest.TestCase, ABC):
         assert isinstance(data, int)
         self.logger.info(f'write data:{data:X} to address:0x{addr:X}')
 
-    def read_block_addr_space(self, addr: int, width: int, accesswidth: int, length: int) -> List:
+    def read_block_addr_space(self, addr: int, width: int,
+                              accesswidth: int, length: int) -> list[int]:
         """
         Callback to simulate the operation of the package
 
@@ -357,7 +359,7 @@ class CallBackTestWrapper(unittest.TestCase, ABC):
         return [0 for x in range(length)]
 
     def write_block_addr_space(self, addr: int,
-                               width: int, accesswidth: int, data: List[int]) -> None:
+                               width: int, accesswidth: int, data: list[int]) -> None:
         """
         Callback to simulate the operation of the package
 
@@ -373,7 +375,7 @@ class CallBackTestWrapper(unittest.TestCase, ABC):
         assert isinstance(addr, int)
         assert isinstance(width, int)
         assert isinstance(accesswidth, int)
-        assert isinstance(data, List)
+        assert isinstance(data, list)
 
     def setUp(self) -> None:
         # the callbacks need to a faked magic mock so that the methods can be patched in tests

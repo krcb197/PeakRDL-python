@@ -19,7 +19,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 {% include "header_tb.py.jinja" with context %}
 
 {% if legacy_block_access %}from array import array as Array{% endif %}
-from typing import List, Union, Dict, cast
+from typing import Union, cast
 {% if asyncoutput %}
 import sys
 import asyncio
