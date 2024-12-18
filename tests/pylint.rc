@@ -45,7 +45,7 @@ limit-inference-results=100
 
 # List of plugins (as comma separated values of python module names) to load,
 # usually to register additional checkers.
-load-plugins=
+load-plugins=pylint.extensions.typing,pylint.extensions.bad_builtin
 
 # Pickle collected data for later comparisons.
 persistent=yes
@@ -255,6 +255,7 @@ variable-naming-style=snake_case
 # naming-style.
 #variable-rgx=
 
+bad-functions=print,exec,input
 
 [FORMAT]
 
