@@ -21,13 +21,13 @@ import keyword
 from typing import List, Union, Type, Callable, Dict, Optional
 from dataclasses import dataclass
 
-from systemrdl.node import RegNode  # type: ignore
-from systemrdl.node import FieldNode  # type: ignore
-from systemrdl.node import AddrmapNode  # type: ignore
-from systemrdl.node import RegfileNode  # type: ignore
-from systemrdl.node import MemNode  # type: ignore
-from systemrdl.node import RootNode  # type: ignore
-from systemrdl.node import Node  # type: ignore
+from systemrdl.node import RegNode
+from systemrdl.node import FieldNode
+from systemrdl.node import AddrmapNode
+from systemrdl.node import RegfileNode
+from systemrdl.node import MemNode
+from systemrdl.node import RootNode
+from systemrdl.node import Node
 
 from .lib import RegReadOnly
 from .lib import RegWriteOnly
@@ -302,14 +302,15 @@ def is_safe_addrmap_name(node: AddrmapNode, proposed_name: Optional[str] = None)
 
     return True
 
+assert issubclass(RegNode, Node)
 
 @dataclass()
 class _NodeProcessingScheme:
-    safe_func: Callable[[Node], bool]
+    safe_func: Callable[[Node, Optional[str]], bool]
     prefix: str
 
 
-_node_processing: Dict[Node, _NodeProcessingScheme] = {
+_node_processing: Dict[type[Node], _NodeProcessingScheme] = {
     RegNode: _NodeProcessingScheme(is_safe_register_name, 'register'),
     FieldNode: _NodeProcessingScheme(is_safe_field_name, 'field'),
     RegfileNode: _NodeProcessingScheme(is_safe_regfile_name, 'regfile'),
@@ -341,7 +342,7 @@ def safe_node_name(node: Union[RegNode,
         node_type = type(node)
 
         node_name = node.inst_name
-        if not _node_processing[node_type].safe_func(node):
+        if not _node_processing[node_type].safe_func(node, None):
             name_pre: str = _node_processing[node_type].prefix
             node_name = name_pre + '_' + node_name
 

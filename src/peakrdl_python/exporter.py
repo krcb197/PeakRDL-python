@@ -24,14 +24,14 @@ from shutil import copy
 from typing import List, NoReturn, Iterable, Tuple, Dict, Any, Optional
 
 import jinja2 as jj
-from systemrdl import RDLWalker  # type: ignore
+from systemrdl import RDLWalker
 
-from systemrdl.node import RootNode, Node, RegNode, AddrmapNode, RegfileNode  # type: ignore
-from systemrdl.node import FieldNode, MemNode, AddressableNode  # type: ignore
-from systemrdl.node import SignalNode  # type: ignore
-from systemrdl.rdltypes import OnReadType, OnWriteType, PropertyReference  # type: ignore
-from systemrdl.rdltypes.user_enum import UserEnum, UserEnumMeta  # type: ignore
-from systemrdl.rdltypes.user_struct import UserStruct  # type: ignore
+from systemrdl.node import RootNode, Node, RegNode, AddrmapNode, RegfileNode
+from systemrdl.node import FieldNode, MemNode, AddressableNode
+from systemrdl.node import SignalNode
+from systemrdl.rdltypes import OnReadType, OnWriteType, PropertyReference
+from systemrdl.rdltypes.user_enum import UserEnum, UserEnumMeta
+from systemrdl.rdltypes.user_struct import UserStruct
 
 from .systemrdl_node_utility_functions import get_reg_readable_fields, get_reg_writable_fields, \
     get_table_block, get_dependent_component, \
@@ -49,6 +49,7 @@ from .safe_name_utility import get_python_path_segments, safe_node_name
 from ._node_walkers import AddressMaps, OwnedbyAddressMap
 
 from .__about__ import __version__
+
 
 file_path = os.path.dirname(__file__)
 
@@ -717,6 +718,9 @@ class PythonExporter:
         """
 
         self.node_type_name = {}
+
+        if node.parent is None:
+            raise RuntimeError('node.parent can not be None')
 
         for child_node in get_dependent_component(node.parent, hide_node_func):
 

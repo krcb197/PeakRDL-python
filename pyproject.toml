@@ -7,7 +7,7 @@ name = "peakrdl-python"
 dynamic = ["version"]
 requires-python = ">=3.9"
 dependencies = [
-    "systemrdl-compiler>=1.25.0",
+    "systemrdl-compiler>=1.28.0",
     "jinja2",
     "typing-extensions;python_version<'3.11'"
 ]

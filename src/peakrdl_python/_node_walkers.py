@@ -19,8 +19,8 @@ Node walkers to be used in the generated of the output code
 """
 from typing import Optional, List, Union, Iterator
 
-from systemrdl import RDLListener, WalkerAction # type: ignore
-from systemrdl.node import RegNode, MemNode, FieldNode, AddrmapNode, RegfileNode # type: ignore
+from systemrdl import RDLListener, WalkerAction
+from systemrdl.node import RegNode, MemNode, FieldNode, AddrmapNode, RegfileNode
 
 from .systemrdl_node_utility_functions import HideNodeCallback
 
@@ -56,13 +56,13 @@ class OwnedbyAddressMap(RDLListener):
         super().__init__()
 
         self.registers: List[RegNode] = []
-        self.fields: List[RegNode] = []
-        self.memories: List[RegNode] = []
+        self.fields: List[FieldNode] = []
+        self.memories: List[MemNode] = []
         self.addr_maps: List[AddrmapNode] = []
         self.reg_files: List[RegfileNode] = []
         self._hidden_registers: List[RegNode] = []
-        self._hidden_fields: List[RegNode] = []
-        self._hidden_memories: List[RegNode] = []
+        self._hidden_fields: List[FieldNode] = []
+        self._hidden_memories: List[MemNode] = []
         self._hidden_addr_maps: List[AddrmapNode] = []
         self._hidden_reg_files: List[RegfileNode] = []
         self.__hide_node_callback = hide_node_callback
