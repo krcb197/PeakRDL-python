@@ -18,7 +18,8 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 utility functions for turning potentially unsafe names from the system RDL and making them safe
 """
 import keyword
-from typing import List, Union, Type, Callable, Dict, Optional
+from typing import Union, Optional
+from collections.abc import Callable
 from dataclasses import dataclass
 
 from systemrdl.node import RegNode
@@ -43,7 +44,7 @@ from .lib import AddressMap
 from .lib.base import Base
 
 
-def _build_class_method_list(peakrld_python_class: Type[Base]) -> List[str]:
+def _build_class_method_list(peakrld_python_class: type[Base]) -> list[str]:
     return list(filter(lambda x: not x[0] == '_', dir(peakrld_python_class)))
 
 
@@ -310,7 +311,7 @@ class _NodeProcessingScheme:
     prefix: str
 
 
-_node_processing: Dict[type[Node], _NodeProcessingScheme] = {
+_node_processing: dict[type[Node], _NodeProcessingScheme] = {
     RegNode: _NodeProcessingScheme(is_safe_register_name, 'register'),
     FieldNode: _NodeProcessingScheme(is_safe_field_name, 'field'),
     RegfileNode: _NodeProcessingScheme(is_safe_regfile_name, 'regfile'),
@@ -367,7 +368,7 @@ def get_python_path_segments(node: Union[RegNode,
                                          FieldNode,
                                          RegfileNode,
                                          AddrmapNode,
-                                         MemNode]) -> List[str]:
+                                         MemNode]) -> list[str]:
     """
     Behaves similarly to the get_path_segments method of a system RDL node but names are converted
     using the following pattern:
@@ -384,7 +385,7 @@ def get_python_path_segments(node: Union[RegNode,
                                        RegfileNode,
                                        AddrmapNode,
                                        MemNode],
-                     child_list: List[str]) -> List[str]:
+                     child_list: list[str]) -> list[str]:
         if isinstance(child_node.parent, RootNode):
             return child_list
         child_node_safe_name = safe_node_name(child_node)

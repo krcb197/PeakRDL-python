@@ -18,7 +18,8 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 A set of utility functions that perform supplementary processing on a node in a compiled
 system RDL dataset.
 """
-from typing import Iterable, Optional, List, Protocol
+from typing import Optional, Protocol
+from collections.abc import Iterable
 from itertools import filterfalse
 
 import textwrap
@@ -471,7 +472,7 @@ def get_field_default_value(node: FieldNode) -> Optional[int]:
     raise TypeError(f'unhandled type for field default type={type(value)}')
 
 
-def get_enum_values(enum: UserEnumMeta) -> List[int]:
+def get_enum_values(enum: UserEnumMeta) -> list[int]:
     """
 
     Args:
@@ -486,7 +487,7 @@ def get_enum_values(enum: UserEnumMeta) -> List[int]:
     return [e.value for e in enum]
 
 
-def get_properties_to_include(node: Node, udp_to_include: Optional[List[str]]) -> List[str]:
+def get_properties_to_include(node: Node, udp_to_include: Optional[list[str]]) -> list[str]:
     """
 
 

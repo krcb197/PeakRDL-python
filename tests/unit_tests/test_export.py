@@ -8,7 +8,6 @@ import unittest
 import os
 import tempfile
 import sys
-from typing import List
 import re
 from itertools import chain, permutations, product
 from pathlib import Path
@@ -139,7 +138,7 @@ class TestExportUDP(unittest.TestCase):
     test_case_reg_model_cls = test_case_top_level + '_cls'
 
     @contextmanager
-    def build_wrappers_and_import(self, udp_list:List[str]):
+    def build_wrappers_and_import(self, udp_list:list[str]):
         """
         Context manager to build the python wrappers for a value of show_hidden, then import them
         and clean up afterwards

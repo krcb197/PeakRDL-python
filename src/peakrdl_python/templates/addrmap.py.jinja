@@ -19,12 +19,9 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 {% include "header.py.jinja" with context %}
 {% if uses_enum %}from enum import EnumMeta{% endif %}
 from enum import IntEnum, unique
-from typing import Tuple
 from typing import Iterator
-from typing import List
 from typing import Optional
 from typing import Union
-from typing import Dict
 from typing import Type
 {% if asyncoutput -%}
 from typing import AsyncGenerator
@@ -145,7 +142,7 @@ class {{get_fully_qualified_type_name(node)}}_cls({% if asyncoutput %}Async{% en
     {{get_table_block(node) | indent}}
     """
 
-    __slots__ : List[str] = [{%- for child_node in node.children(unroll=False) -%}'__{{child_node.inst_name}}'{% if not loop.last %}, {% endif %}{%- endfor %}]
+    __slots__ : list[str] = [{%- for child_node in node.children(unroll=False) -%}'__{{child_node.inst_name}}'{% if not loop.last %}, {% endif %}{%- endfor %}]
 
     {% if asyncoutput %}AsyncCallbackSet{% else %}NormalCallbackSet{% endif %}
 
@@ -193,7 +190,7 @@ class {{get_fully_qualified_type_name(node)}}_cls({% if asyncoutput %}Async{% en
     {% endfor %}
 
     @property
-    def systemrdl_python_child_name_map(self) -> Dict[str, str]:
+    def systemrdl_python_child_name_map(self) -> dict[str, str]:
         """
         In some cases systemRDL names need to be converted make them python safe, this dictionary
         is used to map the original systemRDL names to the names of the python attributes of this
@@ -232,13 +229,13 @@ class {{get_fully_qualified_type_name(node)}}_array_cls({% if asyncoutput %}Asyn
     """
     Class to represent a regfile array in the register model
     """
-    __slots__: List[str] = []
+    __slots__: list[str] = []
 
     def __init__(self, logger_handle: str, inst_name: str,
                  parent: Union[{% if asyncoutput %}Async{% endif %}AddressMap, {% if asyncoutput %}Async{% endif %}RegFile],
                  address: int,
                  stride: int,
-                 dimensions: Tuple[int, ...]):
+                 dimensions: tuple[int, ...]):
 
         super().__init__(logger_handle=logger_handle, inst_name=inst_name,
                          parent=parent, address=address,
@@ -258,7 +255,7 @@ class {{get_fully_qualified_type_name(node)}}_cls({% if asyncoutput %}Async{% en
     {{get_table_block(node) | indent}}
     """
 
-    __slots__ : List[str] = [{%- for child_node in node.children(unroll=False) -%}{%- if isinstance(child_node, systemrdlRegNode) or isinstance(child_node, systemrdlRegfileNode) or isinstance(child_node, systemrdlAddrmapNode) or isinstance(child_node, systemrdlMemNode) -%}'__{{child_node.inst_name}}'{% if not loop.last %}, {% endif %}{% endif %}{%- endfor %}]
+    __slots__ : list[str] = [{%- for child_node in node.children(unroll=False) -%}{%- if isinstance(child_node, systemrdlRegNode) or isinstance(child_node, systemrdlRegfileNode) or isinstance(child_node, systemrdlAddrmapNode) or isinstance(child_node, systemrdlMemNode) -%}'__{{child_node.inst_name}}'{% if not loop.last %}, {% endif %}{% endif %}{%- endfor %}]
 
     def __init__(self, *,
                  address:int {%- if node == top_node -%}={{top_node.absolute_address}}{%- endif -%},
@@ -312,7 +309,7 @@ class {{get_fully_qualified_type_name(node)}}_cls({% if asyncoutput %}Async{% en
         {% endfor %}
 
     @property
-    def systemrdl_python_child_name_map(self) -> Dict[str, str]:
+    def systemrdl_python_child_name_map(self) -> dict[str, str]:
         """
         In some cases systemRDL names need to be converted make them python safe, this dictionary
         is used to map the original systemRDL names to the names of the python attributes of this
@@ -357,13 +354,13 @@ class {{get_fully_qualified_type_name(node)}}_array_cls({% if asyncoutput %}Asyn
     """
     Class to represent a addrmap array in the register model
     """
-    __slots__: List[str] = []
+    __slots__: list[str] = []
 
     def __init__(self, logger_handle: str, inst_name: str,
                  parent: {% if asyncoutput %}Async{% endif %}AddressMap,
                  address: int,
                  stride: int,
-                 dimensions: Tuple[int, ...]):
+                 dimensions: tuple[int, ...]):
 
         super().__init__(logger_handle=logger_handle, inst_name=inst_name,
                          parent=parent, address=address,

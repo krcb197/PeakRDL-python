@@ -18,7 +18,6 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 {% include "header_tb.py.jinja" with context %}
 from array import array as Array
-from typing import List
 {% if asyncoutput %}
 import sys
 import asyncio
@@ -59,19 +58,19 @@ from {% if skip_lib_copy %}src.peakrdl_python.{% else %}..{% endif %}sim_lib.dum
 {% if asyncoutput %}async {% endif %}def read_callback(addr: int, width: int, accesswidth: int) -> int:
     return {% if asyncoutput %}await {% endif %}read_addr_space(addr=addr, width=width, accesswidth=accesswidth)
 
-{% if asyncoutput %}async {%endif %}def read_block_callback(addr: int, width: int, accesswidth: int, length: int) -> {% if legacy_block_access %}Array{% else %}List{% endif %}:
+{% if asyncoutput %}async {%endif %}def read_block_callback(addr: int, width: int, accesswidth: int, length: int) -> {% if legacy_block_access %}Array{% else %}list[int]{% endif %}:
     return {% if asyncoutput %}await {% endif %}read_block_addr_space(addr=addr, width=width, accesswidth=accesswidth, length=length)
 
-{% if asyncoutput %}async {%endif %}def read_block_callback_alt(addr: int, width: int, accesswidth: int, length: int) -> {% if not legacy_block_access %}Array{% else %}List{% endif %}:
+{% if asyncoutput %}async {%endif %}def read_block_callback_alt(addr: int, width: int, accesswidth: int, length: int) -> {% if not legacy_block_access %}Array{% else %}list[int]{% endif %}:
     return {% if asyncoutput %}await {% endif %}read_block_addr_space_alt(addr=addr, width=width, accesswidth=accesswidth, length=length)
 
 {% if asyncoutput %}async {%endif %}def write_callback(addr: int, width: int, accesswidth: int,  data: int) -> None:
     {% if asyncoutput %}await {% endif %}write_addr_space(addr=addr, width=width, accesswidth=accesswidth, data=data)
 
-{% if asyncoutput %}async {%endif %}def write_block_callback(addr: int, width: int, accesswidth: int,  data: {% if legacy_block_access %}Array{% else %}List{% endif %}) -> None:
+{% if asyncoutput %}async {%endif %}def write_block_callback(addr: int, width: int, accesswidth: int,  data: {% if legacy_block_access %}Array{% else %}list[int]{% endif %}) -> None:
     {% if asyncoutput %}await {% endif %}write_block_addr_space(addr=addr, width=width, accesswidth=accesswidth, data=data)
 
-{% if asyncoutput %}async {%endif %}def write_block_callback_alt(addr: int, width: int, accesswidth: int,  data: {% if not legacy_block_access %}Array{% else %}List{% endif %}) -> None:
+{% if asyncoutput %}async {%endif %}def write_block_callback_alt(addr: int, width: int, accesswidth: int,  data: {% if not legacy_block_access %}Array{% else %}list[int]{% endif %}) -> None:
     {% if asyncoutput %}await {% endif %}write_block_addr_space_alt(addr=addr, width=width, accesswidth=accesswidth, data=data)
 
 

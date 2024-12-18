@@ -34,7 +34,7 @@ class {{get_fully_qualified_type_name(node)}}_cls(Memory{% if asyncoutput %}Asyn
     {{get_table_block(node) | indent}}
     """
 
-    __slots__ : List[str] = [{%- for child_node in node.children(unroll=False) -%}{%- if isinstance(child_node, systemrdlRegNode) -%}'__{{child_node.inst_name}}'{% if not loop.last %}, {% endif %}{% endif %}{%- endfor %}]
+    __slots__ : list[str] = [{%- for child_node in node.children(unroll=False) -%}{%- if isinstance(child_node, systemrdlRegNode) -%}'__{{child_node.inst_name}}'{% if not loop.last %}, {% endif %}{% endif %}{%- endfor %}]
 
     def __init__(self,
                  address: int,
@@ -76,7 +76,7 @@ class {{get_fully_qualified_type_name(node)}}_cls(Memory{% if asyncoutput %}Asyn
     {{ child_register_getter(node) }}
 
     @property
-    def systemrdl_python_child_name_map(self) -> Dict[str, str]:
+    def systemrdl_python_child_name_map(self) -> dict[str, str]:
         """
         In some cases systemRDL names need to be converted make them python safe, this dictionary
         is used to map the original systemRDL names to the names of the python attributes of this
@@ -105,13 +105,13 @@ class {{get_fully_qualified_type_name(node)}}_array_cls(Memory{% if asyncoutput 
     """
     Class to represent a memory array in the register model
     """
-    __slots__: List[str] = []
+    __slots__: list[str] = []
 
     def __init__(self, logger_handle: str, inst_name: str,
                  parent: {% if asyncoutput %}Async{% endif %}AddressMap,
                  address: int,
                  stride: int,
-                 dimensions: Tuple[int, ...]):
+                 dimensions: tuple[int, ...]):
 
         super().__init__(logger_handle=logger_handle, inst_name=inst_name,
                          parent=parent, address=address,

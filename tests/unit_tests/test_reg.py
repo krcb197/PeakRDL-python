@@ -2,7 +2,8 @@
 Test for basic register reading
 """
 import unittest
-from typing import Tuple, Optional, Iterator, Union, Dict, Type, cast
+from typing import Optional, cast, Union
+from collections.abc import Iterator
 from abc import ABC, abstractmethod
 from unittest.mock import patch
 
@@ -14,6 +15,7 @@ from .simple_components import ReadOnlyRegisterToTest, WriteOnlyRegisterToTest, 
     ReadWriteRegisterToTest, CallBackTestWrapper
 
 # pylint: disable=logging-not-lazy,logging-fstring-interpolation
+
 
 class RegTestBase(CallBackTestWrapper, ABC):
     """
@@ -30,7 +32,7 @@ class RegTestBase(CallBackTestWrapper, ABC):
 
     @property
     @abstractmethod
-    def reg_type(self) -> Type[Union[ReadOnlyRegisterToTest,
+    def reg_type(self) -> type[Union[ReadOnlyRegisterToTest,
                                WriteOnlyRegisterToTest,
                                ReadWriteRegisterToTest]]:
         """
@@ -50,7 +52,7 @@ class RegTestBase(CallBackTestWrapper, ABC):
                          address: int,
                          logger_handle: str,
                          inst_name: str,
-                         reg_type: Type[Union[ReadOnlyRegisterToTest,
+                         reg_type: type[Union[ReadOnlyRegisterToTest,
                                               WriteOnlyRegisterToTest,
                                               ReadWriteRegisterToTest]]):
 
@@ -65,12 +67,12 @@ class RegTestBase(CallBackTestWrapper, ABC):
                                       address=address)
 
             def get_memories(self, unroll: bool = False) -> \
-                    Iterator[Union[Memory, Tuple[Memory, ...]]]:
+                    Iterator[Union[Memory, tuple[Memory, ...]]]:
                 raise NotImplementedError('Not implemented in the testing')
 
             def get_sections(self, unroll: bool = False) -> \
                     Iterator[Union[Union[AddressMap, RegFile],
-                                   Tuple[Union[AddressMap, RegFile], ...]]]:
+                                   tuple[Union[AddressMap, RegFile], ...]]]:
                 raise NotImplementedError('Not implemented in the testing')
 
             def get_registers(self, unroll: bool = False) -> \
@@ -81,7 +83,7 @@ class RegTestBase(CallBackTestWrapper, ABC):
                 raise NotImplementedError('Not implemented in the testing')
 
             @property
-            def systemrdl_python_child_name_map(self) -> Dict[str, str]:
+            def systemrdl_python_child_name_map(self) -> dict[str, str]:
 
                 return {
                     'dut': 'dut'
@@ -117,7 +119,7 @@ class TestReadOnly(RegTestBase):
         return 0
 
     @property
-    def reg_type(self) -> Type[ReadOnlyRegisterToTest]:
+    def reg_type(self) -> type[ReadOnlyRegisterToTest]:
         """
         Register Class to test
         """
@@ -196,7 +198,7 @@ class TestWrite(RegTestBase):
         return 0
 
     @property
-    def reg_type(self) -> Type[WriteOnlyRegisterToTest]:
+    def reg_type(self) -> type[WriteOnlyRegisterToTest]:
         """
         Register Class to test
         """
@@ -247,7 +249,7 @@ class TestReadWrite(RegTestBase):
         return 0
 
     @property
-    def reg_type(self) -> Type[ReadWriteRegisterToTest]:
+    def reg_type(self) -> type[ReadWriteRegisterToTest]:
         """
         Register Class to test
         """

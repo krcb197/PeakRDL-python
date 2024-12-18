@@ -17,7 +17,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #}
 
 {% include "header_tb.py.jinja" with context %}
-from typing import List, Union, Dict
+from typing import Union
 from array import array as Array
 {% if asyncoutput %}
 import sys
@@ -568,7 +568,7 @@ class {{fq_block_name}}_single_access({{top_node.type_name}}_TestCase): # type: 
         """
         Walk the register map and check every register read_fields method
         """
-        reference_read_fields: Dict[str, Union[bool, IntEnum, int]]
+        reference_read_fields: dict[str, Union[bool, IntEnum, int]]
         {% for node in owned_elements.registers -%}
         {% if node.has_sw_readable %}
         with self.subTest(msg='register: {{'.'.join(node.get_path_segments())}}'):
@@ -627,7 +627,7 @@ class {{fq_block_name}}_single_access({{top_node.type_name}}_TestCase): # type: 
         """
         Walk the register map and check every register read_fields method
         """
-        reference_read_fields: Dict[str, Union[bool, IntEnum, int]]
+        reference_read_fields: dict[str, Union[bool, IntEnum, int]]
         {% for node in owned_elements.registers -%}
         {% if node.has_sw_readable %}
         # test context manager to register:
@@ -700,7 +700,7 @@ class {{fq_block_name}}_single_access({{top_node.type_name}}_TestCase): # type: 
         Test the read modify write context manager
         """
         rut:Reg{% if asyncoutput %}Async{% endif %}ReadWrite
-        {% if asyncoutput %}async {% endif %}def write_field_cominbinations(reg: Reg{% if asyncoutput %}Async{% endif %}ReadWrite, writable_fields:List[str]) -> None:
+        {% if asyncoutput %}async {% endif %}def write_field_cominbinations(reg: Reg{% if asyncoutput %}Async{% endif %}ReadWrite, writable_fields:list[str]) -> None:
             with patch(base_name + '.write_addr_space') as write_callback_mock, \
                 patch(base_name + '.read_addr_space', return_value=0) as read_callback_mock:
                 for num_parm in range(1, len(writable_fields) + 1):
@@ -786,7 +786,7 @@ class {{fq_block_name}}_single_access({{top_node.type_name}}_TestCase): # type: 
         """
         rut:Reg{% if asyncoutput %}Async{% endif %}ReadWrite
         rand_enum_value:IntEnum
-        {% if asyncoutput %}async {% endif %}def write_field_cominbinations(reg: Reg{% if asyncoutput %}Async{% endif %}ReadWrite, writable_fields:List[str]) -> None:
+        {% if asyncoutput %}async {% endif %}def write_field_cominbinations(reg: Reg{% if asyncoutput %}Async{% endif %}ReadWrite, writable_fields:list[str]) -> None:
             with patch(base_name + '.write_addr_space') as write_callback_mock, \
                 patch(base_name + '.read_addr_space', return_value=0) as read_callback_mock:
                 for num_parm in range(1, len(writable_fields) + 1):
@@ -991,16 +991,16 @@ class {{fq_block_name}}_single_access({{top_node.type_name}}_TestCase): # type: 
     {% if block == top_node %}
     def test_top_traversal_iterators(self) -> None:
         {% if asyncoutput %}
-        expected_writable_regs: List[WritableAsyncRegister]
-        expected_readable_regs: List[ReadableAsyncRegister]
-        expected_memories:List[Union[MemoryAsyncReadOnly{% if legacy_block_access %}Legacy{% endif %}, MemoryAsyncWriteOnly{% if legacy_block_access %}Legacy{% endif %}, MemoryAsyncReadWrite{% if legacy_block_access %}Legacy{% endif %}]]
+        expected_writable_regs: list[WritableAsyncRegister]
+        expected_readable_regs: list[ReadableAsyncRegister]
+        expected_memories:list[Union[MemoryAsyncReadOnly{% if legacy_block_access %}Legacy{% endif %}, MemoryAsyncWriteOnly{% if legacy_block_access %}Legacy{% endif %}, MemoryAsyncReadWrite{% if legacy_block_access %}Legacy{% endif %}]]
 
         {% else %}
-        expected_writable_regs: List[WritableRegister]
-        expected_readable_regs: List[ReadableRegister]
-        expected_memories:List[Union[MemoryReadOnly{% if legacy_block_access %}Legacy{% endif %}, MemoryWriteOnly{% if legacy_block_access %}Legacy{% endif %}, MemoryReadWrite{% if legacy_block_access %}Legacy{% endif %}]]
+        expected_writable_regs: list[WritableRegister]
+        expected_readable_regs: list[ReadableRegister]
+        expected_memories:list[Union[MemoryReadOnly{% if legacy_block_access %}Legacy{% endif %}, MemoryWriteOnly{% if legacy_block_access %}Legacy{% endif %}, MemoryReadWrite{% if legacy_block_access %}Legacy{% endif %}]]
         {% endif %}
-        expected_sections : List[Union[{% if asyncoutput %}Async{% endif %}AddressMap, {% if asyncoutput %}Async{% endif %}RegFile]]
+        expected_sections : list[Union[{% if asyncoutput %}Async{% endif %}AddressMap, {% if asyncoutput %}Async{% endif %}RegFile]]
 
         # check the readable registers
         expected_readable_regs = [ {%- for child_node in top_node.children(unroll=True) %}
@@ -1198,22 +1198,22 @@ class {{fq_block_name}}_single_access({{top_node.type_name}}_TestCase): # type: 
         Walk the address map and check that the iterators for each node as as expected
         """
         {% if asyncoutput %}
-        expected_writable_fields: List[Union[FieldAsyncWriteOnly, FieldAsyncReadWrite]]
-        expected_readable_fields: List[Union[FieldAsyncReadOnly, FieldAsyncReadWrite]]
-        expected_fields: List[Union[FieldAsyncWriteOnly, FieldAsyncReadOnly, FieldAsyncReadWrite]]
-        expected_writable_regs: List[WritableAsyncRegister]
-        expected_readable_regs: List[ReadableAsyncRegister]
-        expected_memories:List[Union[MemoryAsyncReadOnly{% if legacy_block_access %}Legacy{% endif %}, MemoryAsyncWriteOnly{% if legacy_block_access %}Legacy{% endif %}, MemoryAsyncReadWrite{% if legacy_block_access %}Legacy{% endif %}]]
+        expected_writable_fields: list[Union[FieldAsyncWriteOnly, FieldAsyncReadWrite]]
+        expected_readable_fields: list[Union[FieldAsyncReadOnly, FieldAsyncReadWrite]]
+        expected_fields: list[Union[FieldAsyncWriteOnly, FieldAsyncReadOnly, FieldAsyncReadWrite]]
+        expected_writable_regs: list[WritableAsyncRegister]
+        expected_readable_regs: list[ReadableAsyncRegister]
+        expected_memories:list[Union[MemoryAsyncReadOnly{% if legacy_block_access %}Legacy{% endif %}, MemoryAsyncWriteOnly{% if legacy_block_access %}Legacy{% endif %}, MemoryAsyncReadWrite{% if legacy_block_access %}Legacy{% endif %}]]
 
         {% else %}
-        expected_writable_fields: List[Union[FieldWriteOnly, FieldReadWrite]]
-        expected_readable_fields: List[Union[FieldReadOnly, FieldReadWrite]]
-        expected_fields: List[Union[FieldWriteOnly, FieldReadOnly, FieldReadWrite]]
-        expected_writable_regs: List[WritableRegister]
-        expected_readable_regs: List[ReadableRegister]
-        expected_memories:List[Union[MemoryReadOnly{% if legacy_block_access %}Legacy{% endif %}, MemoryWriteOnly{% if legacy_block_access %}Legacy{% endif %}, MemoryReadWrite{% if legacy_block_access %}Legacy{% endif %}]]
+        expected_writable_fields: list[Union[FieldWriteOnly, FieldReadWrite]]
+        expected_readable_fields: list[Union[FieldReadOnly, FieldReadWrite]]
+        expected_fields: list[Union[FieldWriteOnly, FieldReadOnly, FieldReadWrite]]
+        expected_writable_regs: list[WritableRegister]
+        expected_readable_regs: list[ReadableRegister]
+        expected_memories:list[Union[MemoryReadOnly{% if legacy_block_access %}Legacy{% endif %}, MemoryWriteOnly{% if legacy_block_access %}Legacy{% endif %}, MemoryReadWrite{% if legacy_block_access %}Legacy{% endif %}]]
         {% endif %}
-        expected_sections : List[Union[{% if asyncoutput %}Async{% endif %}AddressMap, {% if asyncoutput %}Async{% endif %}RegFile]]
+        expected_sections : list[Union[{% if asyncoutput %}Async{% endif %}AddressMap, {% if asyncoutput %}Async{% endif %}RegFile]]
 
         # test all the registers
         {% for node in owned_elements.registers -%}
