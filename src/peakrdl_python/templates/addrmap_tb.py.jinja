@@ -22,12 +22,8 @@ from array import array as Array
 {% if asyncoutput %}
 import sys
 import asyncio
-if sys.version_info < (3, 8):
-    import asynctest  # type: ignore[import]
-    from asynctest.mock import patch, call  # type: ignore[import]
-else:
-    import unittest
-    from unittest.mock import patch, call
+import unittest
+from unittest.mock import patch, call
 {% else %}
 import unittest
 from unittest.mock import patch, call
