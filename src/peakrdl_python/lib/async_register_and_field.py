@@ -408,6 +408,7 @@ class RegAsyncReadWrite(RegAsyncReadOnly, RegAsyncWriteOnly, ABC):
             async with super().single_read() as reg:
                 yield reg
         finally:
+            # pylint: disable=duplicate-code
             self.__in_read_context_manager = False
 
     async def write(self, data: int, verify: bool = False) -> None:
@@ -426,6 +427,7 @@ class RegAsyncReadWrite(RegAsyncReadOnly, RegAsyncWriteOnly, ABC):
                                       expected value
         """
         if self.__in_read_context_manager:
+            # pylint: disable=duplicate-code
             raise RuntimeError('writes within the single read context manager are not permitted')
 
         if self.__in_read_write_context_manager:

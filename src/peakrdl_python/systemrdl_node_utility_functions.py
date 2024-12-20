@@ -53,10 +53,6 @@ def get_fully_qualified_type_name(node: Node) -> str:
     """
     scope_path = node.inst.get_scope_path(scope_separator='_')
 
-    # TODO if the node is a integer field we can use the base class no
-    #      need to generate a unique instance, if it has not documentation
-    #      properties
-
     inst_type_name = node.inst.type_name
     if inst_type_name is None:
         inst_type_name = node.inst_name

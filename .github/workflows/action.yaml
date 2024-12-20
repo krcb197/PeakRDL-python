@@ -37,14 +37,14 @@ jobs:
           python -m pip install -U pylint
 
       - name: Run Main code Lint
-        run: pylint --rcfile tests/pylint.rc src/peakrdl_python
+        run: pylint src/peakrdl_python
 
       - name: Install dependencies for unit tests
         run: |
           python -m pip install .[unit_test] -U
 
       - name: Run unit tests Lint
-        run: pylint --rcfile tests/pylint.rc src/peakrdl_python tests/unit_tests
+        run: pylint src/peakrdl_python tests/unit_tests
 
   mypy:
     runs-on: ubuntu-latest
@@ -280,7 +280,7 @@ jobs:
 
         python generate_testcases.py
         mypy testcase_output
-        # pylint --rcfile tests/pylint.rc testcase_output/autopep8 --disable=duplicate-code,line-too-long,too-many-statements,invalid-name,unused-import,too-many-instance-attributes,too-many-arguments,too-many-lines
+        # pylint testcase_output/autopep8 --disable=duplicate-code,line-too-long,too-many-statements,invalid-name,unused-import,too-many-instance-attributes,too-many-arguments,too-many-lines
 
         python -m unittest discover -s testcase_output
 
