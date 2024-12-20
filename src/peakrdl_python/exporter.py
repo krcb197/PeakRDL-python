@@ -21,7 +21,7 @@ import os
 import re
 from pathlib import Path
 from shutil import copy
-from typing import NoReturn, Any, Optional
+from typing import NoReturn, Any, Optional, Union
 from collections.abc import Iterable
 
 import jinja2 as jj
@@ -571,7 +571,7 @@ class PythonExporter:
                                        ' build the peakrdl-python wrappers: ' + reserved_name)
 
     # pylint: disable-next=too-many-arguments
-    def export(self, node: Node, path: str, *,
+    def export(self, node: Union[RootNode, AddrmapNode], path: str, *,
                asyncoutput: bool = False,
                skip_test_case_generation: bool = False,
                delete_existing_package_content: bool = True,
@@ -579,7 +579,7 @@ class PythonExporter:
                legacy_block_access: bool = True,
                show_hidden: bool = False,
                user_defined_properties_to_include: Optional[list[str]] = None,
-               hidden_inst_name_regex: Optional[str] = None) -> list[str]:
+               hidden_inst_name_regex: Optional[str] = None) -> str:
         """
         Generated Python Code and Testbench
 
@@ -616,13 +616,15 @@ class PythonExporter:
 
 
         Returns:
-            list[str] : modules that have been exported:
+            modules that have been exported:
         """
 
         # If it is the root node, skip to top addrmap
         if isinstance(node, RootNode):
             top_block = node.top
         else:
+            if not isinstance(node, AddrmapNode):
+                raise TypeError(f'node must be an AddrmapNode got {type(node)}')
             top_block = node
 
         if not isinstance(path, str):
@@ -722,6 +724,8 @@ class PythonExporter:
 
         if node.parent is None:
             raise RuntimeError('node.parent can not be None')
+        if not isinstance(node.parent, AddressableNode):
+            raise TypeError(f'parent should be an addressable node got {type(node.parent)}')
 
         for child_node in get_dependent_component(node.parent, hide_node_func):
 
@@ -812,13 +816,16 @@ class PythonExporter:
         if udp_to_include is None:
             return []
 
-        enum_needed = []
+        enum_needed: list[UserEnumMeta] = []
 
         def update_enum_list(node_to_process: AddressableNode) -> None:
 
             def walk_property_struct_node(value: Any) -> None:
                 if isinstance(value, UserEnum) and type(value) not in enum_needed:
-                    enum_needed.append(type(value))
+                    enum_type = type(value)
+                    if not isinstance(enum_type, UserEnumMeta):
+                        raise TypeError(f'enum type should be UserEnumMeta, got {type(enum_type)}')
+                    enum_needed.append(enum_type)
 
                 if isinstance(value, UserStruct):
                     for sub_value in value.members.values():
@@ -829,7 +836,10 @@ class PythonExporter:
             for node_property_name in node_properties:
                 node_property = node_to_process.get_property(node_property_name)
                 if isinstance(node_property, UserEnum) and type(node_property) not in enum_needed:
-                    enum_needed.append(type(node_property))
+                    enum_type = type(node_property)
+                    if not isinstance(enum_type, UserEnumMeta):
+                        raise TypeError(f'enum type should be UserEnumMeta, got {type(enum_type)}')
+                    enum_needed.append(enum_type)
 
                 if isinstance(node_property, UserStruct):
                     for sub_value in node_property.members.values():
@@ -838,6 +848,8 @@ class PythonExporter:
         update_enum_list(node_to_process=node)
 
         for child_node in node.descendants():
+            if not isinstance(child_node, AddrmapNode):
+                raise TypeError(f'child_node must be an AddressableNode got {type(child_node)}')
             update_enum_list(node_to_process=child_node)
 
         return enum_needed
