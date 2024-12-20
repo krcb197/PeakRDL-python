@@ -724,7 +724,7 @@ class PythonExporter:
 
         if node.parent is None:
             raise RuntimeError('node.parent can not be None')
-        if not isinstance(node.parent, AddressableNode):
+        if not isinstance(node.parent, (AddressableNode, RootNode)):
             raise TypeError(f'parent should be an addressable node got {type(node.parent)}')
 
         for child_node in get_dependent_component(node.parent, hide_node_func):
