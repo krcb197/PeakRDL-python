@@ -806,7 +806,7 @@ class PythonExporter:
                         enum_needed.append(fully_qualified_enum_name)
                         yield field_enum, child_node
 
-    def _get_dependent_property_enum(self, node: AddressableNode,
+    def _get_dependent_property_enum(self, node: Node,
                                      udp_to_include: Optional[list[str]]) -> \
             list[UserEnumMeta]:
         """
@@ -818,7 +818,7 @@ class PythonExporter:
 
         enum_needed: list[UserEnumMeta] = []
 
-        def update_enum_list(node_to_process: AddressableNode) -> None:
+        def update_enum_list(node_to_process: Node) -> None:
 
             def walk_property_struct_node(value: Any) -> None:
                 if isinstance(value, UserEnum) and type(value) not in enum_needed:
@@ -848,8 +848,8 @@ class PythonExporter:
         update_enum_list(node_to_process=node)
 
         for child_node in node.descendants():
-            if not isinstance(child_node, AddrmapNode):
-                raise TypeError(f'child_node must be an AddressableNode got {type(child_node)}')
+            if not isinstance(child_node, Node):
+                raise TypeError(f'child_node must be an Node got {type(child_node)}')
             update_enum_list(node_to_process=child_node)
 
         return enum_needed
