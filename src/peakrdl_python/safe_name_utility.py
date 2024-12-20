@@ -34,7 +34,6 @@ from .lib import RegReadOnly
 from .lib import RegWriteOnly
 from .lib import RegReadWrite
 
-
 from .lib.memory import MemoryReadOnly
 from .lib.memory import MemoryWriteOnly
 from .lib.memory import MemoryReadWrite
@@ -303,11 +302,15 @@ def is_safe_addrmap_name(node: AddrmapNode, proposed_name: Optional[str] = None)
 
     return True
 
-assert issubclass(RegNode, Node)
 
 @dataclass()
 class _NodeProcessingScheme:
-    safe_func: Callable[[Node, Optional[str]], bool]
+    safe_func: Union[Callable[[RegNode, Optional[str]], bool],
+                     Callable[[FieldNode, Optional[str]], bool],
+                     Callable[[RegfileNode, Optional[str]], bool],
+                     Callable[[AddrmapNode, Optional[str]], bool],
+                     Callable[[MemNode, Optional[str]], bool]
+    ]
     prefix: str
 
 
@@ -343,7 +346,7 @@ def safe_node_name(node: Union[RegNode,
         node_type = type(node)
 
         node_name = node.inst_name
-        if not _node_processing[node_type].safe_func(node, None):
+        if not _node_processing[node_type].safe_func(node, None):  # type: ignore[arg-type]
             name_pre: str = _node_processing[node_type].prefix
             node_name = name_pre + '_' + node_name
 
@@ -380,6 +383,7 @@ def get_python_path_segments(node: Union[RegNode,
     Returns:
 
     """
+
     def node_segment(child_node: Union[RegNode,
                                        FieldNode,
                                        RegfileNode,
@@ -390,6 +394,10 @@ def get_python_path_segments(node: Union[RegNode,
             return child_list
         child_node_safe_name = safe_node_name(child_node)
         child_list.insert(0, child_node_safe_name)
+        if child_node.parent is None:
+            raise RuntimeError('parent node is None')
+        if not isinstance(child_node.parent, (RegNode,FieldNode,RegfileNode,AddrmapNode,MemNode)):
+            raise TypeError(f'child_node.parent not a handled type, got {type(child_node.parent)}')
         return node_segment(child_node.parent, child_list=child_list)
 
     return node_segment(node, [])
