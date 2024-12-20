@@ -18,7 +18,6 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 This module provides a set of "dummy" callbacks that provide the most basic of operations
 """
 from array import array as Array
-from typing import List
 import asyncio
 
 from ..lib.utility_functions import get_array_typecode
@@ -58,10 +57,11 @@ def dummy_write(addr: int, width: int, accesswidth: int, data: int) -> None:
     Returns:
         None
     """
+    # pylint: disable-next=bad-builtin
     print(f'0x{data:X} written to 0x{addr:X}')
 
 
-def dummy_read_block(addr: int, width: int, accesswidth: int, length:int) -> List[int]:
+def dummy_read_block(addr: int, width: int, accesswidth: int, length:int) -> list[int]:
     """
     Callback to simulate the operation of the package, everytime the read_block is called, it
     return an integer value of array of o's
@@ -97,7 +97,7 @@ def dummy_read_block_legacy(addr: int, width: int, accesswidth: int, length:int)
     return Array(get_array_typecode(width=width), [0 for x in range(length)])
 
 
-def dummy_write_block(addr: int, width: int, accesswidth: int,  data: List[int]) -> None:
+def dummy_write_block(addr: int, width: int, accesswidth: int,  data: list[int]) -> None:
     """
     Callback to simulate the operation of the package, everytime the read_block is called, it
     return an integer value of array of o's
@@ -173,7 +173,7 @@ async def async_dummy_write(addr: int, width: int, accesswidth: int, data: int) 
 async def async_dummy_read_block(addr: int,
                                  width: int,
                                  accesswidth: int,
-                                 length: int) -> List[int]:
+                                 length: int) -> list[int]:
     """
     Callback to simulate the operation of the package, everytime the read_block is called, it
     return an integer value of array of o's
@@ -216,7 +216,7 @@ async def async_dummy_read_block_legacy(addr: int,
 
 async def async_dummy_write_block(addr: int,
                                   width: int,
-                                  accesswidth: int, data: List[int]) -> None:
+                                  accesswidth: int, data: list[int]) -> None:
     """
     Callback to simulate the operation of the package, everytime the read_block is called, it
     return an integer value of array of o's

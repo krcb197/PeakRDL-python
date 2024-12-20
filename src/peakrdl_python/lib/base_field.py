@@ -20,7 +20,7 @@ peakrdl-python tool. It provides the base types for fields that are shared by no
 fields
 """
 from enum import EnumMeta
-from typing import List, cast, Optional
+from typing import cast, Optional
 from abc import ABC, abstractmethod
 
 from .base import Base
@@ -358,7 +358,7 @@ class _FieldReadOnlyFramework(Field, ABC):
             object
 
     """
-    __slots__ : List[str] = []
+    __slots__ : list[str] = []
 
     def decode_read_value(self, value: int) -> int:
         """
@@ -410,7 +410,7 @@ class _FieldWriteOnlyFramework(Field, ABC):
             object
 
     """
-    __slots__ : List[str] = []
+    __slots__ : list[str] = []
 
     def _write_value_checks(self, value: int) -> None:
         """
@@ -456,7 +456,7 @@ class FieldEnum(Field, ABC):
     """
     class for a register field with an enumerated value
     """
-    __slots__: List[str] = []
+    __slots__: list[str] = []
 
     @property
     @abstractmethod
@@ -466,7 +466,7 @@ class FieldEnum(Field, ABC):
         """
 
     @property
-    def _enum_values(self) -> List[int]:
+    def _enum_values(self) -> list[int]:
         """
         provide the legal values for the enumeration
         """

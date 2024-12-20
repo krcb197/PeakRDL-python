@@ -18,7 +18,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 {% include "header.py.jinja" with context %}
 
-from typing import Union, List, Dict
+from typing import Union
 
 from {% if skip_lib_copy %}src.peakrdl_python.{% else %}..{% endif %}sim_lib.register import Register, MemoryRegister
 from {% if skip_lib_copy %}src.peakrdl_python.{% else %}..{% endif %}sim_lib.memory import Memory
@@ -32,7 +32,7 @@ from {% if skip_lib_copy %}src.peakrdl_python.{% else %}..{% endif %}sim_lib.sim
 
 class {{top_node.inst_name}}_simulator_cls(Simulator{% if legacy_block_access %}Legacy{% endif %}):
 
-    def _build_registers(self) -> Dict[int, Union[MemoryRegister, Register]]:
+    def _build_registers(self) -> dict[int, Union[MemoryRegister, Register]]:
         return {
         {%- for node in top_node.descendants(unroll=True) -%}
             {% if isinstance(node, systemrdlRegNode) %}
@@ -46,7 +46,7 @@ class {{top_node.inst_name}}_simulator_cls(Simulator{% if legacy_block_access %}
         {%- endfor %}
         }
 
-    def _build_memories(self) -> List[MemoryEntry]:
+    def _build_memories(self) -> list[MemoryEntry]:
         return [
         {%- for node in top_node.descendants(unroll=True) -%}
             {% if isinstance(node, systemrdlMemNode) %}

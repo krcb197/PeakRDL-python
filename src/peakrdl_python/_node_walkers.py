@@ -17,10 +17,11 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 Node walkers to be used in the generated of the output code
 """
-from typing import Optional, List, Union, Iterator
+from typing import Optional, Union
+from collections.abc import Iterator
 
-from systemrdl import RDLListener, WalkerAction # type: ignore
-from systemrdl.node import RegNode, MemNode, FieldNode, AddrmapNode, RegfileNode # type: ignore
+from systemrdl import RDLListener, WalkerAction
+from systemrdl.node import RegNode, MemNode, FieldNode, AddrmapNode, RegfileNode
 
 from .systemrdl_node_utility_functions import HideNodeCallback
 
@@ -32,7 +33,7 @@ class AddressMaps(RDLListener):
     """
     def __init__(self, hide_node_callback: HideNodeCallback) -> None:
         super().__init__()
-        self.__address_maps: List[AddrmapNode] = []
+        self.__address_maps: list[AddrmapNode] = []
         self.__hide_node_callback = hide_node_callback
 
     def enter_Addrmap(self, node: AddrmapNode) -> Optional[WalkerAction]:
@@ -55,16 +56,16 @@ class OwnedbyAddressMap(RDLListener):
     def __init__(self, hide_node_callback: HideNodeCallback) -> None:
         super().__init__()
 
-        self.registers: List[RegNode] = []
-        self.fields: List[RegNode] = []
-        self.memories: List[RegNode] = []
-        self.addr_maps: List[AddrmapNode] = []
-        self.reg_files: List[RegfileNode] = []
-        self._hidden_registers: List[RegNode] = []
-        self._hidden_fields: List[RegNode] = []
-        self._hidden_memories: List[RegNode] = []
-        self._hidden_addr_maps: List[AddrmapNode] = []
-        self._hidden_reg_files: List[RegfileNode] = []
+        self.registers: list[RegNode] = []
+        self.fields: list[FieldNode] = []
+        self.memories: list[MemNode] = []
+        self.addr_maps: list[AddrmapNode] = []
+        self.reg_files: list[RegfileNode] = []
+        self._hidden_registers: list[RegNode] = []
+        self._hidden_fields: list[FieldNode] = []
+        self._hidden_memories: list[MemNode] = []
+        self._hidden_addr_maps: list[AddrmapNode] = []
+        self._hidden_reg_files: list[RegfileNode] = []
         self.__hide_node_callback = hide_node_callback
 
     def enter_Reg(self, node: RegNode) -> Optional[WalkerAction]:
@@ -107,7 +108,7 @@ class OwnedbyAddressMap(RDLListener):
         return WalkerAction.Continue
 
     @property
-    def nodes(self) -> List[Union[RegNode, MemNode, FieldNode, AddrmapNode, RegfileNode]]:
+    def nodes(self) -> list[Union[RegNode, MemNode, FieldNode, AddrmapNode, RegfileNode]]:
         """
         All the nodes owned by the address map, including:
         - address maps
@@ -122,7 +123,7 @@ class OwnedbyAddressMap(RDLListener):
         return self.addr_maps + self.reg_files + self.memories + self.registers + self.fields
 
     @property
-    def hidden_nodes(self) -> List[Union[RegNode, MemNode, FieldNode, AddrmapNode, RegfileNode]]:
+    def hidden_nodes(self) -> list[Union[RegNode, MemNode, FieldNode, AddrmapNode, RegfileNode]]:
         """
         All the 1st tier nodes owned by the address map which are hidden, including:
         - address maps
@@ -145,7 +146,7 @@ class OwnedbyAddressMap(RDLListener):
         return len(self.hidden_nodes) > 0
 
     @property
-    def addressable_nodes(self) -> List[Union[RegNode, MemNode, AddrmapNode, RegfileNode]]:
+    def addressable_nodes(self) -> list[Union[RegNode, MemNode, AddrmapNode, RegfileNode]]:
         """
         All the nodes owned by the address map, including:
         - address maps

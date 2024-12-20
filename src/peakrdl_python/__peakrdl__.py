@@ -32,7 +32,7 @@ from .compiler_udp import PythonHideUDP, PythonInstNameUDP
 
 if TYPE_CHECKING:
     import argparse
-    from systemrdl.node import AddrmapNode  # type: ignore
+    from systemrdl.node import AddrmapNode
 
 
 class Exporter(ExporterSubcommandPlugin):
