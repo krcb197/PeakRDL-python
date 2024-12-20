@@ -18,7 +18,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 A set of utility functions that perform supplementary processing on a node in a compiled
 system RDL dataset.
 """
-from typing import Optional, Protocol
+from typing import Optional, Protocol, Union
 from collections.abc import Iterable
 from itertools import filterfalse
 
@@ -26,6 +26,7 @@ import textwrap
 
 from systemrdl.node import Node
 from systemrdl.node import RegNode
+from systemrdl.node import RootNode
 from systemrdl.node import AddressableNode
 from systemrdl.node import FieldNode
 from systemrdl.node import MemNode
@@ -77,7 +78,7 @@ def hide_based_on_property(node: Node, show_hidden: bool) -> bool:
     return node.get_property('python_hide', default=False) and not show_hidden
 
 
-def get_dependent_component(node: AddressableNode,
+def get_dependent_component(node: Union[AddressableNode, RootNode],
                             hide_node_callback: HideNodeCallback) -> Iterable[Node]:
     """
     iterable of nodes that have a component which is used by a
