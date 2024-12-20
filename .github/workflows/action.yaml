@@ -287,6 +287,8 @@ jobs:
   autoformating:
     needs:
       - integration_tests
+      - peakrdl_integration
+      - dev_runner
 
     runs-on: ubuntu-latest
     strategy:
@@ -334,7 +336,8 @@ jobs:
     needs:
       # the documentation relies on examples so these must be prechecked
       # as part of the dependency
-      - peakrdl_integration
+      - autoformating
+
     name: Build the sphinx documentation
     runs-on: ubuntu-latest
     steps:
