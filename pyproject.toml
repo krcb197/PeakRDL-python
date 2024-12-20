@@ -24,7 +24,7 @@ keywords = [
     "Python"
 ]
 classifiers = [
-    "Development Status :: 4 - Beta",
+    "Development Status :: 5 - Production/Stable",
     "Programming Language :: Python",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.9",
@@ -37,6 +37,7 @@ classifiers = [
     "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
     "Operating System :: OS Independent",
     "Topic :: Scientific/Engineering :: Electronic Design Automation (EDA)",
+    "Typing :: Typed"
 ]
 
 [project.urls]
@@ -72,8 +73,8 @@ unit_test = [
 [tool.mypy]
 namespace_packages = true
 explicit_package_bases = true
-disallow_untyped_calls=true
-disallow_untyped_defs=true
+disallow_untyped_calls = true
+disallow_untyped_defs = true
 
 [tool.pylint.main]
 # Analyse import fallback blocks. This can be used to support both Python 2 and 3
