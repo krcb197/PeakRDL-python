@@ -67,3 +67,9 @@ unit_test = [
     "peakrdl",
     "tomli;python_version<'3.11'"
 ]
+
+[tool.mypy]
+namespace_packages = true
+explicit_package_bases = true
+disallow_untyped_calls=true
+disallow_untyped_defs=true
