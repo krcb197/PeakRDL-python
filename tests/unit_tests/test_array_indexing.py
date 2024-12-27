@@ -3,7 +3,8 @@ Tests for the array indexing in the base library
 """
 
 import unittest
-from typing import Tuple, Optional, Iterator, Union, Dict
+from typing import Optional, Union
+from collections.abc import Iterator
 from abc import ABC, abstractmethod
 from itertools import product
 
@@ -21,7 +22,7 @@ class ArrayBase(CallBackTestWrapper, ABC):
 
     @property
     @abstractmethod
-    def dimensions(self) -> Tuple[int, ...]:
+    def dimensions(self) -> tuple[int, ...]:
         """
         Array dimensions
         """
@@ -48,7 +49,7 @@ class ArrayBase(CallBackTestWrapper, ABC):
         return self.__dut_warpper.dut
 
     @abstractmethod
-    def calculate_address(self, indices: Tuple[int, ...]) -> int:
+    def calculate_address(self, indices: tuple[int, ...]) -> int:
         """
         address based on array index
         """
@@ -67,7 +68,7 @@ class ArrayBase(CallBackTestWrapper, ABC):
                          logger_handle: str,
                          inst_name: str,
                          dut_stride : int,
-                         dut_dimensions : Tuple[int, ...]):
+                         dut_dimensions : tuple[int, ...]):
 
                 super().__init__(callbacks=callbacks, address=address, logger_handle=logger_handle,
                                  inst_name=inst_name, parent=None )
@@ -82,12 +83,12 @@ class ArrayBase(CallBackTestWrapper, ABC):
                                                          dimensions=dut_dimensions)
 
             def get_memories(self, unroll: bool = False) -> \
-                    Iterator[Union[Memory, Tuple[Memory, ...]]]:
+                    Iterator[Union[Memory, tuple[Memory, ...]]]:
                 raise NotImplementedError('Not implemented in the testing')
 
             def get_sections(self, unroll: bool = False) -> \
                     Iterator[Union[Union[AddressMap, RegFile],
-                                   Tuple[Union[AddressMap, RegFile], ...]]]:
+                                   tuple[Union[AddressMap, RegFile], ...]]]:
                 raise NotImplementedError('Not implemented in the testing')
 
             def get_registers(self, unroll: bool = False) -> \
@@ -98,7 +99,7 @@ class ArrayBase(CallBackTestWrapper, ABC):
                 raise NotImplementedError('Not implemented in the testing')
 
             @property
-            def systemrdl_python_child_name_map(self) -> Dict[str, str]:
+            def systemrdl_python_child_name_map(self) -> dict[str, str]:
 
                 return {
                     'dut': 'dut'
@@ -130,7 +131,7 @@ class Test1DArray(ArrayBase):
 
 
     @property
-    def dimensions(self) -> Tuple[int, ...]:
+    def dimensions(self) -> tuple[int, ...]:
         return (10,)
 
     @property
@@ -141,7 +142,7 @@ class Test1DArray(ArrayBase):
     def base_address(self) -> int:
         return 0
 
-    def calculate_address(self, indices: Tuple[int, ...]) -> int:
+    def calculate_address(self, indices: tuple[int, ...]) -> int:
         return (indices[0] * self.stride) + self.base_address
 
     def test_individual_access(self) -> None:
@@ -192,7 +193,7 @@ class Test2DArray(ArrayBase):
     """
 
     @property
-    def dimensions(self) -> Tuple[int, ...]:
+    def dimensions(self) -> tuple[int, ...]:
         return (10, 12,)
 
     @property
@@ -203,7 +204,7 @@ class Test2DArray(ArrayBase):
     def base_address(self) -> int:
         return 0
 
-    def calculate_address(self, indices: Tuple[int, ...]) -> int:
+    def calculate_address(self, indices: tuple[int, ...]) -> int:
         return (indices[0] * self.dimensions[1] * self.stride) + \
                (indices[1] * self.stride) + self.base_address
 

@@ -18,21 +18,21 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 utility functions for turning potentially unsafe names from the system RDL and making them safe
 """
 import keyword
-from typing import List, Union, Type, Callable, Dict, Optional
+from typing import Union, Optional
+from collections.abc import Callable
 from dataclasses import dataclass
 
-from systemrdl.node import RegNode  # type: ignore
-from systemrdl.node import FieldNode  # type: ignore
-from systemrdl.node import AddrmapNode  # type: ignore
-from systemrdl.node import RegfileNode  # type: ignore
-from systemrdl.node import MemNode  # type: ignore
-from systemrdl.node import RootNode  # type: ignore
-from systemrdl.node import Node  # type: ignore
+from systemrdl.node import RegNode
+from systemrdl.node import FieldNode
+from systemrdl.node import AddrmapNode
+from systemrdl.node import RegfileNode
+from systemrdl.node import MemNode
+from systemrdl.node import RootNode
+from systemrdl.node import Node
 
 from .lib import RegReadOnly
 from .lib import RegWriteOnly
 from .lib import RegReadWrite
-
 
 from .lib.memory import MemoryReadOnly
 from .lib.memory import MemoryWriteOnly
@@ -43,7 +43,7 @@ from .lib import AddressMap
 from .lib.base import Base
 
 
-def _build_class_method_list(peakrld_python_class: Type[Base]) -> List[str]:
+def _build_class_method_list(peakrld_python_class: type[Base]) -> list[str]:
     return list(filter(lambda x: not x[0] == '_', dir(peakrld_python_class)))
 
 
@@ -305,11 +305,16 @@ def is_safe_addrmap_name(node: AddrmapNode, proposed_name: Optional[str] = None)
 
 @dataclass()
 class _NodeProcessingScheme:
-    safe_func: Callable[[Node], bool]
+    safe_func: Union[Callable[[RegNode, Optional[str]], bool],
+                     Callable[[FieldNode, Optional[str]], bool],
+                     Callable[[RegfileNode, Optional[str]], bool],
+                     Callable[[AddrmapNode, Optional[str]], bool],
+                     Callable[[MemNode, Optional[str]], bool]
+    ]
     prefix: str
 
 
-_node_processing: Dict[Node, _NodeProcessingScheme] = {
+_node_processing: dict[type[Node], _NodeProcessingScheme] = {
     RegNode: _NodeProcessingScheme(is_safe_register_name, 'register'),
     FieldNode: _NodeProcessingScheme(is_safe_field_name, 'field'),
     RegfileNode: _NodeProcessingScheme(is_safe_regfile_name, 'regfile'),
@@ -341,7 +346,7 @@ def safe_node_name(node: Union[RegNode,
         node_type = type(node)
 
         node_name = node.inst_name
-        if not _node_processing[node_type].safe_func(node):
+        if not _node_processing[node_type].safe_func(node, None):  # type: ignore[arg-type]
             name_pre: str = _node_processing[node_type].prefix
             node_name = name_pre + '_' + node_name
 
@@ -366,7 +371,7 @@ def get_python_path_segments(node: Union[RegNode,
                                          FieldNode,
                                          RegfileNode,
                                          AddrmapNode,
-                                         MemNode]) -> List[str]:
+                                         MemNode]) -> list[str]:
     """
     Behaves similarly to the get_path_segments method of a system RDL node but names are converted
     using the following pattern:
@@ -378,16 +383,21 @@ def get_python_path_segments(node: Union[RegNode,
     Returns:
 
     """
+
     def node_segment(child_node: Union[RegNode,
                                        FieldNode,
                                        RegfileNode,
                                        AddrmapNode,
                                        MemNode],
-                     child_list: List[str]) -> List[str]:
+                     child_list: list[str]) -> list[str]:
         if isinstance(child_node.parent, RootNode):
             return child_list
         child_node_safe_name = safe_node_name(child_node)
         child_list.insert(0, child_node_safe_name)
+        if child_node.parent is None:
+            raise RuntimeError('parent node is None')
+        if not isinstance(child_node.parent, (RegNode,FieldNode,RegfileNode,AddrmapNode,MemNode)):
+            raise TypeError(f'child_node.parent not a handled type, got {type(child_node.parent)}')
         return node_segment(child_node.parent, child_list=child_list)
 
     return node_segment(node, [])

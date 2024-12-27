@@ -18,22 +18,24 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 A set of utility functions that perform supplementary processing on a node in a compiled
 system RDL dataset.
 """
-from typing import Iterable, Optional, List, Protocol
+from typing import Optional, Protocol, Union
+from collections.abc import Iterable
 from itertools import filterfalse
 
 import textwrap
 
-from systemrdl.node import Node  # type: ignore
-from systemrdl.node import RegNode  # type: ignore
-from systemrdl.node import AddressableNode  # type: ignore
-from systemrdl.node import FieldNode  # type: ignore
-from systemrdl.node import MemNode  # type: ignore
-from systemrdl.node import SignalNode  # type: ignore
-from systemrdl.node import AddrmapNode  # type: ignore
-from systemrdl.node import RegfileNode  # type: ignore
-from systemrdl.component import Component  # type: ignore
-from systemrdl.rdltypes.user_enum import UserEnumMeta  # type: ignore
-from systemrdl import RDLListener, WalkerAction, RDLWalker  # type: ignore
+from systemrdl.node import Node
+from systemrdl.node import RegNode
+from systemrdl.node import RootNode
+from systemrdl.node import AddressableNode
+from systemrdl.node import FieldNode
+from systemrdl.node import MemNode
+from systemrdl.node import SignalNode
+from systemrdl.node import AddrmapNode
+from systemrdl.node import RegfileNode
+from systemrdl.component import Component
+from systemrdl.rdltypes.user_enum import UserEnumMeta
+from systemrdl import RDLListener, WalkerAction, RDLWalker
 
 
 class HideNodeCallback(Protocol):
@@ -51,10 +53,6 @@ def get_fully_qualified_type_name(node: Node) -> str:
     Returns the fully qualified class type name, i.e. with scope prefix
     """
     scope_path = node.inst.get_scope_path(scope_separator='_')
-
-    # TODO if the node is a integer field we can use the base class no
-    #      need to generate a unique instance, if it has not documentation
-    #      properties
 
     inst_type_name = node.inst.type_name
     if inst_type_name is None:
@@ -80,7 +78,7 @@ def hide_based_on_property(node: Node, show_hidden: bool) -> bool:
     return node.get_property('python_hide', default=False) and not show_hidden
 
 
-def get_dependent_component(node: AddressableNode,
+def get_dependent_component(node: Union[AddressableNode, RootNode],
                             hide_node_callback: HideNodeCallback) -> Iterable[Node]:
     """
     iterable of nodes that have a component which is used by a
@@ -194,7 +192,10 @@ def get_table_block(node: Node) -> str:
         if 'name' in node.list_properties():
             table_strs.append("| Name         | .. raw:: html".ljust(88, ' ') + ' |')
             table_strs.append("|              | ".ljust(88, ' ') + ' |')
-            name_rows = textwrap.wrap(node.get_html_name(), width=88,
+            html_name = node.get_html_name()
+            if html_name is None:
+                raise ValueError('html name should not be None')
+            name_rows = textwrap.wrap(html_name, width=88,
                                       initial_indent="|              |      ",
                                       subsequent_indent="|              |      ")
             for name_row in name_rows:
@@ -204,7 +205,10 @@ def get_table_block(node: Node) -> str:
         if 'desc' in node.list_properties():
             table_strs.append("| Description  | .. raw:: html".ljust(88, ' ') + ' |')
             table_strs.append("|              | ".ljust(88, ' ') + ' |')
-            desc_rows = textwrap.wrap(node.get_html_desc(), width=88,
+            html_desc = node.get_html_desc()
+            if html_desc is None:
+                raise ValueError('html name should not be None')
+            desc_rows = textwrap.wrap(html_desc, width=88,
                                       initial_indent="|              |      ",
                                       subsequent_indent="|              |      ")
             for desc_row in desc_rows:
@@ -266,6 +270,8 @@ def get_field_inv_bitmask_hex_string(node: FieldNode) -> str:
     """
     if not isinstance(node, FieldNode):
         raise TypeError(f'node is not a {type(FieldNode)} got {type(node)}')
+    if not isinstance(node.parent, RegNode):
+        raise TypeError(f'node.parent is not a {type(RegNode)} got {type(node)}')
     reg_bitmask = (2 ** (node.parent.size * 8)) - 1
     inv_bitmask = reg_bitmask ^ get_field_bitmask_int(node)
     return f'0x{inv_bitmask:X}'
@@ -463,7 +469,7 @@ def get_field_default_value(node: FieldNode) -> Optional[int]:
     raise TypeError(f'unhandled type for field default type={type(value)}')
 
 
-def get_enum_values(enum: UserEnumMeta) -> List[int]:
+def get_enum_values(enum: UserEnumMeta) -> list[int]:
     """
 
     Args:
@@ -478,7 +484,7 @@ def get_enum_values(enum: UserEnumMeta) -> List[int]:
     return [e.value for e in enum]
 
 
-def get_properties_to_include(node: Node, udp_to_include: Optional[List[str]]) -> List[str]:
+def get_properties_to_include(node: Node, udp_to_include: Optional[list[str]]) -> list[str]:
     """
 
 

@@ -14,7 +14,6 @@ import os
 import sys
 import datetime
 sys.path.insert(0, os.path.abspath('..'))
-sys.path.insert(0, os.path.join(os.path.abspath('..'), 'src'))
 
 
 # -- Project information -----------------------------------------------------
@@ -30,8 +29,7 @@ author = 'Keith Brady'
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
 extensions = ['sphinx.ext.autodoc',
-              'sphinx.ext.napoleon',
-              'sphinxarg.ext']
+              'sphinx.ext.napoleon']
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']

@@ -18,11 +18,11 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 Defined the compiler classes that are used
 """
 from typing import Any
-from systemrdl import RDLCompiler  # type: ignore
-from systemrdl.udp import UDPDefinition  # type: ignore
-from systemrdl.component import Field, Reg, Regfile, Mem, Addrmap # type: ignore
-from systemrdl.node import FieldNode, RegNode, RegfileNode, MemNode, AddrmapNode  # type: ignore
-from systemrdl.node import Node  # type: ignore
+from systemrdl import RDLCompiler
+from systemrdl.udp import UDPDefinition
+from systemrdl.component import Field, Reg, Regfile, Mem, Addrmap
+from systemrdl.node import FieldNode, RegNode, RegfileNode, MemNode, AddrmapNode
+from systemrdl.node import Node
 
 from .safe_name_utility import is_safe_field_name, is_safe_memory_name, is_safe_addrmap_name, \
     is_safe_regfile_name, is_safe_register_name

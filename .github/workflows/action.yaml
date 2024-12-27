@@ -37,14 +37,14 @@ jobs:
           python -m pip install -U pylint
 
       - name: Run Main code Lint
-        run: pylint --rcfile tests/pylint.rc src/peakrdl_python
+        run: pylint src/peakrdl_python
 
       - name: Install dependencies for unit tests
         run: |
           python -m pip install .[unit_test] -U
 
       - name: Run unit tests Lint
-        run: pylint --rcfile tests/pylint.rc src/peakrdl_python tests/unit_tests
+        run: pylint src/peakrdl_python tests/unit_tests
 
   mypy:
     runs-on: ubuntu-latest
@@ -61,7 +61,7 @@ jobs:
           python -m pip install .
           python -m pip install -U mypy
       - name: Type Check
-        run: mypy src/peakrdl_python --config-file=tests/.mypy.ini
+        run: mypy src/peakrdl_python
 
   unit_tests:
     needs:
@@ -279,14 +279,16 @@ jobs:
         python -m pip install mypy
 
         python generate_testcases.py
-        mypy testcase_output --config-file=tests/.mypy.ini
-        # pylint --rcfile tests/pylint.rc testcase_output/autopep8 --disable=duplicate-code,line-too-long,too-many-statements,invalid-name,unused-import,too-many-instance-attributes,too-many-arguments,too-many-lines
+        mypy testcase_output
+        # pylint testcase_output/autopep8 --disable=duplicate-code,line-too-long,too-many-statements,invalid-name,unused-import,too-many-instance-attributes,too-many-arguments,too-many-lines
 
         python -m unittest discover -s testcase_output
 
   autoformating:
     needs:
       - integration_tests
+      - peakrdl_integration
+      - dev_runner
 
     runs-on: ubuntu-latest
     strategy:
@@ -326,16 +328,14 @@ jobs:
         # run the autoformatting
         black autoformatted_output --line-length 120
         # check the files are correct with mypy and unittesting
-        mypy autoformatted_output --config-file=tests/.mypy.ini
+        mypy autoformatted_output
         python -m unittest discover -s autoformatted_output
 
   #-------------------------------------------------------------------------------
   build:
     needs:
-      - integration_tests
       - autoformating
-      - dev_runner
-      - peakrdl_integration
+
     name: Build source distribution
     runs-on: ubuntu-latest
     steps:
@@ -358,7 +358,6 @@ jobs:
           path: |
             dist/*.tar.gz
             dist/*.whl
-          
 
   #-------------------------------------------------------------------------------
   deploy:

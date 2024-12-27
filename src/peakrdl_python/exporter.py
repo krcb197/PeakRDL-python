@@ -21,17 +21,18 @@ import os
 import re
 from pathlib import Path
 from shutil import copy
-from typing import List, NoReturn, Iterable, Tuple, Dict, Any, Optional
+from typing import NoReturn, Any, Optional, Union
+from collections.abc import Iterable
 
 import jinja2 as jj
-from systemrdl import RDLWalker  # type: ignore
+from systemrdl import RDLWalker
 
-from systemrdl.node import RootNode, Node, RegNode, AddrmapNode, RegfileNode  # type: ignore
-from systemrdl.node import FieldNode, MemNode, AddressableNode  # type: ignore
-from systemrdl.node import SignalNode  # type: ignore
-from systemrdl.rdltypes import OnReadType, OnWriteType, PropertyReference  # type: ignore
-from systemrdl.rdltypes.user_enum import UserEnum, UserEnumMeta  # type: ignore
-from systemrdl.rdltypes.user_struct import UserStruct  # type: ignore
+from systemrdl.node import RootNode, Node, RegNode, AddrmapNode, RegfileNode
+from systemrdl.node import FieldNode, MemNode, AddressableNode
+from systemrdl.node import SignalNode
+from systemrdl.rdltypes import OnReadType, OnWriteType, PropertyReference
+from systemrdl.rdltypes.user_enum import UserEnum, UserEnumMeta
+from systemrdl.rdltypes.user_struct import UserStruct
 
 from .systemrdl_node_utility_functions import get_reg_readable_fields, get_reg_writable_fields, \
     get_table_block, get_dependent_component, \
@@ -49,6 +50,7 @@ from .safe_name_utility import get_python_path_segments, safe_node_name
 from ._node_walkers import AddressMaps, OwnedbyAddressMap
 
 from .__about__ import __version__
+
 
 file_path = os.path.dirname(__file__)
 
@@ -281,7 +283,7 @@ class PythonExporter:
                                 template_name: str,
                                 target_package: _PythonPackage,
                                 target_name: str,
-                                template_context: Dict[str, Any]) -> None:
+                                template_context: dict[str, Any]) -> None:
 
         template = self.jj_env.get_template(template_name)
         module_path = target_package.child_module_path(target_name)
@@ -297,7 +299,7 @@ class PythonExporter:
                            skip_lib_copy: bool,
                            asyncoutput: bool,
                            legacy_block_access: bool,
-                           udp_to_include: Optional[List[str]],
+                           udp_to_include: Optional[list[str]],
                            hide_node_func: HideNodeCallback) -> None:
 
         context = {
@@ -454,7 +456,7 @@ class PythonExporter:
                        skip_lib_copy: bool,
                        asyncoutput: bool,
                        legacy_block_access: bool,
-                       udp_to_include: Optional[List[str]],
+                       udp_to_include: Optional[list[str]],
                        hide_node_func: HideNodeCallback) -> None:
         """
 
@@ -484,7 +486,7 @@ class PythonExporter:
             # the arrays rolled up but parents within the address map e.g. a regfile unrolled
             # I have not found a way to do this with the Walker as the unroll seems to be a
             # global setting, the following code works but it is not elegant
-            rolled_owned_reg: List[RegNode] = list(block.registers(unroll=False))
+            rolled_owned_reg: list[RegNode] = list(block.registers(unroll=False))
             for regfile in owned_elements.reg_files:
                 rolled_owned_reg += list(regfile.registers(unroll=False))
             for memory in owned_elements.memories:
@@ -551,7 +553,7 @@ class PythonExporter:
                                          target_name='test_sim_' + fq_block_name + '.py',
                                          template_context=context)
 
-    def _validate_udp_to_include(self, udp_to_include: Optional[List[str]]) -> None:
+    def _validate_udp_to_include(self, udp_to_include: Optional[list[str]]) -> None:
         if udp_to_include is not None:
             # the list of user defined properties may not include the names used by peakrdl python
             # for control behaviours
@@ -569,15 +571,15 @@ class PythonExporter:
                                        ' build the peakrdl-python wrappers: ' + reserved_name)
 
     # pylint: disable-next=too-many-arguments
-    def export(self, node: Node, path: str, *,
+    def export(self, node: Union[RootNode, AddrmapNode], path: str, *,
                asyncoutput: bool = False,
                skip_test_case_generation: bool = False,
                delete_existing_package_content: bool = True,
                skip_library_copy: bool = False,
                legacy_block_access: bool = True,
                show_hidden: bool = False,
-               user_defined_properties_to_include: Optional[List[str]] = None,
-               hidden_inst_name_regex: Optional[str] = None) -> List[str]:
+               user_defined_properties_to_include: Optional[list[str]] = None,
+               hidden_inst_name_regex: Optional[str] = None) -> str:
         """
         Generated Python Code and Testbench
 
@@ -614,13 +616,15 @@ class PythonExporter:
 
 
         Returns:
-            List[str] : modules that have been exported:
+            modules that have been exported:
         """
 
         # If it is the root node, skip to top addrmap
         if isinstance(node, RootNode):
             top_block = node.top
         else:
+            if not isinstance(node, AddrmapNode):
+                raise TypeError(f'node must be an AddrmapNode got {type(node)}')
             top_block = node
 
         if not isinstance(path, str):
@@ -718,6 +722,11 @@ class PythonExporter:
 
         self.node_type_name = {}
 
+        if node.parent is None:
+            raise RuntimeError('node.parent can not be None')
+        if not isinstance(node.parent, (AddressableNode, RootNode)):
+            raise TypeError(f'parent should be an addressable node got {type(node.parent)}')
+
         for child_node in get_dependent_component(node.parent, hide_node_func):
 
             child_inst = child_node.inst
@@ -776,7 +785,7 @@ class PythonExporter:
         raise RuntimeError('Failed to find parent node to reference')
 
     def _get_dependent_enum(self, node: AddressableNode, hide_node_func: HideNodeCallback) -> \
-            Iterable[Tuple[UserEnumMeta, FieldNode]]:
+            Iterable[tuple[UserEnumMeta, FieldNode]]:
         """
         iterable of enums which is used by a descendant of the input node,
         this list is de-duplicated
@@ -797,9 +806,9 @@ class PythonExporter:
                         enum_needed.append(fully_qualified_enum_name)
                         yield field_enum, child_node
 
-    def _get_dependent_property_enum(self, node: AddressableNode,
-                                     udp_to_include: Optional[List[str]]) -> \
-            List[UserEnumMeta]:
+    def _get_dependent_property_enum(self, node: Node,
+                                     udp_to_include: Optional[list[str]]) -> \
+            list[UserEnumMeta]:
         """
         iterable of enums which is used by a descendant of the input node,
         this list is de-duplicated
@@ -807,13 +816,16 @@ class PythonExporter:
         if udp_to_include is None:
             return []
 
-        enum_needed = []
+        enum_needed: list[UserEnumMeta] = []
 
-        def update_enum_list(node_to_process: AddressableNode) -> None:
+        def update_enum_list(node_to_process: Node) -> None:
 
             def walk_property_struct_node(value: Any) -> None:
                 if isinstance(value, UserEnum) and type(value) not in enum_needed:
-                    enum_needed.append(type(value))
+                    enum_type = type(value)
+                    if not isinstance(enum_type, UserEnumMeta):
+                        raise TypeError(f'enum type should be UserEnumMeta, got {type(enum_type)}')
+                    enum_needed.append(enum_type)
 
                 if isinstance(value, UserStruct):
                     for sub_value in value.members.values():
@@ -824,7 +836,10 @@ class PythonExporter:
             for node_property_name in node_properties:
                 node_property = node_to_process.get_property(node_property_name)
                 if isinstance(node_property, UserEnum) and type(node_property) not in enum_needed:
-                    enum_needed.append(type(node_property))
+                    enum_type = type(node_property)
+                    if not isinstance(enum_type, UserEnumMeta):
+                        raise TypeError(f'enum type should be UserEnumMeta, got {type(enum_type)}')
+                    enum_needed.append(enum_type)
 
                 if isinstance(node_property, UserStruct):
                     for sub_value in node_property.members.values():
@@ -833,6 +848,8 @@ class PythonExporter:
         update_enum_list(node_to_process=node)
 
         for child_node in node.descendants():
+            if not isinstance(child_node, Node):
+                raise TypeError(f'child_node must be an Node got {type(child_node)}')
             update_enum_list(node_to_process=child_node)
 
         return enum_needed

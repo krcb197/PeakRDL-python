@@ -3,7 +3,8 @@ Tests for the array indexing in the base library
 """
 
 import unittest
-from typing import Tuple, Optional, Iterator, Union, Dict, cast
+from typing import Optional, Union, cast
+from collections.abc import Iterator
 from abc import ABC, abstractmethod
 from unittest.mock import patch
 from array import array as Array
@@ -30,7 +31,7 @@ class ArrayBase(CallBackTestWrapper, ABC):
 
     @property
     @abstractmethod
-    def dimensions(self) -> Tuple[int, ...]:
+    def dimensions(self) -> tuple[int, ...]:
         """
         Array dimensions
         """
@@ -57,7 +58,7 @@ class ArrayBase(CallBackTestWrapper, ABC):
         return self.__dut_warpper.dut
 
     @abstractmethod
-    def calculate_address(self, indices: Tuple[int, ...]) -> int:
+    def calculate_address(self, indices: tuple[int, ...]) -> int:
         """
         address based on array index
         """
@@ -76,7 +77,7 @@ class ArrayBase(CallBackTestWrapper, ABC):
                          logger_handle: str,
                          inst_name: str,
                          dut_stride : int,
-                         dut_dimensions : Tuple[int, ...],
+                         dut_dimensions : tuple[int, ...],
                          RegisterArrayType):
 
                 super().__init__(callbacks=callbacks, address=address, logger_handle=logger_handle,
@@ -92,12 +93,12 @@ class ArrayBase(CallBackTestWrapper, ABC):
                                                dimensions=dut_dimensions)
 
             def get_memories(self, unroll: bool = False) -> \
-                    Iterator[Union[Memory, Tuple[Memory, ...]]]:
+                    Iterator[Union[Memory, tuple[Memory, ...]]]:
                 raise NotImplementedError('Not implemented in the testing')
 
             def get_sections(self, unroll: bool = False) -> \
                     Iterator[Union[Union[AddressMap, RegFile],
-                                   Tuple[Union[AddressMap, RegFile], ...]]]:
+                                   tuple[Union[AddressMap, RegFile], ...]]]:
                 raise NotImplementedError('Not implemented in the testing')
 
             def get_registers(self, unroll: bool = False) -> \
@@ -108,7 +109,7 @@ class ArrayBase(CallBackTestWrapper, ABC):
                 raise NotImplementedError('Not implemented in the testing')
 
             @property
-            def systemrdl_python_child_name_map(self) -> Dict[str, str]:
+            def systemrdl_python_child_name_map(self) -> dict[str, str]:
 
                 return {
                     'dut': 'dut'
@@ -154,7 +155,7 @@ class Test1DArrayReadWrite(ArrayBase):
 
     # pylint: disable=duplicate-code
     @property
-    def dimensions(self) -> Tuple[int, ...]:
+    def dimensions(self) -> tuple[int, ...]:
         return (10,)
 
     @property
@@ -165,7 +166,7 @@ class Test1DArrayReadWrite(ArrayBase):
     def base_address(self) -> int:
         return 0
 
-    def calculate_address(self, indices: Tuple[int, ...]) -> int:
+    def calculate_address(self, indices: tuple[int, ...]) -> int:
         return (indices[0] * self.stride) + self.base_address
 
     # pylint: enable=duplicate-code
@@ -246,7 +247,7 @@ class Test1DArrayReadOnly(ArrayBase):
 
     # pylint: disable=duplicate-code
     @property
-    def dimensions(self) -> Tuple[int, ...]:
+    def dimensions(self) -> tuple[int, ...]:
         return (10,)
 
     @property
@@ -257,7 +258,7 @@ class Test1DArrayReadOnly(ArrayBase):
     def base_address(self) -> int:
         return 0
 
-    def calculate_address(self, indices: Tuple[int, ...]) -> int:
+    def calculate_address(self, indices: tuple[int, ...]) -> int:
         return (indices[0] * self.stride) + self.base_address
 
     # pylint: enable=duplicate-code
@@ -307,7 +308,7 @@ class Test1DArrayWriteOnly(ArrayBase):
 
     # pylint: disable=duplicate-code
     @property
-    def dimensions(self) -> Tuple[int, ...]:
+    def dimensions(self) -> tuple[int, ...]:
         return (10,)
 
     @property
@@ -318,7 +319,7 @@ class Test1DArrayWriteOnly(ArrayBase):
     def base_address(self) -> int:
         return 0
 
-    def calculate_address(self, indices: Tuple[int, ...]) -> int:
+    def calculate_address(self, indices: tuple[int, ...]) -> int:
         return (indices[0] * self.stride) + self.base_address
 
     # pylint: enable=duplicate-code
