@@ -793,10 +793,8 @@ class PythonExporter:
         enum_needed = []
         for child_node in node.descendants():
             if isinstance(child_node, FieldNode):
-                if 'encode' in child_node.list_properties():
-                    # found an field with an enumeration
-
-                    field_enum = child_node.get_property('encode')
+                field_enum = child_node.get_property('encode')
+                if field_enum is not None:
                     fully_qualified_enum_name = self._fully_qualified_enum_type(field_enum,
                                                                                 node,
                                                                                 child_node,
