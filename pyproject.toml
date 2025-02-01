@@ -8,7 +8,7 @@ dynamic = ["version"]
 # Callable is broken in python 3.9.0 and 3.9.1 so these need to be excluded
 requires-python = ">=3.9.2"
 dependencies = [
-    "systemrdl-compiler>=1.28.0",
+    "systemrdl-compiler>=1.29.3", # this is needed to make sure all the latest type checking
     "jinja2",
     "typing-extensions;python_version<'3.11'"
 ]
