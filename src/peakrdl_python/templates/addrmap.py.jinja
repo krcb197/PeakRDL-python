@@ -492,5 +492,5 @@ if __name__ == '__main__':
         print('write data:0x%X to address:0x%X'%(data, addr))
 
     # create an instance of the class
-    {{top_node.inst_name}} = {{top_node.inst_name)}}_cls(callbacks = {% if asyncoutput %}AsyncCallbackSet{% else %}NormalCallbackSet{% endif %}{% if legacy_block_access %}Legacy{% endif %}(read_callback=read_addr_space,
+    {{top_node.inst_name}} = {{top_node.inst_name}}_cls(callbacks = {% if asyncoutput %}AsyncCallbackSet{% else %}NormalCallbackSet{% endif %}{% if legacy_block_access %}Legacy{% endif %}(read_callback=read_addr_space,
                                                                                                      write_callback=write_addr_space))
