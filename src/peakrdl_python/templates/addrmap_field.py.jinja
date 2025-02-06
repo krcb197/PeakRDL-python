@@ -17,6 +17,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #}
 
 {% from 'addrmap_udp_property.py.jinja' import udp_property with context %}
+{% from 'addrmap_universal_property.py.jinja' import universal_properties with context %}
 
 {%- macro field_class(node) %}
     {% if node.is_sw_readable and node.is_sw_writable %}
@@ -125,5 +126,7 @@ class {{get_fully_qualified_type_name(node)}}_cls(Field{%- if 'encode' in node.l
     {% endif %}
 
     {{ udp_property(node) }}
+
+    {{ universal_properties(node) }}
 
 {%- endmacro -%}
