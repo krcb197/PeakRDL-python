@@ -1,0 +1,13 @@
+addrmap parametrised_top #(bit MY_PARAM = 12) {
+
+    default regwidth = 32;
+    default accesswidth = 32;
+
+    reg {
+        default sw = rw;
+        default hw = rw;
+        name = "ReadWriteRegister";
+        field {} my_field[32] = 0;
+    } my_reg[MY_PARAM];
+
+};

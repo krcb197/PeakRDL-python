@@ -175,6 +175,7 @@ jobs:
           peakrdl python tests/testcases/extended_memories.rdl -o peakrdl_out/raw/
           peakrdl python tests/testcases/user_defined_properties.rdl -o peakrdl_out/raw/ --udp bool_property_to_include
           peakrdl python tests/testcases/reserved_elements.rdl -o peakrdl_out/raw/ --hide_regex "(?:[\w_\[\]]+\.)+RSVD"
+          peakrdl python tests/testcases/parametrised_top.rdl -o peakrdl_out/raw/ -P MY_PARAM=3
           python -m unittest discover -s peakrdl_out/raw
 
           peakrdl python tests/testcases/basic.rdl -o peakrdl_out/raw_async/ --async

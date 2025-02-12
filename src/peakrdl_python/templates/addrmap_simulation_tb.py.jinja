@@ -35,10 +35,10 @@ from enum import IntEnum
 from {% if skip_lib_copy %}src.peakrdl_python.{% else %}..{% endif %}sim_lib.register import Register,MemoryRegister
 from {% if skip_lib_copy %}src.peakrdl_python.{% else %}..{% endif %}sim_lib.field import Field
 
-from ._{{top_node.inst_name}}_sim_test_base import {{top_node.type_name}}_SimTestCase, {{top_node.type_name}}_SimTestCase_BlockAccess
+from ._{{top_node.inst_name}}_sim_test_base import {{top_node.inst_name}}_SimTestCase, {{top_node.inst_name}}_SimTestCase_BlockAccess
 from ._{{top_node.inst_name}}_sim_test_base import __name__ as base_name
 
-class {{fq_block_name}}_single_access({{top_node.type_name}}_SimTestCase): # type: ignore[valid-type,misc]
+class {{fq_block_name}}_single_access({{top_node.inst_name}}_SimTestCase): # type: ignore[valid-type,misc]
 
     {% if asyncoutput %}async {% endif %}def test_register_read_and_write(self) -> None:
         """
@@ -335,7 +335,7 @@ class {{fq_block_name}}_single_access({{top_node.type_name}}_SimTestCase): # typ
 
 
 
-class {{fq_block_name}}_block_access({{top_node.type_name}}_SimTestCase_BlockAccess): # type: ignore[valid-type,misc]
+class {{fq_block_name}}_block_access({{top_node.inst_name}}_SimTestCase_BlockAccess): # type: ignore[valid-type,misc]
     """
     tests for all the block access methods
     """
