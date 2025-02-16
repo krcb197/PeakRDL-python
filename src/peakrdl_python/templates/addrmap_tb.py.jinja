@@ -35,9 +35,9 @@ from enum import IntEnum
 
 from {% if skip_lib_copy %}src.peakrdl_python.{% else %}..{% endif %}lib import RegisterWriteVerifyError, UnsupportedWidthError
 
-from ..reg_model.{{top_node.type_name}} import {{top_node.type_name}}_cls
+from ..reg_model.{{top_node.inst_name}} import {{top_node.inst_name}}_cls
 {% for property_enum in dependent_property_enum %}
-from ..reg_model.{{top_node.type_name}} import {{property_enum.type_name}}_property_enumcls
+from ..reg_model.{{top_node.inst_name}} import {{property_enum.type_name}}_property_enumcls
 {% endfor %}
 
 
@@ -67,12 +67,12 @@ from {% if skip_lib_copy %}src.peakrdl_python.{% else %}..{% endif %}lib import 
 from {% if skip_lib_copy %}src.peakrdl_python.{% else %}..{% endif %}lib import Field
 from {% if skip_lib_copy %}src.peakrdl_python.{% else %}..{% endif %}lib import Reg
 
-from ._{{top_node.inst_name}}_test_base import {{top_node.type_name}}_TestCase, {{top_node.type_name}}_TestCase_BlockAccess, {{top_node.type_name}}_TestCase_AltBlockAccess
+from ._{{top_node.inst_name}}_test_base import {{top_node.inst_name}}_TestCase, {{top_node.inst_name}}_TestCase_BlockAccess, {{top_node.inst_name}}_TestCase_AltBlockAccess
 from ._{{top_node.inst_name}}_test_base import __name__ as base_name
 
 {% from 'addrmap_udp_property.py.jinja' import udp_property_dict_entry with context %}
 
-class {{fq_block_name}}_single_access({{top_node.type_name}}_TestCase): # type: ignore[valid-type,misc]
+class {{fq_block_name}}_single_access({{top_node.inst_name}}_TestCase): # type: ignore[valid-type,misc]
 
     def test_inst_name(self)  -> None:
         """
@@ -1329,7 +1329,7 @@ class {{fq_block_name}}_single_access({{top_node.type_name}}_TestCase): # type: 
 
 
 
-class {{fq_block_name}}_block_access({{top_node.type_name}}_TestCase_BlockAccess): # type: ignore[valid-type,misc]
+class {{fq_block_name}}_block_access({{top_node.inst_name}}_TestCase_BlockAccess): # type: ignore[valid-type,misc]
     """
     tests for all the block access methods
     """
@@ -1488,7 +1488,7 @@ class {{fq_block_name}}_block_access({{top_node.type_name}}_TestCase_BlockAccess
 
         {%- endfor %}
 
-class {{fq_block_name}}_alt_block_access({{top_node.type_name}}_TestCase_AltBlockAccess): # type: ignore[valid-type,misc]
+class {{fq_block_name}}_alt_block_access({{top_node.inst_name}}_TestCase_AltBlockAccess): # type: ignore[valid-type,misc]
     """
     tests for all the block access methods with the alternative callbacks, this is a simpler
     version of the tests above

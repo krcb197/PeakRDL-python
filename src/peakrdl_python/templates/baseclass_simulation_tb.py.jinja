@@ -37,23 +37,23 @@ from {% if skip_lib_copy %}src.peakrdl_python.{% else %}..{% endif %}lib import 
 from {% if skip_lib_copy %}src.peakrdl_python.{% else %}..{% endif %}lib import NormalCallbackSet{% if legacy_block_access %}Legacy{% endif %}
 {% endif %}
 
-from ._{{top_node.inst_name}}_test_base import {{top_node.type_name}}_TestCase, {{top_node.type_name}}_TestCase_BlockAccess
+from ._{{top_node.inst_name}}_test_base import {{top_node.inst_name}}_TestCase, {{top_node.inst_name}}_TestCase_BlockAccess
 
-from ..reg_model.{{top_node.type_name}} import {{top_node.type_name}}_cls
-from ..sim.{{top_node.type_name}} import {{top_node.type_name}}_simulator_cls
+from ..reg_model.{{top_node.inst_name}} import {{top_node.inst_name}}_cls
+from ..sim.{{top_node.inst_name}} import {{top_node.inst_name}}_simulator_cls
 
-class {{top_node.type_name}}_SimTestCase({{top_node.type_name}}_TestCase): # type: ignore[valid-type,misc]
+class {{top_node.inst_name}}_SimTestCase({{top_node.inst_name}}_TestCase): # type: ignore[valid-type,misc]
 
     def setUp(self) -> None:
-        self.sim = {{top_node.type_name}}_simulator_cls(address=0)
-        self.dut = {{top_node.type_name}}_cls(callbacks={% if asyncoutput %}AsyncCallbackSet{% else %}NormalCallbackSet{% endif %}{% if legacy_block_access %}Legacy{% endif %}(read_callback=self.sim.read,
+        self.sim = {{top_node.inst_name}}_simulator_cls(address=0)
+        self.dut = {{top_node.inst_name}}_cls(callbacks={% if asyncoutput %}AsyncCallbackSet{% else %}NormalCallbackSet{% endif %}{% if legacy_block_access %}Legacy{% endif %}(read_callback=self.sim.read,
                                                           write_callback=self.sim.write))
 
-class {{top_node.type_name}}_SimTestCase_BlockAccess({{top_node.type_name}}_TestCase_BlockAccess): # type: ignore[valid-type,misc]
+class {{top_node.inst_name}}_SimTestCase_BlockAccess({{top_node.inst_name}}_TestCase_BlockAccess): # type: ignore[valid-type,misc]
 
     def setUp(self) -> None:
-        self.sim = {{top_node.type_name}}_simulator_cls(address=0)
-        self.dut = {{top_node.type_name}}_cls(callbacks={% if asyncoutput %}AsyncCallbackSet{% else %}NormalCallbackSet{% endif %}{% if legacy_block_access %}Legacy{% endif %}(read_callback=self.sim.read,
+        self.sim = {{top_node.inst_name}}_simulator_cls(address=0)
+        self.dut = {{top_node.inst_name}}_cls(callbacks={% if asyncoutput %}AsyncCallbackSet{% else %}NormalCallbackSet{% endif %}{% if legacy_block_access %}Legacy{% endif %}(read_callback=self.sim.read,
                                                           write_callback=self.sim.write,
                                                           read_block_callback=self.sim.read_block,
                                                           write_block_callback=self.sim.write_block))
