@@ -35,7 +35,7 @@ mem memtype {
     desc = "Mem desc";
 };
 
-addrmap name_description_test {
+addrmap name_desc_all_levels {
     reg regtype {
         enum field_encoding {
          // note the specification section 6.2.5 says that an enumeration does not have properties

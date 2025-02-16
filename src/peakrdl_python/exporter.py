@@ -49,6 +49,8 @@ from .safe_name_utility import get_python_path_segments, safe_node_name
 
 from ._node_walkers import AddressMaps, OwnedbyAddressMap
 
+from .python_jinja_extensions import python_escape
+
 from .__about__ import __version__
 
 
@@ -269,6 +271,7 @@ class PythonExporter:
             loader=loader,
             undefined=jj.StrictUndefined
         )
+        self.jj_env.filters['python_escape'] = python_escape
 
         # Dictionary of root-level type definitions
         # key = definition type name
