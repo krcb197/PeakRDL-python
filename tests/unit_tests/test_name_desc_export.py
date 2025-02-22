@@ -11,6 +11,7 @@ import re
 from itertools import chain, permutations, product
 from pathlib import Path
 from array import array as Array
+import re
 
 from contextlib import contextmanager
 
@@ -88,9 +89,16 @@ class TestAlternativeTemplates(unittest.TestCase):
         """
         Checks all the nodes in the reg model match the name and desc in the systemRDL compilation
         """
+        node_name_regex = re.compile(r"(?P<node_name>\w*)(\[(?P<index>\d*)\])?")
         def walk_node_path(node, node_path: list[str]):
             if len(node_path) > 0:
-                child_node = getattr(node, node_path[0])
+                node_name_breakdown = node_name_regex.match(node_path[0])
+                if (node_name:=node_name_breakdown.group('node_name')) is None:
+                    raise RuntimeError(f'No Node name found for {node_path[0]}')
+                if (node_index := node_name_breakdown.group('index')) is None:
+                    child_node = getattr(node, node_name)
+                else:
+                    child_node = getattr(node, node_name).__getitem__(int(node_index))
                 return walk_node_path(child_node, node_path[1:])
             return node
 

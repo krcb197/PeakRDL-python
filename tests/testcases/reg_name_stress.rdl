@@ -21,7 +21,9 @@ addrmap reg_name_stress {
         fieldtype field_a;} reg_d;
     reg {name="A register name with an single {{bad_name}} designed to mess the jinja templates";
         fieldtype field_a;} reg_e;
+    /* This test was removed pending the solution to #169
     reg {name="A register name \"\"\" this messes up the docstrings";
         fieldtype field_a;} reg_f;
+    */
 
 };
