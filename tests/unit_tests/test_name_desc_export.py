@@ -95,10 +95,11 @@ class TestAlternativeTemplates(unittest.TestCase):
                 node_name_breakdown = node_name_regex.match(node_path[0])
                 if (node_name:=node_name_breakdown.group('node_name')) is None:
                     raise RuntimeError(f'No Node name found for {node_path[0]}')
+                child_node_name = node.systemrdl_python_child_name_map[node_name]
                 if (node_index := node_name_breakdown.group('index')) is None:
-                    child_node = getattr(node, node_name)
+                    child_node = getattr(node, child_node_name)
                 else:
-                    child_node = getattr(node, node_name).__getitem__(int(node_index))
+                    child_node = getattr(node, child_node_name).__getitem__(int(node_index))
                 return walk_node_path(child_node, node_path[1:])
             return node
 
