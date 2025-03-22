@@ -210,7 +210,7 @@ if __name__ == '__main__':
             peakrdl_python_package = __import__('generate_and_test_output.' + CommandLineArgs.root_node + '.lib',
                                                 globals(), locals(), ['CallbackSet'], 0)
         else:
-            peakrdl_python_package = __import__('src.peakrdl_python.lib',
+            peakrdl_python_package = __import__('peakrdl_python.lib',
                                                 globals(), locals(), ['CallbackSet'], 0)
 
         if CommandLineArgs.asyncoutput is True:
