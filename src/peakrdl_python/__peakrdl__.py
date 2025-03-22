@@ -86,6 +86,8 @@ class Exporter(ExporterSubcommandPlugin):
         arg_group.add_argument('--hide_regex', dest='hide_regex', type=str,
                                help='A regex that will cause any matching fully qualified node to '
                                     'be hidden')
+        arg_group.add_argument('--skip_library_copy', action='store_true',
+                               help='skip the copy of the library code into the generated package')
 
     def do_export(self, top_node: 'AddrmapNode', options: 'argparse.Namespace') -> None:
         """
@@ -117,5 +119,6 @@ class Exporter(ExporterSubcommandPlugin):
             legacy_block_access=options.legacy_block_access,
             show_hidden=options.show_hidden,
             user_defined_properties_to_include=options.udp,
-            hidden_inst_name_regex=options.hide_regex
+            hidden_inst_name_regex=options.hide_regex,
+            skip_library_copy=options.skip_library_copy
         )

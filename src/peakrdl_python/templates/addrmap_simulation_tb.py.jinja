@@ -32,8 +32,8 @@ from unittest.mock import Mock
 import random
 from enum import IntEnum
 
-from {% if skip_lib_copy %}src.peakrdl_python.{% else %}..{% endif %}sim_lib.register import Register,MemoryRegister
-from {% if skip_lib_copy %}src.peakrdl_python.{% else %}..{% endif %}sim_lib.field import Field
+from {% if skip_lib_copy %}peakrdl_python.{% else %}..{% endif %}sim_lib.register import Register,MemoryRegister
+from {% if skip_lib_copy %}peakrdl_python.{% else %}..{% endif %}sim_lib.field import Field
 
 from ._{{top_node.inst_name}}_sim_test_base import {{top_node.inst_name}}_SimTestCase, {{top_node.inst_name}}_SimTestCase_BlockAccess
 from ._{{top_node.inst_name}}_sim_test_base import __name__ as base_name

@@ -33,7 +33,7 @@ from itertools import combinations
 import math
 from enum import IntEnum
 
-from {% if skip_lib_copy %}src.peakrdl_python.{% else %}..{% endif %}lib import RegisterWriteVerifyError, UnsupportedWidthError
+from {% if skip_lib_copy %}peakrdl_python.{% else %}..{% endif %}lib import RegisterWriteVerifyError, UnsupportedWidthError
 
 from ..reg_model.{{top_node.inst_name}} import {{top_node.inst_name}}_cls
 {% for property_enum in dependent_property_enum %}
@@ -42,30 +42,30 @@ from ..reg_model.{{top_node.inst_name}} import {{property_enum.type_name}}_prope
 
 
 {% if asyncoutput %}
-from {% if skip_lib_copy %}src.peakrdl_python.{% else %}..{% endif %}lib import FieldAsyncReadOnly, FieldAsyncWriteOnly, FieldAsyncReadWrite
-from {% if skip_lib_copy %}src.peakrdl_python.{% else %}..{% endif %}lib import WritableAsyncRegister, ReadableAsyncRegister
-from {% if skip_lib_copy %}src.peakrdl_python.{% else %}..{% endif %}lib import RegAsyncReadWrite, RegAsyncReadOnly, RegAsyncWriteOnly
-from {% if skip_lib_copy %}src.peakrdl_python.{% else %}..{% endif %}lib import RegAsyncReadWriteArray, RegAsyncReadOnlyArray, RegAsyncWriteOnlyArray
-from {% if skip_lib_copy %}src.peakrdl_python.{% else %}..{% endif %}lib import MemoryAsyncReadOnly{% if legacy_block_access %}Legacy{% endif %}, MemoryAsyncWriteOnly{% if legacy_block_access %}Legacy{% endif %}, MemoryAsyncReadWrite{% if legacy_block_access %}Legacy{% endif %}
-from {% if skip_lib_copy %}src.peakrdl_python.{% else %}..{% endif %}lib import MemoryAsyncReadOnlyArray, MemoryAsyncWriteOnlyArray, MemoryAsyncReadWriteArray
-from {% if skip_lib_copy %}src.peakrdl_python.{% else %}..{% endif %}lib import AsyncAddressMap, AsyncRegFile
-from {% if skip_lib_copy %}src.peakrdl_python.{% else %}..{% endif %}lib import AsyncAddressMapArray, AsyncRegFileArray
-from {% if skip_lib_copy %}src.peakrdl_python.{% else %}..{% endif %}lib import AsyncMemory
+from {% if skip_lib_copy %}peakrdl_python.{% else %}..{% endif %}lib import FieldAsyncReadOnly, FieldAsyncWriteOnly, FieldAsyncReadWrite
+from {% if skip_lib_copy %}peakrdl_python.{% else %}..{% endif %}lib import WritableAsyncRegister, ReadableAsyncRegister
+from {% if skip_lib_copy %}peakrdl_python.{% else %}..{% endif %}lib import RegAsyncReadWrite, RegAsyncReadOnly, RegAsyncWriteOnly
+from {% if skip_lib_copy %}peakrdl_python.{% else %}..{% endif %}lib import RegAsyncReadWriteArray, RegAsyncReadOnlyArray, RegAsyncWriteOnlyArray
+from {% if skip_lib_copy %}peakrdl_python.{% else %}..{% endif %}lib import MemoryAsyncReadOnly{% if legacy_block_access %}Legacy{% endif %}, MemoryAsyncWriteOnly{% if legacy_block_access %}Legacy{% endif %}, MemoryAsyncReadWrite{% if legacy_block_access %}Legacy{% endif %}
+from {% if skip_lib_copy %}peakrdl_python.{% else %}..{% endif %}lib import MemoryAsyncReadOnlyArray, MemoryAsyncWriteOnlyArray, MemoryAsyncReadWriteArray
+from {% if skip_lib_copy %}peakrdl_python.{% else %}..{% endif %}lib import AsyncAddressMap, AsyncRegFile
+from {% if skip_lib_copy %}peakrdl_python.{% else %}..{% endif %}lib import AsyncAddressMapArray, AsyncRegFileArray
+from {% if skip_lib_copy %}peakrdl_python.{% else %}..{% endif %}lib import AsyncMemory
 {% else %}
-from {% if skip_lib_copy %}src.peakrdl_python.{% else %}..{% endif %}lib import FieldReadOnly, FieldWriteOnly, FieldReadWrite
-from {% if skip_lib_copy %}src.peakrdl_python.{% else %}..{% endif %}lib import WritableRegister, ReadableRegister
-from {% if skip_lib_copy %}src.peakrdl_python.{% else %}..{% endif %}lib import RegReadWrite, RegReadOnly, RegWriteOnly
-from {% if skip_lib_copy %}src.peakrdl_python.{% else %}..{% endif %}lib import RegReadWriteArray, RegReadOnlyArray, RegWriteOnlyArray
-from {% if skip_lib_copy %}src.peakrdl_python.{% else %}..{% endif %}lib import MemoryReadOnly{% if legacy_block_access %}Legacy{% endif %}, MemoryWriteOnly{% if legacy_block_access %}Legacy{% endif %}, MemoryReadWrite{% if legacy_block_access %}Legacy{% endif %}
-from {% if skip_lib_copy %}src.peakrdl_python.{% else %}..{% endif %}lib import MemoryReadOnlyArray, MemoryWriteOnlyArray, MemoryReadWriteArray
-from {% if skip_lib_copy %}src.peakrdl_python.{% else %}..{% endif %}lib import AddressMap, RegFile
-from {% if skip_lib_copy %}src.peakrdl_python.{% else %}..{% endif %}lib import AddressMapArray, RegFileArray
-from {% if skip_lib_copy %}src.peakrdl_python.{% else %}..{% endif %}lib import Memory
+from {% if skip_lib_copy %}peakrdl_python.{% else %}..{% endif %}lib import FieldReadOnly, FieldWriteOnly, FieldReadWrite
+from {% if skip_lib_copy %}peakrdl_python.{% else %}..{% endif %}lib import WritableRegister, ReadableRegister
+from {% if skip_lib_copy %}peakrdl_python.{% else %}..{% endif %}lib import RegReadWrite, RegReadOnly, RegWriteOnly
+from {% if skip_lib_copy %}peakrdl_python.{% else %}..{% endif %}lib import RegReadWriteArray, RegReadOnlyArray, RegWriteOnlyArray
+from {% if skip_lib_copy %}peakrdl_python.{% else %}..{% endif %}lib import MemoryReadOnly{% if legacy_block_access %}Legacy{% endif %}, MemoryWriteOnly{% if legacy_block_access %}Legacy{% endif %}, MemoryReadWrite{% if legacy_block_access %}Legacy{% endif %}
+from {% if skip_lib_copy %}peakrdl_python.{% else %}..{% endif %}lib import MemoryReadOnlyArray, MemoryWriteOnlyArray, MemoryReadWriteArray
+from {% if skip_lib_copy %}peakrdl_python.{% else %}..{% endif %}lib import AddressMap, RegFile
+from {% if skip_lib_copy %}peakrdl_python.{% else %}..{% endif %}lib import AddressMapArray, RegFileArray
+from {% if skip_lib_copy %}peakrdl_python.{% else %}..{% endif %}lib import Memory
 {% endif %}
 
 
-from {% if skip_lib_copy %}src.peakrdl_python.{% else %}..{% endif %}lib import Field
-from {% if skip_lib_copy %}src.peakrdl_python.{% else %}..{% endif %}lib import Reg
+from {% if skip_lib_copy %}peakrdl_python.{% else %}..{% endif %}lib import Field
+from {% if skip_lib_copy %}peakrdl_python.{% else %}..{% endif %}lib import Reg
 
 from ._{{top_node.inst_name}}_test_base import {{top_node.inst_name}}_TestCase, {{top_node.inst_name}}_TestCase_BlockAccess, {{top_node.inst_name}}_TestCase_AltBlockAccess
 from ._{{top_node.inst_name}}_test_base import __name__ as base_name

@@ -120,6 +120,8 @@ jobs:
           python -m pip uninstall peakrdl-python -y
           # peakrdl-ipxact is needed for some of the test cases so is imported by the
           # generate_and_test script
+          
+          PYTHONPATH=/src
 
 
           # retrieve the example code from the systemRDL compiler
@@ -186,15 +188,15 @@ jobs:
           python -m unittest discover -s peakrdl_out/raw_legacy
 
           peakrdl python tests/testcases/basic.rdl -o peakrdl_out/no_test/ --skip_test_case_generation
+          
+          peakrdl python tests/testcases/basic.rdl -o peakrdl_out/no_lib/ --skip_library_copy
+          python -m unittest discover -s peakrdl_out/no_lib
 
           # test a TOMl file that passes in overridden templates
           peakrdl python tests/testcases/basic.rdl -o peakrdl_out/simple_user_template/ --peakrdl-cfg tests/alternative_templates_toml/peakrdl.toml
           python tests/alternative_templates_toml/header_check.py --generated_package_location peakrdl_out/simple_user_template/ --top_name basic
           peakrdl python tests/testcases/basic.rdl -o peakrdl_out/dynamic_user_template/ --peakrdl-cfg tests/alternative_templates_dynamic_toml/peakrdl.toml
           python tests/alternative_templates_dynamic_toml/header_check.py --generated_package_location peakrdl_out/dynamic_user_template/ --top_name basic
-
-
-
 
       - name: Check Examples
         run: |
