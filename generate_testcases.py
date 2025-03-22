@@ -20,7 +20,6 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 script to generate all the test cases from the test set
 """
 
-import sys
 import os
 
 from glob import glob
