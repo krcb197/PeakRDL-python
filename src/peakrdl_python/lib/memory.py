@@ -73,7 +73,6 @@ class BaseMemory(Node, ABC):
         Initialise the class
 
         Args:
-            callbacks: set of callback to be used for accessing the hardware or simulator
             address: address of the register
             width: width of the register in bits
             logger_handle: name to be used logging messages associate with this object
@@ -192,7 +191,6 @@ class Memory(BaseMemory, ABC):
         Initialise the class
 
         Args:
-            callbacks: set of callback to be used for accessing the hardware or simulator
             address: address of the register
             width: width of the register in bits
             logger_handle: name to be used logging messages associate with this object

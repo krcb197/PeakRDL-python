@@ -23,7 +23,6 @@ the peakrdl command line tool. However, when developing and debugging it is conv
 peakrdl and call the exporter directly.
 """
 
-import os
 import time
 import argparse
 import pathlib
@@ -67,14 +66,14 @@ CommandLineParser.add_argument('--suppress_cleanup', action='store_true', dest='
                                     'files found in the directory where the package will be'
                                     ' generated. This is normally useful if the user is '
                                     'generating over the top of an existing package and prevents '
-                                    'problems when the strucutre of the register map changes. '
+                                    'problems when the structure of the register map changes. '
                                     'However, if additional python files are added by the user '
                                     '(not recommended) this cleanup will need to be suppressed '
                                     'and managed by the user')
 CommandLineParser.add_argument('--copy_libraries', action='store_true', dest='copy_libraries',
                                help='by default peakrdl python copies all the libraries over'
                                     'to the generated package along with the generated code. '
-                                    'However, that is potententially problematic when developing'
+                                    'However, that is potentiality problematic when developing'
                                     'and debugging as multiple copies of the libraries can cause'
                                     'confusion. Therefore by default this script does not copy '
                                     'them over.')

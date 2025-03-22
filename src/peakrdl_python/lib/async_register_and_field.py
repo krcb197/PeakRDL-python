@@ -116,7 +116,6 @@ class RegAsyncReadOnly(AsyncReg, ABC):
     class for an async read only register
 
     Args:
-        callbacks: set of callback to be used for accessing the hardware or simulator
         address: address of the register
         width: width of the register in bits
         accesswidth: minimum access width of the register in bits
