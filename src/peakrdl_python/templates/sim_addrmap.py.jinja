@@ -20,14 +20,14 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 from typing import Union
 
-from {% if skip_lib_copy %}src.peakrdl_python.{% else %}..{% endif %}sim_lib.register import Register, MemoryRegister
-from {% if skip_lib_copy %}src.peakrdl_python.{% else %}..{% endif %}sim_lib.memory import Memory
-from {% if skip_lib_copy %}src.peakrdl_python.{% else %}..{% endif %}sim_lib.simulator import MemoryEntry
-from {% if skip_lib_copy %}src.peakrdl_python.{% else %}..{% endif %}sim_lib.field import FieldDefinition
+from {% if skip_lib_copy %}peakrdl_python.{% else %}..{% endif %}sim_lib.register import Register, MemoryRegister
+from {% if skip_lib_copy %}peakrdl_python.{% else %}..{% endif %}sim_lib.memory import Memory
+from {% if skip_lib_copy %}peakrdl_python.{% else %}..{% endif %}sim_lib.simulator import MemoryEntry
+from {% if skip_lib_copy %}peakrdl_python.{% else %}..{% endif %}sim_lib.field import FieldDefinition
 {% if asyncoutput -%}
-from {%if skip_lib_copy %}src.peakrdl_python.{% else %}..{% endif %}sim_lib.simulator import AsyncSimulator{% if legacy_block_access %}Legacy{% endif %} as Simulator{% if legacy_block_access %}Legacy{% endif %}
+from {% if skip_lib_copy %}peakrdl_python.{% else %}..{% endif %}sim_lib.simulator import AsyncSimulator{% if legacy_block_access %}Legacy{% endif %} as Simulator{% if legacy_block_access %}Legacy{% endif %}
 {% else %}
-from {% if skip_lib_copy %}src.peakrdl_python.{% else %}..{% endif %}sim_lib.simulator import Simulator{% if legacy_block_access %}Legacy{% endif %}
+from {% if skip_lib_copy %}peakrdl_python.{% else %}..{% endif %}sim_lib.simulator import Simulator{% if legacy_block_access %}Legacy{% endif %}
 {%- endif %}
 
 class {{top_node.inst_name}}_simulator_cls(Simulator{% if legacy_block_access %}Legacy{% endif %}):

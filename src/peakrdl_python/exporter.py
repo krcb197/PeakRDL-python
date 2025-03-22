@@ -594,8 +594,10 @@ class PythonExporter:
                                                     operations
             skip_library_copy (bool): skip copy the libraries to the generated package, this is
                                       useful to turn off when developing peakrdl python to avoid
-                                      editing the wrong copy of the library. However, it is not
-                                      recommended in end user cases
+                                      editing the wrong copy of the library. It also avoids the
+                                      GPL code being part of the package for distribution,
+                                      However, this means the end-user is responsible for
+                                      installing the libraries.
             legacy_block_access (bool): version 0.8 changed the block access methods from using
                                         arrays to to lists. This allows memory widths of other
                                         than 8, 16, 32, 64 to be supported which are legal in

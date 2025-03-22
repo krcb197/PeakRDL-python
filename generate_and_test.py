@@ -39,7 +39,6 @@ from unittest import TextTestRunner
 
 #from peakrdl_ipxact import IPXACTImporter
 
-sys.path.append('src')
 from peakrdl_python import PythonExporter
 from peakrdl_python import compiler_with_udp_registers
 
