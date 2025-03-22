@@ -84,16 +84,16 @@ class {{fq_block_name}}_single_access({{top_node.inst_name}}_TestCase): # type: 
             self.assertEqual(self.dut.{{'.'.join(get_python_path_segments(node))}}.full_inst_name, '{{'.'.join(node.get_path_segments())}}')  # type: ignore[union-attr]
         {% endfor %}
 
-    def test_name(self)  -> None:
+    def test_name_property(self)  -> None:
         """
         Walk the address map and check the name property has been correctly populated
         """
         {% for node in owned_elements.nodes -%}
         with self.subTest(msg='node: {{'.'.join(node.get_path_segments())}}'):
             {% if node.get_property('name', default=None) is none %}
-            self.assertIsNone(self.dut.{{'.'.join(get_python_path_segments(node))}}.name)  # type: ignore[union-attr]
+            self.assertIsNone(self.dut.{{'.'.join(get_python_path_segments(node))}}.name_property)  # type: ignore[union-attr]
             {% else %}
-            self.assertEqual(self.dut.{{'.'.join(get_python_path_segments(node))}}.name, {{node.get_property('name') | tojson}}) # type: ignore[union-attr]
+            self.assertEqual(self.dut.{{'.'.join(get_python_path_segments(node))}}.name_property, {{node.get_property('name') | tojson}}) # type: ignore[union-attr]
             {% endif %}
 
         {% endfor %}

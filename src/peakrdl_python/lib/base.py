@@ -119,7 +119,7 @@ class Base(ABC):
         return {}
 
     @property
-    def name(self) -> Optional[str]:
+    def name_property(self) -> Optional[str]:
         """
         The systemRDL name property for the item
         """
