@@ -18,19 +18,23 @@ reg regtype {
 
 addrmap addrmaptype {
     regtype  reg_a;
+    regtype  reg_b[2];
     name = "Addrmap name";
     desc = "Addrmap desc";
 };
 
 regfile regfiletype {
     regtype  reg_a;
+    regtype  reg_b[2];
     name = "RegFile name";
     desc = "RegFile desc";
 };
 
 mem memtype {
-    mementries = 2;
+    mementries = 6;
     memwidth = 32;
+    regtype  reg_a;
+    regtype  reg_b[2];
     name = "Mem name";
     desc = "Mem desc";
 };
@@ -53,5 +57,5 @@ addrmap name_desc_all_levels {
     addrmaptype addrmap_a;
     addrmaptype addrmap_b[2];
     external memtype mem_a;
-    external memtype mem_b;
+    external memtype mem_b[2];
 };
