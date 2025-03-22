@@ -67,27 +67,27 @@ Memories
 Registers
 =========
 
-.. autoclass:: peakrdl_python.lib.register.RegReadOnly
+.. autoclass:: peakrdl_python.lib.register_and_field.RegReadOnly
     :members:
     :inherited-members:
 
-.. autoclass:: peakrdl_python.lib.register.RegWriteOnly
+.. autoclass:: peakrdl_python.lib.register_and_field.RegWriteOnly
     :members:
     :inherited-members:
 
-.. autoclass:: peakrdl_python.lib.register.RegReadWrite
+.. autoclass:: peakrdl_python.lib.register_and_field.RegReadWrite
     :members:
     :inherited-members:
 
-.. autoclass:: peakrdl_python.lib.register.RegReadOnlyArray
+.. autoclass:: peakrdl_python.lib.register_and_field.RegReadOnlyArray
     :members:
     :inherited-members:
 
-.. autoclass:: peakrdl_python.lib.register.RegWriteOnlyArray
+.. autoclass:: peakrdl_python.lib.register_and_field.RegWriteOnlyArray
     :members:
     :inherited-members:
 
-.. autoclass:: peakrdl_python.lib.register.RegReadWriteArray
+.. autoclass:: peakrdl_python.lib.register_and_field.RegReadWriteArray
     :members:
     :inherited-members:
 
@@ -95,26 +95,26 @@ Register Fields
 ^^^^^^^^^^^^^^^
 A register will always have fields within it
 
-.. autoclass:: peakrdl_python.lib.fields.FieldReadOnly
+.. autoclass:: peakrdl_python.lib.register_and_field.FieldReadOnly
     :members:
     :inherited-members:
 
-.. autoclass:: peakrdl_python.lib.fields.FieldWriteOnly
+.. autoclass:: peakrdl_python.lib.register_and_field.FieldWriteOnly
     :members:
     :inherited-members:
 
-.. autoclass:: peakrdl_python.lib.fields.FieldReadWrite
+.. autoclass:: peakrdl_python.lib.register_and_field.FieldReadWrite
     :members:
     :inherited-members:
 
-.. autoclass:: peakrdl_python.lib.fields.FieldEnumReadOnly
+.. autoclass:: peakrdl_python.lib.register_and_field.FieldEnumReadOnly
     :members:
     :inherited-members:
 
-.. autoclass:: peakrdl_python.lib.fields.FieldEnumWriteOnly
+.. autoclass:: peakrdl_python.lib.register_and_field.FieldEnumWriteOnly
     :members:
     :inherited-members:
 
-.. autoclass:: peakrdl_python.lib.fields.FieldEnumReadWrite
+.. autoclass:: peakrdl_python.lib.register_and_field.FieldEnumReadWrite
     :members:
     :inherited-members:
