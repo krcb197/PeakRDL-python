@@ -1,0 +1,32 @@
+/*
+This test was introduced as part of #167 to check various names that have be chossen to stress
+the generated code
+*/
+
+field fieldtype {
+        fieldwidth=1;
+        };
+
+addrmap reg_name_stress {
+
+    reg {name="hello";
+         fieldtype field_a;} reg_a;
+    reg {name="a register called name";
+         fieldtype field_a;} name;
+    reg {name="A register name with an escaped double quote\"";
+         fieldtype field_a;} reg_b;
+    reg {name="A register name with an \\ which may have strange effects";
+         fieldtype field_a;} reg_c;
+    reg {name="A register name with an single ' character";
+         fieldtype field_a;} reg_d;
+    reg {name="A register name with an single {{bad_name}} designed to mess the jinja templates";
+         fieldtype field_a;} reg_e;
+    /* This test was removed pending the solution to #169
+    reg {name="A register name \"\"\" this messes up the docstrings";
+         fieldtype field_a;} reg_f;
+    */
+    reg {name="A registers with
+               some line breaks";
+         fieldtype field_a;} reg_g;
+
+};

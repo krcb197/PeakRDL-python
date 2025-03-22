@@ -1,0 +1,61 @@
+/*
+This test was introduced as part of #167 to check that a name and description would get populated
+correctly in all the possible structures
+*/
+field fieldtype {
+        fieldwidth=20;
+        name = "Field name";
+        desc = "Field desc";
+        };
+
+reg regtype {
+        default sw = rw;
+        default hw = r;
+        name = "Reg name";
+        desc = "Reg desc";
+        fieldtype field_a;
+    };
+
+addrmap addrmaptype {
+    regtype  reg_a;
+    regtype  reg_b[2];
+    name = "Addrmap name";
+    desc = "Addrmap desc";
+};
+
+regfile regfiletype {
+    regtype  reg_a;
+    regtype  reg_b[2];
+    name = "RegFile name";
+    desc = "RegFile desc";
+};
+
+mem memtype {
+    mementries = 6;
+    memwidth = 32;
+    regtype  reg_a;
+    regtype  reg_b[2];
+    name = "Mem name";
+    desc = "Mem desc";
+};
+
+addrmap name_desc_all_levels {
+    reg regtype {
+        enum field_encoding {
+         // note the specification section 6.2.5 says that an enumeration does not have properties
+         first_encoding_entry = 0;
+         second_entry = 1 { name = "second entry"; };
+         third_entry = 2 { name = "third entry"; desc = "this value has a documentation"; };
+         fourth_entry = 3 { desc = "this value has a documentation but no name"; };
+        };
+        default sw = rw;
+        default hw = r;
+        field { encode=field_encoding; } field_a[3:0];
+    };
+    regfiletype regfile_a;
+    regfiletype regfile_b[2];
+    addrmaptype addrmap_a;
+    addrmaptype addrmap_b[2];
+    external memtype mem_a;
+    external memtype mem_b[2];
+};
