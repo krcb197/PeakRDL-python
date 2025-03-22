@@ -113,9 +113,9 @@ class TestAlternativeTemplates(unittest.TestCase):
                         path_segments = item.get_path_segments()
                         node = walk_node_path(reg_model, path_segments[1:])
                         if 'name' in item.list_properties():
-                            self.assertEqual(item.get_property('name'), node.name)
+                            self.assertEqual(item.get_property('name'), node.name_property)
                         else:
-                            self.assertIsNone(node.name)
+                            self.assertIsNone(node.name_property)
 
                         if 'desc' in item.list_properties():
                             self.assertEqual(item.get_property('desc'), node.desc)
