@@ -38,7 +38,7 @@ from {% if skip_lib_copy %}src.peakrdl_python.{% else %}..{% endif %}lib import 
 {% endif %}
 
 
-from ..reg_model.{{top_node.type_name}} import {{top_node.type_name}}_cls
+from ..reg_model.{{top_node.inst_name}} import {{top_node.inst_name}}_cls
 {% if asyncoutput %}
 from {% if skip_lib_copy %}src.peakrdl_python.{% else %}..{% endif %}sim_lib.dummy_callbacks import async_dummy_read as read_addr_space
 from {% if skip_lib_copy %}src.peakrdl_python.{% else %}..{% endif %}sim_lib.dummy_callbacks import async_dummy_write as write_addr_space
@@ -83,10 +83,10 @@ else:
 TestCaseBase = unittest.TestCase
 {% endif %}
 
-class {{top_node.type_name}}_TestCase(TestCaseBase): # type: ignore[valid-type,misc]
+class {{top_node.inst_name}}_TestCase(TestCaseBase): # type: ignore[valid-type,misc]
 
     def setUp(self) -> None:
-        self.dut = {{top_node.type_name}}_cls(callbacks={% if asyncoutput %}AsyncCallbackSet{% else %}NormalCallbackSet{% endif %}{% if legacy_block_access %}Legacy{% endif %}(read_callback=read_callback,
+        self.dut = {{top_node.inst_name}}_cls(callbacks={% if asyncoutput %}AsyncCallbackSet{% else %}NormalCallbackSet{% endif %}{% if legacy_block_access %}Legacy{% endif %}(read_callback=read_callback,
                                                           write_callback=write_callback))
 
     @staticmethod
@@ -106,22 +106,22 @@ class {{top_node.type_name}}_TestCase(TestCaseBase): # type: ignore[valid-type,m
                 result |= 1 << (number_bits - 1 - i)
         return result
 
-class {{top_node.type_name}}_TestCase_BlockAccess(TestCaseBase): # type: ignore[valid-type,misc]
+class {{top_node.inst_name}}_TestCase_BlockAccess(TestCaseBase): # type: ignore[valid-type,misc]
 
     def setUp(self) -> None:
-        self.dut = {{top_node.type_name}}_cls(callbacks={% if asyncoutput %}AsyncCallbackSet{% else %}NormalCallbackSet{% endif %}{% if legacy_block_access %}Legacy{% endif %}(read_callback=read_callback,
+        self.dut = {{top_node.inst_name}}_cls(callbacks={% if asyncoutput %}AsyncCallbackSet{% else %}NormalCallbackSet{% endif %}{% if legacy_block_access %}Legacy{% endif %}(read_callback=read_callback,
                                                           write_callback=write_callback,
                                                           read_block_callback=read_block_callback,
                                                           write_block_callback=write_block_callback))
 
-class {{top_node.type_name}}_TestCase_AltBlockAccess(TestCaseBase): # type: ignore[valid-type,misc]
+class {{top_node.inst_name}}_TestCase_AltBlockAccess(TestCaseBase): # type: ignore[valid-type,misc]
     """
     Based test to use with the alternative call backs, this allow the legacy output API to be tested
     with the new callbacks and visa versa.
     """
 
     def setUp(self) -> None:
-        self.dut = {{top_node.type_name}}_cls(callbacks={% if asyncoutput %}AsyncCallbackSet{% else %}NormalCallbackSet{% endif %}{% if not legacy_block_access %}Legacy{% endif %}(
+        self.dut = {{top_node.inst_name}}_cls(callbacks={% if asyncoutput %}AsyncCallbackSet{% else %}NormalCallbackSet{% endif %}{% if not legacy_block_access %}Legacy{% endif %}(
                                                           read_callback=read_callback,
                                                           write_callback=write_callback,
                                                           read_block_callback=read_block_callback_alt,
