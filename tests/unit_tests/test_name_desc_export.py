@@ -8,10 +8,10 @@ import os
 import tempfile
 import sys
 import re
-from itertools import chain, permutations, product
+
 from pathlib import Path
-from array import array as Array
-import re
+
+
 
 from contextlib import contextmanager
 
@@ -52,6 +52,7 @@ class TestAlternativeTemplates(unittest.TestCase):
             # that there are two separate entries in the python import cache and this avoids the
             # test failing for strange reasons
 
+            # pylint: disable=duplicate-code
             exporter.export(node=spec,
                             path=tmpdirname,
                             asyncoutput=False,
@@ -60,6 +61,7 @@ class TestAlternativeTemplates(unittest.TestCase):
                             skip_test_case_generation=True,
                             legacy_block_access=False,
                             show_hidden=False)
+            # pylint: enable=duplicate-code
 
             # add the temp directory to the python path so that it can be imported from
             sys.path.append(tmpdirname)
@@ -99,7 +101,7 @@ class TestAlternativeTemplates(unittest.TestCase):
                 if (node_index := node_name_breakdown.group('index')) is None:
                     child_node = getattr(node, child_node_name)
                 else:
-                    child_node = getattr(node, child_node_name).__getitem__(int(node_index))
+                    child_node = getattr(node, child_node_name)[int(node_index)]
                 return walk_node_path(child_node, node_path[1:])
             return node
 
