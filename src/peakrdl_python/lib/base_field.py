@@ -350,13 +350,6 @@ class Field(Base, ABC):
 class _FieldReadOnlyFramework(Field, ABC):
     """
     base class for a async or normal read only register field
-
-    Args:
-        parent_register: register within which the field resides
-        size_props: object defining the msb, lsb, high bit, low bit and width
-        logger_handle: name to be used logging messages associate with this
-            object
-
     """
     __slots__ : list[str] = []
 
@@ -402,13 +395,6 @@ class _FieldReadOnlyFramework(Field, ABC):
 class _FieldWriteOnlyFramework(Field, ABC):
     """
     class for a write only register field
-
-    Args:
-        parent_register: register within which the field resides
-        size_props: object defining the msb, lsb, high bit, low bit and width
-        logger_handle: name to be used logging messages associate with this
-            object
-
     """
     __slots__ : list[str] = []
 
