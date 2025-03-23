@@ -19,13 +19,13 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
     {%- if 'name' in node.list_properties() -%}
     @property
-    def name_property(self) -> str:
+    def rdl_name(self) -> str:
         return {{ node.get_property('name') | tojson}}
     {% endif %}
 
     {%- if 'desc' in node.list_properties() -%}
     @property
-    def desc(self) -> str:
+    def rdl_desc(self) -> str:
         return {{ node.get_property('desc') | tojson}}
     {% endif %}
 {%- endmacro %}

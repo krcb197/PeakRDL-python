@@ -91,6 +91,11 @@ CommandLineParser.add_argument('--full_inst_file', dest='full_inst_file',
                                type=pathlib.Path, required=False,
                                help='export a text file with a list of the all qualified instance'
                                     'names in the systemRDL')
+CommandLineParser.add_argument('--legacy_enum_type', action='store_true',
+                               dest='legacy_enum_type',
+                               help='peakrdl python has ways to define field encoding as enums a '
+                                    'a new method and an old method based on IntEnum. Setting '
+                                    'this to true will restore the old behaviour')
 
 
 def build_logging_cong(logfilepath:str):
@@ -184,7 +189,8 @@ if __name__ == '__main__':
                     skip_library_copy=not CommandLineArgs.copy_libraries,
                     legacy_block_access=CommandLineArgs.legacy_block_access,
                     user_defined_properties_to_include=CommandLineArgs.udp,
-                    hidden_inst_name_regex=CommandLineArgs.hide_regex)
+                    hidden_inst_name_regex=CommandLineArgs.hide_regex,
+                    legacy_enum_type=CommandLineArgs.legacy_enum_type)
     print(f'generation time {time.time() - start_time}s')
 
     if not CommandLineArgs.export_only:

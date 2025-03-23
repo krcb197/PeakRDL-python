@@ -76,7 +76,8 @@ def compile_rdl(infile: str,
 def generate(root: Node, outdir: str,
              asyncoutput: bool = False,
              skip_test_case_generation: bool = False,
-             legacy_block_access: bool = True) -> List[str]:
+             legacy_block_access: bool = True,
+             legacy_enum_type: bool = True) -> List[str]:
     """
     Generate a PeakRDL output package from compiled systemRDL
 
@@ -87,6 +88,8 @@ def generate(root: Node, outdir: str,
                 clean it up. This can slow down large jobs or mask problems
         legacy_block_access: If set to True the code build a register model the legacy array block
                              access as opposed to the newer list based
+        legacy_enum_type: If set to True the code with build with the old style IntEnum rather than
+                          the new style SystemRDLEnum
 
     Returns:
         List of strings with the module names generated
@@ -96,7 +99,8 @@ def generate(root: Node, outdir: str,
     modules = PythonExporter().export(root, outdir, # type: ignore[no-untyped-call]
                                       asyncoutput=asyncoutput,
                                       skip_test_case_generation=skip_test_case_generation,
-                                      legacy_block_access=legacy_block_access)
+                                      legacy_block_access=legacy_block_access,
+                                      legacy_enum_type=legacy_enum_type)
 
     return modules
 
@@ -130,10 +134,14 @@ if __name__ == '__main__':
             root = compile_rdl(rdl_file)
 
         for build_options, folder_name in \
-                [({'asyncoutput': True, 'legacy':False}, 'raw_async'),
-                 ({'asyncoutput': False, 'legacy':False}, 'raw'),
-                 ({'asyncoutput': True, 'legacy': True}, 'raw_async_legacy'),
-                 ({'asyncoutput': False, 'legacy': True}, 'raw_legacy')
+                [({'asyncoutput': True, 'legacy_block':False, 'legacy_enum': False}, 'raw_async'),
+                 ({'asyncoutput': False, 'legacy_block':False, 'legacy_enum': False}, 'raw'),
+                 ({'asyncoutput': True, 'legacy_block': True, 'legacy_enum': False}, 'raw_async_legacy_block'),
+                 ({'asyncoutput': False, 'legacy_block': True, 'legacy_enum': False}, 'raw_legacy_block'),
+                 ({'asyncoutput': True, 'legacy_block': False, 'legacy_enum': True}, 'raw_async_legacy_enum'),
+                 ({'asyncoutput': False, 'legacy_block': False, 'legacy_enum': True}, 'raw_legacy_enum'),
+                 ({'asyncoutput': True, 'legacy_block': True, 'legacy_enum': True}, 'raw_async_legacy_block_legacy_enum'),
+                 ({'asyncoutput': False, 'legacy_block': True, 'legacy_enum': True}, 'raw_legacy_block_legacy_enum')
                  ]:
 
             # test cases that use the extended widths an not be tested in the non-legacy modes
@@ -143,7 +151,8 @@ if __name__ == '__main__':
 
             _ = generate(root, str(output_path / folder_name),
                          asyncoutput=build_options['asyncoutput'],
-                         legacy_block_access=build_options['legacy']
+                         legacy_block_access=build_options['legacy_block'],
+                         legacy_enum_type=build_options['legacy_enum'])
                          )
 
             module_fqfn = output_path / folder_name / '__init__.py'

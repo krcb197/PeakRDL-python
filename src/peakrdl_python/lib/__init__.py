@@ -76,6 +76,7 @@ from .register_and_field import FieldEnumReadOnly
 from .register_and_field import FieldEnumWriteOnly
 from .register_and_field import FieldEnumReadWrite
 from .base_field import FieldEnum
+from .field_encoding import SystemRDLEnum, SystemRDLEnumEntry
 
 from .async_register_and_field import FieldAsyncReadOnly
 from .async_register_and_field import FieldAsyncWriteOnly

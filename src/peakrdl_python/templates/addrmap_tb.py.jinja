@@ -31,7 +31,9 @@ from unittest.mock import patch, call
 import random
 from itertools import combinations
 import math
+{% if legacy_enum_type %}
 from enum import IntEnum
+{% endif %}
 
 from {% if skip_lib_copy %}peakrdl_python.{% else %}..{% endif %}lib import RegisterWriteVerifyError, UnsupportedWidthError
 
@@ -66,6 +68,9 @@ from {% if skip_lib_copy %}peakrdl_python.{% else %}..{% endif %}lib import Memo
 
 from {% if skip_lib_copy %}peakrdl_python.{% else %}..{% endif %}lib import Field
 from {% if skip_lib_copy %}peakrdl_python.{% else %}..{% endif %}lib import Reg
+{% if not legacy_enum_type %}
+from {% if skip_lib_copy %}peakrdl_python.{% else %}..{% endif %}lib import SystemRDLEnum, SystemRDLEnumEntry
+{% endif %}
 
 from ._{{top_node.inst_name}}_test_base import {{top_node.inst_name}}_TestCase, {{top_node.inst_name}}_TestCase_BlockAccess, {{top_node.inst_name}}_TestCase_AltBlockAccess
 from ._{{top_node.inst_name}}_test_base import __name__ as base_name
@@ -91,9 +96,9 @@ class {{fq_block_name}}_single_access({{top_node.inst_name}}_TestCase): # type: 
         {% for node in owned_elements.nodes -%}
         with self.subTest(msg='node: {{'.'.join(node.get_path_segments())}}'):
             {% if node.get_property('name', default=None) is none %}
-            self.assertIsNone(self.dut.{{'.'.join(get_python_path_segments(node))}}.name_property)  # type: ignore[union-attr]
+            self.assertIsNone(self.dut.{{'.'.join(get_python_path_segments(node))}}.rdl_name)  # type: ignore[union-attr]
             {% else %}
-            self.assertEqual(self.dut.{{'.'.join(get_python_path_segments(node))}}.name_property, {{node.get_property('name') | tojson}}) # type: ignore[union-attr]
+            self.assertEqual(self.dut.{{'.'.join(get_python_path_segments(node))}}.rdl_name, {{node.get_property('name') | tojson}}) # type: ignore[union-attr]
             {% endif %}
 
         {% endfor %}
@@ -105,9 +110,9 @@ class {{fq_block_name}}_single_access({{top_node.inst_name}}_TestCase): # type: 
         {% for node in owned_elements.nodes -%}
         with self.subTest(msg='node: {{'.'.join(node.get_path_segments())}}'):
             {% if node.get_property('desc', default=None) is none %}
-            self.assertIsNone(self.dut.{{'.'.join(get_python_path_segments(node))}}.desc)  # type: ignore[union-attr]
+            self.assertIsNone(self.dut.{{'.'.join(get_python_path_segments(node))}}.rdl_desc)  # type: ignore[union-attr]
             {% else %}
-            self.assertEqual(self.dut.{{'.'.join(get_python_path_segments(node))}}.desc, {{node.get_property('desc') | tojson}}) # type: ignore[union-attr]
+            self.assertEqual(self.dut.{{'.'.join(get_python_path_segments(node))}}.rdl_desc, {{node.get_property('desc') | tojson}}) # type: ignore[union-attr]
             {% endif %}
 
         {% endfor %}
@@ -184,7 +189,7 @@ class {{fq_block_name}}_single_access({{top_node.inst_name}}_TestCase): # type: 
                 {% if 'encode' in node.list_properties() %}
                 {# only attempt to test enum fields if the reset value is legal for the field #}
                     {% if get_field_default_value(node) in get_enum_values(node.get_property('encode')) %}
-            self.assertEqual(fut.default,{{get_field_default_value(node)}})
+            self.assertEqual(fut.default.value,{{get_field_default_value(node)}})
                     {% else %}
             self.assertIsNone(fut.default)
                     {% endif %}
@@ -192,6 +197,38 @@ class {{fq_block_name}}_single_access({{top_node.inst_name}}_TestCase): # type: 
             self.assertEqual(fut.default,{{get_field_default_value(node)}})
                 {% endif %}
             self.assertEqual(fut.is_volatile,{{node.is_hw_writable}})
+        {% endfor %}
+
+    def test_field_encoding_properties(self)  -> None:
+        """
+        Check that enumeration has the name and desc meta data from the systemRDL
+        """
+        {% if legacy_enum_type %}
+        fut_enum:IntEnum
+        {% else %}
+        fut_enum:SystemRDLEnum
+        {% endif %}
+        {% for node in owned_elements.fields -%}
+            {% if 'encode' in node.list_properties() %}
+        with self.subTest(msg='field: {{'.'.join(node.get_path_segments())}}'):
+            # test properties of field: {{'.'.join(node.get_path_segments())}}
+            fut_enum = self.dut.{{'.'.join(get_python_path_segments(node))}}.enum_cls # type: ignore[union-attr]
+                {% for encoding_entry in node.get_property('encode') %}
+            self.assertEqual(fut_enum.{{encoding_entry.name | upper}}.value, {{encoding_entry.value}})
+                    {% if not legacy_enum_type %}
+                        {% if encoding_entry.rdl_name is none %}
+            self.assertIsNone(fut_enum.{{encoding_entry.name | upper}}.rdl_name)
+                        {% else %}
+            self.assertEqual(fut_enum.{{encoding_entry.name | upper}}.rdl_name, "{{encoding_entry.rdl_name}}")
+                        {% endif %}
+                        {% if encoding_entry.rdl_desc is none %}
+            self.assertIsNone(fut_enum.{{encoding_entry.name | upper}}.rdl_desc)
+                        {% else %}
+            self.assertEqual(fut_enum.{{encoding_entry.name | upper}}.rdl_desc, "{{encoding_entry.rdl_desc}}")
+                        {% endif %}
+                    {% endif %}
+                {% endfor %}
+            {% endif %}
         {% endfor %}
 
     def test_user_defined_properties(self)  -> None:
