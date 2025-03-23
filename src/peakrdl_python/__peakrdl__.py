@@ -90,7 +90,7 @@ class Exporter(ExporterSubcommandPlugin):
                                help='skip the copy of the library code into the generated package')
         arg_group.add_argument('--legacy_enum_type', action='store_true',
                                dest='legacy_enum_type',
-                               help='peakrdl python has ways to define field encoding as enums a '
+                               help='peakrdl python has two ways to define field encoding as enums a '
                                     'a new method and an old method based on IntEnum. Setting '
                                     'this to true will restore the old behaviour')
 
