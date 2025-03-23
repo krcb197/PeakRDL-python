@@ -3,8 +3,7 @@ Test the extension to an Enum that is used in the for an systemRDL encoding, whi
 meta data in addition to a value
 """
 import unittest
-
-from peakrdl_python.lib import SystemRDLEnum, SystemRDLEnumEntry
+from peakrdl_python.lib.field_encoding import SystemRDLEnum, SystemRDLEnumEntry
 
 class TestGoodEncoding(unittest.TestCase):
     """
