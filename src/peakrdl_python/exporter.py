@@ -623,7 +623,7 @@ class PythonExporter:
                                            for this to have no effect
             legacy_enum_type (bool): version 1.2 introduced a new Enum type that allows system
                                      rdl ``name`` and ``desc`` properties on field encoding
-                                     to be included.
+                                     to be included. The legacy mode uses python IntEnum.
 
 
         Returns:
