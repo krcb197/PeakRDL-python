@@ -55,7 +55,7 @@ class SystemRDLEnum(Enum):
         return super().value.desc
 
     @classmethod
-    def _missing_(cls, value):
+    def _missing_(cls, value): # type: ignore[no-untyped-def]
 
         if isinstance(value, int):
             # pylint:disable-next=protected-access,no-member
@@ -64,5 +64,5 @@ class SystemRDLEnum(Enum):
 
         return None
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.name
