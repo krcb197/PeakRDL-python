@@ -30,6 +30,7 @@ addrmap name_clash {
     reg {
         field { fieldwidth=1; } msb = 1;
         field { fieldwidth=1; python_inst_name="pass_field"; } pass = 1;
+        field { fieldwidth=8; } size = 64;
     } msb;
 
     addrmap {

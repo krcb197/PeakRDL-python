@@ -722,6 +722,76 @@ class TestCallbackAndLegacyTemplates(unittest.TestCase):
                 else:
                     dut.simple_memory_a.write(0, [0, 0, 0, 0])
 
+class TestNameClash(unittest.TestCase):
+    """
+    Test class for the export of hidden and force not hidden (show hidden)
+    """
+
+    test_case_path = test_cases
+    test_case_name = 'name_clash.rdl'
+    test_case_top_level = 'name_clash'
+    test_case_reg_model_cls = test_case_top_level + '_cls'
+
+    @contextmanager
+    def build_python_wrappers_and_make_instance(self):
+        """
+        Context manager to build the python wrappers for a value of show_hidden, then import them
+        and clean up afterwards
+        """
+
+        # compile the code for the test
+        rdlc = compiler_with_udp_registers()
+        rdlc.compile_file(os.path.join(self.test_case_path, self.test_case_name))
+        spec = rdlc.elaborate(top_def_name=self.test_case_top_level).top
+
+        exporter = PythonExporter()
+
+        with tempfile.TemporaryDirectory() as tmpdirname:
+
+            exporter.export(node=spec,
+                            path=tmpdirname,
+                            asyncoutput=False,
+                            delete_existing_package_content=False,
+                            skip_library_copy=False,
+                            skip_test_case_generation=True,
+                            legacy_block_access=False,
+                            show_hidden=True)
+
+            # add the temp directory to the python path so that it can be imported from
+            sys.path.append(tmpdirname)
+
+            reg_model_module = __import__( self.test_case_top_level +
+                '.reg_model.' + self.test_case_top_level,
+                globals(), locals(), [self.test_case_reg_model_cls], 0)
+            dut_cls = getattr(reg_model_module, self.test_case_reg_model_cls)
+            peakrdl_python_package = __import__(self.test_case_top_level + '.lib',
+                globals(), locals(), ['CallbackSet'], 0)
+            callbackset_cls = getattr(peakrdl_python_package, 'NormalCallbackSet')
+            dummy_operations_module = __import__(self.test_case_top_level +
+                                                 '.sim_lib.dummy_callbacks',
+                                    globals(), locals(), ['dummy_read', 'dummy_write'], 0)
+            dummy_read = getattr(dummy_operations_module, 'dummy_read')
+
+            # no read/write are attempted so this can yield out a version with no callbacks
+            # configured
+            yield dut_cls(callbacks=callbackset_cls(read_callback=dummy_read))
+
+            sys.path.remove(tmpdirname)
+
+    def test_size_rename(self):
+        """
+        Simple test to make sure that the fields marks as hidden are not generated
+        """
+        with self.build_python_wrappers_and_make_instance() as dut:
+
+            dut.msb.field_size = 29
+            with self.assertRaises(ValueError):
+                dut.msb.write_fields(size=30)
+            dut.msb.write_fields(field_size=31)
+
+
+
+
 
 if __name__ == '__main__':
 
