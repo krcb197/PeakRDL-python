@@ -153,7 +153,6 @@ if __name__ == '__main__':
                          asyncoutput=build_options['asyncoutput'],
                          legacy_block_access=build_options['legacy_block'],
                          legacy_enum_type=build_options['legacy_enum'])
-                         )
 
             module_fqfn = output_path / folder_name / '__init__.py'
             with open(module_fqfn, 'w', encoding='utf-8') as fid:
