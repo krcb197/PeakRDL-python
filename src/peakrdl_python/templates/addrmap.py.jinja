@@ -19,10 +19,9 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 {% include "header.py.jinja" with context %}
 {% if uses_enum %}
 from enum import EnumMeta
-from enum import unique
-    {% if legacy_enum_type %}
+{% endif %}
+{% if legacy_enum_type %}
 from enum import IntEnum
-    {% endif %}
 {% endif %}
 from enum import unique
 from typing import Iterator
@@ -79,7 +78,7 @@ from {% if skip_lib_copy %}peakrdl_python.{% else %}..{% endif %}lib import Read
 {%- endif %}
 from {% if skip_lib_copy %}peakrdl_python.{% else %}..{% endif %}lib import FieldSizeProps, FieldMiscProps
 
-{% if uses_enum and not legacy_enum_type %}
+{% if not legacy_enum_type %}
 from {% if skip_lib_copy %}peakrdl_python.{% else %}..{% endif %}lib import SystemRDLEnum, SystemRDLEnumEntry
 {% endif %}
 
