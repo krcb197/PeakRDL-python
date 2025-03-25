@@ -146,7 +146,7 @@ if __name__ == '__main__':
 
             # test cases that use the extended widths an not be tested in the non-legacy modes
             if (testcase_name in ['extended_memories', 'extended_sizes_registers_array']) and \
-                    (build_options['legacy'] is True):
+                    (build_options['legacy_block'] is True):
                 continue
 
             _ = generate(root, str(output_path / folder_name),
