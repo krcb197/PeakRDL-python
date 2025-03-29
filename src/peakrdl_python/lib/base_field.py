@@ -23,6 +23,7 @@ from enum import EnumMeta
 from typing import cast, Optional
 from abc import ABC, abstractmethod
 
+
 from .base import Base
 from .utility_functions import swap_msb_lsb_ordering
 from .base_register import BaseReg

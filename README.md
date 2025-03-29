@@ -20,4 +20,12 @@ Users are encouraged to upgrade in order to avoid this limitation. However, ther
 to support users with existing designs, see: _Legacy Block Callback and Block Access_ in the 
 documentation
 
+## Upgrading from pre 1.2.0
+
+Version 1.2 introduced a new way to define the enumerations for the field encoding. This allows 
+metadata from the systemRDL to propogate through to the generated code. This may break advanced 
+usage of the python enumerations. User are encouraged to use the new feature, however, if there 
+are problems with the old enumeation types (based on `IntEnum`) can be used, see 
+_Legacy Enumeration Types_ in the documentation
+
 

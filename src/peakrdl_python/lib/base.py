@@ -119,14 +119,14 @@ class Base(ABC):
         return {}
 
     @property
-    def name(self) -> Optional[str]:
+    def rdl_name(self) -> Optional[str]:
         """
         The systemRDL name property for the item
         """
         return None
 
     @property
-    def desc(self) -> Optional[str]:
+    def rdl_desc(self) -> Optional[str]:
         """
         The systemRDL desc property for the item
         """

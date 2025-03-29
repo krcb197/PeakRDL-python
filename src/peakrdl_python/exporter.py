@@ -300,7 +300,8 @@ class PythonExporter:
                            asyncoutput: bool,
                            legacy_block_access: bool,
                            udp_to_include: Optional[list[str]],
-                           hide_node_func: HideNodeCallback) -> None:
+                           hide_node_func: HideNodeCallback,
+                           legacy_enum_type: bool) -> None:
 
         context = {
             'print': print,
@@ -350,7 +351,8 @@ class PythonExporter:
             'dependent_property_enum':
                 self._get_dependent_property_enum(node=top_block,
                                                   udp_to_include=udp_to_include),
-            'hide_node_func': hide_node_func
+            'hide_node_func': hide_node_func,
+            'legacy_enum_type': legacy_enum_type
         }
         if legacy_block_access is True:
             context['get_array_typecode'] = get_array_typecode
@@ -457,7 +459,9 @@ class PythonExporter:
                        asyncoutput: bool,
                        legacy_block_access: bool,
                        udp_to_include: Optional[list[str]],
-                       hide_node_func: HideNodeCallback) -> None:
+                       hide_node_func: HideNodeCallback,
+                       legacy_enum_type: bool
+                       ) -> None:
         """
 
         Args:
@@ -540,7 +544,8 @@ class PythonExporter:
                 'dependent_property_enum':
                     self._get_dependent_property_enum(node=top_block,
                                                       udp_to_include=udp_to_include),
-                'hide_node_func': hide_node_func
+                'hide_node_func': hide_node_func,
+                'legacy_enum_type': legacy_enum_type
             }
 
             self.__stream_jinja_template(template_name="addrmap_tb.py.jinja",
@@ -570,7 +575,7 @@ class PythonExporter:
                     raise RuntimeError('It is not permitted to expose a property name used to'
                                        ' build the peakrdl-python wrappers: ' + reserved_name)
 
-    # pylint: disable-next=too-many-arguments
+    # pylint: disable-next=too-many-arguments,too-many-locals
     def export(self, node: Union[RootNode, AddrmapNode], path: str, *,
                asyncoutput: bool = False,
                skip_test_case_generation: bool = False,
@@ -579,7 +584,8 @@ class PythonExporter:
                legacy_block_access: bool = True,
                show_hidden: bool = False,
                user_defined_properties_to_include: Optional[list[str]] = None,
-               hidden_inst_name_regex: Optional[str] = None) -> str:
+               hidden_inst_name_regex: Optional[str] = None,
+               legacy_enum_type: bool = True) -> str:
         """
         Generated Python Code and Testbench
 
@@ -615,6 +621,9 @@ class PythonExporter:
             hidden_inst_name_regex (str) : A regular expression which will hide any fully
                                            qualified instance name that matches, set to None to
                                            for this to have no effect
+            legacy_enum_type (bool): version 1.2 introduced a new Enum type that allows system
+                                     rdl ``name`` and ``desc`` properties on field encoding
+                                     to be included. The legacy mode uses python IntEnum.
 
 
         Returns:
@@ -670,7 +679,8 @@ class PythonExporter:
                                 skip_lib_copy=skip_library_copy,
                                 legacy_block_access=legacy_block_access,
                                 udp_to_include=user_defined_properties_to_include,
-                                hide_node_func=hide_node_func)
+                                hide_node_func=hide_node_func,
+                                legacy_enum_type=legacy_enum_type)
 
         self.__export_simulator(top_block=top_block, package=package, asyncoutput=asyncoutput,
                                 skip_lib_copy=skip_library_copy,
@@ -690,7 +700,8 @@ class PythonExporter:
                                 skip_lib_copy=skip_library_copy,
                                 legacy_block_access=legacy_block_access,
                                 udp_to_include=user_defined_properties_to_include,
-                                hide_node_func=hide_node_func)
+                                hide_node_func=hide_node_func,
+                                legacy_enum_type=legacy_enum_type)
 
         return top_block.inst_name
 

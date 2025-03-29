@@ -134,6 +134,19 @@ Legacy Block Callback and Block Access
       * ``NormalCallbackSetLegacy`` for standard python function callbacks
       * ``AsyncCallbackSetLegacy`` for async python function callbacks, these are called from the library using ``await``
 
+Legacy Enumeration Types
+------------------------
+
+.. versionchanged:: 1.2.0
+
+   Previous versions of PeakRDL Python used `IntEnum` for the the field encoding. This had a
+   limitation that the metadata from the system RDL code, notably the ``name`` and ``desc``
+   property could not be included. A new data type for the enumerations was introduced in
+   version 1.2.0.
+
+   There was a small risk this may impact some users code, in the case of advanced usage of the
+   enumeration. The old behaviour can be brought back using the ``legacy_enum_type`` build option.
+
 
 Using the Register Access Layer
 ===============================

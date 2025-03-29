@@ -3,48 +3,48 @@
         {
             "single_reg": {
                 "first_field": 0,
-                "second_field": 0
+                "second_field": "VALUE1"
             },
             "reg_array": [
                 {
                     "first_field": 0,
-                    "second_field": 0
+                    "second_field": "VALUE1"
                 },
                 {
                     "first_field": 0,
-                    "second_field": 0
+                    "second_field": "VALUE1"
                 },
                 {
                     "first_field": 0,
-                    "second_field": 0
+                    "second_field": "VALUE1"
                 },
                 {
                     "first_field": 0,
-                    "second_field": 0
+                    "second_field": "VALUE1"
                 }
             ]
         },
         {
             "single_reg": {
                 "first_field": 0,
-                "second_field": 0
+                "second_field": "VALUE1"
             },
             "reg_array": [
                 {
                     "first_field": 0,
-                    "second_field": 0
+                    "second_field": "VALUE1"
                 },
                 {
                     "first_field": 0,
-                    "second_field": 0
+                    "second_field": "VALUE1"
                 },
                 {
                     "first_field": 0,
-                    "second_field": 0
+                    "second_field": "VALUE1"
                 },
                 {
                     "first_field": 0,
-                    "second_field": 0
+                    "second_field": "VALUE1"
                 }
             ]
         }
@@ -52,24 +52,24 @@
     "single_regfile": {
         "single_reg": {
             "first_field": 0,
-            "second_field": 0
+            "second_field": "VALUE1"
         },
         "reg_array": [
             {
                 "first_field": 0,
-                "second_field": 0
+                "second_field": "VALUE1"
             },
             {
                 "first_field": 0,
-                "second_field": 0
+                "second_field": "VALUE1"
             },
             {
                 "first_field": 0,
-                "second_field": 0
+                "second_field": "VALUE1"
             },
             {
                 "first_field": 0,
-                "second_field": 0
+                "second_field": "VALUE1"
             }
         ]
     }
