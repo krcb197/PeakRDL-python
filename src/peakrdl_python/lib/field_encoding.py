@@ -21,6 +21,7 @@ peakrdl-python tool. It provides the base types of field enumerations
 from enum import Enum
 from typing import Optional
 from collections import namedtuple
+from json import JSONEncoder
 
 SystemRDLEnumEntry = namedtuple('SystemRDLEnumEntry', ['int_value', 'name', 'desc'])
 
@@ -66,3 +67,13 @@ class SystemRDLEnum(Enum):
 
     def __str__(self) -> str:
         return self.name
+
+class RegisterFieldJSONEncoder(JSONEncoder):
+    """
+    JSON Encoder that supports SystemRDLEnum
+    """
+    def default(self, o):   # type: ignore[no-untyped-def]
+        if isinstance(o, SystemRDLEnum):
+            return o.name
+        # Let the base class default method raise the TypeError
+        return super().default(o)
