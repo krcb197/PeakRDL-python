@@ -633,7 +633,7 @@ class {{fq_block_name}}_single_access({{top_node.inst_name}}_TestCase): # type: 
         """
         Walk the register map and check every register read_fields method
         """
-        reference_read_fields: dict[str, Union[bool, IntEnum, int]]
+        reference_read_fields: dict[str, Union[bool, {% if legacy_enum_type %}IntEnum{% else %}SystemRDLEnum{% endif %}, int]]
         {% for node in owned_elements.registers -%}
         {% if node.has_sw_readable %}
         with self.subTest(msg='register: {{'.'.join(node.get_path_segments())}}'):
@@ -692,7 +692,7 @@ class {{fq_block_name}}_single_access({{top_node.inst_name}}_TestCase): # type: 
         """
         Walk the register map and check every register read_fields method
         """
-        reference_read_fields: dict[str, Union[bool, IntEnum, int]]
+        reference_read_fields: dict[str, Union[bool, {% if legacy_enum_type %}IntEnum{% else %}SystemRDLEnum{% endif %}, int]]
         {% for node in owned_elements.registers -%}
         {% if node.has_sw_readable %}
         # test context manager to register:
@@ -850,7 +850,7 @@ class {{fq_block_name}}_single_access({{top_node.inst_name}}_TestCase): # type: 
         Walk the register map and check every register write_fields method
         """
         rut:Reg{% if asyncoutput %}Async{% endif %}ReadWrite
-        rand_enum_value:IntEnum
+        rand_enum_value:{% if legacy_enum_type %}IntEnum{% else %}SystemRDLEnum{% endif %}
         {% if asyncoutput %}async {% endif %}def write_field_cominbinations(reg: Reg{% if asyncoutput %}Async{% endif %}ReadWrite, writable_fields:list[str]) -> None:
             with patch(base_name + '.write_addr_space') as write_callback_mock, \
                 patch(base_name + '.read_addr_space', return_value=0) as read_callback_mock:
