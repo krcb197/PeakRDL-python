@@ -189,6 +189,9 @@ class {{fq_block_name}}_single_access({{top_node.inst_name}}_TestCase): # type: 
                 {% if 'encode' in node.list_properties() %}
                 {# only attempt to test enum fields if the reset value is legal for the field #}
                     {% if get_field_default_value(node) in get_enum_values(node.get_property('encode')) %}
+            if fut.default is None:
+                # This is needed to ensure type checking with mypy is happy
+                raise TypeError('The default should be set')
             self.assertEqual(fut.default.value,{{get_field_default_value(node)}})
                     {% else %}
             self.assertIsNone(fut.default)
@@ -203,28 +206,22 @@ class {{fq_block_name}}_single_access({{top_node.inst_name}}_TestCase): # type: 
         """
         Check that enumeration has the name and desc meta data from the systemRDL
         """
-        {% if legacy_enum_type %}
-        fut_enum:IntEnum
-        {% else %}
-        fut_enum:SystemRDLEnum
-        {% endif %}
         {% for node in owned_elements.fields -%}
             {% if 'encode' in node.list_properties() %}
         with self.subTest(msg='field: {{'.'.join(node.get_path_segments())}}'):
             # test properties of field: {{'.'.join(node.get_path_segments())}}
-            fut_enum = self.dut.{{'.'.join(get_python_path_segments(node))}}.enum_cls # type: ignore[union-attr]
                 {% for encoding_entry in node.get_property('encode') %}
-            self.assertEqual(fut_enum.{{encoding_entry.name | upper}}.value, {{encoding_entry.value}})
+            self.assertEqual(self.dut.{{'.'.join(get_python_path_segments(node))}}.enum_cls.{{encoding_entry.name | upper}}.value, {{encoding_entry.value}})
                     {% if not legacy_enum_type %}
                         {% if encoding_entry.rdl_name is none %}
-            self.assertIsNone(fut_enum.{{encoding_entry.name | upper}}.rdl_name)
+            self.assertIsNone(self.dut.{{'.'.join(get_python_path_segments(node))}}.enum_cls.{{encoding_entry.name | upper}}.rdl_name)
                         {% else %}
-            self.assertEqual(fut_enum.{{encoding_entry.name | upper}}.rdl_name, "{{encoding_entry.rdl_name}}")
+            self.assertEqual(self.dut.{{'.'.join(get_python_path_segments(node))}}.enum_cls.{{encoding_entry.name | upper}}.rdl_name, "{{encoding_entry.rdl_name}}")
                         {% endif %}
                         {% if encoding_entry.rdl_desc is none %}
-            self.assertIsNone(fut_enum.{{encoding_entry.name | upper}}.rdl_desc)
+            self.assertIsNone(self.dut.{{'.'.join(get_python_path_segments(node))}}.enum_cls.{{encoding_entry.name | upper}}.rdl_desc)
                         {% else %}
-            self.assertEqual(fut_enum.{{encoding_entry.name | upper}}.rdl_desc, "{{encoding_entry.rdl_desc}}")
+            self.assertEqual(self.dut.{{'.'.join(get_python_path_segments(node))}}.enum_cls.{{encoding_entry.name | upper}}.rdl_desc, "{{encoding_entry.rdl_desc}}")
                         {% endif %}
                     {% endif %}
                 {% endfor %}
@@ -574,14 +571,13 @@ class {{fq_block_name}}_single_access({{top_node.inst_name}}_TestCase): # type: 
                 {% endif %}
 
                 {% if node.is_sw_writable %}
-                enum_cls = self.dut.{{'.'.join(get_python_path_segments(node))}}.enum_cls
                 {% for value_of_enum_needed in node.get_property('encode') %}
                 random_reg_value = random.randrange(0, {{get_reg_max_value_hex_string(node.parent)}} + 1)
                 read_callback_mock.reset_mock()
                 write_callback_mock.reset_mock()
                 read_callback_mock.return_value = random_reg_value
 
-                {% if asyncoutput %}await {%endif %}self.dut.{{'.'.join(get_python_path_segments(node))}}.write(enum_cls.{{value_of_enum_needed.name.upper()}}) # type: ignore[attr-defined]
+                {% if asyncoutput %}await {%endif %}self.dut.{{'.'.join(get_python_path_segments(node))}}.write(self.dut.{{'.'.join(get_python_path_segments(node))}}.enum_cls.{{value_of_enum_needed.name.upper()}})
 
                 {% if ( node.width < (node.parent.size*8)) and (node.parent.has_sw_readable) %}
                 read_callback_mock.assert_called_once()

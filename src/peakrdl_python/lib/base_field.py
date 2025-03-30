@@ -126,6 +126,8 @@ class FieldMiscProps:
     __slots__ = ['__default', '__is_volatile']
 
     def __init__(self, default:Optional[int], is_volatile:bool):
+        if not isinstance(default, int) and default is not None:
+            raise TypeError(f'default should be int or None, got {type(default)}')
         self.__default = default
         self.__is_volatile = is_volatile
 
@@ -328,7 +330,7 @@ class Field(Base, ABC):
 
         This returns None:
         - if the field is not reset.
-        - if the register resets to a signal value tht can not be determined
+        - if the register resets to a signal value that can not be determined
         """
         return self.__misc_props.default
 
