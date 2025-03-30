@@ -31,7 +31,9 @@ from unittest.mock import patch, call
 import random
 from itertools import combinations
 import math
+{% if legacy_enum_type %}
 from enum import IntEnum
+{% endif %}
 
 from {% if skip_lib_copy %}peakrdl_python.{% else %}..{% endif %}lib import RegisterWriteVerifyError, UnsupportedWidthError
 
@@ -66,6 +68,9 @@ from {% if skip_lib_copy %}peakrdl_python.{% else %}..{% endif %}lib import Memo
 
 from {% if skip_lib_copy %}peakrdl_python.{% else %}..{% endif %}lib import Field
 from {% if skip_lib_copy %}peakrdl_python.{% else %}..{% endif %}lib import Reg
+{% if not legacy_enum_type %}
+from {% if skip_lib_copy %}peakrdl_python.{% else %}..{% endif %}lib import SystemRDLEnum, SystemRDLEnumEntry
+{% endif %}
 
 from ._{{top_node.inst_name}}_test_base import {{top_node.inst_name}}_TestCase, {{top_node.inst_name}}_TestCase_BlockAccess, {{top_node.inst_name}}_TestCase_AltBlockAccess
 from ._{{top_node.inst_name}}_test_base import __name__ as base_name
@@ -84,16 +89,16 @@ class {{fq_block_name}}_single_access({{top_node.inst_name}}_TestCase): # type: 
             self.assertEqual(self.dut.{{'.'.join(get_python_path_segments(node))}}.full_inst_name, '{{'.'.join(node.get_path_segments())}}')  # type: ignore[union-attr]
         {% endfor %}
 
-    def test_name(self)  -> None:
+    def test_name_property(self)  -> None:
         """
         Walk the address map and check the name property has been correctly populated
         """
         {% for node in owned_elements.nodes -%}
         with self.subTest(msg='node: {{'.'.join(node.get_path_segments())}}'):
             {% if node.get_property('name', default=None) is none %}
-            self.assertIsNone(self.dut.{{'.'.join(get_python_path_segments(node))}}.name)  # type: ignore[union-attr]
+            self.assertIsNone(self.dut.{{'.'.join(get_python_path_segments(node))}}.rdl_name)  # type: ignore[union-attr]
             {% else %}
-            self.assertEqual(self.dut.{{'.'.join(get_python_path_segments(node))}}.name, {{node.get_property('name') | tojson}}) # type: ignore[union-attr]
+            self.assertEqual(self.dut.{{'.'.join(get_python_path_segments(node))}}.rdl_name, {{node.get_property('name') | tojson}}) # type: ignore[union-attr]
             {% endif %}
 
         {% endfor %}
@@ -105,9 +110,9 @@ class {{fq_block_name}}_single_access({{top_node.inst_name}}_TestCase): # type: 
         {% for node in owned_elements.nodes -%}
         with self.subTest(msg='node: {{'.'.join(node.get_path_segments())}}'):
             {% if node.get_property('desc', default=None) is none %}
-            self.assertIsNone(self.dut.{{'.'.join(get_python_path_segments(node))}}.desc)  # type: ignore[union-attr]
+            self.assertIsNone(self.dut.{{'.'.join(get_python_path_segments(node))}}.rdl_desc)  # type: ignore[union-attr]
             {% else %}
-            self.assertEqual(self.dut.{{'.'.join(get_python_path_segments(node))}}.desc, {{node.get_property('desc') | tojson}}) # type: ignore[union-attr]
+            self.assertEqual(self.dut.{{'.'.join(get_python_path_segments(node))}}.rdl_desc, {{node.get_property('desc') | tojson}}) # type: ignore[union-attr]
             {% endif %}
 
         {% endfor %}
@@ -184,7 +189,10 @@ class {{fq_block_name}}_single_access({{top_node.inst_name}}_TestCase): # type: 
                 {% if 'encode' in node.list_properties() %}
                 {# only attempt to test enum fields if the reset value is legal for the field #}
                     {% if get_field_default_value(node) in get_enum_values(node.get_property('encode')) %}
-            self.assertEqual(fut.default,{{get_field_default_value(node)}})
+            if fut.default is None:
+                # This is needed to ensure type checking with mypy is happy
+                raise TypeError('The default should be set')
+            self.assertEqual(fut.default.value,{{get_field_default_value(node)}})
                     {% else %}
             self.assertIsNone(fut.default)
                     {% endif %}
@@ -192,6 +200,32 @@ class {{fq_block_name}}_single_access({{top_node.inst_name}}_TestCase): # type: 
             self.assertEqual(fut.default,{{get_field_default_value(node)}})
                 {% endif %}
             self.assertEqual(fut.is_volatile,{{node.is_hw_writable}})
+        {% endfor %}
+
+    def test_field_encoding_properties(self)  -> None:
+        """
+        Check that enumeration has the name and desc meta data from the systemRDL
+        """
+        {% for node in owned_elements.fields -%}
+            {% if 'encode' in node.list_properties() %}
+        with self.subTest(msg='field: {{'.'.join(node.get_path_segments())}}'):
+            # test properties of field: {{'.'.join(node.get_path_segments())}}
+                {% for encoding_entry in node.get_property('encode') %}
+            self.assertEqual(self.dut.{{'.'.join(get_python_path_segments(node))}}.enum_cls.{{encoding_entry.name | upper}}.value, {{encoding_entry.value}})
+                    {% if not legacy_enum_type %}
+                        {% if encoding_entry.rdl_name is none %}
+            self.assertIsNone(self.dut.{{'.'.join(get_python_path_segments(node))}}.enum_cls.{{encoding_entry.name | upper}}.rdl_name)
+                        {% else %}
+            self.assertEqual(self.dut.{{'.'.join(get_python_path_segments(node))}}.enum_cls.{{encoding_entry.name | upper}}.rdl_name, "{{encoding_entry.rdl_name}}")
+                        {% endif %}
+                        {% if encoding_entry.rdl_desc is none %}
+            self.assertIsNone(self.dut.{{'.'.join(get_python_path_segments(node))}}.enum_cls.{{encoding_entry.name | upper}}.rdl_desc)
+                        {% else %}
+            self.assertEqual(self.dut.{{'.'.join(get_python_path_segments(node))}}.enum_cls.{{encoding_entry.name | upper}}.rdl_desc, "{{encoding_entry.rdl_desc}}")
+                        {% endif %}
+                    {% endif %}
+                {% endfor %}
+            {% endif %}
         {% endfor %}
 
     def test_user_defined_properties(self)  -> None:
@@ -537,14 +571,13 @@ class {{fq_block_name}}_single_access({{top_node.inst_name}}_TestCase): # type: 
                 {% endif %}
 
                 {% if node.is_sw_writable %}
-                enum_cls = self.dut.{{'.'.join(get_python_path_segments(node))}}.enum_cls
                 {% for value_of_enum_needed in node.get_property('encode') %}
                 random_reg_value = random.randrange(0, {{get_reg_max_value_hex_string(node.parent)}} + 1)
                 read_callback_mock.reset_mock()
                 write_callback_mock.reset_mock()
                 read_callback_mock.return_value = random_reg_value
 
-                {% if asyncoutput %}await {%endif %}self.dut.{{'.'.join(get_python_path_segments(node))}}.write(enum_cls.{{value_of_enum_needed.name.upper()}}) # type: ignore[attr-defined]
+                {% if asyncoutput %}await {%endif %}self.dut.{{'.'.join(get_python_path_segments(node))}}.write(self.dut.{{'.'.join(get_python_path_segments(node))}}.enum_cls.{{value_of_enum_needed.name.upper()}})
 
                 {% if ( node.width < (node.parent.size*8)) and (node.parent.has_sw_readable) %}
                 read_callback_mock.assert_called_once()
@@ -596,7 +629,7 @@ class {{fq_block_name}}_single_access({{top_node.inst_name}}_TestCase): # type: 
         """
         Walk the register map and check every register read_fields method
         """
-        reference_read_fields: dict[str, Union[bool, IntEnum, int]]
+        reference_read_fields: dict[str, Union[bool, {% if legacy_enum_type %}IntEnum{% else %}SystemRDLEnum{% endif %}, int]]
         {% for node in owned_elements.registers -%}
         {% if node.has_sw_readable %}
         with self.subTest(msg='register: {{'.'.join(node.get_path_segments())}}'):
@@ -655,7 +688,7 @@ class {{fq_block_name}}_single_access({{top_node.inst_name}}_TestCase): # type: 
         """
         Walk the register map and check every register read_fields method
         """
-        reference_read_fields: dict[str, Union[bool, IntEnum, int]]
+        reference_read_fields: dict[str, Union[bool, {% if legacy_enum_type %}IntEnum{% else %}SystemRDLEnum{% endif %}, int]]
         {% for node in owned_elements.registers -%}
         {% if node.has_sw_readable %}
         # test context manager to register:
@@ -813,7 +846,7 @@ class {{fq_block_name}}_single_access({{top_node.inst_name}}_TestCase): # type: 
         Walk the register map and check every register write_fields method
         """
         rut:Reg{% if asyncoutput %}Async{% endif %}ReadWrite
-        rand_enum_value:IntEnum
+        rand_enum_value:{% if legacy_enum_type %}IntEnum{% else %}SystemRDLEnum{% endif %}
         {% if asyncoutput %}async {% endif %}def write_field_cominbinations(reg: Reg{% if asyncoutput %}Async{% endif %}ReadWrite, writable_fields:list[str]) -> None:
             with patch(base_name + '.write_addr_space') as write_callback_mock, \
                 patch(base_name + '.read_addr_space', return_value=0) as read_callback_mock:

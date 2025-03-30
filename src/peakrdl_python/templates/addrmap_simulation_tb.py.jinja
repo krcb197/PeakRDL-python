@@ -30,13 +30,19 @@ import unittest
 from unittest.mock import Mock
 {% endif %}
 import random
+{% if legacy_enum_type %}
 from enum import IntEnum
+{% endif %}
 
 from {% if skip_lib_copy %}peakrdl_python.{% else %}..{% endif %}sim_lib.register import Register,MemoryRegister
 from {% if skip_lib_copy %}peakrdl_python.{% else %}..{% endif %}sim_lib.field import Field
 
 from ._{{top_node.inst_name}}_sim_test_base import {{top_node.inst_name}}_SimTestCase, {{top_node.inst_name}}_SimTestCase_BlockAccess
 from ._{{top_node.inst_name}}_sim_test_base import __name__ as base_name
+
+{% if not legacy_enum_type %}
+from {% if skip_lib_copy %}peakrdl_python.{% else %}..{% endif %}lib import SystemRDLEnum
+{% endif %}
 
 class {{fq_block_name}}_single_access({{top_node.inst_name}}_SimTestCase): # type: ignore[valid-type,misc]
 
@@ -109,7 +115,7 @@ class {{fq_block_name}}_single_access({{top_node.inst_name}}_SimTestCase): # typ
         """
         Walk the register map and check every field can be read and written to correctly
         """
-        random_field_value: Union[int, IntEnum]
+        random_field_value: Union[int, {% if legacy_enum_type %}IntEnum{% else %}SystemRDLEnum{% endif %}]
         {% for node in owned_elements.fields -%}
         # test access operations (read and/or write) to register:
         # {{'.'.join(node.get_path_segments())}}
@@ -128,7 +134,7 @@ class {{fq_block_name}}_single_access({{top_node.inst_name}}_SimTestCase): # typ
             # update the register value via the backdoor in the simulator
 
             {%- if 'encode' in node.list_properties() %}
-            random_field_value = cast(IntEnum, random.choice(list(self.dut.{{'.'.join(get_python_path_segments(node))}}.enum_cls)))
+            random_field_value = cast({% if legacy_enum_type %}IntEnum{% else %}SystemRDLEnum{% endif %}, random.choice(list(self.dut.{{'.'.join(get_python_path_segments(node))}}.enum_cls)))
             random_value = (random.randrange(0, {{get_reg_max_value_hex_string(node.parent)}}+1) & {{get_field_inv_bitmask_hex_string(node)}}) | ({% if node.msb == node.high %}random_field_value.value{% else %}self._reverse_bits(value=random_field_value.value, number_bits={{node.width}}){% endif %} << {{node.low}})
             {% else %}
             random_value = random.randrange(0, {{get_reg_max_value_hex_string(node.parent)}}+1)
@@ -142,7 +148,7 @@ class {{fq_block_name}}_single_access({{top_node.inst_name}}_SimTestCase): # typ
             # update the field value via the backdoor in the simulator
             previous_register_value = random_value
             {%- if 'encode' in node.list_properties() %}
-            random_field_value = cast(IntEnum, random.choice(list(self.dut.{{'.'.join(get_python_path_segments(node))}}.enum_cls)))
+            random_field_value = cast({% if legacy_enum_type %}IntEnum{% else %}SystemRDLEnum{% endif %}, random.choice(list(self.dut.{{'.'.join(get_python_path_segments(node))}}.enum_cls)))
             sim_field.value = random_field_value.value
             self.assertEqual(sim_register.value, (previous_register_value & {{get_field_inv_bitmask_hex_string(node)}}) | ({% if node.msb == node.high %}random_field_value.value{% else %}self._reverse_bits(value=random_field_value.value, number_bits={{node.width}}){% endif %} << {{node.low}}))
             {% else %}
@@ -153,7 +159,7 @@ class {{fq_block_name}}_single_access({{top_node.inst_name}}_SimTestCase): # typ
             self.assertEqual({% if asyncoutput %}await {%endif %}self.dut.{{'.'.join(get_python_path_segments(node))}}.read(), random_field_value)
             # hook up the call backs to check they work correctly
             {%- if 'encode' in node.list_properties() %}
-            random_field_value = cast(IntEnum, random.choice(list(self.dut.{{'.'.join(get_python_path_segments(node))}}.enum_cls)))
+            random_field_value = cast({% if legacy_enum_type %}IntEnum{% else %}SystemRDLEnum{% endif %}, random.choice(list(self.dut.{{'.'.join(get_python_path_segments(node))}}.enum_cls)))
             random_value = (random.randrange(0, {{get_reg_max_value_hex_string(node.parent)}}+1) & {{get_field_inv_bitmask_hex_string(node)}}) | ({% if node.msb == node.high %}random_field_value.value{% else %}self._reverse_bits(value=random_field_value.value, number_bits={{node.width}}){% endif %} << {{node.low}})
             {% else %}
             random_value = random.randrange(0, {{get_reg_max_value_hex_string(node.parent)}}+1)
@@ -171,7 +177,11 @@ class {{fq_block_name}}_single_access({{top_node.inst_name}}_SimTestCase): # typ
             register_write_callback.assert_not_called()
             register_read_callback.assert_called_once_with(value=random_value)
             field_write_callback.assert_not_called()
+            {%- if 'encode' in node.list_properties() %}
+            field_read_callback.assert_called_once_with(value=random_field_value.value)
+            {% else %}
             field_read_callback.assert_called_once_with(value=random_field_value)
+            {% endif %}
             # revert the callbacks and check again
             register_write_callback.reset_mock()
             register_read_callback.reset_mock()
@@ -182,7 +192,7 @@ class {{fq_block_name}}_single_access({{top_node.inst_name}}_SimTestCase): # typ
             sim_field.read_callback = None
             sim_field.write_callback = None
             {%- if 'encode' in node.list_properties() %}
-            random_field_value = cast(IntEnum, random.choice(list(self.dut.{{'.'.join(get_python_path_segments(node))}}.enum_cls)))
+            random_field_value = cast({% if legacy_enum_type %}IntEnum{% else %}SystemRDLEnum{% endif %}, random.choice(list(self.dut.{{'.'.join(get_python_path_segments(node))}}.enum_cls)))
             random_value = (random.randrange(0, {{get_reg_max_value_hex_string(node.parent)}}+1) & {{get_field_inv_bitmask_hex_string(node)}}) | ({% if node.msb == node.high %}random_field_value.value{% else %}self._reverse_bits(value=random_field_value.value, number_bits={{node.width}}){% endif %} << {{node.low}})
             {% else %}
             random_value = random.randrange(0, {{get_reg_max_value_hex_string(node.parent)}}+1)
@@ -211,7 +221,7 @@ class {{fq_block_name}}_single_access({{top_node.inst_name}}_SimTestCase): # typ
             inital_reg_random_value = 0
             {% endif %}
             {%- if 'encode' in node.list_properties() %}
-            random_field_value = cast(IntEnum, random.choice(list(self.dut.{{'.'.join(get_python_path_segments(node))}}.enum_cls)))
+            random_field_value = cast({% if legacy_enum_type %}IntEnum{% else %}SystemRDLEnum{% endif %}, random.choice(list(self.dut.{{'.'.join(get_python_path_segments(node))}}.enum_cls)))
             {% else %}
             random_field_value = random.randrange(0, {{get_field_max_value_hex_string(node)}}+1)
             {% endif %}
@@ -232,7 +242,7 @@ class {{fq_block_name}}_single_access({{top_node.inst_name}}_SimTestCase): # typ
             sim_field.read_callback = None
             sim_field.write_callback = field_write_callback
             {%- if 'encode' in node.list_properties() %}
-            random_field_value = cast(IntEnum, random.choice(list(self.dut.{{'.'.join(get_python_path_segments(node))}}.enum_cls)))
+            random_field_value = cast({% if legacy_enum_type %}IntEnum{% else %}SystemRDLEnum{% endif %}, random.choice(list(self.dut.{{'.'.join(get_python_path_segments(node))}}.enum_cls)))
             {% else %}
             random_field_value = random.randrange(0, {{get_field_max_value_hex_string(node)}}+1)
             {% endif %}
@@ -257,7 +267,7 @@ class {{fq_block_name}}_single_access({{top_node.inst_name}}_SimTestCase): # typ
             sim_register.write_callback = None
             sim_field.write_callback = None
             {%- if 'encode' in node.list_properties() %}
-            random_field_value = cast(IntEnum, random.choice(list(self.dut.{{'.'.join(get_python_path_segments(node))}}.enum_cls)))
+            random_field_value = cast({% if legacy_enum_type %}IntEnum{% else %}SystemRDLEnum{% endif %}, random.choice(list(self.dut.{{'.'.join(get_python_path_segments(node))}}.enum_cls)))
             {% else %}
             random_field_value = random.randrange(0, {{get_field_max_value_hex_string(node)}}+1)
             {% endif %}

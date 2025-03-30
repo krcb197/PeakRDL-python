@@ -7,7 +7,7 @@ from chip_with_registers.sim.chip_with_registers import chip_with_registers_simu
 from chip_with_registers.lib import NormalCallbackSet, RegReadOnly, RegReadWrite, \
     MemoryReadOnly, MemoryReadWrite, RegFile, AddressMap, RegReadOnlyArray, RegReadWriteArray, \
     AddressMapArray, RegFileArray, MemoryReadOnlyArray, MemoryReadWriteArray
-
+from chip_with_registers.lib import RegisterFieldJSONEncoder
 
 class RegisterDumper:
 
@@ -40,7 +40,7 @@ class RegisterDumper:
 
         """
         with open(filename, encoding='utf-8', mode='w') as fp:
-            json.dump(self.registers, fp, indent=4)
+            json.dump(self.registers, fp, indent=4, cls=RegisterFieldJSONEncoder)
 
     @staticmethod
     def _process_registers(node: Union[MemoryReadOnly, MemoryReadWrite, RegFile, AddressMap]):

@@ -88,6 +88,11 @@ class Exporter(ExporterSubcommandPlugin):
                                     'be hidden')
         arg_group.add_argument('--skip_library_copy', action='store_true',
                                help='skip the copy of the library code into the generated package')
+        arg_group.add_argument('--legacy_enum_type', action='store_true',
+                               dest='legacy_enum_type',
+                               help='peakrdl python has two ways to define field encoding as '
+                                     'enums new method and an old method based on IntEnum. '
+                                     'Setting this to true will restore the old behaviour')
 
     def do_export(self, top_node: 'AddrmapNode', options: 'argparse.Namespace') -> None:
         """
@@ -120,5 +125,6 @@ class Exporter(ExporterSubcommandPlugin):
             show_hidden=options.show_hidden,
             user_defined_properties_to_include=options.udp,
             hidden_inst_name_regex=options.hide_regex,
-            skip_library_copy=options.skip_library_copy
+            skip_library_copy=options.skip_library_copy,
+            legacy_enum_type=options.legacy_enum_type
         )
