@@ -1024,7 +1024,7 @@ class FieldReadOnly(_FieldReadOnlyFramework[FieldType], ABC):
             field value
 
         """
-        return self.decode_read_value(self.parent_register.read())
+        return self._decode_read_value(self.parent_register.read())
 
     @property
     def parent_register(self) -> ReadableRegister:
@@ -1085,7 +1085,7 @@ class FieldWriteOnly(_FieldWriteOnlyFramework[FieldType], ABC):
             value: field value to update to
 
         """
-        encoded_value = self.encode_write_value(value)
+        encoded_value = self._encode_write_value(value)
 
         if (self.high == (self.register_data_width - 1)) and (self.low == 0):
             # special case where the field occupies the whole register,
