@@ -61,6 +61,7 @@ class {{get_fully_qualified_type_name(node)}}_cls(Reg{% if asyncoutput %}Async{%
         # build the field attributes
         {% for child_node in get_reg_fields(node, hide_node_func) %}
         self.__{{child_node.inst_name}}:{{get_fully_qualified_type_name(child_node)}}_cls = {{get_fully_qualified_type_name(child_node)}}_cls(
+            {% if 'encode' in child_node.list_properties() %}field_type={{ get_fully_qualified_enum_type(child_node.get_property('encode'), top_node.parent, child_node, hide_node_func) + '_enumcls' }},{% endif %}
             parent_register=self,
             size_props=FieldSizeProps(
                 width={{child_node.width}},

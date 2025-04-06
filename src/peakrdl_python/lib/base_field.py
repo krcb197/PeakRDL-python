@@ -19,14 +19,15 @@ This module is intended to distributed as part of automatically generated code b
 peakrdl-python tool. It provides the base types for fields that are shared by non-async and async
 fields
 """
-from enum import EnumMeta
-from typing import cast, Optional
-from abc import ABC, abstractmethod
-
+from enum import IntEnum
+from typing import cast, Optional, TypeVar, Generic
+from abc import ABC
+import warnings
 
 from .base import Base
 from .utility_functions import swap_msb_lsb_ordering
 from .base_register import BaseReg
+from .field_encoding import SystemRDLEnum
 
 
 class FieldSizeProps:
@@ -149,8 +150,8 @@ class FieldMiscProps:
         """
         return self.__is_volatile
 
-
-class Field(Base, ABC):
+FieldType = TypeVar('FieldType', int, SystemRDLEnum, IntEnum)
+class Field(Generic[FieldType], Base, ABC):
     """
     base class of register field wrappers
 
@@ -160,11 +161,11 @@ class Field(Base, ABC):
     """
 
     __slots__ = ['__size_props', '__misc_props',
-                 '__bitmask', '__msb0', '__lsb0']
+                 '__bitmask', '__msb0', '__lsb0', '__field_type']
 
     def __init__(self, *,
                  parent_register: BaseReg, size_props: FieldSizeProps, misc_props: FieldMiscProps,
-                 logger_handle: str, inst_name: str):
+                 logger_handle: str, inst_name: str, field_type:type[FieldType]):
 
         super().__init__(logger_handle=logger_handle,
                          inst_name=inst_name, parent=parent_register)
@@ -210,6 +211,8 @@ class Field(Base, ABC):
         self.__bitmask = 0
         for bit_position in range(self.low, self.high+1):
             self.__bitmask |= (1 << bit_position)
+
+        self.__field_type = field_type
 
     @property
     def lsb(self) -> int:
@@ -324,7 +327,7 @@ class Field(Base, ABC):
         return self.__lsb0
 
     @property
-    def default(self) -> Optional[int]:
+    def default(self) -> Optional[FieldType]:
         """
         The default value of the field
 
@@ -332,6 +335,20 @@ class Field(Base, ABC):
         - if the field is not reset.
         - if the register resets to a signal value that can not be determined
         """
+        if issubclass(self._field_type, (SystemRDLEnum, IntEnum)):
+            int_default = self.__misc_props.default
+
+            if int_default is not None:
+                if int_default in [item.value for item in self._field_type]:
+                    return self._field_type(int_default)
+                else:
+                    msg = f'reset value {int_default:d} is not within the enumeration for the class'
+                    self._logger.warning(msg)
+                    warnings.warn(msg)
+                    return None
+
+            return None
+
         return self.__misc_props.default
 
     @property
@@ -349,14 +366,18 @@ class Field(Base, ABC):
         # this cast is OK because an explict typing check was done in the __init__
         return cast(BaseReg, self.parent)
 
+    @property
+    def _field_type(self) -> type[FieldType]:
+        return self.__field_type
 
-class _FieldReadOnlyFramework(Field, ABC):
+
+class _FieldReadOnlyFramework(Field[FieldType], ABC):
     """
     base class for a async or normal read only register field
     """
     __slots__ : list[str] = []
 
-    def decode_read_value(self, value: int) -> int:
+    def decode_read_value(self, value: int) -> FieldType:
         """
         extracts the field value from a register value, by applying the bit
         mask and shift needed
@@ -379,12 +400,16 @@ class _FieldReadOnlyFramework(Field, ABC):
                              f'to {self.__parent_register.max_value:d}')
 
         if self.msb0 is False:
-            return_value = (value & self.bitmask) >> self.low
+            return_int_value = (value & self.bitmask) >> self.low
         else:
-            return_value = swap_msb_lsb_ordering(value=(value & self.bitmask) >> self.low,
+            return_int_value = swap_msb_lsb_ordering(value=(value & self.bitmask) >> self.low,
                                                  width=self.width)
 
-        return return_value
+        if not issubclass(self._field_type, (SystemRDLEnum, IntEnum)):
+            return return_int_value
+
+        return self._field_type(return_int_value)
+
 
     @property
     def __parent_register(self) -> BaseReg:
@@ -395,7 +420,7 @@ class _FieldReadOnlyFramework(Field, ABC):
         return cast(BaseReg, self.parent)
 
 
-class _FieldWriteOnlyFramework(Field, ABC):
+class _FieldWriteOnlyFramework(Field[FieldType], ABC):
     """
     class for a write only register field
     """
@@ -419,7 +444,7 @@ class _FieldWriteOnlyFramework(Field, ABC):
             raise ValueError(f'value to be written to register must be less '
                              f'than or equal to {self.max_value:d}')
 
-    def encode_write_value(self, value: int) -> int:
+    def encode_write_value(self, value: FieldType) -> int:
         """
         Check that a value is legal for the field and then encode it in preparation to be written
         to the register
@@ -431,32 +456,35 @@ class _FieldWriteOnlyFramework(Field, ABC):
             value which can be applied to the register to update the field
 
         """
-        self._write_value_checks(value=value)
+        if not isinstance(value, self._field_type):
+            raise TypeError(f'Field type is not as expected, got {type(value)}, expected {self._field_type}')
+
+        if isinstance(value, (SystemRDLEnum, IntEnum)):
+            int_value = value.value
+        elif isinstance(value, int):
+            int_value = value
+        else:
+            raise RuntimeError('Unhandled type configuration')
+
+        self._write_value_checks(value=int_value)
 
         if self.msb0 is False:
-            return_value = value << self.low
+            return_value = int_value << self.low
         else:
-            return_value = swap_msb_lsb_ordering(value=value,  width=self.width) << self.low
+            return_value = swap_msb_lsb_ordering(value=int_value,  width=self.width) << self.low
 
         return return_value
 
 
-class FieldEnum(Field, ABC):
+class FieldEnum(Field[FieldType], ABC):
     """
     class for a register field with an enumerated value
     """
     __slots__: list[str] = []
 
     @property
-    @abstractmethod
-    def enum_cls(self) -> EnumMeta:
+    def enum_cls(self) -> type[FieldType]:
         """
         The enumeration class for this field
         """
-
-    @property
-    def _enum_values(self) -> list[int]:
-        """
-        provide the legal values for the enumeration
-        """
-        return [e.value for e in self.enum_cls] # type: ignore[var-annotated]
+        return self._field_type

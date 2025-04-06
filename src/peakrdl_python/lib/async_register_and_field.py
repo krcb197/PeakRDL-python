@@ -28,7 +28,7 @@ from array import array as Array
 import sys
 from warnings import warn
 
-from .utility_functions import get_array_typecode, swap_msb_lsb_ordering
+from .utility_functions import get_array_typecode
 from .base import AsyncAddressMap, AsyncRegFile
 from .async_memory import  MemoryAsyncReadOnly, MemoryAsyncWriteOnly, MemoryAsyncReadWrite, \
     AsyncMemory, ReadableAsyncMemory, WritableAsyncMemory
@@ -38,7 +38,7 @@ from .async_memory import ReadableAsyncMemoryLegacy, WritableAsyncMemoryLegacy
 from .callbacks import AsyncCallbackSet, AsyncCallbackSetLegacy
 from .base_register import BaseReg, BaseRegArray, RegisterWriteVerifyError
 from .base_field import FieldEnum, FieldSizeProps, FieldMiscProps, \
-    _FieldReadOnlyFramework, _FieldWriteOnlyFramework
+    _FieldReadOnlyFramework, _FieldWriteOnlyFramework, FieldType
 
 # pylint: disable=duplicate-code
 if sys.version_info >= (3, 11):
@@ -1020,7 +1020,7 @@ ReadableAsyncRegisterArray = Union[RegAsyncReadOnlyArray, RegAsyncReadWriteArray
 WriteableAsyncRegisterArray = Union[RegAsyncWriteOnlyArray, RegAsyncReadWriteArray]
 
 
-class FieldAsyncReadOnly(_FieldReadOnlyFramework, ABC):
+class FieldAsyncReadOnly(_FieldReadOnlyFramework[FieldType], ABC):
     """
     class for an asynchronous read only register field
 
@@ -1038,7 +1038,8 @@ class FieldAsyncReadOnly(_FieldReadOnlyFramework, ABC):
                  size_props: FieldSizeProps,
                  misc_props: FieldMiscProps,
                  logger_handle: str,
-                 inst_name: str):
+                 inst_name: str,
+                 field_type:type[FieldType]=int):
 
         if not isinstance(parent_register, (RegAsyncReadWrite, RegAsyncReadOnly)):
             raise TypeError(f'size_props must be of {type(RegAsyncReadWrite)} or '
@@ -1049,7 +1050,8 @@ class FieldAsyncReadOnly(_FieldReadOnlyFramework, ABC):
                          size_props=size_props,
                          misc_props=misc_props,
                          parent_register=parent_register,
-                         inst_name=inst_name)
+                         inst_name=inst_name,
+                         field_type=field_type)
         # pylint: enable=duplicate-code
 
     async def read(self) -> int:  # pylint: disable=invalid-overridden-method
@@ -1073,7 +1075,7 @@ class FieldAsyncReadOnly(_FieldReadOnlyFramework, ABC):
         return cast(ReadableAsyncRegister, self.parent)
 
 
-class FieldAsyncWriteOnly(_FieldWriteOnlyFramework, ABC):
+class FieldAsyncWriteOnly(_FieldWriteOnlyFramework[FieldType], ABC):
     """
     class for an asynchronous write only register field
 
@@ -1091,7 +1093,8 @@ class FieldAsyncWriteOnly(_FieldWriteOnlyFramework, ABC):
                  size_props: FieldSizeProps,
                  misc_props: FieldMiscProps,
                  logger_handle: str,
-                 inst_name: str):
+                 inst_name: str,
+                 field_type:type[FieldType]=int):
 
         if not isinstance(parent_register, (RegAsyncReadWrite, RegAsyncWriteOnly)):
             raise TypeError(f'size_props must be of {type(RegAsyncReadWrite)} or '
@@ -1102,7 +1105,8 @@ class FieldAsyncWriteOnly(_FieldWriteOnlyFramework, ABC):
                          size_props=size_props,
                          misc_props=misc_props,
                          parent_register=parent_register,
-                         inst_name=inst_name)
+                         inst_name=inst_name,
+                         field_type=field_type)
         # pylint: enable=duplicate-code
 
     async def write(self, value: int) -> None:  # pylint: disable=invalid-overridden-method
@@ -1120,27 +1124,20 @@ class FieldAsyncWriteOnly(_FieldWriteOnlyFramework, ABC):
             value: field value to update to
 
         """
-
-        # This code closely resembles the non-async version but is duplicated for clarity
-        # pylint: disable=duplicate-code
-        self._write_value_checks(value=value)
-
-        if self.msb0:
-            value = swap_msb_lsb_ordering(value=value, width=self.width)
-        # pylint: enable=duplicate-code
+        encoded_value = self.encode_write_value(value)
 
         if (self.high == (self.register_data_width - 1)) and (self.low == 0):
             # special case where the field occupies the whole register,
             # there a straight write can be performed
-            new_reg_value = value
+            new_reg_value = encoded_value
         else:
             # do a read, modify write
             if isinstance(self.parent_register, RegAsyncReadWrite):
                 reg_value = await self.parent_register.read()
                 masked_reg_value = reg_value & self.inverse_bitmask
-                new_reg_value = masked_reg_value | (value << self.low)
+                new_reg_value = masked_reg_value | encoded_value
             elif isinstance(self.parent_register, RegAsyncWriteOnly):
-                new_reg_value = value << self.low
+                new_reg_value = encoded_value
             else:
                 raise TypeError('Unhandled parent type')
 
@@ -1156,9 +1153,9 @@ class FieldAsyncWriteOnly(_FieldWriteOnlyFramework, ABC):
         return cast(WritableAsyncRegister, self.parent)
 
 
-class FieldAsyncReadWrite(FieldAsyncReadOnly, FieldAsyncWriteOnly, ABC):
+class FieldAsyncReadWrite(FieldAsyncReadOnly[FieldType], FieldAsyncWriteOnly[FieldType], ABC):
     """
-    class for an asyncronous read/write register field
+    class for an asynchronous read/write register field
 
     Args:
         parent_register: register within which the field resides
@@ -1198,7 +1195,7 @@ class FieldAsyncReadWrite(FieldAsyncReadOnly, FieldAsyncWriteOnly, ABC):
         return cast(RegAsyncReadWrite, self.parent)
 
 
-class FieldEnumAsyncReadWrite(FieldAsyncReadWrite, FieldEnum, ABC):
+class FieldEnumAsyncReadWrite(FieldAsyncReadWrite[FieldType], FieldEnum[FieldType], ABC):
     """
     class for an async read/write register field with an enumerated value
     """
@@ -1214,14 +1211,14 @@ class FieldEnumAsyncReadWrite(FieldAsyncReadWrite, FieldEnum, ABC):
         return cast(RegAsyncReadWrite, self.parent)
 
 
-class FieldEnumAsyncReadOnly(FieldAsyncReadOnly, FieldEnum, ABC):
+class FieldEnumAsyncReadOnly(FieldAsyncReadOnly[FieldType], FieldEnum[FieldType], ABC):
     """
     class for an async read only register field with an enumerated value
     """
     __slots__: list[str] = []
 
 
-class FieldEnumAsyncWriteOnly(FieldAsyncWriteOnly, FieldEnum, ABC):
+class FieldEnumAsyncWriteOnly(FieldAsyncWriteOnly[FieldType], FieldEnum[FieldType], ABC):
     """
     class for an async write only register field with an enumerated value
     """
