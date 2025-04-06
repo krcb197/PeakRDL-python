@@ -43,7 +43,7 @@ class RegTestBase(CallBackTestWrapper, ABC):
 
         class DUTWrapper(AddressMap):
             """
-            Address map to to wrap the register being tested
+            Address map to wrap the register being tested
             """
 
             # pylint: disable=duplicate-code
