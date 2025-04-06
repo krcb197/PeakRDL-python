@@ -53,7 +53,8 @@ class ReadOnlyRegisterToTest(RegReadOnly):
                 default=None,
                 is_volatile=False),
             logger_handle=logger_handle + '.field',
-            inst_name='field')
+            inst_name='field',
+            field_type=int)
 
     @property
     def readable_fields(self) -> Iterator[FieldReadOnly]:
@@ -131,7 +132,8 @@ class WriteOnlyRegisterToTest(RegWriteOnly):
                 default=None,
                 is_volatile=False),
             logger_handle=logger_handle + '.field',
-            inst_name='field')
+            inst_name='field',
+            field_type=int)
 
     @property
     def writable_fields(self) -> Iterator[FieldWriteOnly]:
@@ -212,7 +214,8 @@ class ReadWriteRegisterToTest(RegReadWrite):
                 default=None,
                 is_volatile=False),
             logger_handle=logger_handle + '.field',
-            inst_name='field')
+            inst_name='field',
+            field_type=int)
 
     @property
     def readable_fields(self) -> Iterator[FieldReadOnly]:

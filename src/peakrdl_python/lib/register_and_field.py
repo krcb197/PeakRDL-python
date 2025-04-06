@@ -1139,7 +1139,7 @@ class FieldReadWrite(FieldReadOnly[FieldType], FieldWriteOnly[FieldType], ABC):
                  field_type:type[FieldType]):
 
         if not isinstance(parent_register, RegReadWrite):
-            raise TypeError(f'size_props must be of {type(RegReadWrite)} '
+            raise TypeError(f'parent_register must be of {type(RegReadWrite)} '
                             f'but got {type(parent_register)}')
 
         super().__init__(logger_handle=logger_handle,
