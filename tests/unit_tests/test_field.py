@@ -21,7 +21,7 @@ from peakrdl_python.lib import SystemRDLEnum, SystemRDLEnumEntry
 from .simple_components import CallBackTestWrapper
 
 # pylint: disable-next=invalid-name,unsupported-binary-operation
-FieldClassType = TypeVar('FieldClassType', bound=FieldReadWrite|FieldReadOnly|FieldWriteOnly)
+FieldClassType = TypeVar('FieldClassType')
 
 
 class TestMsbAndLsbSwapping(unittest.TestCase):
