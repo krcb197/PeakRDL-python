@@ -1033,13 +1033,14 @@ class FieldAsyncReadOnly(_FieldReadOnlyFramework[FieldType], ABC):
     """
     __slots__: list[str] = []
 
+    # pylint: disable-next=too-many-arguments
     def __init__(self, *,
                  parent_register: ReadableAsyncRegister,
                  size_props: FieldSizeProps,
                  misc_props: FieldMiscProps,
                  logger_handle: str,
                  inst_name: str,
-                 field_type:type[FieldType]=int):
+                 field_type:type[FieldType]):
 
         if not isinstance(parent_register, (RegAsyncReadWrite, RegAsyncReadOnly)):
             raise TypeError(f'size_props must be of {type(RegAsyncReadWrite)} or '
@@ -1054,7 +1055,7 @@ class FieldAsyncReadOnly(_FieldReadOnlyFramework[FieldType], ABC):
                          field_type=field_type)
         # pylint: enable=duplicate-code
 
-    async def read(self) -> int:  # pylint: disable=invalid-overridden-method
+    async def read(self) -> FieldType:  # pylint: disable=invalid-overridden-method
         """
         Asynchronously reads the register that this field is located in and retries the field
         value applying the required masking and shifting
@@ -1063,7 +1064,7 @@ class FieldAsyncReadOnly(_FieldReadOnlyFramework[FieldType], ABC):
             field value
 
         """
-        return self.decode_read_value(await self.parent_register.read())
+        return self._decode_read_value(await self.parent_register.read())
 
     @property
     def parent_register(self) -> ReadableAsyncRegister:
@@ -1088,13 +1089,14 @@ class FieldAsyncWriteOnly(_FieldWriteOnlyFramework[FieldType], ABC):
     """
     __slots__: list[str] = []
 
+    # pylint: disable-next=too-many-arguments
     def __init__(self, *,
                  parent_register: WritableAsyncRegister,
                  size_props: FieldSizeProps,
                  misc_props: FieldMiscProps,
                  logger_handle: str,
                  inst_name: str,
-                 field_type:type[FieldType]=int):
+                 field_type:type[FieldType]):
 
         if not isinstance(parent_register, (RegAsyncReadWrite, RegAsyncWriteOnly)):
             raise TypeError(f'size_props must be of {type(RegAsyncReadWrite)} or '
@@ -1109,7 +1111,7 @@ class FieldAsyncWriteOnly(_FieldWriteOnlyFramework[FieldType], ABC):
                          field_type=field_type)
         # pylint: enable=duplicate-code
 
-    async def write(self, value: int) -> None:  # pylint: disable=invalid-overridden-method
+    async def write(self, value: FieldType) -> None:  # pylint: disable=invalid-overridden-method
         """
         The behaviour of this method depends on whether the field is located in
         a readable register or not:
@@ -1124,7 +1126,7 @@ class FieldAsyncWriteOnly(_FieldWriteOnlyFramework[FieldType], ABC):
             value: field value to update to
 
         """
-        encoded_value = self.encode_write_value(value)
+        encoded_value = self._encode_write_value(value)
 
         if (self.high == (self.register_data_width - 1)) and (self.low == 0):
             # special case where the field occupies the whole register,
@@ -1166,12 +1168,14 @@ class FieldAsyncReadWrite(FieldAsyncReadOnly[FieldType], FieldAsyncWriteOnly[Fie
     """
     __slots__: list[str] = []
 
+    # pylint: disable-next=too-many-arguments
     def __init__(self, *,
                  parent_register: RegAsyncReadWrite,
                  size_props: FieldSizeProps,
                  misc_props: FieldMiscProps,
                  logger_handle: str,
-                 inst_name: str):
+                 inst_name: str,
+                 field_type:type[FieldType]):
 
         if not isinstance(parent_register, RegAsyncReadWrite):
             raise TypeError(f'size_props must be of {type(RegAsyncReadWrite)} '
@@ -1182,7 +1186,8 @@ class FieldAsyncReadWrite(FieldAsyncReadOnly[FieldType], FieldAsyncWriteOnly[Fie
                          size_props=size_props,
                          misc_props=misc_props,
                          parent_register=parent_register,
-                         inst_name=inst_name)
+                         inst_name=inst_name,
+                         field_type=field_type)
         # pylint: enable=duplicate-code
 
     @property

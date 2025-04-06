@@ -150,7 +150,9 @@ class FieldMiscProps:
         """
         return self.__is_volatile
 
-FieldType = TypeVar('FieldType', int, SystemRDLEnum, IntEnum)
+
+# pylint: disable-next=invalid-name,unsupported-binary-operation
+FieldType = TypeVar('FieldType', bound=int|SystemRDLEnum|IntEnum)
 class Field(Generic[FieldType], Base, ABC):
     """
     base class of register field wrappers
@@ -163,6 +165,7 @@ class Field(Generic[FieldType], Base, ABC):
     __slots__ = ['__size_props', '__misc_props',
                  '__bitmask', '__msb0', '__lsb0', '__field_type']
 
+    # pylint: disable-next=too-many-arguments
     def __init__(self, *,
                  parent_register: BaseReg, size_props: FieldSizeProps, misc_props: FieldMiscProps,
                  logger_handle: str, inst_name: str, field_type:type[FieldType]):
@@ -212,6 +215,8 @@ class Field(Generic[FieldType], Base, ABC):
         for bit_position in range(self.low, self.high+1):
             self.__bitmask |= (1 << bit_position)
 
+        if not issubclass(field_type, (int, IntEnum, SystemRDLEnum)):
+            raise TypeError(f'Unsupported field type: {field_type}')
         self.__field_type = field_type
 
     @property
@@ -339,17 +344,20 @@ class Field(Generic[FieldType], Base, ABC):
             int_default = self.__misc_props.default
 
             if int_default is not None:
-                if int_default in [item.value for item in self._field_type]:
-                    return self._field_type(int_default)
-                else:
+                if int_default not in [item.value for item in self._field_type]:
+                    # this is a special case which can occur if the default value of the register
+                    # does not cover the enum
                     msg = f'reset value {int_default:d} is not within the enumeration for the class'
                     self._logger.warning(msg)
                     warnings.warn(msg)
                     return None
 
+                return_value = self._field_type(int_default)
+                return return_value # type: ignore[return-value]
+
             return None
 
-        return self.__misc_props.default
+        return self.__misc_props.default  # type: ignore[return-value]
 
     @property
     def is_volatile(self) -> bool:
@@ -427,10 +435,12 @@ class _FieldReadOnlyFramework(Field[FieldType], ABC):
             return_int_value = swap_msb_lsb_ordering(value=(value & self.bitmask) >> self.low,
                                                  width=self.width)
 
-        if not issubclass(self._field_type, (SystemRDLEnum, IntEnum)):
-            return return_int_value
+        if issubclass(self._field_type, (SystemRDLEnum, IntEnum)):
+            return self._field_type(return_int_value) # type: ignore[return-value]
+        if issubclass(self._field_type, int):
+            return return_int_value # type: ignore[return-value]
 
-        return self._field_type(return_int_value)
+        raise TypeError(f'unhandled field_type: {self._field_type}')
 
 
     @property
@@ -502,7 +512,8 @@ class _FieldWriteOnlyFramework(Field[FieldType], ABC):
 
         """
         if not isinstance(value, self._field_type):
-            raise TypeError(f'Field type is not as expected, got {type(value)}, expected {self._field_type}')
+            raise TypeError(f'Field type is not as expected, got {type(value)},'
+                            f' expected {self._field_type}')
 
         if isinstance(value, (SystemRDLEnum, IntEnum)):
             int_value = value.value

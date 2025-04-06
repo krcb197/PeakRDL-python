@@ -994,13 +994,14 @@ class FieldReadOnly(_FieldReadOnlyFramework[FieldType], ABC):
     """
     __slots__: list[str] = []
 
+    # pylint: disable-next=too-many-arguments
     def __init__(self, *,
                  parent_register: ReadableRegister,
                  size_props: FieldSizeProps,
                  misc_props: FieldMiscProps,
                  logger_handle: str,
                  inst_name: str,
-                 field_type:type[FieldType]=int):
+                 field_type:type[FieldType]):
 
         if not isinstance(parent_register, (RegReadWrite, RegReadOnly)):
             raise TypeError(f'size_props must be of {type(RegReadWrite)} or {type(RegReadOnly)} '
@@ -1049,13 +1050,14 @@ class FieldWriteOnly(_FieldWriteOnlyFramework[FieldType], ABC):
     """
     __slots__: list[str] = []
 
+    # pylint: disable-next=too-many-arguments
     def __init__(self, *,
                  parent_register: WritableRegister,
                  size_props: FieldSizeProps,
                  misc_props: FieldMiscProps,
                  logger_handle: str,
                  inst_name: str,
-                 field_type:type[FieldType]=int):
+                 field_type:type[FieldType]):
 
         if not isinstance(parent_register, (RegReadWrite, RegWriteOnly)):
             raise TypeError(f'size_props must be of {type(RegReadWrite)} or {type(RegWriteOnly)} '
@@ -1127,13 +1129,14 @@ class FieldReadWrite(FieldReadOnly[FieldType], FieldWriteOnly[FieldType], ABC):
     """
     __slots__: list[str] = []
 
+    # pylint: disable-next=too-many-arguments
     def __init__(self, *,
                  parent_register: RegReadWrite,
                  size_props: FieldSizeProps,
                  misc_props: FieldMiscProps,
                  logger_handle: str,
                  inst_name: str,
-                 field_type:type[FieldType]=int):
+                 field_type:type[FieldType]):
 
         if not isinstance(parent_register, RegReadWrite):
             raise TypeError(f'size_props must be of {type(RegReadWrite)} '
