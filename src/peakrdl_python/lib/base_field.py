@@ -152,7 +152,7 @@ class FieldMiscProps:
 
 
 # pylint: disable-next=invalid-name,unsupported-binary-operation
-FieldType = TypeVar('FieldType', bound=int|SystemRDLEnum|IntEnum)
+FieldType = TypeVar('FieldType')
 class Field(Generic[FieldType], Base, ABC):
     """
     base class of register field wrappers
@@ -376,7 +376,7 @@ class Field(Generic[FieldType], Base, ABC):
 
     @property
     def _field_type(self) -> type[FieldType]:
-        return self.__field_type
+        return self.__field_type  # type: ignore[return-value]
 
 
 class _FieldReadOnlyFramework(Field[FieldType], ABC):
