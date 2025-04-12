@@ -29,42 +29,26 @@ class SystemRDLEnum(Enum):
     """
     A Enumeration that can also hold the system RDL properties, notably the `name` and `desc
     """
-    @property
-    def _full_value(self) -> SystemRDLEnumEntry:
-        """ The full field value (needed to some operation) """
-        return super().value
-
-    @property
-    # pylint:disable-next=invalid-overridden-method
-    def value(self) -> int:
-        """ The integer value used to encode the field value """
-        return super().value.int_value
+    def __new__(cls, value, rdl_name, rdl_desc):
+        obj = object.__new__(cls)
+        obj._value_ = value
+        obj.__rdl_name = rdl_name
+        obj.__rdl_desc = rdl_desc
+        return obj
 
     @property
     def rdl_name(self) -> Optional[str]:
         """
         The systemRDL name property for the encoding entry
         """
-        return super().value.name
+        return self.__rdl_name
 
     @property
     def rdl_desc(self) -> Optional[str]:
         """
         The systemRDL name property for the encoding entry
         """
-        return super().value.desc
-
-    @classmethod
-    def _missing_(cls, value): # type: ignore[no-untyped-def]
-
-        if isinstance(value, int):
-            # pylint:disable-next=protected-access,no-member
-            int_mapping = {item.value: item._full_value for item in cls._member_map_.values()}
-            if value not in int_mapping:
-                raise ValueError(f'Enumeration has not integer value of {value}')
-            return cls(int_mapping[value])
-
-        return None
+        return self.__rdl_desc
 
     def __str__(self) -> str:
         return self.name
