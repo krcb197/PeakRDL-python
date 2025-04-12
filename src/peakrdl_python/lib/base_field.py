@@ -19,7 +19,7 @@ This module is intended to distributed as part of automatically generated code b
 peakrdl-python tool. It provides the base types for fields that are shared by non-async and async
 fields
 """
-from enum import IntEnum, EnumMeta
+from enum import IntEnum
 from typing import cast, Optional, TypeVar, Generic
 from abc import ABC
 import warnings

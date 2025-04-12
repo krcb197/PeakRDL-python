@@ -413,6 +413,7 @@ class PythonExporter:
                                      target_name='example.py',
                                      template_context=context)
 
+    # pylint: disable-next=too-many-arguments
     def __export_base_tests(self, *,
                             top_block: AddrmapNode,
                             package: _Package,
