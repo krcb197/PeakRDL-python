@@ -151,8 +151,11 @@ class FieldMiscProps:
         return self.__is_volatile
 
 
-# pylint: disable-next=invalid-name,unsupported-binary-operation
-FieldType = TypeVar('FieldType', bound=int|IntEnum|SystemRDLEnum)
+# The following line should be:
+# FieldType = TypeVar('FieldType', bound=int|IntEnum|SystemRDLEnum)
+# However, python 3.9 does not support the combination so the binding was removed
+# pylint: disable-next=invalid-name
+FieldType = TypeVar('FieldType')
 class Field(Generic[FieldType], Base, ABC):
     """
     base class of register field wrappers
