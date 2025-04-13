@@ -51,7 +51,6 @@ from ._node_walkers import AddressMaps, OwnedbyAddressMap
 
 from .__about__ import __version__
 
-
 file_path = os.path.dirname(__file__)
 
 
@@ -414,12 +413,14 @@ class PythonExporter:
                                      target_name='example.py',
                                      template_context=context)
 
+    # pylint: disable-next=too-many-arguments
     def __export_base_tests(self, *,
                             top_block: AddrmapNode,
                             package: _Package,
                             skip_lib_copy: bool,
                             asyncoutput: bool,
-                            legacy_block_access: bool) -> None:
+                            legacy_block_access: bool,
+                            legacy_enum_type: bool) -> None:
         """
 
         Args:
@@ -437,6 +438,7 @@ class PythonExporter:
             'skip_lib_copy': skip_lib_copy,
             'version': __version__,
             'legacy_block_access': legacy_block_access,
+            'legacy_enum_type': legacy_enum_type
         }
 
         context.update(self.user_template_context)
@@ -694,7 +696,8 @@ class PythonExporter:
             # export the baseclasses for the tests
             self.__export_base_tests(top_block=top_block, package=package, asyncoutput=asyncoutput,
                                      skip_lib_copy=skip_library_copy,
-                                     legacy_block_access=legacy_block_access)
+                                     legacy_block_access=legacy_block_access,
+                                     legacy_enum_type=legacy_enum_type)
             # export the tests themselves, these are broken down to one file per addressmap
             self.__export_tests(top_block=top_block, package=package, asyncoutput=asyncoutput,
                                 skip_lib_copy=skip_library_copy,
@@ -758,7 +761,7 @@ class PythonExporter:
                     raise RuntimeError(
                         f'Top Node name {cand_type_name} already used by instance ' \
                         + str(list(self.node_type_name.keys())
-                          [list(self.node_type_name.values()).index(cand_type_name)])
+                              [list(self.node_type_name.values()).index(cand_type_name)])
                     )
                 self.node_type_name[child_inst] = cand_type_name + '_0x' + hex(hash(child_inst))
             else:

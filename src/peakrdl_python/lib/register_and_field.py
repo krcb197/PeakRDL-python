@@ -30,7 +30,6 @@ from warnings import warn
 
 from .base import AddressMap, RegFile
 from .utility_functions import get_array_typecode
-from .utility_functions import swap_msb_lsb_ordering
 from .memory import  MemoryReadOnly, MemoryWriteOnly, MemoryReadWrite, Memory, \
     ReadableMemory, WritableMemory
 from .memory import MemoryReadOnlyLegacy, MemoryWriteOnlyLegacy, MemoryReadWriteLegacy
@@ -38,7 +37,7 @@ from .memory import ReadableMemoryLegacy, WritableMemoryLegacy
 from .callbacks import NormalCallbackSet, NormalCallbackSetLegacy
 from .base_register import BaseReg, BaseRegArray, RegisterWriteVerifyError
 from .base_field import FieldEnum, FieldSizeProps, FieldMiscProps, \
-    _FieldReadOnlyFramework, _FieldWriteOnlyFramework
+    _FieldReadOnlyFramework, _FieldWriteOnlyFramework, FieldType
 
 # pylint: disable=duplicate-code
 if sys.version_info >= (3, 11):
@@ -982,7 +981,7 @@ ReadableRegisterArray = Union[RegReadOnlyArray, RegReadWriteArray]
 WriteableRegisterArray = Union[RegWriteOnlyArray, RegReadWriteArray]
 
 
-class FieldReadOnly(_FieldReadOnlyFramework, ABC):
+class FieldReadOnly(_FieldReadOnlyFramework[FieldType], ABC):
     """
     class for a read only register field
 
@@ -995,12 +994,14 @@ class FieldReadOnly(_FieldReadOnlyFramework, ABC):
     """
     __slots__: list[str] = []
 
+    # pylint: disable-next=too-many-arguments
     def __init__(self, *,
                  parent_register: ReadableRegister,
                  size_props: FieldSizeProps,
                  misc_props: FieldMiscProps,
                  logger_handle: str,
-                 inst_name: str):
+                 inst_name: str,
+                 field_type:type[FieldType]):
 
         if not isinstance(parent_register, (RegReadWrite, RegReadOnly)):
             raise TypeError(f'size_props must be of {type(RegReadWrite)} or {type(RegReadOnly)} '
@@ -1011,10 +1012,11 @@ class FieldReadOnly(_FieldReadOnlyFramework, ABC):
                          size_props=size_props,
                          misc_props=misc_props,
                          parent_register=parent_register,
-                         inst_name=inst_name)
+                         inst_name=inst_name,
+                         field_type=field_type)
         # pylint: enable=duplicate-code
 
-    def read(self) -> int:
+    def read(self) -> FieldType:
         """
         Reads the register that this field is located in and retries the field
         value applying the required masking and shifting
@@ -1023,7 +1025,7 @@ class FieldReadOnly(_FieldReadOnlyFramework, ABC):
             field value
 
         """
-        return self.decode_read_value(self.parent_register.read())
+        return self._decode_read_value(self.parent_register.read())
 
     @property
     def parent_register(self) -> ReadableRegister:
@@ -1035,7 +1037,7 @@ class FieldReadOnly(_FieldReadOnlyFramework, ABC):
         return cast(ReadableRegister, self.parent)
 
 
-class FieldWriteOnly(_FieldWriteOnlyFramework, ABC):
+class FieldWriteOnly(_FieldWriteOnlyFramework[FieldType], ABC):
     """
     class for a write only register field
 
@@ -1048,12 +1050,14 @@ class FieldWriteOnly(_FieldWriteOnlyFramework, ABC):
     """
     __slots__: list[str] = []
 
+    # pylint: disable-next=too-many-arguments
     def __init__(self, *,
                  parent_register: WritableRegister,
                  size_props: FieldSizeProps,
                  misc_props: FieldMiscProps,
                  logger_handle: str,
-                 inst_name: str):
+                 inst_name: str,
+                 field_type:type[FieldType]):
 
         if not isinstance(parent_register, (RegReadWrite, RegWriteOnly)):
             raise TypeError(f'size_props must be of {type(RegReadWrite)} or {type(RegWriteOnly)} '
@@ -1064,10 +1068,11 @@ class FieldWriteOnly(_FieldWriteOnlyFramework, ABC):
                          size_props=size_props,
                          misc_props=misc_props,
                          parent_register=parent_register,
-                         inst_name=inst_name)
+                         inst_name=inst_name,
+                         field_type=field_type)
         # pylint: enable=duplicate-code
 
-    def write(self, value: int) -> None:
+    def write(self, value: FieldType) -> None:
         """
         The behaviour of this method depends on whether the field is located in
         a readable register or not:
@@ -1082,23 +1087,20 @@ class FieldWriteOnly(_FieldWriteOnlyFramework, ABC):
             value: field value to update to
 
         """
-        self._write_value_checks(value=value)
-
-        if self.msb0:
-            value = swap_msb_lsb_ordering(value=value, width=self.width)
+        encoded_value = self._encode_write_value(value)
 
         if (self.high == (self.register_data_width - 1)) and (self.low == 0):
             # special case where the field occupies the whole register,
             # there a straight write can be performed
-            new_reg_value = value
+            new_reg_value = encoded_value
         else:
             # do a read, modify write
             if isinstance(self.parent_register, RegReadWrite):
                 reg_value = self.parent_register.read()
                 masked_reg_value = reg_value & self.inverse_bitmask
-                new_reg_value = masked_reg_value | (value << self.low)
+                new_reg_value = masked_reg_value | encoded_value
             elif isinstance(self.parent_register, RegWriteOnly):
-                new_reg_value = value << self.low
+                new_reg_value = encoded_value
             else:
                 raise TypeError('Unhandled parent type')
 
@@ -1114,7 +1116,7 @@ class FieldWriteOnly(_FieldWriteOnlyFramework, ABC):
         return cast(WritableRegister, self.parent)
 
 
-class FieldReadWrite(FieldReadOnly, FieldWriteOnly, ABC):
+class FieldReadWrite(FieldReadOnly[FieldType], FieldWriteOnly[FieldType], ABC):
     """
     class for a read/write register field
 
@@ -1127,22 +1129,25 @@ class FieldReadWrite(FieldReadOnly, FieldWriteOnly, ABC):
     """
     __slots__: list[str] = []
 
+    # pylint: disable-next=too-many-arguments
     def __init__(self, *,
                  parent_register: RegReadWrite,
                  size_props: FieldSizeProps,
                  misc_props: FieldMiscProps,
                  logger_handle: str,
-                 inst_name: str):
+                 inst_name: str,
+                 field_type:type[FieldType]):
 
         if not isinstance(parent_register, RegReadWrite):
-            raise TypeError(f'size_props must be of {type(RegReadWrite)} '
+            raise TypeError(f'parent_register must be of {type(RegReadWrite)} '
                             f'but got {type(parent_register)}')
 
         super().__init__(logger_handle=logger_handle,
                          size_props=size_props,
                          misc_props=misc_props,
                          parent_register=parent_register,
-                         inst_name=inst_name)
+                         inst_name=inst_name,
+                         field_type=field_type)
 
     @property
     def parent_register(self) -> RegReadWrite:
@@ -1154,7 +1159,7 @@ class FieldReadWrite(FieldReadOnly, FieldWriteOnly, ABC):
         return cast(RegReadWrite, self.parent)
 
 
-class FieldEnumReadWrite(FieldReadWrite, FieldEnum, ABC):
+class FieldEnumReadWrite(FieldReadWrite[FieldType], FieldEnum[FieldType], ABC):
     """
     class for a read/write register field with an enumerated value
     """
@@ -1170,14 +1175,14 @@ class FieldEnumReadWrite(FieldReadWrite, FieldEnum, ABC):
         return cast(RegReadWrite, self.parent)
 
 
-class FieldEnumReadOnly(FieldReadOnly, FieldEnum, ABC):
+class FieldEnumReadOnly(FieldReadOnly[FieldType], FieldEnum[FieldType], ABC):
     """
     class for a read only register field with an enumerated value
     """
     __slots__: list[str] = []
 
 
-class FieldEnumWriteOnly(FieldWriteOnly, FieldEnum, ABC):
+class FieldEnumWriteOnly(FieldWriteOnly[FieldType], FieldEnum[FieldType], ABC):
     """
     class for a write only register field with an enumerated value
     """

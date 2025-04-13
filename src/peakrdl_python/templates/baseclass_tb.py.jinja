@@ -28,6 +28,10 @@ else:
 {% else %}
 import unittest
 {% endif %}
+import random
+{% if legacy_enum_type %}
+from enum import IntEnum
+{% endif %}
 
 
 from {% if skip_lib_copy %}peakrdl_python.{% else %}..{% endif %}lib import RegisterWriteVerifyError
@@ -55,6 +59,10 @@ from {% if skip_lib_copy %}peakrdl_python.{% else %}..{% endif %}sim_lib.dummy_c
 from {% if skip_lib_copy %}peakrdl_python.{% else %}..{% endif %}sim_lib.dummy_callbacks import dummy_write_block{% if not legacy_block_access %}_legacy{% endif %} as write_block_addr_space_alt
 {% endif %}
 
+{% if not legacy_enum_type %}
+from {% if skip_lib_copy %}peakrdl_python.{% else %}..{% endif %}lib import SystemRDLEnum, SystemRDLEnumEntry
+{% endif %}
+
 {% if asyncoutput %}async {% endif %}def read_callback(addr: int, width: int, accesswidth: int) -> int:
     return {% if asyncoutput %}await {% endif %}read_addr_space(addr=addr, width=width, accesswidth=accesswidth)
 
@@ -73,6 +81,8 @@ from {% if skip_lib_copy %}peakrdl_python.{% else %}..{% endif %}sim_lib.dummy_c
 {% if asyncoutput %}async {%endif %}def write_block_callback_alt(addr: int, width: int, accesswidth: int,  data: {% if not legacy_block_access %}Array{% else %}list[int]{% endif %}) -> None:
     {% if asyncoutput %}await {% endif %}write_block_addr_space_alt(addr=addr, width=width, accesswidth=accesswidth, data=data)
 
+def random_enum_reg_value(enum_class: type[{% if legacy_enum_type %}IntEnum{% else %}SystemRDLEnum{% endif %}]) -> {% if legacy_enum_type %}IntEnum{% else %}SystemRDLEnum{% endif %}:
+    return random.choice(list(enum_class))
 
 {% if asyncoutput %}
 if sys.version_info < (3, 8):

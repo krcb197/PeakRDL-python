@@ -52,15 +52,15 @@ addrmap enum_example {
 	} reg_file_a;
 
 	reg {
-	   field { encode = twoBitFieldType; sw=r; fieldwidth=2; } feild_g;
-	   field { encode = twoBitFieldType; sw=rw; fieldwidth=2; } feild_h;
-	   field { encode = twoBitFieldType; sw=w; fieldwidth=2;} feild_i;
+	   field { encode = twoBitFieldType; sw=r; fieldwidth=2; } field_g;
+	   field { encode = twoBitFieldType; sw=rw; fieldwidth=2; } field_h;
+	   field { encode = twoBitFieldType; sw=w; fieldwidth=2;} field_i;
 	} reg_c;
 
 	reg {
 	    default sw = w;
-	    field { encode = twoBitFieldType; sw=w; fieldwidth=2; } feild_j;
-	    field { encode = twoBitFieldType; sw=w; fieldwidth=2; } feild_k;
+	    field { encode = twoBitFieldType; sw=w; fieldwidth=2; } field_j;
+	    field { encode = twoBitFieldType; sw=w; fieldwidth=2; } field_k;
 	} reg_d;
     
 

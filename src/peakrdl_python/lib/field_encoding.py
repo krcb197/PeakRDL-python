@@ -29,7 +29,6 @@ class SystemRDLEnum(Enum):
     """
     A Enumeration that can also hold the system RDL properties, notably the `name` and `desc
     """
-
     @property
     def _full_value(self) -> SystemRDLEnumEntry:
         """ The full field value (needed to some operation) """
@@ -61,6 +60,8 @@ class SystemRDLEnum(Enum):
         if isinstance(value, int):
             # pylint:disable-next=protected-access,no-member
             int_mapping = {item.value: item._full_value for item in cls._member_map_.values()}
+            if value not in int_mapping:
+                raise ValueError(f'Enumeration has not integer value of {value}')
             return cls(int_mapping[value])
 
         return None

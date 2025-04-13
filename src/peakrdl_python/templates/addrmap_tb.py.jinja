@@ -74,6 +74,7 @@ from {% if skip_lib_copy %}peakrdl_python.{% else %}..{% endif %}lib import Syst
 
 from ._{{top_node.inst_name}}_test_base import {{top_node.inst_name}}_TestCase, {{top_node.inst_name}}_TestCase_BlockAccess, {{top_node.inst_name}}_TestCase_AltBlockAccess
 from ._{{top_node.inst_name}}_test_base import __name__ as base_name
+from ._{{top_node.inst_name}}_test_base import random_enum_reg_value
 
 {% from 'addrmap_udp_property.py.jinja' import udp_property_dict_entry with context %}
 
@@ -644,7 +645,7 @@ class {{fq_block_name}}_single_access({{top_node.inst_name}}_TestCase): # type: 
                 {% elif isinstance(child_node, systemrdlFieldNode) %}
                     {% if child_node.is_sw_readable %}
                         {% if 'encode' in child_node.list_properties() %}
-            rand_field_value = random.choice(list(self.dut.{{'.'.join(get_python_path_segments(child_node))}}.enum_cls)).value  # type: ignore[attr-defined]
+            rand_field_value = random_enum_reg_value(self.dut.{{'.'.join(get_python_path_segments(child_node))}}.enum_cls).value
                         {%- else %}
             rand_field_value = random.randrange(0, {{ get_field_max_value_hex_string(child_node) }} + 1)
                         {% endif %}
@@ -667,7 +668,7 @@ class {{fq_block_name}}_single_access({{top_node.inst_name}}_TestCase): # type: 
                                             {% if isinstance(child_node, systemrdlFieldNode) %}
                                                 {%- if child_node.is_sw_readable %}
                                                     {%- if not hide_node_func(child_node) %}
-                                          '{{ child_node.inst_name }}' : {% if asyncoutput %}await {%endif %}self.dut.{{'.'.join(get_python_path_segments(child_node))}}.read(){%- if not loop.last -%}, {%- endif %} # type: ignore[union-attr]
+                                          '{{ child_node.inst_name }}' : {% if asyncoutput %}await {%endif %}self.dut.{{'.'.join(get_python_path_segments(child_node))}}.read(){%- if not loop.last -%}, {%- endif %}
                                                     {%- endif -%}
                                                 {%- endif -%}
                                               {%- endif -%}
@@ -676,7 +677,7 @@ class {{fq_block_name}}_single_access({{top_node.inst_name}}_TestCase): # type: 
 
                 read_callback_mock.reset_mock()
 
-                self.assertDictEqual({% if asyncoutput %}await {% endif %}self.dut.{{'.'.join(get_python_path_segments(node))}}.read_fields(), # type: ignore[union-attr]
+                self.assertDictEqual({% if asyncoutput %}await {% endif %}self.dut.{{'.'.join(get_python_path_segments(node))}}.read_fields(),
                                      reference_read_fields)
                 read_callback_mock.assert_called_once()
                 write_callback_mock.assert_not_called()
@@ -701,7 +702,7 @@ class {{fq_block_name}}_single_access({{top_node.inst_name}}_TestCase): # type: 
                 {% if isinstance(field, systemrdlFieldNode) %}
                     {% if field.is_sw_readable %}
                         {% if 'encode' in field.list_properties() %}
-            rand_field_value = random.choice(list(self.dut.{{'.'.join(get_python_path_segments(field))}}.enum_cls)).value   # type: ignore[attr-defined]
+            rand_field_value = random_enum_reg_value(self.dut.{{'.'.join(get_python_path_segments(field))}}.enum_cls).value
                         {% else %}
             rand_field_value = random.randrange(0, {{ get_field_max_value_hex_string(field) }} + 1)
                         {% endif %}
@@ -766,13 +767,13 @@ class {{fq_block_name}}_single_access({{top_node.inst_name}}_TestCase): # type: 
                 patch(base_name + '.read_addr_space', return_value=0) as read_callback_mock:
                 for num_parm in range(1, len(writable_fields) + 1):
                     for fields_to_write in combinations(writable_fields, num_parm):
-                        field_values = {}
+                        field_values: dict[str, Union[bool, {% if legacy_enum_type %}IntEnum{% else %}SystemRDLEnum{% endif %}, int]] = {}
                         expected_value = 0
                         for field_str in fields_to_write:
                             field = getattr(reg, field_str)
                             if hasattr(field, 'enum_cls'):
-                                rand_enum_value = random.choice(list(field.enum_cls))
-                                rand_field_value = rand_enum_value.value   # type: ignore[attr-defined]
+                                rand_enum_value = random_enum_reg_value(field.enum_cls)
+                                rand_field_value = rand_enum_value.value
                                 field_values[field_str] = rand_enum_value
                             else:
                                 rand_field_value = random.randrange(0, field.max_value + 1)
@@ -852,13 +853,13 @@ class {{fq_block_name}}_single_access({{top_node.inst_name}}_TestCase): # type: 
                 patch(base_name + '.read_addr_space', return_value=0) as read_callback_mock:
                 for num_parm in range(1, len(writable_fields) + 1):
                     for fields_to_write in combinations(writable_fields, num_parm):
-                        kwargs = {}
+                        kwargs: dict[str, Union[bool, {% if legacy_enum_type %}IntEnum{% else %}SystemRDLEnum{% endif %}, int]] = {}
                         expected_value = 0
                         for field_str in fields_to_write:
                             field = getattr(reg, field_str)
                             if hasattr(field, 'enum_cls'):
-                                rand_enum_value = random.choice(list(field.enum_cls))
-                                rand_field_value = rand_enum_value.value   # type: ignore[attr-defined]
+                                rand_enum_value = random_enum_reg_value(field.enum_cls)
+                                rand_field_value = rand_enum_value.value
                                 kwargs[field_str] = rand_enum_value
                             else:
                                 rand_field_value = random.randrange(0, field.max_value + 1)
@@ -902,8 +903,8 @@ class {{fq_block_name}}_single_access({{top_node.inst_name}}_TestCase): # type: 
             expected_value = 0
             {% for field in get_reg_writable_fields(node, hide_node_func) %}
             {%- if 'encode' in field.list_properties() %}
-            rand_enum_value = random.choice(list(self.dut.{{'.'.join(get_python_path_segments(field))}}.enum_cls))
-            rand_field_value = rand_enum_value.value   # type: ignore[attr-defined]
+            rand_enum_value = random_enum_reg_value(self.dut.{{'.'.join(get_python_path_segments(field))}}.enum_cls)
+            rand_field_value = rand_enum_value.value
             kwargs['{{field.inst_name}}'] = rand_enum_value
             {%- else %}
             rand_field_value = random.randrange(0, {{ get_field_max_value_hex_string(field) }} + 1)
@@ -913,7 +914,7 @@ class {{fq_block_name}}_single_access({{top_node.inst_name}}_TestCase): # type: 
             {% endfor %}
             with patch(base_name + '.write_addr_space') as write_callback_mock, \
                 patch(base_name + '.read_addr_space', return_value=0) as read_callback_mock:
-                {% if asyncoutput %}await {% endif %}self.dut.{{'.'.join(get_python_path_segments(node))}}.write_fields(**kwargs)  # type: ignore[union-attr]
+                {% if asyncoutput %}await {% endif %}self.dut.{{'.'.join(get_python_path_segments(node))}}.write_fields(**kwargs)  # type: ignore[arg-type]
                 write_callback_mock.assert_called_once_with(
                                     addr={{node.absolute_address}},
                                     width={{node.size * 8}},
