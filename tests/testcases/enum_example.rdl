@@ -25,7 +25,7 @@ addrmap enum_example {
 		enum threeBitFieldType {
 			value1 = 0;
 			value2 = 1;
-			value3 = 5 { name = "Value 3"; desc="Slighting different definition"; };
+			value3 = 5;
 		};
 		
         field { encode = threeBitFieldType; fieldwidth=3; } field_b = {threeBitFieldType::value3};

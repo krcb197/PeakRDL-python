@@ -355,7 +355,7 @@ class Field(Generic[FieldType], Base, ABC):
                     warnings.warn(msg)
                     return None
 
-                return_value = self._field_type(int_default) # type: ignore[return-value,call-arg]
+                return_value = self._field_type(int_default)
                 return return_value # type: ignore[return-value]
 
             return None
@@ -439,7 +439,7 @@ class _FieldReadOnlyFramework(Field[FieldType], ABC):
                                                  width=self.width)
 
         if issubclass(self._field_type, (SystemRDLEnum, IntEnum)):
-            return self._field_type(return_int_value) # type: ignore[call-arg,return-value]
+            return self._field_type(return_int_value) # type: ignore[return-value]
         if issubclass(self._field_type, int):
             return return_int_value # type: ignore[return-value]
 

@@ -19,7 +19,7 @@ This module is intended to distributed as part of automatically generated code b
 peakrdl-python tool. It provides the base types of field enumerations
 """
 from enum import Enum
-from typing import Optional, Self
+from typing import Optional
 from collections import namedtuple
 from json import JSONEncoder
 
@@ -29,11 +29,11 @@ class SystemRDLEnum(Enum):
     """
     A Enumeration that can also hold the system RDL properties, notably the `name` and `desc
     """
-    def __new__(cls, value: int, rdl_name: Optional[str], rdl_desc: Optional[str]) -> 'SystemRDLEnum':
+    def __new__(cls, value, rdl_name, rdl_desc):
         obj = object.__new__(cls)
         obj._value_ = value
-        obj.__rdl_name = rdl_name  # type: ignore[attr-defined]
-        obj.__rdl_desc = rdl_desc  # type: ignore[attr-defined]
+        obj.__rdl_name = rdl_name
+        obj.__rdl_desc = rdl_desc
         return obj
 
     @property
@@ -41,14 +41,14 @@ class SystemRDLEnum(Enum):
         """
         The systemRDL name property for the encoding entry
         """
-        return self.__rdl_name  # type: ignore[attr-defined]
+        return self.__rdl_name
 
     @property
     def rdl_desc(self) -> Optional[str]:
         """
         The systemRDL name property for the encoding entry
         """
-        return self.__rdl_desc  # type: ignore[attr-defined]
+        return self.__rdl_desc
 
     def __str__(self) -> str:
         return self.name
