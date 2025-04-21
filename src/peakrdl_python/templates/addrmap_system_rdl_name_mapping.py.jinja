@@ -22,7 +22,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
     {# 0 always returns an error #}
     {% if visible_nonsignal_node(node) == 0 %}
     def get_child_by_system_rdl_name(self, name: Any) -> NoReturn:
-        raise NotImplementedError('This node has no children')
+        raise KeyError('This node has no children')
     {% elif visible_nonsignal_node(node) == 1 %}
         {%- for child_node in node.children(unroll=False) -%}
             {%- if isinstance(child_node, systemrdlFieldNode) %}
