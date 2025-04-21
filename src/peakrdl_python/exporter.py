@@ -302,6 +302,15 @@ class PythonExporter:
                            hide_node_func: HideNodeCallback,
                            legacy_enum_type: bool) -> None:
 
+        def visible_nonsignal_node(node: Node) -> int:
+            count = 0
+            for child_node in node.children(unroll=False):
+                if not isinstance(child_node, SignalNode):
+                    if not hide_node_func(child_node):
+                        count +=1
+            return count
+
+
         context = {
             'print': print,
             'type': type,
@@ -351,6 +360,7 @@ class PythonExporter:
                 self._get_dependent_property_enum(node=top_block,
                                                   udp_to_include=udp_to_include),
             'hide_node_func': hide_node_func,
+            'visible_nonsignal_node' : visible_nonsignal_node,
             'legacy_enum_type': legacy_enum_type
         }
         if legacy_block_access is True:
