@@ -189,6 +189,8 @@ class Node(Base, ABC):
         Returns: Node
 
         """
+        if not isinstance(name, str):
+            raise TypeError(f'name must be a string got {type(name)}')
         return getattr(self, self.systemrdl_python_child_name_map[name])
 
     @property
