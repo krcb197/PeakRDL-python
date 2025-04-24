@@ -1382,7 +1382,7 @@ class {{fq_block_name}}_single_access({{top_node.inst_name}}_TestCase): # type: 
                 self.dut.get_child_by_system_rdl_name('{{node.inst_name}}')
             {% else %}
             with self.assertRaises(KeyError):
-                self.dut.{{'.'.join(get_python_path_segments(node.parent))}}.get_child_by_system_rdl_name('{{node.inst_name}}')
+                self.dut.{{'.'.join(get_python_path_segments(node.parent))}}.get_child_by_system_rdl_name('{{node.inst_name}}') # type: ignore[call-overload]
             {% endif %}
             with self.assertRaises(AttributeError):
                 _ = self.dut.{{'.'.join(get_python_path_segments(node))}} # type: ignore[attr-defined]
