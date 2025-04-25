@@ -28,6 +28,10 @@ from typing import Iterator
 from typing import Optional
 from typing import Union
 from typing import Type
+from typing import overload
+from typing import Literal
+from typing import Any
+from typing import NoReturn
 {% if asyncoutput -%}
 from typing import AsyncGenerator
 {% else %}
@@ -39,7 +43,7 @@ import warnings
 
 from contextlib import {% if asyncoutput %}async{% endif %}contextmanager
 
-from {% if skip_lib_copy %}peakrdl_python.{% else %}..{% endif %}lib import Node
+from {% if skip_lib_copy %}peakrdl_python.{% else %}..{% endif %}lib import Node, Base
 from {% if skip_lib_copy %}peakrdl_python.{% else %}..{% endif %}lib import UDPStruct
 
 from {% if skip_lib_copy %}peakrdl_python.{% else %}..{% endif %}lib  import AddressMapArray, RegFileArray
@@ -96,6 +100,8 @@ from {% if skip_lib_copy %}peakrdl_python.{% else %}..{% endif %}lib import Norm
 {% from 'reg_definitions.py.jinja' import child_register_getter with context %}
 {% from 'addrmap_udp_property.py.jinja' import udp_property with context %}
 {% from 'addrmap_universal_property.py.jinja' import universal_properties with context %}
+{% from 'addrmap_system_rdl_name_mapping.py.jinja' import get_child_by_system_rdl_name with context %}
+{% from 'addrmap_system_rdl_name_mapping.py.jinja' import systemrdl_python_child_name_map with context %}
 
 {%- macro regfile_or_addr_instance(node) %}
     {%- if not hide_node_func(node) %}
@@ -199,30 +205,9 @@ class {{get_fully_qualified_type_name(node)}}_cls({% if asyncoutput %}Async{% en
         {%- endif %}
     {% endfor %}
 
-    @property
-    def systemrdl_python_child_name_map(self) -> dict[str, str]:
-        """
-        In some cases systemRDL names need to be converted make them python safe, this dictionary
-        is used to map the original systemRDL names to the names of the python attributes of this
-        class
+    {{ systemrdl_python_child_name_map(node) }}
 
-        Returns: dictionary whose key is the systemRDL names and value it the property name
-        """
-        return {
-            {%- for child_node in node.children(unroll=False) -%}
-                {%- if not hide_node_func(child_node) %}
-                    {%- if isinstance(child_node, systemrdlRegNode) -%}
-            '{{child_node.inst_name}}':'{{safe_node_name(child_node)}}',
-                    {%- elif isinstance(child_node, systemrdlRegfileNode) -%}
-            '{{child_node.inst_name}}':'{{safe_node_name(child_node)}}',
-                    {%- elif isinstance(child_node, systemrdlSignalNode) %}
-            # doing nothing with signal node: {{child_node.inst_name}}
-                    {% else %}
-            {{ raise_template_error('unexpected type') }}
-                    {%- endif %}
-                {%- endif %}
-            {%- endfor %}
-            }
+    {{ get_child_by_system_rdl_name(node) }}
 
     {{ udp_property(node) }}
 
@@ -320,34 +305,9 @@ class {{get_fully_qualified_type_name(node)}}_cls({% if asyncoutput %}Async{% en
             {%- endif %}
         {% endfor %}
 
-    @property
-    def systemrdl_python_child_name_map(self) -> dict[str, str]:
-        """
-        In some cases systemRDL names need to be converted make them python safe, this dictionary
-        is used to map the original systemRDL names to the names of the python attributes of this
-        class
+    {{ systemrdl_python_child_name_map(node) }}
 
-        Returns: dictionary whose key is the systemRDL names and value it the property name
-        """
-        return {
-            {%- for child_node in node.children(unroll=False) -%}
-                {%- if not hide_node_func(child_node) %}
-                    {%- if isinstance(child_node, systemrdlRegNode) -%}
-            '{{child_node.inst_name}}':'{{safe_node_name(child_node)}}',
-                    {%- elif isinstance(child_node, systemrdlRegfileNode) -%}
-            '{{child_node.inst_name}}':'{{safe_node_name(child_node)}}',
-                    {%- elif isinstance(child_node, systemrdlAddrmapNode) -%}
-            '{{child_node.inst_name}}':'{{safe_node_name(child_node)}}',
-                    {%- elif isinstance(child_node, systemrdlMemNode) %}
-            '{{child_node.inst_name}}':'{{safe_node_name(child_node)}}',
-                    {%- elif isinstance(child_node, systemrdlSignalNode) %}
-            # doing nothing with signal node: {{child_node.inst_name}}
-                    {% else %}
-            {{ raise_template_error('unexpected type') }}
-                    {%- endif %}
-                {%- endif %}
-            {%- endfor %}
-            }
+    {{ get_child_by_system_rdl_name(node) }}
 
     {{ udp_property(node) }}
 

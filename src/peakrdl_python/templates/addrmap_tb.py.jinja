@@ -743,7 +743,7 @@ class {{fq_block_name}}_single_access({{top_node.inst_name}}_TestCase): # type: 
                     {%- if field.is_sw_readable %}
                     {%- if not hide_node_func(field) %}
                     self.assertEqual(reference_read_fields['{{ field.inst_name }}'],
-                                     {% if asyncoutput %} await {% endif %}reg_context.get_child_by_system_rdl_name('{{ field.inst_name }}').read()  # type: ignore[attr-defined,union-attr]
+                                     {% if asyncoutput %} await {% endif %}reg_context.get_child_by_system_rdl_name('{{ field.inst_name }}').read()
                                      )
                     {%- endif -%}
                     {%- endif -%}
@@ -1364,7 +1364,7 @@ class {{fq_block_name}}_single_access({{top_node.inst_name}}_TestCase): # type: 
         {% for child_node in node.children(unroll=False) %}
         {% if not isinstance(child_node, systemrdlSignalNode) %}
         {%- if not hide_node_func(child_node) %}
-        self.assertEqual(self.dut.{{'.'.join(get_python_path_segments(node))}}.get_child_by_system_rdl_name('{{child_node.inst_name}}').inst_name, '{{child_node.inst_name}}')  # type: ignore[union-attr]
+        self.assertEqual(self.dut.{{'.'.join(get_python_path_segments(node))}}.get_child_by_system_rdl_name('{{child_node.inst_name}}').inst_name, '{{child_node.inst_name}}')
         {% endif %}
         {% endif %}
         {% endfor %}
@@ -1382,7 +1382,7 @@ class {{fq_block_name}}_single_access({{top_node.inst_name}}_TestCase): # type: 
                 self.dut.get_child_by_system_rdl_name('{{node.inst_name}}')
             {% else %}
             with self.assertRaises(KeyError):
-                self.dut.{{'.'.join(get_python_path_segments(node.parent))}}.get_child_by_system_rdl_name('{{node.inst_name}}')
+                self.dut.{{'.'.join(get_python_path_segments(node.parent))}}.get_child_by_system_rdl_name('{{node.inst_name}}') # type: ignore[call-overload]
             {% endif %}
             with self.assertRaises(AttributeError):
                 _ = self.dut.{{'.'.join(get_python_path_segments(node))}} # type: ignore[attr-defined]

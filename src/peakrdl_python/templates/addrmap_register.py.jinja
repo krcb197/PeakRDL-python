@@ -18,6 +18,8 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 {% from 'addrmap_udp_property.py.jinja' import udp_property with context %}
 {% from 'addrmap_universal_property.py.jinja' import universal_properties with context %}
+{% from 'addrmap_system_rdl_name_mapping.py.jinja' import get_child_by_system_rdl_name with context %}
+{% from 'addrmap_system_rdl_name_mapping.py.jinja' import systemrdl_python_child_name_map with context %}
 
 {%- macro register_class(node) %}
     {%- if node.has_sw_readable and node.has_sw_writable %}
@@ -116,28 +118,9 @@ class {{get_fully_qualified_type_name(node)}}_cls(Reg{% if asyncoutput %}Async{%
         return self.__{{child_node.inst_name}}
     {%- endfor %}
 
-    @property
-    def systemrdl_python_child_name_map(self) -> dict[str, str]:
-        """
-        In some cases systemRDL names need to be converted make them python safe, this dictionary
-        is used to map the original systemRDL names to the names of the python attributes of this
-        class
+    {{ systemrdl_python_child_name_map(node) }}
 
-        Returns: dictionary whose key is the systemRDL names and value it the property name
-        """
-        return {
-            {%- for child_node in node.children(unroll=False) -%}
-            {%- if isinstance(child_node, systemrdlFieldNode) %}
-                {% if not hide_node_func(child_node) %}
-            '{{child_node.inst_name}}':'{{safe_node_name(child_node)}}',
-                {% endif %}
-            {%- elif isinstance(child_node, systemrdlSignalNode) %}
-            # doing nothing with signal node: {{child_node.inst_name}}
-            {% else %}
-            {{ raise_template_error('unexpected type') }}
-            {% endif %}
-            {%- endfor %}
-            }
+    {{ get_child_by_system_rdl_name(node) }}
 
     {{ udp_property(node) }}
 
