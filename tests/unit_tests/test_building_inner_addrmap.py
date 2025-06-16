@@ -1,6 +1,6 @@
 """
-Test that it is possible to build a addrmap inside the compiled structure and compare it to
-a result of a the top level
+Test that it is possible to build an addrmap inside the compiled structure and compare it to
+a result of the top level
 """
 import unittest
 import os
@@ -26,7 +26,6 @@ class TestTopAndInner(unittest.TestCase):
     """
     Test class building both the top level address map and one of the inner address maps
     """
-
     test_case_path = test_cases
 
 
@@ -72,7 +71,11 @@ class TestTopAndInner(unittest.TestCase):
             # add the temp directory to the python path so that it can be imported from
             sys.path.append(tmpdirname)
 
-            def generate_instance(regmodel_name: str, regmodel_cls: str):
+            def generate_instance(regmodel_name: str, regmodel_cls: str) -> AddressMap:
+                """
+                Import the register model python code and make an instance of the address map
+                """
+
                 reg_model_module = __import__(
                     regmodel_name + '.reg_model.' + regmodel_name,
                     globals(), locals(), [regmodel_cls],
@@ -95,6 +98,9 @@ class TestTopAndInner(unittest.TestCase):
         """
 
         def compare_addrmap_instances(a: AddressMap, b: AddressMap):
+            """
+            Walk all the sections of two address maps to make sure they are the same
+            """
             self.assertEqual(a.inst_name, b.inst_name)
             for a_child, b_child in zip(a.get_sections(unroll=True), b.get_sections(unroll=True)):
                 compare_addrmap_instances(a_child, b_child)
