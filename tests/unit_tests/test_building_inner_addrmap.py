@@ -6,15 +6,15 @@ import unittest
 import os
 import tempfile
 import sys
-import re
 
 from pathlib import Path
-
-
 
 from contextlib import contextmanager
 
 from peakrdl_python import PythonExporter
+from peakrdl_python.lib import NormalCallbackSet
+from peakrdl_python.lib import AddressMap
+from peakrdl_python.sim_lib.dummy_callbacks import dummy_write_block, dummy_read_block
 from peakrdl_python import compiler_with_udp_registers
 
 
@@ -50,16 +50,12 @@ class TestTopAndInner(unittest.TestCase):
         exporter = PythonExporter()
 
         with tempfile.TemporaryDirectory() as tmpdirname:
-            # the temporary package, within which the real package is placed is needed to ensure
-            # that there are two separate entries in the python import cache and this avoids the
-            # test failing for strange reasons
 
-            # pylint: disable=duplicate-code
             exporter.export(node=spec.top,
                             path=tmpdirname,
                             asyncoutput=False,
                             delete_existing_package_content=False,
-                            skip_library_copy=False,
+                            skip_library_copy=True,
                             skip_test_case_generation=True,
                             legacy_block_access=False,
                             show_hidden=False)
@@ -67,7 +63,7 @@ class TestTopAndInner(unittest.TestCase):
                             path=tmpdirname,
                             asyncoutput=False,
                             delete_existing_package_content=False,
-                            skip_library_copy=False,
+                            skip_library_copy=True,
                             skip_test_case_generation=True,
                             legacy_block_access=False,
                             show_hidden=False)
@@ -76,53 +72,46 @@ class TestTopAndInner(unittest.TestCase):
             # add the temp directory to the python path so that it can be imported from
             sys.path.append(tmpdirname)
 
-            top_reg_model_module = __import__(
-                test_case + '.reg_model.' + test_case,
-                globals(), locals(), [test_case_reg_model_cls],
-                0)
-            top_dut_cls = getattr(top_reg_model_module, test_case_reg_model_cls)
-            top_peakrdl_python_package = __import__(test_case + '.lib',
-                                                    globals(), locals(), ['CallbackSet'], 0)
-            top_callbackset_cls = getattr(top_peakrdl_python_package, 'NormalCallbackSet')
-            top_dummy_operations_module = __import__(test_case +
-                                                 '.sim_lib.dummy_callbacks',
-                                                 globals(), locals(),
-                                                 ['dummy_read_block'], 0)
-            top_dummy_read = getattr(top_dummy_operations_module, 'dummy_read_block')
-            top_dummy_write = getattr(top_dummy_operations_module, 'dummy_write_block')
+            def generate_instance(regmodel_name: str, regmodel_cls: str):
+                reg_model_module = __import__(
+                    regmodel_name + '.reg_model.' + regmodel_name,
+                    globals(), locals(), [regmodel_cls],
+                    0)
+                dut_cls = getattr(reg_model_module, regmodel_cls)
 
-            inner_reg_model_module = __import__(
-                inner_addr_map + '.reg_model.' + inner_addr_map,
-                globals(), locals(), [test_case_reg_model_cls],
-                0)
-            inner_dut_cls = getattr(inner_reg_model_module, inner_case_reg_model_cls)
-            inner_peakrdl_python_package = __import__(inner_addr_map + '.lib',
-                                                      globals(), locals(), ['CallbackSet'], 0)
-            inner_callbackset_cls = getattr(inner_peakrdl_python_package, 'NormalCallbackSet')
-            inner_dummy_operations_module = __import__(inner_addr_map +
-                                                       '.sim_lib.dummy_callbacks',
-                                                       globals(), locals(),
-                                                       ['dummy_read_block'], 0)
-            inner_dummy_read = getattr(inner_dummy_operations_module, 'dummy_read_block')
-            inner_dummy_write = getattr(inner_dummy_operations_module, 'dummy_write_block')
-            # pylint: enable=duplicate-code
+                return dut_cls(callbacks=NormalCallbackSet(
+                    read_block_callback=dummy_read_block,
+                    write_block_callback=dummy_write_block))
 
-            yield (top_dut_cls(callbacks=top_callbackset_cls(
-                read_block_callback=top_dummy_read,
-                write_block_callback=top_dummy_write)),
-                   inner_dut_cls(callbacks=inner_callbackset_cls(
-                       read_block_callback=inner_dummy_read,
-                       write_block_callback=inner_dummy_write)),
-                   spec)
+
+            yield (generate_instance(test_case, test_case_reg_model_cls),
+                   generate_instance(inner_addr_map, inner_case_reg_model_cls))
 
             sys.path.remove(tmpdirname)
 
     def test_top_and_inner(self):
+        """
+        Test that the inner address map generated separately from the full stack are the same
+        """
+
+        def compare_addrmap_instances(a: AddressMap, b: AddressMap):
+            self.assertEqual(a.inst_name, b.inst_name)
+            for a_child, b_child in zip(a.get_sections(unroll=True), b.get_sections(unroll=True)):
+                compare_addrmap_instances(a_child, b_child)
+
+            for a_child, b_child in zip(a.get_registers(unroll=True), b.get_registers(unroll=True)):
+                self.assertEqual(a_child.inst_name, b_child.inst_name)
+                self.assertEqual(a_child.address, b_child.address)
+
+                for a_child_field, b_child_field in zip(a_child.fields, b_child.fields):
+                    self.assertEqual(a_child_field.inst_name, b_child_field.inst_name)
+                    self.assertEqual(a_child_field.lsb, b_child_field.lsb)
+                    self.assertEqual(a_child_field.msb, b_child_field.msb)
+
+
         with self.build_python_wrappers_and_make_instance() as \
-                (top_reg_model, inner_reg_model, compiled_system_rdl):
-            # TODO compare child_c in the top_reg_model to inner_reg_model
-            # making sure they are the same
-            pass
+                (top_reg_model, inner_reg_model):
+            compare_addrmap_instances(top_reg_model.child_c, inner_reg_model)
 
 if __name__ == '__main__':
     unittest.main()
