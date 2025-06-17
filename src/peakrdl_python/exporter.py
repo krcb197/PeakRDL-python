@@ -791,7 +791,7 @@ class PythonExporter:
 
     def _fully_qualified_enum_type(self,
                                    field_enum: UserEnumMeta,
-                                   root_node: Union[AddrmapNode | RootNode],
+                                   root_node: Union[AddrmapNode,RootNode],
                                    owning_field: FieldNode,
                                    hide_node_func: HideNodeCallback) -> str:
         """
