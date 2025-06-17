@@ -791,7 +791,7 @@ class PythonExporter:
 
     def _fully_qualified_enum_type(self,
                                    field_enum: UserEnumMeta,
-                                   root_node: AddressableNode,
+                                   root_node: Union[AddrmapNode | RootNode],
                                    owning_field: FieldNode,
                                    hide_node_func: HideNodeCallback) -> str:
         """
@@ -827,8 +827,9 @@ class PythonExporter:
 
         raise RuntimeError('Failed to find parent node to reference')
 
-    def _get_dependent_enum(self, node: AddressableNode, hide_node_func: HideNodeCallback) -> \
-            Iterable[tuple[UserEnumMeta, str]]:
+    def _get_dependent_enum(
+            self, node: Union[AddrmapNode, RootNode], hide_node_func: HideNodeCallback) -> \
+            Iterable[tuple[UserEnumMeta, FieldNode]]:
         """
         iterable of enums which is used by a descendant of the input node,
         this list is de-duplicated
@@ -845,7 +846,7 @@ class PythonExporter:
 
                     if fully_qualified_enum_name not in enum_needed:
                         enum_needed.append(fully_qualified_enum_name)
-                        yield field_enum, fully_qualified_enum_name
+                        yield field_enum, child_node
 
     def _get_dependent_property_enum(self, node: Node,
                                      udp_to_include: Optional[list[str]]) -> \
