@@ -797,6 +797,13 @@ class PythonExporter:
         """
         Returns the fully qualified class type name, for an enum
         """
+        # in the case where the node node of the peakrdl python wrappers is not the real
+        # root node of the elaborated systemRDL, need to find the true Root Node
+        if not isinstance(root_node, RootNode):
+            if isinstance(root_node, AddrmapNode):
+                while not isinstance(root_node, RootNode):
+                    root_node = root_node.parent
+
         if not hasattr(field_enum, '_parent_scope'):
             # this happens if the enum is has been declared in an IPXACT file
             # which is imported
@@ -821,7 +828,7 @@ class PythonExporter:
         raise RuntimeError('Failed to find parent node to reference')
 
     def _get_dependent_enum(self, node: AddressableNode, hide_node_func: HideNodeCallback) -> \
-            Iterable[tuple[UserEnumMeta, FieldNode]]:
+            Iterable[tuple[UserEnumMeta, str]]:
         """
         iterable of enums which is used by a descendant of the input node,
         this list is de-duplicated
@@ -838,7 +845,7 @@ class PythonExporter:
 
                     if fully_qualified_enum_name not in enum_needed:
                         enum_needed.append(fully_qualified_enum_name)
-                        yield field_enum, child_node
+                        yield field_enum, fully_qualified_enum_name
 
     def _get_dependent_property_enum(self, node: Node,
                                      udp_to_include: Optional[list[str]]) -> \
