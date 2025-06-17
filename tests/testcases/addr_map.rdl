@@ -1,8 +1,14 @@
 
+enum an_enum {
+		    value1 = 0;
+		    value2 = 1;
+		};
+
 reg regtype_a {
         default sw = rw;
         default hw = r;
-        field {} basicfield_a[31:0];
+        field {} basicfield_a[20:0];
+        field { encode = an_enum; fieldwidth=1; } basicfield_b;
     };
 
 addrmap child_addr_map_type_a {
