@@ -23,6 +23,7 @@ from pathlib import Path
 from shutil import copy
 from typing import NoReturn, Any, Optional, Union
 from collections.abc import Iterable
+from functools import cache
 
 import jinja2 as jj
 from systemrdl import RDLWalker
@@ -789,6 +790,15 @@ class PythonExporter:
         """
         raise PythonExportTemplateError(message)
 
+    @cache
+    def __true_root(self, root_node: Union[AddrmapNode,RootNode]) -> RootNode:
+        if not isinstance(root_node, RootNode):
+            if isinstance(root_node, AddrmapNode):
+                while not isinstance(root_node, RootNode):
+                    root_node = root_node.parent
+
+        return root_node
+
     def _fully_qualified_enum_type(self,
                                    field_enum: UserEnumMeta,
                                    root_node: Union[AddrmapNode,RootNode],
@@ -797,22 +807,20 @@ class PythonExporter:
         """
         Returns the fully qualified class type name, for an enum
         """
-        # in the case where the node node of the peakrdl python wrappers is not the real
-        # root node of the elaborated systemRDL, need to find the true Root Node
-        if not isinstance(root_node, RootNode):
-            if isinstance(root_node, AddrmapNode):
-                while not isinstance(root_node, RootNode):
-                    root_node = root_node.parent
+        # in the case where the node of the peakrdl python wrappers is not the real
+        # root node of the elaborated systemRDL, need to find the true Root Node. This is
+        # important as the concatenated name can to be outside the node being built
+        root_node = self.__true_root(root_node=root_node)
 
         if not hasattr(field_enum, '_parent_scope'):
-            # this happens if the enum is has been declared in an IPXACT file
+            # this happens if the enum has been declared in an IPXACT file
             # which is imported
             return self._lookup_type_name(owning_field) + '_' + field_enum.__name__
 
         parent_scope = getattr(field_enum, '_parent_scope')
 
         if parent_scope is None:
-            # this happens if the enum is has been declared in an IPXACT file
+            # this happens if the enum has been declared in an IPXACT file
             # which is imported
             return self._lookup_type_name(owning_field) + '_' + field_enum.__name__
 
