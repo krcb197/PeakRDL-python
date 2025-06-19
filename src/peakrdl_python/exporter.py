@@ -790,7 +790,6 @@ class PythonExporter:
         """
         raise PythonExportTemplateError(message)
 
-    @cache
     def __true_root(self, root_node: Union[AddrmapNode,RootNode]) -> RootNode:
         if not isinstance(root_node, RootNode):
             if isinstance(root_node, AddrmapNode):
