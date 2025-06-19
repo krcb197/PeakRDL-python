@@ -23,7 +23,6 @@ from pathlib import Path
 from shutil import copy
 from typing import NoReturn, Any, Optional, Union
 from collections.abc import Iterable
-from functools import cache
 
 import jinja2 as jj
 from systemrdl import RDLWalker
