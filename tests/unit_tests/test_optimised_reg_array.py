@@ -67,7 +67,7 @@ class ArrayBase(CallBackTestWrapper, ABC):
 
         class DUTWrapper(AddressMap):
             """
-            Address map to to wrap the register array being tested
+            Address map to wrap the register array being tested
             """
 
             # pylint: disable=too-many-arguments,duplicate-code
