@@ -170,7 +170,7 @@ class Field(Generic[FieldType], Base, ABC):
     """
 
     __slots__ = ['__size_props', '__misc_props',
-                 '__bitmask', '__msb0', '__lsb0', '__field_type']
+                 '__bitmask', '__lsb0', '__field_type']
 
     # pylint: disable-next=too-many-arguments
     def __init__(self, *,
@@ -207,10 +207,8 @@ class Field(Generic[FieldType], Base, ABC):
 
         if (self.msb == self.high) and (self.lsb == self.low):
             self.__lsb0 = True
-            self.__msb0 = False
         elif (self.msb == self.low) and (self.lsb == self.high):
             self.__lsb0 = False
-            self.__msb0 = True
         else:
             raise ValueError('msb/lsb are inconsistent with low/high')
 
@@ -251,7 +249,8 @@ class Field(Generic[FieldType], Base, ABC):
 
     @property
     def max_value(self) -> int:
-        """maximum unsigned integer value that can be stored in the field
+        """
+        maximum unsigned integer value that can be stored in the field
 
         For example:
 
@@ -320,7 +319,7 @@ class Field(Generic[FieldType], Base, ABC):
         Returns: true if msb0
 
         """
-        return self.__msb0
+        return not self.lsb0
 
     @property
     def lsb0(self) -> bool:
