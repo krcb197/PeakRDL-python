@@ -37,6 +37,8 @@ from systemrdl.component import Component
 from systemrdl.rdltypes.user_enum import UserEnumMeta
 from systemrdl import RDLListener, WalkerAction, RDLWalker
 
+from .lib.utility_functions import calculate_bitmask
+
 
 class HideNodeCallback(Protocol):
     """
@@ -237,7 +239,7 @@ def get_field_bitmask_int(node: FieldNode) -> int:
     if not isinstance(node, FieldNode):
         raise TypeError(f'node is not a {type(FieldNode)} got {type(node)}')
 
-    return sum(2 ** x for x in range(node.low, node.high + 1))
+    return calculate_bitmask(high=node.high, low=node.low)
 
 
 def get_field_bitmask_hex_string(node: FieldNode) -> str:

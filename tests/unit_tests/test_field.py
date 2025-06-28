@@ -14,7 +14,7 @@ from peakrdl_python.lib import FieldReadOnly, FieldWriteOnly, FieldReadWrite
 from peakrdl_python.lib import FieldEnumReadOnly, FieldEnumWriteOnly, FieldEnumReadWrite
 from peakrdl_python.lib import RegReadOnly, RegWriteOnly, RegReadWrite, Reg
 from peakrdl_python.lib import FieldSizeProps
-from peakrdl_python.lib.utility_functions import swap_msb_lsb_ordering
+from peakrdl_python.lib.utility_functions import swap_msb_lsb_ordering, calculate_bitmask
 from peakrdl_python.lib import AddressMap, CallbackSet, RegFile, Memory, RegArray, FieldMiscProps
 from peakrdl_python.lib import SystemRDLEnum, SystemRDLEnumEntry
 
@@ -48,6 +48,39 @@ class TestMsbAndLsbSwapping(unittest.TestCase):
             for pos in range(field_length):
                 self.assertEqual(swap_msb_lsb_ordering(width=field_length, value=1 << pos),
                                  1 << field_length - 1 - pos)
+
+class TestBitmaskGeneration(unittest.TestCase):
+    """
+    Test utility function for making a bit mask
+    """
+    @staticmethod
+    def reference_bitmask_algorithm(high, low):
+        return sum(2 ** x for x in range(low, high + 1))
+
+    def test_single_pos(self):
+        """
+        Test single bit position
+        """
+        for bit in range(0,64):
+            self.assertEqual(calculate_bitmask(low=bit, high=bit),
+                             self.reference_bitmask_algorithm(low=bit, high=bit))
+
+    def test_multi_bit_fields(self):
+        """
+        Test multi-bit fields
+        """
+        for low, high in ((low, high) for low in range(64) for high in range(low + 1, 64 - low)):
+            self.assertEqual(calculate_bitmask(low=low, high=high),
+                             self.reference_bitmask_algorithm(low=low, high=high))
+
+    def test_huge_register(self):
+        """
+        Test a couple of case with very large register definitions
+        """
+        self.assertEqual(calculate_bitmask(low=128, high=511),
+                         self.reference_bitmask_algorithm(low=128, high=511))
+
+
 
 
 class TestField(CallBackTestWrapper):

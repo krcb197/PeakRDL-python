@@ -25,7 +25,7 @@ from abc import ABC
 import warnings
 
 from .base import Base
-from .utility_functions import swap_msb_lsb_ordering
+from .utility_functions import swap_msb_lsb_ordering, calculate_bitmask
 from .base_register import BaseReg
 from .field_encoding import SystemRDLEnum
 
@@ -46,6 +46,10 @@ class FieldSizeProps:
 
         if self.width < 1:
             raise ValueError('width must be greater than 0')
+
+        if self.high - self.low + 1 != self.width:
+            raise ValueError('field width defined by lsb and msb does not match'
+                             ' specified width')
 
         if self.high < self.low:
             raise ValueError('field high bit position can not be less than the '
@@ -201,10 +205,6 @@ class Field(Generic[FieldType], Base, ABC):
             raise ValueError('field lsb must be less than the parent '
                              'register width')
 
-        if self.high - self.low + 1 != self.width:
-            raise ValueError('field width defined by lsb and msb does not match'
-                             ' specified width')
-
         if (self.msb == self.high) and (self.lsb == self.low):
             self.__lsb0 = True
             self.__msb0 = False
@@ -214,9 +214,7 @@ class Field(Generic[FieldType], Base, ABC):
         else:
             raise ValueError('msb/lsb are inconsistent with low/high')
 
-        self.__bitmask = 0
-        for bit_position in range(self.low, self.high+1):
-            self.__bitmask |= (1 << bit_position)
+        self.__bitmask = calculate_bitmask(high=self.high, low=self.low)
 
         if not issubclass(field_type, (int, IntEnum, SystemRDLEnum)):
             raise TypeError(f'Unsupported field type: {field_type}')
@@ -310,7 +308,7 @@ class Field(Generic[FieldType], Base, ABC):
         register
 
         For example a register field occupying bits 7 to 4 in a 16-bit register
-        will have a inverse bit mask of 0xFF0F
+        will have an inverse bit mask of 0xFF0F
         """
         return self.__parent_register.max_value ^ self.bitmask
 
