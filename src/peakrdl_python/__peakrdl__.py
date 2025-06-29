@@ -93,6 +93,12 @@ class Exporter(ExporterSubcommandPlugin):
                                help='peakrdl python has two ways to define field encoding as '
                                      'enums new method and an old method based on IntEnum. '
                                      'Setting this to true will restore the old behaviour')
+        arg_group.add_argument('--skip_systemrdl_name_and_desc_properties', action='store_true',
+                               dest='skip_systemrdl_name_and_desc_properties',
+                               help='peakrdl python includes the system RDL name and desc '
+                                    'attributes as properties of the class that is built. Setting '
+                                    'this will skip this reducign the size of the python code '
+                                    'generated')
 
     def do_export(self, top_node: 'AddrmapNode', options: 'argparse.Namespace') -> None:
         """
@@ -126,5 +132,6 @@ class Exporter(ExporterSubcommandPlugin):
             user_defined_properties_to_include=options.udp,
             hidden_inst_name_regex=options.hide_regex,
             skip_library_copy=options.skip_library_copy,
-            legacy_enum_type=options.legacy_enum_type
+            legacy_enum_type=options.legacy_enum_type,
+            skip_systemrdl_name_and_desc_properties=options.skip_systemrdl_name_and_desc_properties
         )

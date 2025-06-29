@@ -96,6 +96,13 @@ CommandLineParser.add_argument('--legacy_enum_type', action='store_true',
                                help='peakrdl python has ways to define field encoding as enums a '
                                     'a new method and an old method based on IntEnum. Setting '
                                     'this to true will restore the old behaviour')
+CommandLineParser.add_argument('--skip_systemrdl_name_and_desc_properties',
+                               action='store_true',
+                               dest='skip_systemrdl_name_and_desc_properties',
+                               help='peakrdl python includes the system RDL name and desc '
+                                    'attributes as properties of the class that is built. Setting '
+                                    'this will skip this reducign the size of the python code '
+                                    'generated')
 
 
 def build_logging_cong(logfilepath:str):
@@ -183,14 +190,17 @@ if __name__ == '__main__':
 
     exporter = PythonExporter()
     start_time = time.time()
-    exporter.export(node=spec, path=str(CommandLineArgs.output_path / 'generate_and_test_output'),
-                    asyncoutput=CommandLineArgs.asyncoutput,
-                    delete_existing_package_content=not CommandLineArgs.suppress_cleanup,
-                    skip_library_copy=not CommandLineArgs.copy_libraries,
-                    legacy_block_access=CommandLineArgs.legacy_block_access,
-                    user_defined_properties_to_include=CommandLineArgs.udp,
-                    hidden_inst_name_regex=CommandLineArgs.hide_regex,
-                    legacy_enum_type=CommandLineArgs.legacy_enum_type)
+    exporter.export(
+        node=spec, path=str(CommandLineArgs.output_path / 'generate_and_test_output'),
+        asyncoutput=CommandLineArgs.asyncoutput,
+        delete_existing_package_content=not CommandLineArgs.suppress_cleanup,
+        skip_library_copy=not CommandLineArgs.copy_libraries,
+        legacy_block_access=CommandLineArgs.legacy_block_access,
+        user_defined_properties_to_include=CommandLineArgs.udp,
+        hidden_inst_name_regex=CommandLineArgs.hide_regex,
+        legacy_enum_type=CommandLineArgs.legacy_enum_type,
+        skip_systemrdl_name_and_desc_properties=
+        CommandLineArgs.skip_systemrdl_name_and_desc_properties)
     print(f'generation time {time.time() - start_time}s')
 
     if not CommandLineArgs.export_only:
