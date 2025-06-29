@@ -145,7 +145,7 @@ jobs:
 
           python -m generate_and_test --RDL_source_file tests/testcases/reserved_elements.rdl --root_node reserved_elements --hide_regex "(?:[\w_\[\]]+\.)+RSVD"
           
-          python -m generate_and_test --name_desc_all_levels.rdl --skip_systemrdl_name_and_desc_properties
+          python -m generate_and_test --RDL_source_file tests/testcases/name_desc_all_levels.rdl --root_node name_desc_all_levels --skip_systemrdl_name_and_desc_properties
 
   peakrdl_integration:
     needs:
