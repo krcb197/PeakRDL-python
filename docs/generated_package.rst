@@ -411,7 +411,7 @@ User Defined Properties are not automatically included they must be specified, a
 
 .. code-block:: bash
 
-   peakrdl python chip_with_registers.rdl -o chip_with_registers
+   peakrdl python user_defined_properties.rdl -o . --udp component_usage
 
 The user defined properties are stored in a ``udp`` property of all component in the generated
 register access and can be accessed as follows:
