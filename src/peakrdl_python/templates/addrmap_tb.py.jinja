@@ -96,10 +96,14 @@ class {{fq_block_name}}_single_access({{top_node.inst_name}}_TestCase): # type: 
         """
         {% for node in owned_elements.nodes -%}
         with self.subTest(msg='node: {{'.'.join(node.get_path_segments())}}'):
-            {% if node.get_property('name', default=None) is none %}
-            self.assertIsNone(self.dut.{{'.'.join(get_python_path_segments(node))}}.rdl_name)  # type: ignore[union-attr]
+            {% if skip_systemrdl_name_and_desc_properties %}
+                self.assertIsNone(self.dut.{{'.'.join(get_python_path_segments(node))}}.rdl_name)  # type: ignore[union-attr]
             {% else %}
+                {% if node.get_property('name', default=None) is none %}
+            self.assertIsNone(self.dut.{{'.'.join(get_python_path_segments(node))}}.rdl_name)  # type: ignore[union-attr]
+                {% else %}
             self.assertEqual(self.dut.{{'.'.join(get_python_path_segments(node))}}.rdl_name, {{node.get_property('name') | tojson}}) # type: ignore[union-attr]
+                {% endif %}
             {% endif %}
 
         {% endfor %}
@@ -110,10 +114,14 @@ class {{fq_block_name}}_single_access({{top_node.inst_name}}_TestCase): # type: 
         """
         {% for node in owned_elements.nodes -%}
         with self.subTest(msg='node: {{'.'.join(node.get_path_segments())}}'):
-            {% if node.get_property('desc', default=None) is none %}
-            self.assertIsNone(self.dut.{{'.'.join(get_python_path_segments(node))}}.rdl_desc)  # type: ignore[union-attr]
+            {% if skip_systemrdl_name_and_desc_properties %}
+                self.assertIsNone(self.dut.{{'.'.join(get_python_path_segments(node))}}.rdl_desc)  # type: ignore[union-attr]
             {% else %}
+                {% if node.get_property('desc', default=None) is none %}
+            self.assertIsNone(self.dut.{{'.'.join(get_python_path_segments(node))}}.rdl_desc)  # type: ignore[union-attr]
+                {% else %}
             self.assertEqual(self.dut.{{'.'.join(get_python_path_segments(node))}}.rdl_desc, {{node.get_property('desc') | tojson}}) # type: ignore[union-attr]
+                {% endif %}
             {% endif %}
 
         {% endfor %}
