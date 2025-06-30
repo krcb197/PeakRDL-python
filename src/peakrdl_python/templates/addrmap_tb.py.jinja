@@ -17,7 +17,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #}
 
 {% include "header_tb.py.jinja" with context %}
-from typing import Union
+from typing import Union,Iterable
 from array import array as Array
 {% if asyncoutput %}
 import sys
@@ -769,7 +769,7 @@ class {{fq_block_name}}_single_access({{top_node.inst_name}}_TestCase): # type: 
                 # the combinations are reduced to only tests combinations of three plus the full
                 # set
                 if len(writable_fields) > 4:
-                    perms_iterator = chain(range(1,4), [len(writable_fields)])
+                    perms_iterator: Iterable[int] = chain(range(1,4), [len(writable_fields)])
                 else:
                     perms_iterator = range(1, len(writable_fields) + 1)
                 for fields_to_write in chain.from_iterable((combinations(writable_fields, perms) for perms in perms_iterator)):
@@ -861,7 +861,7 @@ class {{fq_block_name}}_single_access({{top_node.inst_name}}_TestCase): # type: 
                 # the combinations are reduced to only tests combinations of three plus the full
                 # set
                 if len(writable_fields) > 4:
-                    perms_iterator = chain(range(1,4), [len(writable_fields)])
+                    perms_iterator: Iterable[int] = chain(range(1,4), [len(writable_fields)])
                 else:
                     perms_iterator = range(1, len(writable_fields) + 1)
                 for fields_to_write in chain.from_iterable((combinations(writable_fields, perms) for perms in perms_iterator)):
