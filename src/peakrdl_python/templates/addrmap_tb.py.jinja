@@ -901,7 +901,7 @@ class {{fq_block_name}}_single_access({{top_node.inst_name}}_TestCase): # type: 
                                                            '{{ safe_node_name(field) }}' {%- if not loop.last -%},{%- endif %}
                                                            {% endfor -%} ])
             {% else -%}
-            kwargs = {} # type: ignore[var-annotated]
+            kwargs : dict[str, Union[bool, {% if legacy_enum_type %}IntEnum{% else %}SystemRDLEnum{% endif %}, int]] = {} # type: ignore[var-annotated]
             expected_value = 0
             {% for field in get_reg_writable_fields(node, hide_node_func) %}
             {%- if 'encode' in field.list_properties() %}
