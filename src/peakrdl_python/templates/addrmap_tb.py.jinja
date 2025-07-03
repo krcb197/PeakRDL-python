@@ -889,6 +889,7 @@ class {{fq_block_name}}_single_access({{top_node.inst_name}}_TestCase): # type: 
                     write_callback_mock.reset_mock()
                     read_callback_mock.reset_mock()
 
+        kwargs : dict[str, Union[bool, {% if legacy_enum_type %}IntEnum{% else %}SystemRDLEnum{% endif %}, int]]
 
         {% for node in owned_elements.registers -%}
         {% if node.has_sw_writable %}
@@ -901,7 +902,7 @@ class {{fq_block_name}}_single_access({{top_node.inst_name}}_TestCase): # type: 
                                                            '{{ safe_node_name(field) }}' {%- if not loop.last -%},{%- endif %}
                                                            {% endfor -%} ])
             {% else -%}
-            kwargs : dict[str, Union[bool, {% if legacy_enum_type %}IntEnum{% else %}SystemRDLEnum{% endif %}, int]] = {} # type: ignore[var-annotated]
+            kwargs = {}
             expected_value = 0
             {% for field in get_reg_writable_fields(node, hide_node_func) %}
             {%- if 'encode' in field.list_properties() %}
