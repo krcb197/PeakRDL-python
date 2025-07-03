@@ -907,10 +907,10 @@ class {{fq_block_name}}_single_access({{top_node.inst_name}}_TestCase): # type: 
             {%- if 'encode' in field.list_properties() %}
             rand_enum_value = random_enum_reg_value(self.dut.{{'.'.join(get_python_path_segments(field))}}.enum_cls)
             rand_field_value = rand_enum_value.value
-            kwargs['{{field.inst_name}}'] = rand_enum_value
+            kwargs['{{ safe_node_name(field)}}'] = rand_enum_value
             {%- else %}
             rand_field_value = random.randrange(0, {{ get_field_max_value_hex_string(field) }} + 1)
-            kwargs['{{field.inst_name}}'] = rand_field_value
+            kwargs['{{ safe_node_name(field)}}'] = rand_field_value
             {%- endif  %}
             expected_value = ( expected_value & {{get_field_inv_bitmask_hex_string(field)}} ) | (rand_field_value << {{ field.low }})
             {% endfor %}
