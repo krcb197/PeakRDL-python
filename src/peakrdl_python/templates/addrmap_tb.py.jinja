@@ -459,7 +459,7 @@ class {{fq_block_name}}_single_access({{top_node.inst_name}}_TestCase): # type: 
 
                         {% if asyncoutput %}await {%endif %}self.dut.{{'.'.join(get_python_path_segments(node))}}.write(field_value) # type: ignore[union-attr]
 
-                        {% if (((node.high+1) - node.low) < (node.parent.size*8)) and (node.parent.has_sw_readable) %}
+                        {% if (node.width < (node.parent.size*8)) and (node.parent.has_sw_readable) %}
                         read_callback_mock.assert_called_once_with(
                                     addr={{node.parent.absolute_address}},
                                     width={{node.parent.size * 8}},
@@ -548,14 +548,17 @@ class {{fq_block_name}}_single_access({{top_node.inst_name}}_TestCase): # type: 
                                     accesswidth=self.dut.{{'.'.join(get_python_path_segments(node))}}.parent_register.accesswidth) # type: ignore[union-attr]
                 {% endfor %}
 
-                {% if node.get_property('encode').__len__() < (2**((node.high+1) - node.low)) %}
-                # check that other values of the field int
-                # that don't appear in the enum generate an
-                # error
-                for field_value in range(0, {{get_field_max_value_hex_string(node)}}+1):
-                    if field_value in [{%- for value_of_enum_needed in node.get_property('encode') -%}{{value_of_enum_needed.value}}{% if not loop.last %}, {% endif %}{%- endfor %}]:
-                        # legal int value of the eunm so no test is needed
-                        continue
+                {# only run this if there are field values that are not part of the enum #}
+                {% if node.get_property('encode').__len__() < (2**node.width) %}
+                # check that other values of the field int that don't appear in the enum generate
+                # an error
+                    {% if node.width <= 8 %}
+                    {# for enumerated fields of up to 8 bit all combinations can be exhaustively tested #}
+                for field_value in set(range({{get_field_max_value_hex_string(node)}}+1)) - { {%- for value_of_enum_needed in node.get_property('encode') -%}{{value_of_enum_needed.value}}{% if not loop.last %}, {% endif %}{%- endfor %} }:
+                    {% else %}
+                    {# for enumerated fields of with larger sizes look for up to 100 illegal values #}
+                for field_value in { random.randint(0, {{get_field_max_value_hex_string(node)}}+1) for _ in range(100)  } - { {%- for value_of_enum_needed in node.get_property('encode') -%}{{value_of_enum_needed.value}}{% if not loop.last %}, {% endif %}{%- endfor %} }:
+                    {% endif %}
                     with self.assertRaises(ValueError):
                         read_callback_mock.reset_mock()
                         random_reg_value = random.randrange(0, {{get_reg_max_value_hex_string(node.parent)}} + 1)
