@@ -276,7 +276,7 @@ class PythonExporter:
         self.namespace_db = {}
 
         # Dictionary used for determining the unique type names to use
-        self.node_type_name = {}
+        self.node_type_name: str[str, tuple[str, Optional[int]]] = {}
 
     def __stream_jinja_template(self,
                                 template_name: str,
@@ -685,7 +685,9 @@ class PythonExporter:
         if hide_node_func(top_block):
             raise RuntimeError('PeakRDL Python can not export if the node is hidden')
 
-        self._build_node_type_table(top_block, hide_node_func)
+        self._build_node_type_table(top_block, hide_node_func,
+                                    udp_to_include=user_defined_properties_to_include,
+                                    root_node=top_block.parent)
 
         self.__export_reg_model(top_block=top_block, package=package, asyncoutput=asyncoutput,
                                 skip_lib_copy=skip_library_copy,
@@ -730,10 +732,13 @@ class PythonExporter:
 
         """
 
-        return self.node_type_name[node.inst]
+        return self.node_type_name[node.inst][0]
 
     def _build_node_type_table(self, node: AddressableNode,
-                               hide_node_func: HideNodeCallback) -> None:
+                               hide_node_func: HideNodeCallback,
+                               udp_to_include: Optional[list[str]],
+                               root_node: AddressableNode,
+                               ) -> None:
         """
         Populate the type name lookup dictionary
 
@@ -766,16 +771,30 @@ class PythonExporter:
                 cand_type_name = child_node.inst_name
             else:
                 cand_type_name = get_fully_qualified_type_name(child_node)
-            if cand_type_name in self.node_type_name.values():
+
+            if isinstance(child_node, FieldNode):
+                node_hash = self.__field_hash(node=child_node,
+                                              udp_to_include=udp_to_include,
+                                              root_node=root_node,
+                                              hide_node_func=hide_node_func)
+            else:
+                node_hash = None
+
+            if (cand_type_name, node_hash) in self.node_type_name.values():
+                # the name is already in the list, so if it is a field we check the field hash
+
+
+
+
                 if child_node == node:
                     raise RuntimeError(
                         f'Top Node name {cand_type_name} already used by instance ' \
                         + str(list(self.node_type_name.keys())
                               [list(self.node_type_name.values()).index(cand_type_name)])
                     )
-                self.node_type_name[child_inst] = cand_type_name + '_0x' + hex(hash(child_inst))
+                self.node_type_name[child_inst] = (cand_type_name + '_0x' + hex(hash(child_inst)), node_hash)
             else:
-                self.node_type_name[child_inst] = cand_type_name
+                self.node_type_name[child_inst] = (cand_type_name, node_hash)
 
     def _raise_template_error(self, message: str) -> NoReturn:
         """
@@ -790,15 +809,18 @@ class PythonExporter:
         raise PythonExportTemplateError(message)
 
     def _fully_qualified_enum_type(self,
-                                   field_enum: UserEnumMeta,
                                    root_node: AddressableNode,
                                    owning_field: FieldNode,
                                    hide_node_func: HideNodeCallback) -> str:
         """
         Returns the fully qualified class type name, for an enum
         """
+        if 'encode' not in owning_field.list_properties():
+            raise RuntimeError('owning field does not have an encode property')
+        field_enum = owning_field.get_property('encode')
+
         if not hasattr(field_enum, '_parent_scope'):
-            # this happens if the enum is has been declared in an IPXACT file
+            # this happens if the enum has been declared in an IPXACT file
             # which is imported
             return self._lookup_type_name(owning_field) + '_' + field_enum.__name__
 
@@ -831,8 +853,7 @@ class PythonExporter:
             if isinstance(child_node, FieldNode):
                 field_enum = child_node.get_property('encode')
                 if field_enum is not None:
-                    fully_qualified_enum_name = self._fully_qualified_enum_type(field_enum,
-                                                                                node,
+                    fully_qualified_enum_name = self._fully_qualified_enum_type(node,
                                                                                 child_node,
                                                                                 hide_node_func)
 
@@ -887,3 +908,40 @@ class PythonExporter:
             update_enum_list(node_to_process=child_node)
 
         return enum_needed
+
+    def __field_hash(self,
+                     node: FieldNode,
+                     udp_to_include: Optional[list[str]],
+                     root_node: AddressableNode,
+                     hide_node_func: HideNodeCallback,
+                     include_name_and_desc: bool = True) -> Optional[int]:
+        """
+        Determine the hash for a node instance, which can be used to determine if it needs a unique
+        class definition in the generated code or not.
+
+        If the node has no attributes that extend beyond the base classes, this hash will return as
+        None
+        """
+        if not isinstance(node, FieldNode):
+            raise TypeError(f'{node} is not a FieldNode, got {type(node)}')
+
+        value_to_hash = []
+        if include_name_and_desc:
+            value_to_hash.append(node.get_property('name'))
+            value_to_hash.append(node.get_property('desc'))
+        value_to_hash.append(node.get_property('sw'))
+
+        for udp in get_properties_to_include(node, udp_to_include):
+            value_to_hash.append(node.get_property(udp))
+
+        if 'encode' in node.list_properties():
+            # determine the fully qualified enum name, using the same method as the one that
+            # decides whether a enum class is needed or not
+            value_to_hash.append(self._fully_qualified_enum_type(root_node=root_node,
+                                                                 owning_field=node,
+                                                                 hide_node_func=hide_node_func))
+
+        if not value_to_hash:
+            return None
+
+        return hash(tuple(value_to_hash))
