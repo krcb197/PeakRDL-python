@@ -380,8 +380,29 @@ class PythonExporter:
                            asyncoutput: bool,
                            legacy_block_access: bool) -> None:
 
+        # as a result of issue 202, where two registers existed at that same address,
+        # rather than iterating through the registers within the Jinja template
+        # we iterate through them in in advance so that cases of two registers at that same
+        # address can be identified
+        reg_dict = {}
+        for node in filter(lambda x : isinstance(x, RegNode),  top_block.descendants(unroll=True)):
+            reg_addr = node.absolute_address
+            if reg_addr in reg_dict:
+                existing_entry = reg_dict[reg_addr]
+                # if the entry is already list simply append to it
+                if isinstance(existing_entry, list):
+                    existing_entry.append(node)
+                elif isinstance(existing_entry, RegNode):
+                    reg_dict[reg_addr] = [existing_entry, node]
+                else:
+                    raise TypeError(f'exiting entry of unexpected type: {type(existing_entry)}')
+            else:
+                reg_dict[reg_addr] = node
+
+
         context = {
             'top_node': top_block,
+            'reg_dict': reg_dict,
             'systemrdlRegNode': RegNode,
             'systemrdlMemNode': MemNode,
             'isinstance': isinstance,
@@ -389,6 +410,7 @@ class PythonExporter:
             'skip_lib_copy': skip_lib_copy,
             'version': __version__,
             'legacy_block_access': legacy_block_access,
+            'list': list
         }
 
         context.update(self.user_template_context)

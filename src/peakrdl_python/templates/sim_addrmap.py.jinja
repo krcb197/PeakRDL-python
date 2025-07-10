@@ -30,18 +30,24 @@ from {% if skip_lib_copy %}peakrdl_python.{% else %}..{% endif %}sim_lib.simulat
 from {% if skip_lib_copy %}peakrdl_python.{% else %}..{% endif %}sim_lib.simulator import Simulator{% if legacy_block_access %}Legacy{% endif %}
 {%- endif %}
 
-class {{top_node.inst_name}}_simulator_cls(Simulator{% if legacy_block_access %}Legacy{% endif %}):
-
-    def _build_registers(self) -> dict[int, Union[MemoryRegister, Register]]:
-        return {
-        {%- for node in top_node.descendants(unroll=True) -%}
-            {% if isinstance(node, systemrdlRegNode) %}
-            {{node.absolute_address}} : {% if isinstance(node.parent, systemrdlMemNode) %}MemoryRegister(memory=self.memory_for_address_with_exception({{node.absolute_address}}).memory,memory_address_offset={{node.address_offset}},{% else %}Register({% endif %}width={{node.size*8}}, full_inst_name='{{'.'.join(node.get_path_segments())}}', readable={{node.has_sw_readable}}, writable={{node.has_sw_writable}},
+{%- macro single_reg_entry(node) %}
+    {% if isinstance(node.parent, systemrdlMemNode) %}MemoryRegister(memory=self.memory_for_address_with_exception({{node.absolute_address}}).memory,memory_address_offset={{node.address_offset}},{% else %}Register({% endif %}width={{node.size*8}}, full_inst_name='{{'.'.join(node.get_path_segments())}}', readable={{node.has_sw_readable}}, writable={{node.has_sw_writable}},
                                          fields=[
                                                 {%- for field in node.fields() -%}
                                                 FieldDefinition(high={{field.high}}, low={{field.low}}, msb={{field.msb}}, lsb={{field.lsb}}, inst_name='{{field.inst_name}}'),
                                                 {%- endfor %}
-                                                ]),
+                                                ])
+{%- endmacro %}
+
+class {{top_node.inst_name}}_simulator_cls(Simulator{% if legacy_block_access %}Legacy{% endif %}):
+
+    def _build_registers(self) -> dict[int, Union[list[Union[MemoryRegister, Register]], Union[MemoryRegister, Register]]]:
+        return {
+        {%- for addr, addr_entry in reg_dict.items() -%}
+            {% if isinstance(addr_entry, list) %}
+            {{addr}} : [{% for node in addr_entry %}{{single_reg_entry(node)}},{% endfor %}],
+            {% else %}
+            {{addr}} : {{single_reg_entry(addr_entry)}},
             {%- endif %}
         {%- endfor %}
         }
