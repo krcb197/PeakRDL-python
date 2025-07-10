@@ -81,10 +81,11 @@ class BaseSimulator(ABC):
         self.address = address
 
     @abstractmethod
-    def _build_registers(self) -> dict[int, Union[list[Union[MemoryRegister, Register]], Union[MemoryRegister, Register]]]:
+    def _build_registers(self) -> dict[int, Union[list[Union[MemoryRegister, Register]],
+                                                  Union[MemoryRegister, Register]]]:
         """
-        populate the register structure, this method is intended to implemented by the generated code
-        based on then design
+        populate the register structure, this method is intended to implemented by the generated
+        code based on then design
         """
 
     @abstractmethod
@@ -145,13 +146,15 @@ class BaseSimulator(ABC):
         # see if the address is a register first this ensures that registers in memories are
         # accessed directly
         if addr in self._registers:
-            if isinstance(self._registers[addr], list):
+            addr_entry = self._registers[addr]
+            if isinstance(addr_entry, list):
                 # search the list for a readable register
-                for inner_reg in self._registers[addr]:
+                for inner_reg in addr_entry:
+                    # pylint: disable-next=protected-access
                     if inner_reg._readable:
                         return inner_reg.read()
             else:
-                return self._registers[addr].read()
+                return addr_entry.read()
 
         potential_memory = self.memory_for_address(address=addr)
         if potential_memory is not None:
@@ -170,12 +173,14 @@ class BaseSimulator(ABC):
         # see if the address is a register first this ensures that registers in memories are
         # accessed directly
         if addr in self._registers:
-            if isinstance(self._registers[addr], list):
-                for inner_reg in self._registers[addr]:
+            addr_entry = self._registers[addr]
+            if isinstance(addr_entry, list):
+                for inner_reg in addr_entry:
+                    # pylint: disable-next=protected-access
                     if inner_reg._writable:
                         inner_reg.write(data)
             else:
-                self._registers[addr].write(data)
+                addr_entry.write(data)
         else:
             potential_memory = self.memory_for_address(address=addr)
             if potential_memory is not None:
@@ -304,12 +309,21 @@ class BaseSimulator(ABC):
                 return mem.memory
 
         for reg in self._registers.values():
-            if reg.full_inst_name == name:
-                return reg
+            if isinstance(reg, list):
+                for reg_list_entry in reg:
+                    if reg_list_entry.full_inst_name == name:
+                        return reg_list_entry
 
-            for field in reg.fields:
-                if field.full_inst_name == name:
-                    return field
+                    for field in reg_list_entry.fields:
+                        if field.full_inst_name == name:
+                            return field
+            else:
+                if reg.full_inst_name == name:
+                    return reg
+
+                for field in reg.fields:
+                    if field.full_inst_name == name:
+                        return field
 
         raise ValueError(f'node name not matched: {name}')
 
