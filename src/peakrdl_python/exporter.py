@@ -384,8 +384,10 @@ class PythonExporter:
         # rather than iterating through the registers within the Jinja template
         # we iterate through them in in advance so that cases of two registers at that same
         # address can be identified
-        reg_dict = {}
+        reg_dict:dict[int, Union[list[RegNode],RegNode]] = {}
         for node in filter(lambda x : isinstance(x, RegNode),  top_block.descendants(unroll=True)):
+            if not isinstance(node, RegNode):
+                raise TypeError(f'node should be a register, got {type(node)}')
             reg_addr = node.absolute_address
             if reg_addr in reg_dict:
                 existing_entry = reg_dict[reg_addr]
