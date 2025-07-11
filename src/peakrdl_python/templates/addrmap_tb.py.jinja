@@ -897,6 +897,7 @@ class {{fq_block_name}}_single_access({{top_node.inst_name}}_TestCase): # type: 
                     write_callback_mock.reset_mock()
                     read_callback_mock.reset_mock()
 
+        kwargs : dict[str, Union[bool, {% if legacy_enum_type %}IntEnum{% else %}SystemRDLEnum{% endif %}, int]]
 
         {% for node in owned_elements.registers -%}
         {% if node.has_sw_writable %}
@@ -909,16 +910,16 @@ class {{fq_block_name}}_single_access({{top_node.inst_name}}_TestCase): # type: 
                                                            '{{ safe_node_name(field) }}' {%- if not loop.last -%},{%- endif %}
                                                            {% endfor -%} ])
             {% else -%}
-            kwargs = {} # type: ignore[var-annotated]
+            kwargs = {}
             expected_value = 0
             {% for field in get_reg_writable_fields(node, hide_node_func) %}
             {%- if 'encode' in field.list_properties() %}
             rand_enum_value = random_enum_reg_value(self.dut.{{'.'.join(get_python_path_segments(field))}}.enum_cls)
             rand_field_value = rand_enum_value.value
-            kwargs['{{field.inst_name}}'] = rand_enum_value
+            kwargs['{{ safe_node_name(field)}}'] = rand_enum_value
             {%- else %}
             rand_field_value = random.randrange(0, {{ get_field_max_value_hex_string(field) }} + 1)
-            kwargs['{{field.inst_name}}'] = rand_field_value
+            kwargs['{{ safe_node_name(field)}}'] = rand_field_value
             {%- endif  %}
             expected_value = ( expected_value & {{get_field_inv_bitmask_hex_string(field)}} ) | (rand_field_value << {{ field.low }})
             {% endfor %}

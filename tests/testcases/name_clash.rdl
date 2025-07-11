@@ -28,6 +28,30 @@ addrmap name_clash {
     } gpio_status;
 
     reg {
+        /*
+        This test was introduced as part of #198 to check that a a field with write only and
+        remapped names is handled correctly
+        */
+        field { fieldwidth=1; sw = w; } from = 1;
+        field { fieldwidth=1; sw = r; } in = 1;
+        field { fieldwidth=1; sw = rw; } yield = 1;
+        field { fieldwidth=1; sw = w; encode = direction; } finally;
+        field { fieldwidth=1; sw = r; encode = direction; } pass;
+        field { fieldwidth=1; sw = rw; encode = direction; } is;
+    } gpio_field_rw;
+
+    reg {
+        default sw = r;
+        field { fieldwidth=1; sw = r; } in = 1;
+    } gpio_field_r;
+
+    reg {
+        default sw = w;
+        field { fieldwidth=1; sw = w; encode = direction; } pass;
+        field { fieldwidth=1; sw = w; } from = 1;
+    } gpio_field_w;
+
+    reg {
         field { fieldwidth=1; } msb = 1;
         field { fieldwidth=1; python_inst_name="pass_field"; } pass = 1;
     } msb;

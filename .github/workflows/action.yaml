@@ -298,7 +298,6 @@ jobs:
     - name: Static checks
       run: |
 
-        # one of the test cases uses IPxact so we need the importer
         mypy testcase_output
         # pylint testcase_output/autopep8 --disable=duplicate-code,line-too-long,too-many-statements,invalid-name,unused-import,too-many-instance-attributes,too-many-arguments,too-many-lines
 
