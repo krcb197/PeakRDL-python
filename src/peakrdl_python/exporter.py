@@ -300,7 +300,8 @@ class PythonExporter:
                            legacy_block_access: bool,
                            udp_to_include: Optional[list[str]],
                            hide_node_func: HideNodeCallback,
-                           legacy_enum_type: bool) -> None:
+                           legacy_enum_type: bool,
+                           skip_systemrdl_name_and_desc_properties: bool) -> None:
 
         def visible_nonsignal_node(node: Node) -> int:
             count = 0
@@ -361,7 +362,8 @@ class PythonExporter:
                                                   udp_to_include=udp_to_include),
             'hide_node_func': hide_node_func,
             'visible_nonsignal_node' : visible_nonsignal_node,
-            'legacy_enum_type': legacy_enum_type
+            'legacy_enum_type': legacy_enum_type,
+            'skip_systemrdl_name_and_desc_properties': skip_systemrdl_name_and_desc_properties
         }
         if legacy_block_access is True:
             context['get_array_typecode'] = get_array_typecode
@@ -472,19 +474,10 @@ class PythonExporter:
                        legacy_block_access: bool,
                        udp_to_include: Optional[list[str]],
                        hide_node_func: HideNodeCallback,
-                       legacy_enum_type: bool
+                       legacy_enum_type: bool,
+                       skip_systemrdl_name_and_desc_properties: bool,
                        ) -> None:
-        """
 
-        Args:
-            top_block:
-            package:
-            asyncoutput:
-            legacy_block_access:
-
-        Returns:
-
-        """
         # pylint: disable=too-many-locals
 
         blocks = AddressMaps(hide_node_callback=hide_node_func)
@@ -557,7 +550,8 @@ class PythonExporter:
                     self._get_dependent_property_enum(node=top_block,
                                                       udp_to_include=udp_to_include),
                 'hide_node_func': hide_node_func,
-                'legacy_enum_type': legacy_enum_type
+                'legacy_enum_type': legacy_enum_type,
+                'skip_systemrdl_name_and_desc_properties': skip_systemrdl_name_and_desc_properties
             }
 
             self.__stream_jinja_template(template_name="addrmap_tb.py.jinja",
@@ -597,7 +591,8 @@ class PythonExporter:
                show_hidden: bool = False,
                user_defined_properties_to_include: Optional[list[str]] = None,
                hidden_inst_name_regex: Optional[str] = None,
-               legacy_enum_type: bool = True) -> str:
+               legacy_enum_type: bool = True,
+               skip_systemrdl_name_and_desc_properties: bool = False) -> str:
         """
         Generated Python Code and Testbench
 
@@ -636,7 +631,11 @@ class PythonExporter:
             legacy_enum_type: version 1.2 introduced a new Enum type that allows system
                               rdl ``name`` and ``desc`` properties on field encoding
                               to be included. The legacy mode uses python IntEnum.
-
+            skip_systemrdl_name_and_desc_properties (bool) : version 1.2 introduced new properties
+                                                             that include the systemRDL name and
+                                                             desc as properties of the built
+                                                             python. Setting this option to
+                                                             ``True`` will exclude them.
 
         Returns:
             modules that have been exported:
@@ -687,12 +686,14 @@ class PythonExporter:
 
         self._build_node_type_table(top_block, hide_node_func)
 
-        self.__export_reg_model(top_block=top_block, package=package, asyncoutput=asyncoutput,
-                                skip_lib_copy=skip_library_copy,
-                                legacy_block_access=legacy_block_access,
-                                udp_to_include=user_defined_properties_to_include,
-                                hide_node_func=hide_node_func,
-                                legacy_enum_type=legacy_enum_type)
+        self.__export_reg_model(
+            top_block=top_block, package=package, asyncoutput=asyncoutput,
+            skip_lib_copy=skip_library_copy,
+            legacy_block_access=legacy_block_access,
+            udp_to_include=user_defined_properties_to_include,
+            hide_node_func=hide_node_func,
+            legacy_enum_type=legacy_enum_type,
+            skip_systemrdl_name_and_desc_properties=skip_systemrdl_name_and_desc_properties)
 
         self.__export_simulator(top_block=top_block, package=package, asyncoutput=asyncoutput,
                                 skip_lib_copy=skip_library_copy,
@@ -709,12 +710,14 @@ class PythonExporter:
                                      legacy_block_access=legacy_block_access,
                                      legacy_enum_type=legacy_enum_type)
             # export the tests themselves, these are broken down to one file per addressmap
-            self.__export_tests(top_block=top_block, package=package, asyncoutput=asyncoutput,
-                                skip_lib_copy=skip_library_copy,
-                                legacy_block_access=legacy_block_access,
-                                udp_to_include=user_defined_properties_to_include,
-                                hide_node_func=hide_node_func,
-                                legacy_enum_type=legacy_enum_type)
+            self.__export_tests(
+                top_block=top_block, package=package, asyncoutput=asyncoutput,
+                skip_lib_copy=skip_library_copy,
+                legacy_block_access=legacy_block_access,
+                udp_to_include=user_defined_properties_to_include,
+                hide_node_func=hide_node_func,
+                legacy_enum_type=legacy_enum_type,
+                skip_systemrdl_name_and_desc_properties=skip_systemrdl_name_and_desc_properties)
 
         return top_block.inst_name
 

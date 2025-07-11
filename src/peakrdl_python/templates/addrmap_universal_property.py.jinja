@@ -17,6 +17,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 {%- macro universal_properties(node) %}
 
+    {%- if not skip_systemrdl_name_and_desc_properties %}
     {%- if 'name' in node.list_properties() -%}
     @property
     def rdl_name(self) -> str:
@@ -27,5 +28,6 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
     @property
     def rdl_desc(self) -> str:
         return {{ node.get_property('desc') | tojson}}
+    {% endif %}
     {% endif %}
 {%- endmacro %}
