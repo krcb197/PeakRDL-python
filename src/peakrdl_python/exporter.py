@@ -597,40 +597,40 @@ class PythonExporter:
         Generated Python Code and Testbench
 
         Args:
-            node (str) : Top-level node to export. Can be the top-level `RootNode` or any
-                         internal `AddrmapNode`.
-            path (str) : Output package path.
-            asyncoutput (bool) : If set this builds a register model with async callbacks
-            skip_test_case_generation (bool): skip generation the generation of the test cases
-            delete_existing_package_content (bool): delete any python files in the package
-                                                    location, normally left over from previous
-                                                    operations
-            skip_library_copy (bool): skip copy the libraries to the generated package, this is
-                                      useful to turn off when developing peakrdl python to avoid
-                                      editing the wrong copy of the library. It also avoids the
-                                      GPL code being part of the package for distribution,
-                                      However, this means the end-user is responsible for
-                                      installing the libraries.
-            legacy_block_access (bool): version 0.8 changed the block access methods from using
-                                        arrays to to lists. This allows memory widths of other
-                                        than 8, 16, 32, 64 to be supported which are legal in
-                                        systemRDL. The legacy mode with Arrays is still in
-                                        the tool and will be turned on by default for a few
-                                        releases.
-            show_hidden (bool) : By default any item (Address Map, Regfile, Register, Memory or
-                                 Field) with the systemRDL User Defined Property (UDP)
-                                 ``python_hide`` set to true will not be included in the generated
-                                 python code. This behaviour can be overridden by setting this
-                                 property to true.
+            node: Top-level node to export. Can be the top-level `RootNode` or any
+                  internal `AddrmapNode`.
+            path: Output package path.
+            asyncoutput: If set this builds a register model with async callbacks
+            skip_test_case_generation: skip generation the generation of the test cases
+            delete_existing_package_content: delete any python files in the package
+                                             location, normally left over from previous
+                                             operations
+            skip_library_copy: skip copy the libraries to the generated package, this is
+                               useful to turn off when developing peakrdl python to avoid
+                               editing the wrong copy of the library. It also avoids the
+                               GPL code being part of the package for distribution,
+                               However, this means the end-user is responsible for
+                               installing the libraries.
+            legacy_block_access: version 0.8 changed the block access methods from using
+                                 arrays to to lists. This allows memory widths of other
+                                 than 8, 16, 32, 64 to be supported which are legal in
+                                 systemRDL. The legacy mode with Arrays is still in
+                                 the tool and will be turned on by default for a few
+                                 releases.
+            show_hidden: By default any item (Address Map, Regfile, Register, Memory or
+                         Field) with the systemRDL User Defined Property (UDP)
+                         ``python_hide`` set to true will not be included in the generated
+                         python code. This behaviour can be overridden by setting this
+                         property to true.
             user_defined_properties_to_include : A list of strings of the names of user-defined
                                                  properties to include. Set to None for nothing
                                                  to appear.
-            hidden_inst_name_regex (str) : A regular expression which will hide any fully
-                                           qualified instance name that matches, set to None to
-                                           for this to have no effect
-            legacy_enum_type (bool): version 1.2 introduced a new Enum type that allows system
-                                     rdl ``name`` and ``desc`` properties on field encoding
-                                     to be included. The legacy mode uses python IntEnum.
+            hidden_inst_name_regex: A regular expression which will hide any fully
+                                    qualified instance name that matches, set to None to
+                                    for this to have no effect
+            legacy_enum_type: version 1.2 introduced a new Enum type that allows system
+                              rdl ``name`` and ``desc`` properties on field encoding
+                              to be included. The legacy mode uses python IntEnum.
             skip_systemrdl_name_and_desc_properties (bool) : version 1.2 introduced new properties
                                                              that include the systemRDL name and
                                                              desc as properties of the built
@@ -792,23 +792,36 @@ class PythonExporter:
         """
         raise PythonExportTemplateError(message)
 
+    def __true_root(self, root_node: Union[AddrmapNode,RootNode]) -> RootNode:
+        if not isinstance(root_node, RootNode):
+            if isinstance(root_node, AddrmapNode):
+                while not isinstance(root_node, RootNode):
+                    root_node = root_node.parent
+
+        return root_node
+
     def _fully_qualified_enum_type(self,
                                    field_enum: UserEnumMeta,
-                                   root_node: AddressableNode,
+                                   root_node: Union[AddrmapNode,RootNode],
                                    owning_field: FieldNode,
                                    hide_node_func: HideNodeCallback) -> str:
         """
         Returns the fully qualified class type name, for an enum
         """
+        # in the case where the node of the peakrdl python wrappers is not the real
+        # root node of the elaborated systemRDL, need to find the true Root Node. This is
+        # important as the concatenated name can to be outside the node being built
+        root_node = self.__true_root(root_node=root_node)
+
         if not hasattr(field_enum, '_parent_scope'):
-            # this happens if the enum is has been declared in an IPXACT file
+            # this happens if the enum has been declared in an IPXACT file
             # which is imported
             return self._lookup_type_name(owning_field) + '_' + field_enum.__name__
 
         parent_scope = getattr(field_enum, '_parent_scope')
 
         if parent_scope is None:
-            # this happens if the enum is has been declared in an IPXACT file
+            # this happens if the enum has been declared in an IPXACT file
             # which is imported
             return self._lookup_type_name(owning_field) + '_' + field_enum.__name__
 
@@ -823,7 +836,8 @@ class PythonExporter:
 
         raise RuntimeError('Failed to find parent node to reference')
 
-    def _get_dependent_enum(self, node: AddressableNode, hide_node_func: HideNodeCallback) -> \
+    def _get_dependent_enum(
+            self, node: Union[AddrmapNode, RootNode], hide_node_func: HideNodeCallback) -> \
             Iterable[tuple[UserEnumMeta, FieldNode]]:
         """
         iterable of enums which is used by a descendant of the input node,

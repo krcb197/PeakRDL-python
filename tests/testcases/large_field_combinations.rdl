@@ -1,0 +1,25 @@
+/*
+This test was introduced as part of #196 to show the issues that can occur with large numbers of
+fields on a register, with excessively large numbers of test cases
+*/
+
+addrmap large_field_combinations {
+    reg {
+
+        <% $num_fields = 32;
+        for( $i = 0; $i < $num_fields; $i += 1 ) { %>
+        field { reset = 0; fieldwidth = 1; } data<%=$i%>;
+        <% } %>
+
+    } large_field_count_reg[2];
+
+    reg {
+
+        <% $num_fields = 3;
+        for( $i = 0; $i < $num_fields; $i += 1 ) { %>
+        field { reset = 0; fieldwidth = 1; } data<%=$i%>;
+        <% } %>
+
+    } small_field_count_reg[2];
+
+};

@@ -204,6 +204,11 @@ jobs:
           python tests/alternative_templates_toml/header_check.py --generated_package_location peakrdl_out/simple_user_template/ --top_name basic
           peakrdl python tests/testcases/basic.rdl -o peakrdl_out/dynamic_user_template/ --peakrdl-cfg tests/alternative_templates_dynamic_toml/peakrdl.toml
           python tests/alternative_templates_dynamic_toml/header_check.py --generated_package_location peakrdl_out/dynamic_user_template/ --top_name basic
+          
+          
+          peakrdl python tests/testcases/addr_map.rdl -o peakrdl_out/addr_map/
+          peakrdl python tests/testcases/addr_map.rdl -o peakrdl_out/addr_map/ -t "child_addr_map_type_c"
+          python -m unittest discover -s peakrdl_out/addr_map/
 
       - name: Check Examples
         run: |
@@ -289,9 +294,16 @@ jobs:
         python -m pip install mypy
 
         python generate_testcases.py
+
+    - name: Static checks
+      run: |
+
+        # one of the test cases uses IPxact so we need the importer
         mypy testcase_output
         # pylint testcase_output/autopep8 --disable=duplicate-code,line-too-long,too-many-statements,invalid-name,unused-import,too-many-instance-attributes,too-many-arguments,too-many-lines
 
+    - name: Run the generated tests
+      run: |
         python -m unittest discover -s testcase_output
 
   autoformating:

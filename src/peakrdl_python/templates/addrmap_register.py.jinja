@@ -75,7 +75,7 @@ class {{get_fully_qualified_type_name(node)}}_cls(Reg{% if asyncoutput %}Async{%
                 is_volatile={{child_node.is_hw_writable}}),
             logger_handle=logger_handle+'.{{child_node.inst_name}}',
             inst_name='{{child_node.inst_name}}',
-            field_type={% if 'encode' in child_node.list_properties() %}{{ get_fully_qualified_enum_type(child_node.get_property('encode'), top_node.parent, child_node, hide_node_func) + '_enumcls' }}{% else %}int{% endif %})
+            field_type={% if 'encode' in child_node.list_properties() %}{{ get_fully_qualified_enum_type(child_node.get_property('encode'), top_node, child_node, hide_node_func) + '_enumcls' }}{% else %}int{% endif %})
         {%- endfor %}
 
     @property
