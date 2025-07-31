@@ -1,0 +1,20 @@
+reg a_reg_def {
+    field { hw=r; sw=rw;  } data[7:0];
+    field { hw=r; sw=rw;  } more_data[15:8];
+};
+reg a_reduced_reg_def {
+    field { hw=r; sw=rw;  } data[7:0];
+ };
+
+addrmap aliases {
+    a_reg_def primary_reg;
+    alias primary_reg a_reg_def alias_of_primary;
+    alias primary_reg a_reg_def read_only_alias_of_primary;
+    read_only_alias_of_primary.data->sw = r;
+    alias primary_reg a_reg_def write_only_alias_of_primary;
+    write_only_alias_of_primary.data->sw = w;
+
+    alias primary_reg a_reduced_reg_def reduced_primary;
+
+
+};

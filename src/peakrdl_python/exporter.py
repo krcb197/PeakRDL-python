@@ -23,6 +23,7 @@ from pathlib import Path
 from shutil import copy
 from typing import NoReturn, Any, Optional, Union
 from collections.abc import Iterable
+from functools import partial
 
 import jinja2 as jj
 from systemrdl import RDLWalker
@@ -35,13 +36,15 @@ from systemrdl.rdltypes.user_enum import UserEnum, UserEnumMeta
 from systemrdl.rdltypes.user_struct import UserStruct
 
 from .systemrdl_node_utility_functions import get_reg_readable_fields, get_reg_writable_fields, \
-    get_table_block, get_dependent_component, \
+    get_table_block,  \
     get_field_bitmask_hex_string, get_field_inv_bitmask_hex_string, \
-    get_field_max_value_hex_string, get_reg_max_value_hex_string, get_fully_qualified_type_name, \
+    get_field_max_value_hex_string, get_reg_max_value_hex_string, \
     uses_enum, uses_memory, \
     get_memory_max_entry_value_hex_string, get_memory_width_bytes, \
     get_field_default_value, get_enum_values, get_properties_to_include, get_reg_fields, \
     HideNodeCallback, hide_based_on_property
+from .unique_component_iterator import get_dependent_component
+from .class_names import get_fully_qualified_type_name, fully_qualified_enum_type
 
 from .lib import get_array_typecode
 
@@ -332,19 +335,21 @@ class PythonExporter:
             'str': str,
             'uses_enum': uses_enum(top_block),
             'uses_memory': uses_memory(top_block),
-            'get_fully_qualified_type_name': self._lookup_type_name,
-            'get_dependent_component': get_dependent_component,
+            'get_fully_qualified_type_name': partial(get_fully_qualified_type_name,
+                                                     hide_node_callback=hide_node_func,
+                                                     udp_to_include=udp_to_include),
+            'get_dependent_component': partial(get_dependent_component,
+                                               hide_node_callback=hide_node_func,
+                                               udp_to_include=udp_to_include),
             'get_dependent_enum': self._get_dependent_enum,
             'get_enum_values': get_enum_values,
-            'get_fully_qualified_enum_type': self._fully_qualified_enum_type,
+            'get_fully_qualified_enum_type': fully_qualified_enum_type,
             'get_field_bitmask_hex_string': get_field_bitmask_hex_string,
             'get_field_inv_bitmask_hex_string': get_field_inv_bitmask_hex_string,
             'get_field_max_value_hex_string': get_field_max_value_hex_string,
             'get_reg_max_value_hex_string': get_reg_max_value_hex_string,
             'get_table_block': get_table_block,
-            'get_reg_writable_fields': get_reg_writable_fields,
-            'get_reg_readable_fields': get_reg_readable_fields,
-            'get_reg_fields': get_reg_fields,
+            'get_reg_fields': partial(get_reg_fields, hide_node_callback=hide_node_func) ,
             'get_memory_max_entry_value_hex_string': get_memory_max_entry_value_hex_string,
             'get_memory_width_bytes': get_memory_width_bytes,
             'get_field_default_value': get_field_default_value,
@@ -540,8 +545,8 @@ class PythonExporter:
                 'get_field_max_value_hex_string': get_field_max_value_hex_string,
                 'get_field_default_value': get_field_default_value,
                 'get_reg_max_value_hex_string': get_reg_max_value_hex_string,
-                'get_reg_writable_fields': get_reg_writable_fields,
-                'get_reg_readable_fields': get_reg_readable_fields,
+                'get_reg_writable_fields': partial(get_reg_writable_fields,
+                                                   hide_node_callback=hide_node_func),
                 'get_memory_max_entry_value_hex_string': get_memory_max_entry_value_hex_string,
                 'get_enum_values': get_enum_values,
                 'get_memory_width_bytes': get_memory_width_bytes,
@@ -617,7 +622,7 @@ class PythonExporter:
                                       However, this means the end-user is responsible for
                                       installing the libraries.
             legacy_block_access (bool): version 0.8 changed the block access methods from using
-                                        arrays to to lists. This allows memory widths of other
+                                        arrays to lists. This allows memory widths of other
                                         than 8, 16, 32, 64 to be supported which are legal in
                                         systemRDL. The legacy mode with Arrays is still in
                                         the tool and will be turned on by default for a few
@@ -685,10 +690,6 @@ class PythonExporter:
         if hide_node_func(top_block):
             raise RuntimeError('PeakRDL Python can not export if the node is hidden')
 
-        self._build_node_type_table(top_block, hide_node_func,
-                                    udp_to_include=user_defined_properties_to_include,
-                                    root_node=top_block.parent)
-
         self.__export_reg_model(top_block=top_block, package=package, asyncoutput=asyncoutput,
                                 skip_lib_copy=skip_library_copy,
                                 legacy_block_access=legacy_block_access,
@@ -720,82 +721,6 @@ class PythonExporter:
 
         return top_block.inst_name
 
-    def _lookup_type_name(self, node: Node) -> str:
-        """
-        Retrieve the unique type name from the current lookup list
-
-        Args:
-            node: node to lookup
-
-        Returns:
-            type name
-
-        """
-
-        return self.node_type_name[node.inst][0]
-
-    def _build_node_type_table(self, node: AddressableNode,
-                               hide_node_func: HideNodeCallback,
-                               udp_to_include: Optional[list[str]],
-                               root_node: AddressableNode,
-                               ) -> None:
-        """
-        Populate the type name lookup dictionary
-
-        Args:
-            node: top node to work down from
-            hide_node_func: callback which returns True if the node should be hidden
-
-        Returns:
-            None
-
-        """
-
-        self.node_type_name = {}
-
-        if node.parent is None:
-            raise RuntimeError('node.parent can not be None')
-        if not isinstance(node.parent, (AddressableNode, RootNode)):
-            raise TypeError(f'parent should be an addressable node got {type(node.parent)}')
-
-        for child_node in get_dependent_component(node.parent, hide_node_func):
-
-            child_inst = child_node.inst
-            if child_inst in self.node_type_name:
-                # this should not happen as the get_dependent_component function is supposed to
-                # de-duplicate the values
-                raise RuntimeError("node is already in the lookup dictionary")
-
-            if child_node == node:
-                # in the case of the top node the type name should match the instance name
-                cand_type_name = child_node.inst_name
-            else:
-                cand_type_name = get_fully_qualified_type_name(child_node)
-
-            if isinstance(child_node, FieldNode):
-                node_hash = self.__field_hash(node=child_node,
-                                              udp_to_include=udp_to_include,
-                                              root_node=root_node,
-                                              hide_node_func=hide_node_func)
-            else:
-                node_hash = None
-
-            if (cand_type_name, node_hash) in self.node_type_name.values():
-                # the name is already in the list, so if it is a field we check the field hash
-
-
-
-
-                if child_node == node:
-                    raise RuntimeError(
-                        f'Top Node name {cand_type_name} already used by instance ' \
-                        + str(list(self.node_type_name.keys())
-                              [list(self.node_type_name.values()).index(cand_type_name)])
-                    )
-                self.node_type_name[child_inst] = (cand_type_name + '_0x' + hex(hash(child_inst)), node_hash)
-            else:
-                self.node_type_name[child_inst] = (cand_type_name, node_hash)
-
     def _raise_template_error(self, message: str) -> NoReturn:
         """
         Helper function to raise an exception from within the templating
@@ -808,42 +733,11 @@ class PythonExporter:
         """
         raise PythonExportTemplateError(message)
 
-    def _fully_qualified_enum_type(self,
-                                   root_node: AddressableNode,
-                                   owning_field: FieldNode,
-                                   hide_node_func: HideNodeCallback) -> str:
-        """
-        Returns the fully qualified class type name, for an enum
-        """
-        if 'encode' not in owning_field.list_properties():
-            raise RuntimeError('owning field does not have an encode property')
-        field_enum = owning_field.get_property('encode')
 
-        if not hasattr(field_enum, '_parent_scope'):
-            # this happens if the enum has been declared in an IPXACT file
-            # which is imported
-            return self._lookup_type_name(owning_field) + '_' + field_enum.__name__
 
-        parent_scope = getattr(field_enum, '_parent_scope')
-
-        if parent_scope is None:
-            # this happens if the enum is has been declared in an IPXACT file
-            # which is imported
-            return self._lookup_type_name(owning_field) + '_' + field_enum.__name__
-
-        if root_node.inst.original_def == parent_scope:
-            return field_enum.__name__
-
-        dependent_components = get_dependent_component(root_node, hide_node_func)
-
-        for component in dependent_components:
-            if component.inst.original_def == parent_scope:
-                return get_fully_qualified_type_name(component) + '_' + field_enum.__name__
-
-        raise RuntimeError('Failed to find parent node to reference')
 
     def _get_dependent_enum(self, node: AddressableNode, hide_node_func: HideNodeCallback) -> \
-            Iterable[tuple[UserEnumMeta, FieldNode]]:
+            Iterable[tuple[UserEnumMeta]]:
         """
         iterable of enums which is used by a descendant of the input node,
         this list is de-duplicated
@@ -853,13 +747,11 @@ class PythonExporter:
             if isinstance(child_node, FieldNode):
                 field_enum = child_node.get_property('encode')
                 if field_enum is not None:
-                    fully_qualified_enum_name = self._fully_qualified_enum_type(node,
-                                                                                child_node,
-                                                                                hide_node_func)
+                    enum_name = fully_qualified_enum_type(field_enum)
 
-                    if fully_qualified_enum_name not in enum_needed:
-                        enum_needed.append(fully_qualified_enum_name)
-                        yield field_enum, child_node
+                    if enum_name not in enum_needed:
+                        enum_needed.append(enum_name)
+                        yield field_enum
 
     def _get_dependent_property_enum(self, node: Node,
                                      udp_to_include: Optional[list[str]]) -> \
@@ -909,39 +801,4 @@ class PythonExporter:
 
         return enum_needed
 
-    def __field_hash(self,
-                     node: FieldNode,
-                     udp_to_include: Optional[list[str]],
-                     root_node: AddressableNode,
-                     hide_node_func: HideNodeCallback,
-                     include_name_and_desc: bool = True) -> Optional[int]:
-        """
-        Determine the hash for a node instance, which can be used to determine if it needs a unique
-        class definition in the generated code or not.
 
-        If the node has no attributes that extend beyond the base classes, this hash will return as
-        None
-        """
-        if not isinstance(node, FieldNode):
-            raise TypeError(f'{node} is not a FieldNode, got {type(node)}')
-
-        value_to_hash = []
-        if include_name_and_desc:
-            value_to_hash.append(node.get_property('name'))
-            value_to_hash.append(node.get_property('desc'))
-        value_to_hash.append(node.get_property('sw'))
-
-        for udp in get_properties_to_include(node, udp_to_include):
-            value_to_hash.append(node.get_property(udp))
-
-        if 'encode' in node.list_properties():
-            # determine the fully qualified enum name, using the same method as the one that
-            # decides whether a enum class is needed or not
-            value_to_hash.append(self._fully_qualified_enum_type(root_node=root_node,
-                                                                 owning_field=node,
-                                                                 hide_node_func=hide_node_func))
-
-        if not value_to_hash:
-            return None
-
-        return hash(tuple(value_to_hash))

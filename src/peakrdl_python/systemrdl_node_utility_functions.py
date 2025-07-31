@@ -18,7 +18,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 A set of utility functions that perform supplementary processing on a node in a compiled
 system RDL dataset.
 """
-from typing import Optional, Protocol, Union
+from typing import Optional, Protocol
 from collections.abc import Iterable
 from itertools import filterfalse
 
@@ -26,19 +26,15 @@ import textwrap
 
 from systemrdl.node import Node
 from systemrdl.node import RegNode
-from systemrdl.node import RootNode
+
 from systemrdl.node import AddressableNode
 from systemrdl.node import FieldNode
 from systemrdl.node import MemNode
 from systemrdl.node import SignalNode
-from systemrdl.node import AddrmapNode
-from systemrdl.node import RegfileNode
-from systemrdl.component import Component
+
 from systemrdl.rdltypes.user_enum import UserEnumMeta
-from systemrdl import RDLListener, WalkerAction, RDLWalker
 
 from .lib.utility_functions import calculate_bitmask
-
 
 class HideNodeCallback(Protocol):
     """
@@ -50,124 +46,18 @@ class HideNodeCallback(Protocol):
         pass
 
 
-def get_fully_qualified_type_name(node: Node) -> str:
-    """
-    Returns the fully qualified class type name, i.e. with scope prefix
-    """
-    scope_path = node.inst.get_scope_path(scope_separator='_')
-
-    inst_type_name = node.inst.type_name
-    if inst_type_name is None:
-        inst_type_name = node.inst_name
-
-    if (scope_path == '') or (scope_path is None):
-        return inst_type_name
-
-    return scope_path + '_' + inst_type_name
-
-
 def hide_based_on_property(node: Node, show_hidden: bool) -> bool:
     """
     Used to determine if a node should be hidden based on the ''python_hide'' User Defined Property
 
     Args:
         node: a system RDL node
-        show_hidden: a boolean to indicate that the property should be ingored
+        show_hidden: a boolean to indicate that the property should be ignored
 
     Returns:
         True if the node should be hidden
     """
     return node.get_property('python_hide', default=False) and not show_hidden
-
-
-def get_dependent_component(node: Union[AddressableNode, RootNode],
-                            hide_node_callback: HideNodeCallback) -> Iterable[Node]:
-    """
-    iterable of nodes that have a component which is used by a
-    descendant, this list is de-duplicated and reversed to components
-    are declared before their parents who use them
-
-    Args:
-        node: node to be analysed
-        hide_node_callback: callback to determine if the node should be hidden
-
-
-    """
-    class UniqueComponents(RDLListener):
-        """
-        class intended to be used as part of the walker/listener protocol to find all the items
-        non-hidden nodes
-        """
-
-        def __init__(self, hide_node_callback: HideNodeCallback) -> None:
-            super().__init__()
-
-            self.__hide_node_callback = hide_node_callback
-            self.__components_needed: list[Component] = []
-            self.nodes: list[Node] = []
-
-
-        def enter_Reg(self, node: RegNode) -> Optional[WalkerAction]:
-            if self.__hide_node_callback(node):
-                return WalkerAction.SkipDescendants
-
-            if node.inst in self.__components_needed:
-                return WalkerAction.SkipDescendants
-
-            self.__components_needed.append(node.inst)
-            self.nodes.append(node)
-            return WalkerAction.Continue
-
-        def enter_Mem(self, node: MemNode) -> Optional[WalkerAction]:
-            if self.__hide_node_callback(node):
-                return WalkerAction.SkipDescendants
-
-            if node.inst in self.__components_needed:
-                return WalkerAction.SkipDescendants
-
-            self.__components_needed.append(node.inst)
-            self.nodes.append(node)
-            return WalkerAction.Continue
-
-        def enter_Field(self, node: FieldNode) -> Optional[WalkerAction]:
-            if self.__hide_node_callback(node):
-                return WalkerAction.SkipDescendants
-
-            if node.inst in self.__components_needed:
-                return WalkerAction.SkipDescendants
-
-            self.__components_needed.append(node.inst)
-            self.nodes.append(node)
-            return WalkerAction.Continue
-
-        def enter_Addrmap(self, node: AddrmapNode) -> Optional[WalkerAction]:
-            if self.__hide_node_callback(node):
-                return WalkerAction.SkipDescendants
-
-            if node.inst in self.__components_needed:
-                return WalkerAction.SkipDescendants
-
-            self.__components_needed.append(node.inst)
-            self.nodes.append(node)
-            return WalkerAction.Continue
-
-        def enter_Regfile(self, node: RegfileNode) -> Optional[WalkerAction]:
-            if self.__hide_node_callback(node):
-                return WalkerAction.SkipDescendants
-
-            if node.inst in self.__components_needed:
-                return WalkerAction.SkipDescendants
-
-            self.__components_needed.append(node.inst)
-            self.nodes.append(node)
-            return WalkerAction.Continue
-
-    unique_component_walker = UniqueComponents(hide_node_callback=hide_node_callback)
-    # running the walker populated the blocks with all the address maps in within the
-    # top block, including the top_block itself
-    RDLWalker(unroll=True).walk(node, unique_component_walker, skip_top=False)
-
-    return reversed(unique_component_walker.nodes)
 
 
 def get_table_block(node: Node) -> str:
@@ -346,7 +236,7 @@ def get_reg_fields(node: RegNode, hide_node_callback: HideNodeCallback) -> Itera
 
     """
     if not isinstance(node, RegNode):
-        raise TypeError(f'node is not a {type(RegNode)} got {type(node)}')
+        raise TypeError(f'node is not a RegNode got {type(node)}')
 
     return filterfalse(hide_node_callback, node.fields())
 

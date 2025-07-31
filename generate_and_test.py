@@ -136,12 +136,13 @@ def build_logging_cong(logfilepath:str):
             },
             __name__:  {
                 'handlers': ['console', 'file'],
-                'propagate': True
             },
             'reg_model':  {
                 'handlers': ['console', 'file'],
-                'propagate': True
-            }
+            },
+            'peakrdl_python': {
+                'handlers': ['console', 'file'],
+            },
         }
     }
 
@@ -150,8 +151,11 @@ if __name__ == '__main__':
 
     CommandLineArgs = CommandLineParser.parse_args()
 
-    logfile_path = build_logging_cong(CommandLineArgs.output_path / f'{__file__}.log')
-    logging.config.dictConfig(logfile_path)
+    print('Setup main Logger')
+    log_file_config = build_logging_cong(str(CommandLineArgs.output_path / f'{__file__}.log'))
+    logging.config.dictConfig(log_file_config)
+    script_logger = logging.getLogger(__name__)
+    script_logger.info('Generating and testing')
 
     rdlc = compiler_with_udp_registers()
 
