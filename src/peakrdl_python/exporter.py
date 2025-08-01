@@ -35,14 +35,14 @@ from systemrdl.rdltypes import OnReadType, OnWriteType, PropertyReference
 from systemrdl.rdltypes.user_enum import UserEnum, UserEnumMeta
 from systemrdl.rdltypes.user_struct import UserStruct
 
-from .systemrdl_node_utility_functions import get_reg_readable_fields, get_reg_writable_fields, \
+from .systemrdl_node_utility_functions import get_reg_writable_fields, \
     get_table_block,  \
     get_field_bitmask_hex_string, get_field_inv_bitmask_hex_string, \
     get_field_max_value_hex_string, get_reg_max_value_hex_string, \
     uses_enum, uses_memory, \
     get_memory_max_entry_value_hex_string, get_memory_width_bytes, \
     get_field_default_value, get_enum_values, get_properties_to_include, get_reg_fields, \
-    HideNodeCallback, hide_based_on_property
+    HideNodeCallback, hide_based_on_property, get_reg_accesswidth, get_reg_regwidth
 from .unique_component_iterator import get_dependent_component
 from .class_names import get_fully_qualified_type_name, fully_qualified_enum_type
 
@@ -368,7 +368,9 @@ class PythonExporter:
             'hide_node_func': hide_node_func,
             'visible_nonsignal_node' : visible_nonsignal_node,
             'legacy_enum_type': legacy_enum_type,
-            'skip_systemrdl_name_and_desc_properties': skip_systemrdl_name_and_desc_properties
+            'skip_systemrdl_name_and_desc_properties': skip_systemrdl_name_and_desc_properties,
+            'get_reg_accesswidth': get_reg_accesswidth,
+            'get_reg_regwidth': get_reg_regwidth
         }
         if legacy_block_access is True:
             context['get_array_typecode'] = get_array_typecode

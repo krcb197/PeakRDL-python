@@ -18,8 +18,8 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 {%- macro register_class_attributes(node) %}
         {%- if node.is_array %}
     self.__{{node.inst_name}}:{{get_fully_qualified_type_name(node)}}_array = {{get_fully_qualified_type_name(node)}}_array(address=self.address+{{node.raw_address_offset}},
-                                                                                  {% if 'accesswidth' in node.list_properties() -%}accesswidth={{node.get_property('accesswidth')}}{%- else -%}accesswidth={{node.size*8}}{%- endif -%},
-                                                                                  {% if 'regwidth' in node.list_properties() -%}width={{node.get_property('regwidth')}}{%- else -%}width={{node.size*8}}{%- endif -%},
+                                                                                  accesswidth={{get_reg_accesswidth(node)}},
+                                                                                  width={{get_reg_regwidth(node)}},
                                                                                   stride={{node.array_stride}},
                                                                                   dimensions=tuple({{node.array_dimensions}}),
                                                                                   logger_handle=logger_handle+'.{{node.inst_name}}',
@@ -27,8 +27,8 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
         {%- else %}
     self.__{{node.inst_name}}:{{get_fully_qualified_type_name(node)}} = {{get_fully_qualified_type_name(node)}}(
                                                                  address=self.address+{{node.address_offset}},
-                                                                 {% if 'accesswidth' in node.list_properties() -%}accesswidth={{node.get_property('accesswidth')}}{%- else -%}accesswidth={{node.size*8}}{%- endif -%},
-                                                                 {% if 'regwidth' in node.list_properties() -%}width={{node.get_property('regwidth')}}{%- else -%}width={{node.size*8}}{%- endif -%},
+                                                                 accesswidth={{get_reg_accesswidth(node)}},
+                                                                 width={{get_reg_regwidth(node)}},
                                                                  logger_handle=logger_handle+'.{{node.inst_name}}',
                                                                  inst_name='{{node.inst_name}}', parent=self)
 

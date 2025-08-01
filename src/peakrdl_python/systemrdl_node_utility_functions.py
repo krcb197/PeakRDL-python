@@ -280,6 +280,42 @@ def get_reg_readable_fields(node: RegNode,
     return filter(lambda x: x.is_sw_readable,
                   get_reg_fields(node=node, hide_node_callback=hide_node_callback))
 
+def get_reg_accesswidth(node: RegNode) -> int:
+    """
+    Determine register access width in bits, with a default based on the size of the register
+
+    Args:
+        node: node to be analysed
+
+    Returns:
+        register access width in bits
+
+    """
+    if not isinstance(node, RegNode):
+        raise TypeError(f'node is not a {type(RegNode)} got {type(node)}')
+
+    if 'accesswidth' in node.list_properties():
+        return node.get_property('accesswidth')
+    return node.size*8
+
+def get_reg_regwidth(node: RegNode) -> int:
+    """
+    Determine register regwidth in bits, with a default based on the size of the register
+
+    Args:
+        node: node to be analysed
+
+    Returns:
+        register regwidth in bits
+
+    """
+    if not isinstance(node, RegNode):
+        raise TypeError(f'node is not a {type(RegNode)} got {type(node)}')
+
+    if 'regwidth' in node.list_properties():
+        return node.get_property('regwidth')
+    return node.size*8
+
 
 def uses_memory(node: AddressableNode) -> bool:
     """

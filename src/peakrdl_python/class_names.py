@@ -73,6 +73,9 @@ def get_fully_qualified_type_name(node: Node,
     """
     Returns the fully qualified class type name, i.e. with scope prefix
     """
+    if not isinstance(node, Node):
+        raise TypeError(f'Expected a System RDL Node from the complier, got {type(node)}')
+
     scope_path = node.inst.get_scope_path(scope_separator='_')
 
     # the node.inst.type_name may include a suffix for the reset value, peak_rdl python passes
