@@ -20,6 +20,7 @@ A module for determining the classes names to use
 from typing import Optional
 from systemrdl.node import Node
 from systemrdl.node import FieldNode
+from systemrdl.node import RegNode
 from systemrdl.rdltypes.user_enum import UserEnumMeta
 from .systemrdl_node_utility_functions import HideNodeCallback
 from .systemrdl_node_utility_functions import is_encoded_field
@@ -40,6 +41,21 @@ def get_base_class_name(node: Node, async_library_classes: bool):
         elif node.is_sw_readable and not node.is_sw_writable:
             name += 'ReadOnly'
         elif not node.is_sw_readable and node.is_sw_writable:
+            name += 'WriteOnly'
+        else:
+            raise ValueError('Unhandled field access mode')
+
+        return name
+
+    if isinstance(node, RegNode):
+        name = 'Reg'
+        if async_library_classes:
+            name += 'Async'
+        if node.has_sw_readable and node.has_sw_writable:
+            name += 'ReadWrite'
+        elif node.has_sw_readable and not node.has_sw_writable:
+            name += 'ReadOnly'
+        elif not node.has_sw_readable and node.has_sw_writable:
             name += 'WriteOnly'
         else:
             raise ValueError('Unhandled field access mode')

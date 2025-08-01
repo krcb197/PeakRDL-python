@@ -22,13 +22,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 {% from 'addrmap_system_rdl_name_mapping.py.jinja' import systemrdl_python_child_name_map with context %}
 
 {%- macro register_class(node) %}
-    {%- if node.read_write %}
-class {{node.fully_qualified_type_name}}(Reg{% if asyncoutput %}Async{% endif %}ReadWrite):
-    {%- elif node.read_only %}
-class {{node.fully_qualified_type_name}}(Reg{% if asyncoutput %}Async{% endif %}ReadOnly):
-    {%- elif node.write_only %}
-class {{node.fully_qualified_type_name}}(Reg{% if asyncoutput %}Async{% endif %}WriteOnly):
-    {%- endif %}
+class {{node.fully_qualified_type_name}}({{node.base_class(asyncoutput)}}):
     """
     Class to represent a register in the register model
 
@@ -127,13 +121,7 @@ class {{node.fully_qualified_type_name}}(Reg{% if asyncoutput %}Async{% endif %}
     {{ universal_properties(node.instance) }}
 
     {%- if node.instance.is_array %}
-        {%- if node.read_write %}
-class {{node.fully_qualified_type_name}}_array(Reg{% if asyncoutput %}Async{% endif %}ReadWriteArray):
-        {%- elif node.read_only %}
-class {{node.fully_qualified_type_name}}_array(Reg{% if asyncoutput %}Async{% endif %}ReadOnlyArray):
-        {%- elif node.write_only %}
-class {{node.fully_qualified_type_name}}_array(Reg{% if asyncoutput %}Async{% endif %}WriteOnlyArray):
-        {%- endif %}
+class {{node.fully_qualified_type_name}}_array({{node.base_class(asyncoutput)}}Array):
     """
     Class to represent a register array in the register model
     """
