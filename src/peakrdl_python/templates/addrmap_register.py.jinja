@@ -33,8 +33,6 @@ class {{node.fully_qualified_type_name}}({{node.base_class(asyncoutput)}}):
 
     def __init__(self,
                  address: int,
-                 width: int,
-                 accesswidth: int,
                  logger_handle: str,
                  inst_name: str,
                  parent: Union[{% if asyncoutput -%}Async{%- endif -%}AddressMap,{%- if asyncoutput -%}Async{%- endif -%}RegFile,
@@ -48,8 +46,8 @@ class {{node.fully_qualified_type_name}}({{node.base_class(asyncoutput)}}):
                  ]):
 
         super().__init__(address=address,
-                         width=width,
-                         accesswidth=accesswidth,
+                         width={{get_reg_regwidth(node.instance)}},
+                         accesswidth={{get_reg_accesswidth(node.instance)}},
                          logger_handle=logger_handle,
                          inst_name=inst_name,
                          parent=parent)

@@ -32,6 +32,9 @@ from systemrdl.rdltypes import AccessType
 from .systemrdl_node_utility_functions import get_properties_to_include
 from .systemrdl_node_utility_functions import HideNodeCallback
 from .systemrdl_node_utility_functions import get_field_default_value
+from .systemrdl_node_utility_functions import get_reg_regwidth
+from .systemrdl_node_utility_functions import get_reg_accesswidth
+
 
 def enum_hash(enum: UserEnumMeta):
 
@@ -104,6 +107,11 @@ def __reg_hash(node: RegNode,
     value_to_hash = __node_hash_components(node=node,
                                            udp_to_include=udp_to_include,
                                            include_name_and_desc=include_name_and_desc)
+
+    # TODO need to include the access mode e.g. ReadWrite, ReadOnly, WriteOnly
+
+    value_to_hash.append(get_reg_accesswidth(node))
+    value_to_hash.append(get_reg_regwidth(node))
 
     for field in node.fields():
         if not hide_node_callback(field):
