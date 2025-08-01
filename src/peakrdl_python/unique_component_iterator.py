@@ -157,6 +157,9 @@ class UniqueComponents(RDLListener):
 
         for node_to_test in self.nodes:
             if provide_node == node_to_test:
+                if provide_node.fully_qualified_type_name != node_to_test.fully_qualified_type_name:
+                    raise RuntimeError(f'The fully qualified class names for items with matching '
+                                       f'hashes should also match')
                 return True
 
         return False
