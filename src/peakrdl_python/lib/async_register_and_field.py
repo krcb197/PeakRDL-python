@@ -264,7 +264,7 @@ class RegAsyncWriteOnly(AsyncReg, ABC):
         self._validate_data(data=data)
 
         # pylint: disable=duplicate-code
-        self._logger.info('Writing data:%X to %X', data, self.address)
+        self._logger.info(f'Writing data:0x{data:X} to 0x{self.address:X}')
         # pylint: enable=duplicate-code
 
         if self._callbacks.write_callback is not None:

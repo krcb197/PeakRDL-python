@@ -370,6 +370,24 @@ def get_memory_width_bytes(node: MemNode) -> int:
 
     return node.size // node.get_property('mementries')
 
+def get_memory_accesswidth(node: MemNode) -> int:
+    """
+    Determine register access width in bits, with a default based on the size of the register
+
+    Args:
+        node: node to be analysed
+
+    Returns:
+        register access width in bits
+
+    """
+    if not isinstance(node, MemNode):
+        raise TypeError(f'node is not a {type(MemNode)} got {type(node)}')
+
+    if 'accesswidth' in node.list_properties():
+        return node.get_property('accesswidth')
+    return node.get_property('memwidth')
+
 
 def get_field_default_value(node: FieldNode) -> Optional[int]:
     """
@@ -414,7 +432,8 @@ def get_enum_values(enum: UserEnumMeta) -> list[int]:
 
 def get_properties_to_include(node: Node, udp_to_include: Optional[list[str]]) -> list[str]:
     """
-
+    Provide a list of the User Defined Properties to include in the Register Model for a given
+    Node
 
     Args:
         node: the system rdl node to examine the properties of
@@ -437,5 +456,5 @@ def is_encoded_field(node: FieldNode) -> bool:
     Returns: True if encoded
     """
     if not isinstance(node, FieldNode):
-        raise TypeError(f'This should only be called on an FeildNode, got {type(node)}')
+        raise TypeError(f'This should only be called on an FieldNode, got {type(node)}')
     return 'encode' in node.list_properties()

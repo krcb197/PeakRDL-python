@@ -24,20 +24,14 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 {% from 'addrmap_system_rdl_name_mapping.py.jinja' import systemrdl_python_child_name_map with context %}
 
 {%- macro memory_class(node) %}
-    {%- if node.is_sw_readable and node.is_sw_writable %}
-class {{get_fully_qualified_type_name(node)}}_cls(Memory{% if asyncoutput %}Async{% endif %}ReadWrite{% if legacy_block_access %}Legacy{% endif %}):
-    {%- elif node.is_sw_readable and not node.is_sw_writable %}
-class {{get_fully_qualified_type_name(node)}}_cls(Memory{% if asyncoutput %}Async{% endif %}ReadOnly{% if legacy_block_access %}Legacy{% endif %}):
-    {%- elif not node.is_sw_readable and node.is_sw_writable %}
-class {{get_fully_qualified_type_name(node)}}_cls(Memory{% if asyncoutput %}Async{% endif %}WriteOnly{% if legacy_block_access %}Legacy{% endif %}):
-    {%- endif %}
+class {{node.fully_qualified_type_name}}({{node.base_class(asyncoutput)}}{% if legacy_block_access %}Legacy{% endif %}):
     """
     Class to represent a memory in the register model
 
-    {{get_table_block(node) | indent}}
+    {{get_table_block(node.instance) | indent}}
     """
 
-    __slots__ : list[str] = [{%- for child_node in node.children(unroll=False) -%}{%- if isinstance(child_node, systemrdlRegNode) -%}'__{{child_node.inst_name}}'{% if not loop.last %}, {% endif %}{% endif %}{%- endfor %}]
+    __slots__ : list[str] = [{%- for child_node in node.instance.children(unroll=False) -%}{%- if isinstance(child_node, systemrdlRegNode) -%}'__{{child_node.inst_name}}'{% if not loop.last %}, {% endif %}{% endif %}{%- endfor %}]
 
     def __init__(self,
                  address: int,
@@ -46,20 +40,20 @@ class {{get_fully_qualified_type_name(node)}}_cls(Memory{% if asyncoutput %}Asyn
                  parent:{% if asyncoutput %}Async{% endif %}AddressMap):
 
         super().__init__(address=address,
-                         entries={{node.get_property('mementries')}},
-                         {% if 'accesswidth' in node.list_properties() -%}accesswidth={{node.get_property('accesswidth')}}{%- else -%}accesswidth={{node.get_property('memwidth')}}{%- endif -%},
-                         width={{node.get_property('memwidth')}},
+                         entries={{node.instance.get_property('mementries')}},
+                         accesswidth={{get_memory_accesswidth(node.instance)}},
+                         width={{node.instance.get_property('memwidth')}},
                          logger_handle=logger_handle,
                          inst_name=inst_name,
                          parent=parent)
 
-        {% for child_node in node.children(unroll=False) -%}
+        {% for child_node in node.instance.children(unroll=False) -%}
                 {%- if not hide_node_func(child_node) %}
             {{ register_class_attributes(child_node) | indent }}
                 {% endif %}
         {% endfor %}
 
-        {%- for child_node in node.children(unroll=False) -%}
+        {%- for child_node in node.instance.children(unroll=False) -%}
             {%-  if not hide_node_func(child_node) %}
                 {%- if isinstance(child_node, systemrdlRegNode) %}
     @property
@@ -76,24 +70,18 @@ class {{get_fully_qualified_type_name(node)}}_cls(Memory{% if asyncoutput %}Asyn
             {%- endif %}
         {% endfor %}
 
-    {{ child_register_getter(node) }}
+    {{ child_register_getter(node.instance) }}
 
-    {{ systemrdl_python_child_name_map(node) }}
+    {{ systemrdl_python_child_name_map(node.instance) }}
 
-    {{ get_child_by_system_rdl_name(node) }}
+    {{ get_child_by_system_rdl_name(node.instance) }}
 
     {{ udp_property(node) }}
 
-    {{ universal_properties(node) }}
+    {{ universal_properties(node.instance) }}
 
-    {%- if node.is_array %}
-        {%- if node.is_sw_readable and node.is_sw_writable %}
-class {{get_fully_qualified_type_name(node)}}_array_cls(Memory{% if asyncoutput %}Async{% endif %}ReadWriteArray):
-        {%- elif node.is_sw_readable and not node.is_sw_writable %}
-class {{get_fully_qualified_type_name(node)}}_array_cls(Memory{% if asyncoutput %}Async{% endif %}ReadOnlyArray):
-        {%- elif not node.is_sw_readable and node.is_sw_writable %}
-class {{get_fully_qualified_type_name(node)}}_array_cls(Memory{% if asyncoutput %}Async{% endif %}WriteOnlyArray):
-        {%- endif %}
+    {%- if node.instance.is_array %}
+class {{node.fully_qualified_type_name}}_array({{node.base_class(asyncoutput)}}Array):
     """
     Class to represent a memory array in the register model
     """
@@ -111,7 +99,9 @@ class {{get_fully_qualified_type_name(node)}}_array_cls(Memory{% if asyncoutput 
 
     @property
     def _element_datatype(self) -> Type[Node]:
-        return {{get_fully_qualified_type_name(node)}}_cls
+        return {{node.fully_qualified_type_name}}
+
+    {{ universal_properties(node.instance) }}
     {%- endif %}
 
 {%- endmacro %}

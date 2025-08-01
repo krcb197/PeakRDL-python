@@ -593,7 +593,7 @@ class RegWriteOnly(Reg, ABC):
         # this method check the types and range checks the data
         self._validate_data(data=data)
 
-        self._logger.info('Writing data:%X to %X', data, self.address)
+        self._logger.info(f'Writing data:0x{data:X} to 0x{self.address:X}')
 
         if self._callbacks.write_callback is not None:
             self._callbacks.write_callback(addr=self.address,

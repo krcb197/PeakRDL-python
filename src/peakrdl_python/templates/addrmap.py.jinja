@@ -115,22 +115,10 @@ from {% if skip_lib_copy %}peakrdl_python.{% else %}..{% endif %}lib import Norm
                                                                                   logger_handle=logger_handle+'.{{node.inst_name}}',
                                                                                   inst_name='{{node.inst_name}}', parent=self)
         {%- else %}
-            {%- if node.is_sw_readable and node.is_sw_writable %}
     self.__{{node.inst_name}}:{{get_fully_qualified_type_name(node)}} = {{get_fully_qualified_type_name(node)}}(
                                                                  address=self.address+{{node.address_offset}},
                                                                  logger_handle=logger_handle+'.{{node.inst_name}}',
                                                                                    inst_name='{{node.inst_name}}', parent=self)
-            {%- elif node.is_sw_readable and not node.is_sw_writable %}
-    self.__{{node.inst_name}}:{{get_fully_qualified_type_name(node)}} = {{get_fully_qualified_type_name(node)}}(
-                                                                 address=self.address+{{node.address_offset}},
-                                                                 logger_handle=logger_handle+'.{{node.inst_name}}',
-                                                                                   inst_name='{{node.inst_name}}', parent=self)
-            {%- elif not node.is_sw_readable and node.is_sw_writable %}
-    self.__{{node.inst_name}}:{{get_fully_qualified_type_name(node)}} = {{get_fully_qualified_type_name(node)}}(
-                                                                             address=self.address+{{node.address_offset}},
-                                                                             logger_handle=logger_handle+'.{{node.inst_name}}',
-                                                                             inst_name='{{node.inst_name}}', parent=self)
-            {%- endif %}
         {%- endif %}
     {%- elif isinstance(node, systemrdlRegfileNode) or isinstance(node, systemrdlAddrmapNode) %}
         {%- if node.is_array %}
@@ -324,7 +312,7 @@ class {{node.fully_qualified_type_name}}({% if asyncoutput %}Async{% endif %}Add
     {% endif %}
 
     {%- if node.instance.is_array %}
-class {{node.get_fully_qualified_type_name}}_array({% if asyncoutput %}Async{% endif %}AddressMapArray):
+class {{node.fully_qualified_type_name}}_array({% if asyncoutput %}Async{% endif %}AddressMapArray):
     """
     Class to represent a addrmap array in the register model
     """
@@ -342,7 +330,7 @@ class {{node.get_fully_qualified_type_name}}_array({% if asyncoutput %}Async{% e
 
     @property
     def _element_datatype(self) -> Type[Node]:
-        return {{get_fully_qualified_type_name(node)}}
+        return {{node.fully_qualified_type_name}}
     {%- endif %}
 {%- endmacro %}
 

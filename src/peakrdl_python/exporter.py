@@ -42,7 +42,8 @@ from .systemrdl_node_utility_functions import get_reg_writable_fields, \
     uses_enum, uses_memory, \
     get_memory_max_entry_value_hex_string, get_memory_width_bytes, \
     get_field_default_value, get_enum_values, get_properties_to_include, get_reg_fields, \
-    HideNodeCallback, hide_based_on_property, get_reg_accesswidth, get_reg_regwidth
+    HideNodeCallback, hide_based_on_property, get_reg_accesswidth, get_reg_regwidth, \
+    get_memory_accesswidth,is_encoded_field
 from .unique_component_iterator import get_dependent_component
 from .class_names import get_fully_qualified_type_name, fully_qualified_enum_type
 
@@ -278,9 +279,6 @@ class PythonExporter:
         #   components, this is the original_def (which can be None in some cases)
         self.namespace_db = {}
 
-        # Dictionary used for determining the unique type names to use
-        self.node_type_name: str[str, tuple[str, Optional[int]]] = {}
-
     def __stream_jinja_template(self,
                                 template_name: str,
                                 target_package: _PythonPackage,
@@ -370,7 +368,9 @@ class PythonExporter:
             'legacy_enum_type': legacy_enum_type,
             'skip_systemrdl_name_and_desc_properties': skip_systemrdl_name_and_desc_properties,
             'get_reg_accesswidth': get_reg_accesswidth,
-            'get_reg_regwidth': get_reg_regwidth
+            'get_reg_regwidth': get_reg_regwidth,
+            'get_memory_accesswidth': get_memory_accesswidth,
+            'is_encoded_field': is_encoded_field
         }
         if legacy_block_access is True:
             context['get_array_typecode'] = get_array_typecode
@@ -767,7 +767,7 @@ class PythonExporter:
 
     def _get_dependent_enum(
             self, node: Union[AddrmapNode, RootNode], hide_node_func: HideNodeCallback) -> \
-            Iterable[tuple[UserEnumMeta]]:
+            Iterable[UserEnumMeta]:
         """
         iterable of enums which is used by a descendant of the input node,
         this list is de-duplicated
@@ -830,5 +830,3 @@ class PythonExporter:
             update_enum_list(node_to_process=child_node)
 
         return enum_needed
-
-

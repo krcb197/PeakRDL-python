@@ -90,11 +90,11 @@ def calculate_bitmask(high:int, low:int) -> int:
     if not isinstance(high, int):
         raise TypeError(f'high must be an int, got {type(high)}')
     if high < 0:
-        raise ValueError(f'high must be greater than 0')
+        raise ValueError('high must be greater than 0')
     if not isinstance(low, int):
         raise TypeError(f'low must be an int, got {type(low)}')
     if low < 0:
-        raise ValueError(f'low must be greater than 0')
+        raise ValueError('low must be greater than 0')
     if high < low:
         raise ValueError(f'low must be great than or equal to high, got: {low=}, {high=}')
 

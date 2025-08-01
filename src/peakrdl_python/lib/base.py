@@ -66,7 +66,7 @@ class Base(ABC):
             raise TypeError(f'logger_handle should be str but got {type(logger_handle)}')
 
         self.__logger = logging.getLogger(logger_handle)
-        self._logger.debug('creating instance of %s', self.__class__)
+        self._logger.debug(f'creating instance of {self.__class__}')
 
         if not isinstance(inst_name, str):
             raise TypeError(f'inst_name should be str but got {type(inst_name)}')

@@ -67,7 +67,7 @@ class {{node.fully_qualified_type_name}}({{node.base_class(asyncoutput)}}):
                 is_volatile={{child_node.is_hw_writable}}),
             logger_handle=logger_handle+'.{{child_node.inst_name}}',
             inst_name='{{child_node.inst_name}}',
-            field_type={% if 'encode' in child_node.list_properties() %}{{ get_fully_qualified_enum_type(child_node.get_property('encode')) + '_enumcls' }}{% else %}int{% endif %})
+            field_type={% if is_encoded_field(child_node) %}{{ get_fully_qualified_enum_type(child_node.get_property('encode')) + '_enumcls' }}{% else %}int{% endif %})
         {%- endfor %}
 
     @property
@@ -84,12 +84,12 @@ class {{node.fully_qualified_type_name}}({{node.base_class(asyncoutput)}}):
 
     {% if node.write_only %}
     {# if the register has no readable components, all the fields must be writen as one #}
-    {% if asyncoutput %}async {% endif %}def write_fields(self, {%- for child_node in node.fields() -%} {{safe_node_name(child_node)}} : {%- if 'encode' in child_node.list_properties() %}{{get_fully_qualified_enum_type(top_node.parent, child_node, hide_node_func)}}_enumcls{% else %}int{% endif %}{%- if not loop.last -%},{%- endif -%}{%- endfor -%}) -> None: # type: ignore[override]
+    {% if asyncoutput %}async {% endif %}def write_fields(self, {%- for child_node in node.instance.fields() -%} {{safe_node_name(child_node)}} : {%- if is_encoded_field(child_node) %}{{get_fully_qualified_enum_type(top_node.parent, child_node, hide_node_func)}}_enumcls{% else %}int{% endif %}{%- if not loop.last -%},{%- endif -%}{%- endfor -%}) -> None: # type: ignore[override]
         """
         Do a write to the register, updating all fields
         """
         reg_value = 0
-        {%- for child_node in node.fields() %}
+        {%- for child_node in node.instance.fields() %}
         reg_value &= self.{{safe_node_name(child_node)}}.inverse_bitmask
         reg_value |= self.{{safe_node_name(child_node)}}._encode_write_value({{safe_node_name(child_node)}})
         {% endfor %}

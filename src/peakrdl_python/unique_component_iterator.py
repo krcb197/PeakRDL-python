@@ -18,14 +18,12 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 The methods for building the main iterator that is used in the templates for building the
 code.
 """
-from typing import Optional, Union
+from typing import Optional, Union, TYPE_CHECKING
 from collections.abc import Iterable
 from dataclasses import dataclass
 from functools import cached_property
 import sys
 from logging import getLogger
-
-import textwrap
 
 from systemrdl.node import Node
 from systemrdl.node import RegNode
@@ -40,8 +38,7 @@ from systemrdl import RDLListener, WalkerAction, RDLWalker
 from .systemrdl_node_hashes import node_hash
 from .systemrdl_node_utility_functions import HideNodeCallback
 from .systemrdl_node_utility_functions import get_properties_to_include
-from .systemrdl_node_utility_functions import is_encoded_field
-from .class_names import get_fully_qualified_type_name
+from .class_names import get_fully_qualified_type_name_precalculated_hash
 from .class_names import get_base_class_name
 
 # pylint: disable=duplicate-code
@@ -62,35 +59,45 @@ class PeakRDLPythonUniqueComponents:
 
     @cached_property
     def fully_qualified_type_name(self) -> str:
-        return get_fully_qualified_type_name(node=self.instance,
-                                             udp_to_include=self.udp_to_include,
-                                             hide_node_callback=self.hide_node_callback,
-                                             include_name_and_desc=True)
+        """
+        Return the python class name to use with the component generated in the register model
+        """
+        return get_fully_qualified_type_name_precalculated_hash(
+            node=self.instance,
+            node_hash=self.__system_rdl_type_hash)
 
-    def base_class(self, async_library_classes: bool):
+    def base_class(self, async_library_classes: bool) -> str:
+        """
+        Return the python base class name from the library to use with the component generated
+        in the register model
+        """
         return get_base_class_name(node=self.instance,
                                    async_library_classes=async_library_classes)
 
     @cached_property
     def __system_rdl_type_hash(self) -> int:
-        hash = node_hash(node=self.instance, udp_to_include=self.udp_to_include,
+        nodal_hash_result = node_hash(node=self.instance, udp_to_include=self.udp_to_include,
                   hide_node_callback=self.hide_node_callback,
                   include_name_and_desc=True)
-        if hash is None:
+        if nodal_hash_result is None:
             # The hash of None is a special case where the Field can just use the baseclass,
             # therefore should not have an UniqueComponent Entry
             raise RuntimeError('hash is None')
-        return hash
+        return nodal_hash_result
 
     @property
     def properties_to_include(self) -> list[str]:
+        """
+        Provide a list of the User Defined Properties to include in the Register Model for a given
+        Node
+        """
         return get_properties_to_include(node=self.instance,
                                          udp_to_include=self.udp_to_include)
 
     def __hash__(self) -> int:
         return self.__system_rdl_type_hash
 
-    def __eq__(self, other:Self):
+    def __eq__(self, other:object) -> bool:
         if not isinstance(other, PeakRDLPythonUniqueComponents):
             raise TypeError('Comparison failed')
 
@@ -98,21 +105,30 @@ class PeakRDLPythonUniqueComponents:
 
 @dataclass(frozen=True)
 class PeakRDLPythonUniqueRegisterComponents(PeakRDLPythonUniqueComponents):
-
-    def __post_init__(self):
-        if not isinstance(self.instance, RegNode):
-            raise TypeError(f'This should only be used on a Reg Node, got {type(self.instance)}')
+    """
+    Dataclass to hold a register node that needs to be made into a python class
+    """
+    instance: RegNode
 
     @property
     def read_write(self) -> bool:
+        """
+        Determine if the register is read-write
+        """
         return self.instance.has_sw_readable and self.instance.has_sw_writable
 
     @property
     def read_only(self) -> bool:
+        """
+        Determine if the register is read-only
+        """
         return self.instance.has_sw_readable and not self.instance.has_sw_writable
 
     @property
     def write_only(self) -> bool:
+        """
+        Determine if the register is write-only
+        """
         return not self.instance.has_sw_readable and self.instance.has_sw_writable
 
     def __hash__(self) -> int:
@@ -133,7 +149,7 @@ class UniqueComponents(RDLListener):
         self.nodes: list[PeakRDLPythonUniqueComponents] = []
         self.__logger = getLogger('peakrdl_python.UniqueComponents')
 
-    def __is_equivalent_node_in_list(self, node:Node):
+    def __is_equivalent_node_in_list(self, node:Node) -> bool:
 
         provide_node = self.__build_peak_rdl_unique_component(node)
         node_to_tested_hash = hash(provide_node)
@@ -145,16 +161,16 @@ class UniqueComponents(RDLListener):
 
         return False
 
-    def __build_peak_rdl_unique_component(self, node: Node):
+    def __build_peak_rdl_unique_component(self, node: Node) -> PeakRDLPythonUniqueComponents:
         return PeakRDLPythonUniqueComponents(instance=node,
                                              hide_node_callback=self.__hide_node_callback,
                                              udp_to_include=self.__udp_to_include)
 
-    def __add_node_to_list(self, node: Node):
+    def __add_node_to_list(self, node: Node) -> None:
 
         self.nodes.append(self.__build_peak_rdl_unique_component(node))
 
-    def __add_reg_node_to_list(self, node: RegNode):
+    def __add_reg_node_to_list(self, node: RegNode) -> None:
 
         self.nodes.append(PeakRDLPythonUniqueRegisterComponents(
             instance=node,

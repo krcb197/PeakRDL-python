@@ -21,57 +21,93 @@ from typing import Optional
 from systemrdl.node import Node
 from systemrdl.node import FieldNode
 from systemrdl.node import RegNode
+from systemrdl.node import MemNode
 from systemrdl.rdltypes.user_enum import UserEnumMeta
 from .systemrdl_node_utility_functions import HideNodeCallback
 from .systemrdl_node_utility_functions import is_encoded_field
 
 from .systemrdl_node_hashes import node_hash as calculate_node_hash
 
-def get_base_class_name(node: Node, async_library_classes: bool):
+def __get_field_get_base_class_name(node: FieldNode, async_library_classes: bool) -> str:
+    if not isinstance(node, FieldNode):
+        raise TypeError(f'node should be FieldNode, got: {type(node)}')
 
+    name = 'Field'
+    if is_encoded_field(node):
+        name += 'Enum'
+    if async_library_classes:
+        name += 'Async'
+
+    if node.is_sw_readable and node.is_sw_writable:
+        name += 'ReadWrite'
+    elif node.is_sw_readable and not node.is_sw_writable:
+        name += 'ReadOnly'
+    elif not node.is_sw_readable and node.is_sw_writable:
+        name += 'WriteOnly'
+    else:
+        raise ValueError('Unhandled field access mode')
+
+    return name
+
+
+def __get_reg_get_base_class_name(node: RegNode, async_library_classes: bool) -> str:
+    if not isinstance(node, RegNode):
+        raise TypeError(f'node should be RegNode, got: {type(node)}')
+
+    name = 'Reg'
+    if async_library_classes:
+        name += 'Async'
+    if node.has_sw_readable and node.has_sw_writable:
+        name += 'ReadWrite'
+    elif node.has_sw_readable and not node.has_sw_writable:
+        name += 'ReadOnly'
+    elif not node.has_sw_readable and node.has_sw_writable:
+        name += 'WriteOnly'
+    else:
+        raise ValueError('Unhandled field access mode')
+
+    return name
+
+def __get_mem_get_base_class_name(node: MemNode, async_library_classes: bool) -> str:
+    if not isinstance(node, MemNode):
+        raise TypeError(f'node should be MemNode, got: {type(node)}')
+
+    name = 'Memory'
+    if async_library_classes:
+        name += 'Async'
+
+    if node.is_sw_readable and node.is_sw_writable:
+        name += 'ReadWrite'
+    elif node.is_sw_readable and not node.is_sw_writable:
+        name += 'ReadOnly'
+    elif not node.is_sw_readable and node.is_sw_writable:
+        name += 'WriteOnly'
+    else:
+        raise ValueError('Unhandled field access mode')
+
+    return name
+
+def get_base_class_name(node: Node, async_library_classes: bool) -> str:
+    """
+    Returns the base class from the library to use with the node instance
+    """
     if isinstance(node, FieldNode):
-        name = 'Field'
-        if is_encoded_field(node):
-            name += 'Enum'
-        if async_library_classes:
-            name += 'Async'
-
-        if node.is_sw_readable and node.is_sw_writable:
-            name += 'ReadWrite'
-        elif node.is_sw_readable and not node.is_sw_writable:
-            name += 'ReadOnly'
-        elif not node.is_sw_readable and node.is_sw_writable:
-            name += 'WriteOnly'
-        else:
-            raise ValueError('Unhandled field access mode')
-
-        return name
+        return __get_field_get_base_class_name(node, async_library_classes=async_library_classes)
 
     if isinstance(node, RegNode):
-        name = 'Reg'
-        if async_library_classes:
-            name += 'Async'
-        if node.has_sw_readable and node.has_sw_writable:
-            name += 'ReadWrite'
-        elif node.has_sw_readable and not node.has_sw_writable:
-            name += 'ReadOnly'
-        elif not node.has_sw_readable and node.has_sw_writable:
-            name += 'WriteOnly'
-        else:
-            raise ValueError('Unhandled field access mode')
+        return __get_reg_get_base_class_name(node, async_library_classes=async_library_classes)
 
-        return name
+    if isinstance(node, MemNode):
+        return __get_mem_get_base_class_name(node, async_library_classes=async_library_classes)
 
     raise TypeError(f'Unhandled node type: {type(node)}')
 
 
-
-def get_fully_qualified_type_name(node: Node,
-                                  udp_to_include: Optional[list[str]],
-                                  hide_node_callback: HideNodeCallback,
-                                  include_name_and_desc: bool = True) -> str:
+def get_fully_qualified_type_name_precalculated_hash(
+        node: Node,
+        node_hash: Optional[int]) -> str:
     """
-    Returns the fully qualified class type name, i.e. with scope prefix
+    Returns the fully qualified class type name with a pre-calculated hash to save time
     """
     if not isinstance(node, Node):
         raise TypeError(f'Expected a System RDL Node from the complier, got {type(node)}')
@@ -84,11 +120,6 @@ def get_fully_qualified_type_name(node: Node,
     inst_type_name = node.inst.original_def.type_name
     if inst_type_name is None:
         inst_type_name = node.inst_name
-
-    node_hash = calculate_node_hash(node=node,
-                                    udp_to_include=udp_to_include,
-                                    hide_node_callback=hide_node_callback,
-                                    include_name_and_desc=include_name_and_desc)
 
     if node_hash is None:
         # This is special case where the field has no attributes that need a field definition
@@ -109,6 +140,23 @@ def get_fully_qualified_type_name(node: Node,
         return inst_type_name + '_' + hex(node_hash) + '_cls'
 
     return scope_path + '_' + inst_type_name + '_' + hex(node_hash) + '_cls'
+
+def get_fully_qualified_type_name(node: Node,
+                                  udp_to_include: Optional[list[str]],
+                                  hide_node_callback: HideNodeCallback,
+                                  include_name_and_desc: bool = True) -> str:
+    """
+    Returns the fully qualified class type name, i.e. with scope prefix
+    """
+
+    node_hash = calculate_node_hash(node=node,
+                                    udp_to_include=udp_to_include,
+                                    hide_node_callback=hide_node_callback,
+                                    include_name_and_desc=include_name_and_desc)
+
+    return get_fully_qualified_type_name_precalculated_hash(
+        node=node,
+        node_hash=node_hash, )
 
 def fully_qualified_enum_type(field_enum: UserEnumMeta) -> str:
     """
