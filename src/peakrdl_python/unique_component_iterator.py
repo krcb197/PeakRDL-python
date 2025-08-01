@@ -152,7 +152,7 @@ class UniqueComponents(RDLListener):
 
         provide_node = self.__build_peak_rdl_unique_component(node)
         node_to_tested_hash = hash(provide_node)
-        print(f'Node under test hash:{node_to_tested_hash}')
+        self.__logger.debug(f'Node under test hash:{node_to_tested_hash}')
 
         for node_to_test in self.nodes:
             if provide_node == node_to_test:
@@ -206,18 +206,16 @@ class UniqueComponents(RDLListener):
     def enter_Field(self, node: FieldNode) -> Optional[WalkerAction]:
 
         full_node_name = '.'.join(node.get_path_segments())
-        print(f'Analysing Field:{full_node_name}')
+        self.__logger.debug(f'Analysing Field:{full_node_name}')
 
         if self.__hide_node_callback(node):
-            print(f'Hidden')
+
             return WalkerAction.SkipDescendants
 
         if self.__is_equivalent_node_in_list(node):
-            print(f'Hash Already present')
             return WalkerAction.SkipDescendants
 
         self.__add_field_node_to_list(node)
-        print(f'Adding node')
         return WalkerAction.Continue
 
     def enter_Addrmap(self, node: AddrmapNode) -> Optional[WalkerAction]:
@@ -258,6 +256,5 @@ def get_dependent_component(node: Union[AddressableNode, RootNode],
     # running the walker populated the blocks with all the address maps in within the
     # top block, including the top_block itself
     RDLWalker(unroll=True).walk(node, unique_component_walker, skip_top=False)
-    print(f'Stuff in list:{len(unique_component_walker.nodes)}')
 
     return reversed(unique_component_walker.nodes)
