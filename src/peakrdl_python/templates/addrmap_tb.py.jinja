@@ -836,7 +836,7 @@ class {{fq_block_name}}_single_access({{top_node.inst_name}}_TestCase): # type: 
             if not isinstance(rut, Reg{% if asyncoutput %}Async{% endif %}ReadWrite):
                 raise TypeError('Failed to find read/write register')
             {% if asyncoutput %}await {% endif %}write_field_cominbinations(reg=rut,
-                               writable_fields = [ {% for field in get_reg_writable_fields(node, hide_node_func) -%}
+                               writable_fields = [ {% for field in get_reg_writable_fields(node) -%}
                                                    '{{ safe_node_name(field) }}' {%- if not loop.last -%},{%- endif %}
                                                    {% endfor -%} ])
         {%- endif %}
