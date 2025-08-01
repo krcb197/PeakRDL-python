@@ -396,7 +396,7 @@ class {{property_enum.type_name}}_property_enumcls({% if legacy_enum_type %}IntE
 
 {% if uses_enum %}
 # root level enum definitions
-{%- for enum_needed in get_dependent_enum(top_node.parent, hide_node_func) %}
+{%- for enum_needed in get_dependent_enum(top_node, hide_node_func) %}
 @unique
 class {{get_fully_qualified_enum_type(enum_needed)}}_enumcls({% if legacy_enum_type %}IntEnum{% else %}SystemRDLEnum{% endif %}):
 

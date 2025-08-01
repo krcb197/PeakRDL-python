@@ -303,7 +303,8 @@ class PythonExporter:
                            legacy_block_access: bool,
                            udp_to_include: Optional[list[str]],
                            hide_node_func: HideNodeCallback,
-                           legacy_enum_type: bool) -> None:
+                           legacy_enum_type: bool,
+                           skip_systemrdl_name_and_desc_properties: bool) -> None:
 
         def visible_nonsignal_node(node: Node) -> int:
             count = 0
@@ -366,7 +367,8 @@ class PythonExporter:
                                                   udp_to_include=udp_to_include),
             'hide_node_func': hide_node_func,
             'visible_nonsignal_node' : visible_nonsignal_node,
-            'legacy_enum_type': legacy_enum_type
+            'legacy_enum_type': legacy_enum_type,
+            'skip_systemrdl_name_and_desc_properties': skip_systemrdl_name_and_desc_properties
         }
         if legacy_block_access is True:
             context['get_array_typecode'] = get_array_typecode
@@ -385,8 +387,31 @@ class PythonExporter:
                            asyncoutput: bool,
                            legacy_block_access: bool) -> None:
 
+        # as a result of issue 202, where two registers existed at that same address,
+        # rather than iterating through the registers within the Jinja template
+        # we iterate through them in in advance so that cases of two registers at that same
+        # address can be identified
+        reg_dict:dict[int, Union[list[RegNode],RegNode]] = {}
+        for node in filter(lambda x : isinstance(x, RegNode),  top_block.descendants(unroll=True)):
+            if not isinstance(node, RegNode):
+                raise TypeError(f'node should be a register, got {type(node)}')
+            reg_addr = node.absolute_address
+            if reg_addr in reg_dict:
+                existing_entry = reg_dict[reg_addr]
+                # if the entry is already list simply append to it
+                if isinstance(existing_entry, list):
+                    existing_entry.append(node)
+                elif isinstance(existing_entry, RegNode):
+                    reg_dict[reg_addr] = [existing_entry, node]
+                else:
+                    raise TypeError(f'exiting entry of unexpected type: {type(existing_entry)}')
+            else:
+                reg_dict[reg_addr] = node
+
+
         context = {
             'top_node': top_block,
+            'reg_dict': reg_dict,
             'systemrdlRegNode': RegNode,
             'systemrdlMemNode': MemNode,
             'isinstance': isinstance,
@@ -394,6 +419,7 @@ class PythonExporter:
             'skip_lib_copy': skip_lib_copy,
             'version': __version__,
             'legacy_block_access': legacy_block_access,
+            'list': list
         }
 
         context.update(self.user_template_context)
@@ -477,19 +503,10 @@ class PythonExporter:
                        legacy_block_access: bool,
                        udp_to_include: Optional[list[str]],
                        hide_node_func: HideNodeCallback,
-                       legacy_enum_type: bool
+                       legacy_enum_type: bool,
+                       skip_systemrdl_name_and_desc_properties: bool,
                        ) -> None:
-        """
 
-        Args:
-            top_block:
-            package:
-            asyncoutput:
-            legacy_block_access:
-
-        Returns:
-
-        """
         # pylint: disable=too-many-locals
 
         blocks = AddressMaps(hide_node_callback=hide_node_func)
@@ -562,7 +579,8 @@ class PythonExporter:
                     self._get_dependent_property_enum(node=top_block,
                                                       udp_to_include=udp_to_include),
                 'hide_node_func': hide_node_func,
-                'legacy_enum_type': legacy_enum_type
+                'legacy_enum_type': legacy_enum_type,
+                'skip_systemrdl_name_and_desc_properties': skip_systemrdl_name_and_desc_properties
             }
 
             self.__stream_jinja_template(template_name="addrmap_tb.py.jinja",
@@ -602,46 +620,51 @@ class PythonExporter:
                show_hidden: bool = False,
                user_defined_properties_to_include: Optional[list[str]] = None,
                hidden_inst_name_regex: Optional[str] = None,
-               legacy_enum_type: bool = True) -> str:
+               legacy_enum_type: bool = True,
+               skip_systemrdl_name_and_desc_properties: bool = False) -> str:
         """
         Generated Python Code and Testbench
 
         Args:
-            node (str) : Top-level node to export. Can be the top-level `RootNode` or any
-                         internal `AddrmapNode`.
-            path (str) : Output package path.
-            asyncoutput (bool) : If set this builds a register model with async callbacks
-            skip_test_case_generation (bool): skip generation the generation of the test cases
-            delete_existing_package_content (bool): delete any python files in the package
-                                                    location, normally left over from previous
-                                                    operations
-            skip_library_copy (bool): skip copy the libraries to the generated package, this is
-                                      useful to turn off when developing peakrdl python to avoid
-                                      editing the wrong copy of the library. It also avoids the
-                                      GPL code being part of the package for distribution,
-                                      However, this means the end-user is responsible for
-                                      installing the libraries.
-            legacy_block_access (bool): version 0.8 changed the block access methods from using
-                                        arrays to lists. This allows memory widths of other
-                                        than 8, 16, 32, 64 to be supported which are legal in
-                                        systemRDL. The legacy mode with Arrays is still in
-                                        the tool and will be turned on by default for a few
-                                        releases.
-            show_hidden (bool) : By default any item (Address Map, Regfile, Register, Memory or
-                                 Field) with the systemRDL User Defined Property (UDP)
-                                 ``python_hide`` set to true will not be included in the generated
-                                 python code. This behaviour can be overridden by setting this
-                                 property to true.
+            node: Top-level node to export. Can be the top-level `RootNode` or any
+                  internal `AddrmapNode`.
+            path: Output package path.
+            asyncoutput: If set this builds a register model with async callbacks
+            skip_test_case_generation: skip generation the generation of the test cases
+            delete_existing_package_content: delete any python files in the package
+                                             location, normally left over from previous
+                                             operations
+            skip_library_copy: skip copy the libraries to the generated package, this is
+                               useful to turn off when developing peakrdl python to avoid
+                               editing the wrong copy of the library. It also avoids the
+                               GPL code being part of the package for distribution,
+                               However, this means the end-user is responsible for
+                               installing the libraries.
+            legacy_block_access: version 0.8 changed the block access methods from using
+                                 arrays to lists. This allows memory widths of other
+                                 than 8, 16, 32, 64 to be supported which are legal in
+                                 systemRDL. The legacy mode with Arrays is still in
+                                 the tool and will be turned on by default for a few
+                                 releases.
+            show_hidden: By default any item (Address Map, Regfile, Register, Memory or
+                         Field) with the systemRDL User Defined Property (UDP)
+                         ``python_hide`` set to true will not be included in the generated
+                         python code. This behaviour can be overridden by setting this
+                         property to true.
             user_defined_properties_to_include : A list of strings of the names of user-defined
                                                  properties to include. Set to None for nothing
                                                  to appear.
-            hidden_inst_name_regex (str) : A regular expression which will hide any fully
-                                           qualified instance name that matches, set to None to
-                                           for this to have no effect
-            legacy_enum_type (bool): version 1.2 introduced a new Enum type that allows system
-                                     rdl ``name`` and ``desc`` properties on field encoding
-                                     to be included. The legacy mode uses python IntEnum.
-
+            hidden_inst_name_regex: A regular expression which will hide any fully
+                                    qualified instance name that matches, set to None to
+                                    for this to have no effect
+            legacy_enum_type: version 1.2 introduced a new Enum type that allows system
+                              rdl ``name`` and ``desc`` properties on field encoding
+                              to be included. The legacy mode uses python IntEnum.
+            skip_systemrdl_name_and_desc_properties (bool) : version 1.2 introduced new properties
+                                                             that include the systemRDL name and
+                                                             desc as properties of the built
+                                                             python. Setting this option to
+                                                             ``True`` will exclude them.
 
         Returns:
             modules that have been exported:
@@ -690,12 +713,14 @@ class PythonExporter:
         if hide_node_func(top_block):
             raise RuntimeError('PeakRDL Python can not export if the node is hidden')
 
-        self.__export_reg_model(top_block=top_block, package=package, asyncoutput=asyncoutput,
-                                skip_lib_copy=skip_library_copy,
-                                legacy_block_access=legacy_block_access,
-                                udp_to_include=user_defined_properties_to_include,
-                                hide_node_func=hide_node_func,
-                                legacy_enum_type=legacy_enum_type)
+        self.__export_reg_model(
+            top_block=top_block, package=package, asyncoutput=asyncoutput,
+            skip_lib_copy=skip_library_copy,
+            legacy_block_access=legacy_block_access,
+            udp_to_include=user_defined_properties_to_include,
+            hide_node_func=hide_node_func,
+            legacy_enum_type=legacy_enum_type,
+            skip_systemrdl_name_and_desc_properties=skip_systemrdl_name_and_desc_properties)
 
         self.__export_simulator(top_block=top_block, package=package, asyncoutput=asyncoutput,
                                 skip_lib_copy=skip_library_copy,
@@ -712,12 +737,14 @@ class PythonExporter:
                                      legacy_block_access=legacy_block_access,
                                      legacy_enum_type=legacy_enum_type)
             # export the tests themselves, these are broken down to one file per addressmap
-            self.__export_tests(top_block=top_block, package=package, asyncoutput=asyncoutput,
-                                skip_lib_copy=skip_library_copy,
-                                legacy_block_access=legacy_block_access,
-                                udp_to_include=user_defined_properties_to_include,
-                                hide_node_func=hide_node_func,
-                                legacy_enum_type=legacy_enum_type)
+            self.__export_tests(
+                top_block=top_block, package=package, asyncoutput=asyncoutput,
+                skip_lib_copy=skip_library_copy,
+                legacy_block_access=legacy_block_access,
+                udp_to_include=user_defined_properties_to_include,
+                hide_node_func=hide_node_func,
+                legacy_enum_type=legacy_enum_type,
+                skip_systemrdl_name_and_desc_properties=skip_systemrdl_name_and_desc_properties)
 
         return top_block.inst_name
 
@@ -736,7 +763,8 @@ class PythonExporter:
 
 
 
-    def _get_dependent_enum(self, node: AddressableNode, hide_node_func: HideNodeCallback) -> \
+    def _get_dependent_enum(
+            self, node: Union[AddrmapNode, RootNode], hide_node_func: HideNodeCallback) -> \
             Iterable[tuple[UserEnumMeta]]:
         """
         iterable of enums which is used by a descendant of the input node,

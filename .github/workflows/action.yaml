@@ -145,6 +145,8 @@ jobs:
           python -m generate_and_test --RDL_source_file tests/testcases/user_defined_properties.rdl --root_node user_defined_properties --udp bool_property_to_include enum_property_to_include int_property_to_include str_property_to_include struct_property_to_include double_layer_struct_property_to_include
 
           python -m generate_and_test --RDL_source_file tests/testcases/reserved_elements.rdl --root_node reserved_elements --hide_regex "(?:[\w_\[\]]+\.)+RSVD"
+          
+          python -m generate_and_test --RDL_source_file tests/testcases/name_desc_all_levels.rdl --root_node name_desc_all_levels --skip_systemrdl_name_and_desc_properties
 
   peakrdl_integration:
     needs:
@@ -203,6 +205,11 @@ jobs:
           python tests/alternative_templates_toml/header_check.py --generated_package_location peakrdl_out/simple_user_template/ --top_name basic
           peakrdl python tests/testcases/basic.rdl -o peakrdl_out/dynamic_user_template/ --peakrdl-cfg tests/alternative_templates_dynamic_toml/peakrdl.toml
           python tests/alternative_templates_dynamic_toml/header_check.py --generated_package_location peakrdl_out/dynamic_user_template/ --top_name basic
+          
+          
+          peakrdl python tests/testcases/addr_map.rdl -o peakrdl_out/addr_map/
+          peakrdl python tests/testcases/addr_map.rdl -o peakrdl_out/addr_map/ -t "child_addr_map_type_c"
+          python -m unittest discover -s peakrdl_out/addr_map/
 
       - name: Check Examples
         run: |
@@ -288,9 +295,15 @@ jobs:
         python -m pip install mypy
 
         python generate_testcases.py
+
+    - name: Static checks
+      run: |
+
         mypy testcase_output
         # pylint testcase_output/autopep8 --disable=duplicate-code,line-too-long,too-many-statements,invalid-name,unused-import,too-many-instance-attributes,too-many-arguments,too-many-lines
 
+    - name: Run the generated tests
+      run: |
         python -m unittest discover -s testcase_output
 
   autoformating:

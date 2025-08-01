@@ -1,0 +1,51 @@
+/*
+Testcase for a spare enumeration that caused an issue for excessive test times
+*/
+
+enum block_validity {
+			erased = 0xFFFF_FFFF { name = "Erased"; };
+			invalid = 0x0 { name = "Invalid"; };
+			valid = 0xDEAD_BEEF { name = "Valid"; };
+		};
+
+enum block_validity_short {
+			erased = 0x7F { name = "Erased"; };
+			invalid = 0x0 { name = "Invalid"; };
+			valid = 0x5A { name = "Valid"; };
+		};
+
+enum block_validity_very_short {
+			erased = 0x7 { name = "Erased"; };
+			invalid = 0x0 { name = "Invalid"; };
+			valid = 0x5 { name = "Valid"; };
+		};
+
+addrmap sparse_enum_issue_200 {
+
+	reg {
+	    default sw = rw;
+	    regwidth = 128;
+	    field { encode = block_validity; sw=rw; fieldwidth=32; } valid_rw;
+	    field { encode = block_validity; sw=r; fieldwidth=32; } valid_r;
+	    field { encode = block_validity; sw=w; fieldwidth=32; } valid_w;
+	    field { encode = block_validity_short; sw=rw; fieldwidth=7; } valid_short_rw;
+	    field { encode = block_validity_short; sw=r; fieldwidth=7; } valid_short_r;
+	    field { encode = block_validity_short; sw=w; fieldwidth=7; } valid_short_w;
+	    field { encode = block_validity_very_short; sw=rw; fieldwidth=3; } valid_very_short_rw;
+	    field { encode = block_validity_very_short; sw=r; fieldwidth=3; } valid_very_short_r;
+	    field { encode = block_validity_very_short; sw=w; fieldwidth=3; } valid_very_short_w;
+	} block_valid_rw;
+
+	reg {
+	    default sw = r;
+	    regwidth = 128;
+	    field { encode = block_validity; sw=r; fieldwidth=32; } valid_r;
+	} block_valid_r;
+
+	reg {
+	    default sw = w;
+	    regwidth = 128;
+	    field { encode = block_validity; sw=w; fieldwidth=32; } valid_w;
+	} block_valid_w;
+
+};

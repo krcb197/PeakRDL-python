@@ -1,0 +1,24 @@
+addrmap shared_register_issue_202 {
+
+     reg {
+        field { fieldwidth=1; sw=rw; } enable;
+     } control ;
+
+     reg {
+        field { fieldwidth=16; sw=w; hw=r; } data;
+     } tx @ 4;
+
+     reg {
+        field { fieldwidth=16; sw=r; hw=w; } data;
+     } rx @ 4;
+
+     reg {
+        field { fieldwidth=8; sw=r; hw=w; } count;
+     } rx_fifo_fill;
+
+     reg {
+        field { fieldwidth=8; sw=r; hw=w; } count;
+     } tx_fifo_fill;
+
+};
+
