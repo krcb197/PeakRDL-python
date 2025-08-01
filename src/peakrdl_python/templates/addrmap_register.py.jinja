@@ -34,7 +34,6 @@ class {{node.fully_qualified_type_name}}_cls(Reg{% if asyncoutput %}Async{% endi
 
     {{get_table_block(node.instance) | indent}}
     """
-    # node hash: 0x{{node.__hash__()}}
 
     __slots__ : list[str] = [{%- for child_node in node.instance.children(unroll=False) -%}'__{{child_node.inst_name}}'{% if not loop.last %}, {% endif %}{%- endfor %}]
 

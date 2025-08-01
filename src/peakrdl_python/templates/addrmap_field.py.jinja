@@ -34,8 +34,6 @@ class {{node.fully_qualified_type_name}}_cls(Field{%- if node.encoded_field  -%}
 
     {{get_table_block(node.instance) | indent}}
     """
-    # node hash: 0x{{node.__hash__()}}
-
     __slots__ : list[str] = []
 
     {{ udp_property(node) }}
