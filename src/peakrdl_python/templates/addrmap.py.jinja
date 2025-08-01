@@ -109,24 +109,24 @@ from {% if skip_lib_copy %}peakrdl_python.{% else %}..{% endif %}lib import Norm
         {{ register_class_attributes(node) }}
     {%- elif isinstance(node, systemrdlMemNode) %}
         {%- if node.is_array %}
-    self.__{{node.inst_name}}:{{get_fully_qualified_type_name(node)}}_array_cls = {{get_fully_qualified_type_name(node)}}_array_cls(address=self.address+{{node.raw_address_offset}},
+    self.__{{node.inst_name}}:{{get_fully_qualified_type_name(node)}}_array = {{get_fully_qualified_type_name(node)}}_array(address=self.address+{{node.raw_address_offset}},
                                                                                   stride={{node.array_stride}},
                                                                                   dimensions=tuple({{node.array_dimensions}}),
                                                                                   logger_handle=logger_handle+'.{{node.inst_name}}',
                                                                                   inst_name='{{node.inst_name}}', parent=self)
         {%- else %}
             {%- if node.is_sw_readable and node.is_sw_writable %}
-    self.__{{node.inst_name}}:{{get_fully_qualified_type_name(node)}}_cls = {{get_fully_qualified_type_name(node)}}_cls(
+    self.__{{node.inst_name}}:{{get_fully_qualified_type_name(node)}} = {{get_fully_qualified_type_name(node)}}(
                                                                  address=self.address+{{node.address_offset}},
                                                                  logger_handle=logger_handle+'.{{node.inst_name}}',
                                                                                    inst_name='{{node.inst_name}}', parent=self)
             {%- elif node.is_sw_readable and not node.is_sw_writable %}
-    self.__{{node.inst_name}}:{{get_fully_qualified_type_name(node)}}_cls = {{get_fully_qualified_type_name(node)}}_cls(
+    self.__{{node.inst_name}}:{{get_fully_qualified_type_name(node)}} = {{get_fully_qualified_type_name(node)}}(
                                                                  address=self.address+{{node.address_offset}},
                                                                  logger_handle=logger_handle+'.{{node.inst_name}}',
                                                                                    inst_name='{{node.inst_name}}', parent=self)
             {%- elif not node.is_sw_readable and node.is_sw_writable %}
-    self.__{{node.inst_name}}:{{get_fully_qualified_type_name(node)}}_cls = {{get_fully_qualified_type_name(node)}}_cls(
+    self.__{{node.inst_name}}:{{get_fully_qualified_type_name(node)}} = {{get_fully_qualified_type_name(node)}}(
                                                                              address=self.address+{{node.address_offset}},
                                                                              logger_handle=logger_handle+'.{{node.inst_name}}',
                                                                              inst_name='{{node.inst_name}}', parent=self)
@@ -134,13 +134,13 @@ from {% if skip_lib_copy %}peakrdl_python.{% else %}..{% endif %}lib import Norm
         {%- endif %}
     {%- elif isinstance(node, systemrdlRegfileNode) or isinstance(node, systemrdlAddrmapNode) %}
         {%- if node.is_array %}
-    self.__{{node.inst_name}}:{{get_fully_qualified_type_name(node)}}_array_cls = {{get_fully_qualified_type_name(node)}}_array_cls(address=self.address+{{node.raw_address_offset}},
+    self.__{{node.inst_name}}:{{get_fully_qualified_type_name(node)}}_array = {{get_fully_qualified_type_name(node)}}_array(address=self.address+{{node.raw_address_offset}},
                                                                                   stride={{node.array_stride}},
                                                                                   dimensions=tuple({{node.array_dimensions}}),
                                                                                   logger_handle=logger_handle+'.{{node.inst_name}}',
                                                                                   inst_name='{{node.inst_name}}', parent=self)
         {%- else -%}
-    self.__{{node.inst_name}}:{{get_fully_qualified_type_name(node)}}_cls = {{get_fully_qualified_type_name(node)}}_cls(
+    self.__{{node.inst_name}}:{{get_fully_qualified_type_name(node)}} = {{get_fully_qualified_type_name(node)}}(
                                                                             address=self.address+{{node.address_offset}},
                                                                             logger_handle=logger_handle+'.{{node.inst_name}}',
                                                                             inst_name='{{node.inst_name}}',
@@ -151,7 +151,7 @@ from {% if skip_lib_copy %}peakrdl_python.{% else %}..{% endif %}lib import Norm
 {%- endmacro %}
 
 {%- macro regfile_class(node) %}
-class {{node.fully_qualified_type_name}}_cls({% if asyncoutput %}Async{% endif %}RegFile):
+class {{node.fully_qualified_type_name}}({% if asyncoutput %}Async{% endif %}RegFile):
     """
     Class to represent a register file in the register model
 
@@ -194,7 +194,7 @@ class {{node.fully_qualified_type_name}}_cls({% if asyncoutput %}Async{% endif %
                 {% else %}
                 {{ raise_template_error('unexpected type') }}
                  {%- endif %}
-    def {{property_name}}(self) -> {% if child_node.is_array -%}{{get_fully_qualified_type_name(child_node)}}_array_cls{% else %}{{get_fully_qualified_type_name(child_node)}}_cls{%- endif -%}:
+    def {{property_name}}(self) -> {% if child_node.is_array -%}{{get_fully_qualified_type_name(child_node)}}_array{% else %}{{get_fully_qualified_type_name(child_node)}}{%- endif -%}:
         """
         Property to access {{child_node.inst_name}} {% if child_node.is_array -%}array{% endif %}
 
@@ -222,7 +222,7 @@ class {{node.fully_qualified_type_name}}_cls({% if asyncoutput %}Async{% endif %
     {% endif %}
 
      {%- if node.is_array %}
-class {{get_fully_qualified_type_name(node)}}_array_cls({% if asyncoutput %}Async{% endif %}RegFileArray):
+class {{get_fully_qualified_type_name(node)}}_array({% if asyncoutput %}Async{% endif %}RegFileArray):
     """
     Class to represent a regfile array in the register model
     """
@@ -240,12 +240,12 @@ class {{get_fully_qualified_type_name(node)}}_array_cls({% if asyncoutput %}Asyn
 
     @property
     def _element_datatype(self) -> Type[Node]:
-        return {{get_fully_qualified_type_name(node)}}_cls
+        return {{get_fully_qualified_type_name(node)}}
     {%- endif %}
 {%- endmacro %}
 
 {%- macro addrmap_class(node) %}
-class {{node.fully_qualified_type_name}}_cls({% if asyncoutput %}Async{% endif %}AddressMap):
+class {{node.fully_qualified_type_name}}({% if asyncoutput %}Async{% endif %}AddressMap):
     """
     Class to represent a address map in the register model
 
@@ -294,7 +294,7 @@ class {{node.fully_qualified_type_name}}_cls({% if asyncoutput %}Async{% endif %
     {% else %}
     {{ raise_template_error('unexpected type') }}
     {%- endif %}
-    def {{property_name}}(self) -> {% if child_node.is_array -%}{{get_fully_qualified_type_name(child_node)}}_array_cls{% else %}{{get_fully_qualified_type_name(child_node)}}_cls{%- endif -%}:
+    def {{property_name}}(self) -> {% if child_node.is_array -%}{{get_fully_qualified_type_name(child_node)}}_array{% else %}{{get_fully_qualified_type_name(child_node)}}{%- endif -%}:
         """
         Property to access {{child_node.inst_name}} {% if child_node.is_array -%}array{% endif %}
 
@@ -324,7 +324,7 @@ class {{node.fully_qualified_type_name}}_cls({% if asyncoutput %}Async{% endif %
     {% endif %}
 
     {%- if node.instance.is_array %}
-class {{node.get_fully_qualified_type_name}}_array_cls({% if asyncoutput %}Async{% endif %}AddressMapArray):
+class {{node.get_fully_qualified_type_name}}_array({% if asyncoutput %}Async{% endif %}AddressMapArray):
     """
     Class to represent a addrmap array in the register model
     """
@@ -342,7 +342,7 @@ class {{node.get_fully_qualified_type_name}}_array_cls({% if asyncoutput %}Async
 
     @property
     def _element_datatype(self) -> Type[Node]:
-        return {{get_fully_qualified_type_name(node)}}_cls
+        return {{get_fully_qualified_type_name(node)}}
     {%- endif %}
 {%- endmacro %}
 
@@ -424,7 +424,7 @@ class {{get_fully_qualified_enum_type(enum_needed)}}_enumcls({% if legacy_enum_t
     {% endif %}
 {% endfor %}
 
-{{top_node.inst_name}}_cls = {{get_fully_qualified_type_name(top_node)}}_cls
+{{top_node.inst_name}}_cls = {{get_fully_qualified_type_name(top_node)}}
 
 if __name__ == '__main__':
     # dummy functions to demonstrate the class

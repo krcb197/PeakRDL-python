@@ -40,7 +40,9 @@ from systemrdl import RDLListener, WalkerAction, RDLWalker
 from .systemrdl_node_hashes import node_hash
 from .systemrdl_node_utility_functions import HideNodeCallback
 from .systemrdl_node_utility_functions import get_properties_to_include
+from .systemrdl_node_utility_functions import is_encoded_field
 from .class_names import get_fully_qualified_type_name
+from .class_names import get_base_class_name
 
 # pylint: disable=duplicate-code
 if sys.version_info >= (3, 11):
@@ -65,11 +67,20 @@ class PeakRDLPythonUniqueComponents:
                                              hide_node_callback=self.hide_node_callback,
                                              include_name_and_desc=True)
 
+    def base_class(self, async_library_classes: bool):
+        return get_base_class_name(node=self.instance,
+                                   async_library_classes=async_library_classes)
+
     @cached_property
     def __system_rdl_type_hash(self) -> int:
-        return node_hash(node=self.instance, udp_to_include=self.udp_to_include,
-                         hide_node_callback=self.hide_node_callback,
-                         include_name_and_desc=True)
+        hash = node_hash(node=self.instance, udp_to_include=self.udp_to_include,
+                  hide_node_callback=self.hide_node_callback,
+                  include_name_and_desc=True)
+        if hash is None:
+            # The hash of None is a special case where the Field can just use the baseclass,
+            # therefore should not have an UniqueComponent Entry
+            raise RuntimeError('hash is None')
+        return hash
 
     @property
     def properties_to_include(self) -> list[str]:
@@ -84,32 +95,6 @@ class PeakRDLPythonUniqueComponents:
             raise TypeError('Comparison failed')
 
         return hash(self) == hash(other)
-
-@dataclass(frozen=True)
-class PeakRDLPythonUniqueFieldComponents(PeakRDLPythonUniqueComponents):
-
-    def __post_init__(self):
-        if not isinstance(self.instance, FieldNode):
-            raise TypeError(f'This should only be used on a Field Node, got {type(self.instance)}')
-
-    @property
-    def encoded_field(self) -> bool:
-        return 'encode' in self.instance.list_properties()
-
-    @property
-    def read_write(self) -> bool:
-        return self.instance.is_sw_readable and self.instance.is_sw_writable
-
-    @property
-    def read_only(self) -> bool:
-        return self.instance.is_sw_readable and not self.instance.is_sw_writable
-
-    @property
-    def write_only(self) -> bool:
-        return not self.instance.is_sw_readable and self.instance.is_sw_writable
-
-    def __hash__(self) -> int:
-        return super().__hash__()
 
 @dataclass(frozen=True)
 class PeakRDLPythonUniqueRegisterComponents(PeakRDLPythonUniqueComponents):
@@ -169,13 +154,6 @@ class UniqueComponents(RDLListener):
 
         self.nodes.append(self.__build_peak_rdl_unique_component(node))
 
-    def __add_field_node_to_list(self, node: FieldNode):
-
-        self.nodes.append(PeakRDLPythonUniqueFieldComponents(
-            instance=node,
-            hide_node_callback=self.__hide_node_callback,
-            udp_to_include=self.__udp_to_include))
-
     def __add_reg_node_to_list(self, node: RegNode):
 
         self.nodes.append(PeakRDLPythonUniqueRegisterComponents(
@@ -209,13 +187,19 @@ class UniqueComponents(RDLListener):
         self.__logger.debug(f'Analysing Field:{full_node_name}')
 
         if self.__hide_node_callback(node):
+            return WalkerAction.SkipDescendants
 
+        if node_hash(node=node, udp_to_include=self.__udp_to_include,
+                     hide_node_callback=self.__hide_node_callback,
+                     include_name_and_desc=True) is None:
+            # This is special case where the field has no attributes that need a field definition
+            # to be created so it is not included in the list of things to construct
             return WalkerAction.SkipDescendants
 
         if self.__is_equivalent_node_in_list(node):
             return WalkerAction.SkipDescendants
 
-        self.__add_field_node_to_list(node)
+        self.__add_node_to_list(node)
         return WalkerAction.Continue
 
     def enter_Addrmap(self, node: AddrmapNode) -> Optional[WalkerAction]:

@@ -391,3 +391,15 @@ def get_properties_to_include(node: Node, udp_to_include: Optional[list[str]]) -
         return []
     nodal_properties = node.list_properties(include_udp=True, include_native=False)
     return list(filter(lambda x: x in udp_to_include, nodal_properties))
+
+def is_encoded_field(node: FieldNode) -> bool:
+    """
+    Determines if a field node is encoded (using an enumerated value)
+    Args:
+        node:
+
+    Returns: True if encoded
+    """
+    if not isinstance(node, FieldNode):
+        raise TypeError(f'This should only be called on an FeildNode, got {type(node)}')
+    return 'encode' in node.list_properties()

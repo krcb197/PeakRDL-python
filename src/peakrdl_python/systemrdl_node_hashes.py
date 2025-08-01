@@ -49,7 +49,6 @@ def __node_hash_components(node: Node,
         desc = node.get_property('desc', default=None)
         if desc is not None:
             value_to_hash.append(desc)
-        value_to_hash.append(desc)
 
     for udp in get_properties_to_include(node, udp_to_include):
         value_to_hash.append(node.get_property(udp))
@@ -73,10 +72,7 @@ def __field_hash(node: FieldNode,
                                            udp_to_include=udp_to_include,
                                            include_name_and_desc=include_name_and_desc)
 
-    access_type = node.get_property('sw')
-    if not isinstance(access_type, AccessType):
-        raise TypeError(f'access_type is not AccessType, got {type(access_type)}')
-    value_to_hash.append(access_type.name)
+    value_to_hash.append(node.get_property('sw'))
 
     if 'encode' in node.list_properties():
         # determine the fully qualified enum name, using the same method as the one that
@@ -101,8 +97,14 @@ def __reg_hash(node: RegNode,
         if not hide_node_callback(field):
             value_to_hash += __field_hash(node=field, udp_to_include=udp_to_include,
                                           include_name_and_desc=include_name_and_desc)
+            value_to_hash.append(field.lsb)
+            value_to_hash.append(field.msb)
+            value_to_hash.append(field.low)
+            value_to_hash.append(field.high)
             value_to_hash.append(get_field_default_value(field))
-            # TODO include other field attributes e.g. LSB, MSB, High, Low
+            value_to_hash.append(field.is_hw_writable)
+            value_to_hash.append(field.inst_name)
+            # no need to include the enum class as that is already included
 
     return value_to_hash
 
@@ -152,6 +154,13 @@ def node_hash(node: Node,
     if isinstance(node, FieldNode):
         hash_content = __field_hash(node=node, udp_to_include=udp_to_include,
                                     include_name_and_desc=include_name_and_desc)
+        # This is a special case, if there is a single entry for access type, then there is no
+        # need to make a special class, it is permitted to use the base classes from the
+        # library
+        if len(hash_content) == 1:
+            if isinstance(hash_content[0], AccessType):
+                return None
+            raise TypeError(f'Unexpected content in the hash_content, {type(hash_content[0])}')
 
     elif isinstance(node, RegNode):
         hash_content = __reg_hash(node=node, udp_to_include=udp_to_include,

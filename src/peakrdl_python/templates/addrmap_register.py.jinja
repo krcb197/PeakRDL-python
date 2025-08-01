@@ -23,11 +23,11 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 {%- macro register_class(node) %}
     {%- if node.read_write %}
-class {{node.fully_qualified_type_name}}_cls(Reg{% if asyncoutput %}Async{% endif %}ReadWrite):
+class {{node.fully_qualified_type_name}}(Reg{% if asyncoutput %}Async{% endif %}ReadWrite):
     {%- elif node.read_only %}
-class {{node.fully_qualified_type_name}}_cls(Reg{% if asyncoutput %}Async{% endif %}ReadOnly):
+class {{node.fully_qualified_type_name}}(Reg{% if asyncoutput %}Async{% endif %}ReadOnly):
     {%- elif node.write_only %}
-class {{node.fully_qualified_type_name}}_cls(Reg{% if asyncoutput %}Async{% endif %}WriteOnly):
+class {{node.fully_qualified_type_name}}(Reg{% if asyncoutput %}Async{% endif %}WriteOnly):
     {%- endif %}
     """
     Class to represent a register in the register model
@@ -62,7 +62,7 @@ class {{node.fully_qualified_type_name}}_cls(Reg{% if asyncoutput %}Async{% endi
 
         # build the field attributes
         {% for child_node in get_reg_fields(node.instance) %}
-        self.__{{child_node.inst_name}}:{{get_fully_qualified_type_name(child_node)}}_cls = {{get_fully_qualified_type_name(child_node)}}_cls(
+        self.__{{child_node.inst_name}}:{{get_fully_qualified_type_name(child_node)}} = {{get_fully_qualified_type_name(child_node)}}(
             parent_register=self,
             size_props=FieldSizeProps(
                 width={{child_node.width}},
@@ -109,7 +109,7 @@ class {{node.fully_qualified_type_name}}_cls(Reg{% if asyncoutput %}Async{% endi
     # build the properties for the fields
     {% for child_node in get_reg_fields(node.instance) %}
     @property
-    def {{safe_node_name(child_node)}}(self) -> '{{get_fully_qualified_type_name(child_node)}}_cls':
+    def {{safe_node_name(child_node)}}(self) -> '{{get_fully_qualified_type_name(child_node)}}':
         """
         Property to access {{child_node.inst_name}} field of the register
 
@@ -128,11 +128,11 @@ class {{node.fully_qualified_type_name}}_cls(Reg{% if asyncoutput %}Async{% endi
 
     {%- if node.instance.is_array %}
         {%- if node.read_write %}
-class {{node.fully_qualified_type_name}}_array_cls(Reg{% if asyncoutput %}Async{% endif %}ReadWriteArray):
+class {{node.fully_qualified_type_name}}_array(Reg{% if asyncoutput %}Async{% endif %}ReadWriteArray):
         {%- elif node.read_only %}
-class {{node.fully_qualified_type_name}}_array_cls(Reg{% if asyncoutput %}Async{% endif %}ReadOnlyArray):
+class {{node.fully_qualified_type_name}}_array(Reg{% if asyncoutput %}Async{% endif %}ReadOnlyArray):
         {%- elif node.write_only %}
-class {{node.fully_qualified_type_name}}_array_cls(Reg{% if asyncoutput %}Async{% endif %}WriteOnlyArray):
+class {{node.fully_qualified_type_name}}_array(Reg{% if asyncoutput %}Async{% endif %}WriteOnlyArray):
         {%- endif %}
     """
     Class to represent a register array in the register model
@@ -141,7 +141,7 @@ class {{node.fully_qualified_type_name}}_array_cls(Reg{% if asyncoutput %}Async{
 
     @property
     def _element_datatype(self) -> Type[Node]:
-        return {{node.fully_qualified_type_name}}_cls
+        return {{node.fully_qualified_type_name}}
 
     {{ universal_properties(node.instance) }}
 

@@ -24,6 +24,7 @@ reg myReg {
     myField field_d = 4;
     myField field_e = 5;
     myEncodedField field_f = {twoBitFieldType::value3};
+    field { fieldwidth=2; } field_g = 1;
 };
 
 addrmap deduplicated_field {

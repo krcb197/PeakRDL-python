@@ -19,10 +19,35 @@ A module for determining the classes names to use
 """
 from typing import Optional
 from systemrdl.node import Node
+from systemrdl.node import FieldNode
 from systemrdl.rdltypes.user_enum import UserEnumMeta
 from .systemrdl_node_utility_functions import HideNodeCallback
+from .systemrdl_node_utility_functions import is_encoded_field
 
 from .systemrdl_node_hashes import node_hash as calculate_node_hash
+
+def get_base_class_name(node: Node, async_library_classes: bool):
+
+    if isinstance(node, FieldNode):
+        name = 'Field'
+        if is_encoded_field(node):
+            name += 'Enum'
+        if async_library_classes:
+            name += 'Async'
+
+        if node.is_sw_readable and node.is_sw_writable:
+            name += 'ReadWrite'
+        elif node.is_sw_readable and not node.is_sw_writable:
+            name += 'ReadOnly'
+        elif not node.is_sw_readable and node.is_sw_writable:
+            name += 'WriteOnly'
+        else:
+            raise ValueError('Unhandled field access mode')
+
+        return name
+
+    raise TypeError(f'Unhandled node type: {type(node)}')
+
 
 
 def get_fully_qualified_type_name(node: Node,
@@ -46,16 +71,25 @@ def get_fully_qualified_type_name(node: Node,
                                     hide_node_callback=hide_node_callback,
                                     include_name_and_desc=include_name_and_desc)
 
+    if node_hash is None:
+        # This is special case where the field has no attributes that need a field definition
+        # to be created so it is not included in the list of things to construct, therefore the
+        # base classes are directly used
+        if not isinstance(node, FieldNode):
+            raise TypeError(f'This code should occur for a FieldNode, got {type(node)}')
+        return get_base_class_name(node, False)
+
+
     if node_hash < 0:
         if (scope_path == '') or (scope_path is None):
-            return inst_type_name + '_neg_' + hex(-node_hash)
+            return inst_type_name + '_neg_' + hex(-node_hash) + '_cls'
 
-        return scope_path + '_' + inst_type_name + '_neg_' + hex(-node_hash)
+        return scope_path + '_' + inst_type_name + '_neg_' + hex(-node_hash) + '_cls'
 
     if (scope_path == '') or (scope_path is None):
-        return inst_type_name + '_' + hex(node_hash)
+        return inst_type_name + '_' + hex(node_hash) + '_cls'
 
-    return scope_path + '_' + inst_type_name + '_' + hex(node_hash)
+    return scope_path + '_' + inst_type_name + '_' + hex(node_hash) + '_cls'
 
 def fully_qualified_enum_type(field_enum: UserEnumMeta) -> str:
     """

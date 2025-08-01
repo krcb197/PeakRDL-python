@@ -20,15 +20,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 {% from 'addrmap_universal_property.py.jinja' import universal_properties with context %}
 
 {%- macro field_class(node) %}
-    {% if node.read_write %}
-class {{node.fully_qualified_type_name}}_cls(Field{%- if node.encoded_field -%}Enum{% endif %}{% if asyncoutput %}Async{% endif %}ReadWrite):
-    {% elif node.read_only %}
-class {{node.fully_qualified_type_name}}_cls(Field{%- if node.encoded_field -%}Enum{% endif %}{% if asyncoutput %}Async{% endif %}ReadOnly):
-    {% elif node.write_only %}
-class {{node.fully_qualified_type_name}}_cls(Field{%- if node.encoded_field  -%}Enum{% endif %}{% if asyncoutput %}Async{% endif %}WriteOnly):
-    {% else %}
-{{raise_template_error('Unhandled Field type')}}
-    {% endif %}
+class {{node.fully_qualified_type_name}}({{node.base_class(asyncoutput)}}):
     """
     Class to represent a register field in the register model
 
