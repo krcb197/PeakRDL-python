@@ -147,6 +147,7 @@ class UniqueComponents(RDLListener):
         self.__hide_node_callback = hide_node_callback
         self.__udp_to_include = udp_to_include
         self.nodes: dict[int, PeakRDLPythonUniqueComponents] = {}
+        self.__name_hash_cache: dict[str, Optional[int]] = {}
         self.__logger = getLogger('peakrdl_python.UniqueComponents')
 
     @property
@@ -192,9 +193,8 @@ class UniqueComponents(RDLListener):
     def __build_peak_rdl_unique_component(self, node: Node) -> \
             Optional[PeakRDLPythonUniqueComponents]:
 
-        nodal_hash_result = node_hash(node=node, udp_to_include=self.udp_to_include,
-                                      hide_node_callback=self.hide_node_callback,
-                                      include_name_and_desc=True)
+        nodal_hash_result = self.__calculate_or_lookup_hash(node)
+
         if nodal_hash_result is None:
             return None
 
@@ -267,10 +267,7 @@ class UniqueComponents(RDLListener):
         Returns: classname as a string
 
         """
-
-        nodal_hash_result = node_hash(node=node, udp_to_include=self.udp_to_include,
-                                      hide_node_callback=self.hide_node_callback,
-                                      include_name_and_desc=True)
+        nodal_hash_result = self.__calculate_or_lookup_hash(node)
 
         if nodal_hash_result is None:
             # This is special case where the field has no attributes that need a field definition
@@ -285,3 +282,17 @@ class UniqueComponents(RDLListener):
             raise RuntimeError(f'The node hash for {node.inst_name} is not in the table')
         python_class_name = self.nodes[nodal_hash_result].python_class_name
         return python_class_name
+
+    def __calculate_or_lookup_hash(self, node: Node) -> Optional[int]:
+
+        full_instance_name = '.'.join(node.get_path_segments())
+        if full_instance_name in self.__name_hash_cache:
+            return self.__name_hash_cache[full_instance_name]
+
+        nodal_hash_result = node_hash(node=node, udp_to_include=self.udp_to_include,
+                                      hide_node_callback=self.hide_node_callback,
+                                      include_name_and_desc=True)
+        self.__name_hash_cache[full_instance_name] = nodal_hash_result
+        return nodal_hash_result
+
+
