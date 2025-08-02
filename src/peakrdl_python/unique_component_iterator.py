@@ -258,7 +258,7 @@ class UniqueComponents(RDLListener):
 
     def python_class_name(self, node: Node, async_library_classes: bool) -> str:
         """
-        Lookup the python class nameto be used for a given node
+        Lookup the python class name to be used for a given node
 
         Args:
             node: node
