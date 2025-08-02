@@ -294,5 +294,3 @@ class UniqueComponents(RDLListener):
                                       include_name_and_desc=True)
         self.__name_hash_cache[full_instance_name] = nodal_hash_result
         return nodal_hash_result
-
-
