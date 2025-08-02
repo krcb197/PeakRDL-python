@@ -55,6 +55,9 @@ class TestBitmaskGeneration(unittest.TestCase):
     """
     @staticmethod
     def reference_bitmask_algorithm(high, low):
+        """
+        reference bit mask implementation (previously in the code)
+        """
         return sum(2 ** x for x in range(low, high + 1))
 
     def test_single_pos(self):
@@ -127,10 +130,16 @@ class TestField(CallBackTestWrapper):
 
             @property
             def width(self) -> int:
+                """
+                Register Width
+                """
                 return 32
 
             @property
             def accesswidth(self) -> int:
+                """
+                Register Access Width
+                """
                 return 32
 
             @property

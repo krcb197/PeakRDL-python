@@ -4,7 +4,7 @@ Components to use in unit tests
 import unittest
 from unittest.mock import NonCallableMagicMock
 from collections.abc import Iterator
-from typing import Any, Union, Optional
+from typing import Any, Union
 from abc import ABC
 import logging
 
