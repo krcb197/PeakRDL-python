@@ -27,6 +27,7 @@ from systemrdl.node import RegNode
 from systemrdl.node import RegfileNode
 from systemrdl.node import AddrmapNode
 from systemrdl.node import MemNode
+from systemrdl.node import SignalNode
 from systemrdl.rdltypes.user_enum import UserEnumMeta
 from systemrdl.rdltypes import AccessType
 
@@ -41,12 +42,6 @@ from .systemrdl_node_utility_functions import get_memory_accesswidth
 def enum_hash(enum: UserEnumMeta) -> int:
     """
     Calculate the hash of a system RDL enum type
-
-    Args:
-        enum:
-
-    Returns:
-
     """
     return hash(enum)
 
@@ -121,15 +116,6 @@ def __reg_hash(node: RegNode,
                include_name_and_desc: bool = True) -> list[Any]:
     """
     Provide a list of things to hash for a reg class definition
-
-    Args:
-        node:
-        udp_to_include:
-        hide_node_callback:
-        include_name_and_desc:
-
-    Returns:
-
     """
     if not isinstance(node, RegNode):
         raise TypeError(f'{node} is not a RegNode, got {type(node)}')
@@ -168,15 +154,6 @@ def __reg_instance_hash(node: RegNode,
     """
     Provide a list of things to hash for a reg instance (note this include everything from the
     class definition)
-
-    Args:
-        node:
-        udp_to_include:
-        hide_node_callback:
-        include_name_and_desc:
-
-    Returns:
-
     """
     if not isinstance(node, RegNode):
         raise TypeError(f'{node} is not a RegNode, got {type(node)}')
@@ -203,17 +180,8 @@ def __regfile_instance_hash(node: RegfileNode,
                             hide_node_callback: HideNodeCallback,
                             include_name_and_desc: bool = True) -> list[Any]:
     """
-    Provide a list of things to hash for a reg instance (note this include everything from the
+    Provide a list of things to hash for a regfile instance (note this include everything from the
     class definition)
-
-    Args:
-        node:
-        udp_to_include:
-        hide_node_callback:
-        include_name_and_desc:
-
-    Returns:
-
     """
     if not isinstance(node, RegfileNode):
         raise TypeError(f'{node} is not a RegfileNode, got {type(node)}')
@@ -242,15 +210,6 @@ def __addrmap_instance_hash(node: AddrmapNode,
     """
     Provide a list of things to hash for an address map instance (note this include everything
     from the class definition
-
-    Args:
-        node:
-        udp_to_include:
-        hide_node_callback:
-        include_name_and_desc:
-
-    Returns:
-
     """
     if not isinstance(node, AddrmapNode):
         raise TypeError(f'{node} is not a AddrmapNode, got {type(node)}')
@@ -307,6 +266,8 @@ def __addrmap_hash(node: AddrmapNode,
                     node=child, udp_to_include=udp_to_include,
                     hide_node_callback=hide_node_callback,
                     include_name_and_desc=include_name_and_desc)
+            elif isinstance(child, SignalNode):
+                pass
             else:
                 raise TypeError(f'Unhandled child type, {type(child)}')
 
@@ -338,6 +299,8 @@ def __regfile_hash(node: RegfileNode,
                     node=child, udp_to_include=udp_to_include,
                     hide_node_callback=hide_node_callback,
                     include_name_and_desc=include_name_and_desc)
+            elif isinstance(child, SignalNode):
+                pass
             else:
                 raise TypeError(f'Unhandled child type, {type(child)}')
 
@@ -371,6 +334,8 @@ def __mem_hash(node: MemNode,
                     node=child, udp_to_include=udp_to_include,
                     hide_node_callback=hide_node_callback,
                     include_name_and_desc=include_name_and_desc)
+            elif isinstance(child, SignalNode):
+                pass
             else:
                 raise TypeError(f'Unhandled child type, {type(child)}')
 
@@ -382,17 +347,8 @@ def __mem_instance_hash(node: MemNode,
                         hide_node_callback: HideNodeCallback,
                         include_name_and_desc: bool = True) -> list[Any]:
     """
-    Provide a list of things to hash for a reg instance (note this include everything from the
+    Provide a list of things to hash for a memory instance (note this include everything from the
     class definition)
-
-    Args:
-        node:
-        udp_to_include:
-        hide_node_callback:
-        include_name_and_desc:
-
-    Returns:
-
     """
     if not isinstance(node, MemNode):
         raise TypeError(f'{node} is not a MemNode, got {type(node)}')
