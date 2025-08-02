@@ -22,7 +22,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 {% from 'addrmap_system_rdl_name_mapping.py.jinja' import systemrdl_python_child_name_map with context %}
 
 {%- macro register_class(node) %}
-class {{node.fully_qualified_type_name}}({{node.base_class(asyncoutput)}}):
+class {{node.python_class_name}}({{node.base_class(asyncoutput)}}):
     """
     Class to represent a register in the register model
 
@@ -46,8 +46,6 @@ class {{node.fully_qualified_type_name}}({{node.base_class(asyncoutput)}}):
                  ]):
 
         super().__init__(address=address,
-                         width={{get_reg_regwidth(node.instance)}},
-                         accesswidth={{get_reg_accesswidth(node.instance)}},
                          logger_handle=logger_handle,
                          inst_name=inst_name,
                          parent=parent)
@@ -69,6 +67,14 @@ class {{node.fully_qualified_type_name}}({{node.base_class(asyncoutput)}}):
             inst_name='{{child_node.inst_name}}',
             field_type={% if is_encoded_field(child_node) %}{{ get_fully_qualified_enum_type(child_node.get_property('encode')) + '_enumcls' }}{% else %}int{% endif %})
         {%- endfor %}
+
+    @property
+    def width(self) -> int:
+        return {{get_reg_regwidth(node.instance)}}
+
+    @property
+    def accesswidth(self) -> int:
+        return {{get_reg_accesswidth(node.instance)}}
 
     @property
     def fields(self) -> Iterator[Union[Field{% if asyncoutput %}Async{% endif %}ReadOnly, Field{% if asyncoutput %}Async{% endif %}WriteOnly,Field{% if asyncoutput %}Async{% endif %}ReadWrite]]:
@@ -119,15 +125,23 @@ class {{node.fully_qualified_type_name}}({{node.base_class(asyncoutput)}}):
     {{ universal_properties(node.instance) }}
 
     {%- if node.instance.is_array %}
-class {{node.fully_qualified_type_name}}_array({{node.base_class(asyncoutput)}}Array):
+class {{node.python_class_name}}_array({{node.base_class(asyncoutput)}}Array):
     """
     Class to represent a register array in the register model
     """
     __slots__: list[str] = []
 
     @property
+    def width(self) -> int:
+        return {{get_reg_regwidth(node.instance)}}
+
+    @property
+    def accesswidth(self) -> int:
+        return {{get_reg_accesswidth(node.instance)}}
+
+    @property
     def _element_datatype(self) -> Type[Node]:
-        return {{node.fully_qualified_type_name}}
+        return {{node.python_class_name}}
 
     {{ universal_properties(node.instance) }}
 

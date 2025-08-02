@@ -39,7 +39,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
     def udp(self) -> UDPStruct:
         return {
             {% for property_name in property_list %}
-            {{udp_property_dict_entry(property_name, node.get_property(property_name))}}
+            {{udp_property_dict_entry(property_name, node.instance.get_property(property_name))}}
             {% endfor %}
                }
 

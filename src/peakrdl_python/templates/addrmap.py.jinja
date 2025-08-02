@@ -92,6 +92,10 @@ from {% if skip_lib_copy %}peakrdl_python.{% else %}..{% endif %}lib import Asyn
 from {% if skip_lib_copy %}peakrdl_python.{% else %}..{% endif %}lib import NormalCallbackSet, NormalCallbackSetLegacy
 {% endif %}
 
+{% for property_enum in unique_property_enums %}
+from .{{top_node.inst_name}}_property_enums import {{property_enum.type_name}}_property_enumcls
+{% endfor %}
+
 
 {% from 'addrmap_field.py.jinja' import field_class with context %}
 {% from 'addrmap_register.py.jinja' import register_class with context %}
@@ -139,7 +143,7 @@ from {% if skip_lib_copy %}peakrdl_python.{% else %}..{% endif %}lib import Norm
 {%- endmacro %}
 
 {%- macro regfile_class(node) %}
-class {{node.fully_qualified_type_name}}({% if asyncoutput %}Async{% endif %}RegFile):
+class {{node.python_class_name}}({% if asyncoutput %}Async{% endif %}RegFile):
     """
     Class to represent a register file in the register model
 
@@ -175,14 +179,12 @@ class {{node.fully_qualified_type_name}}({% if asyncoutput %}Async{% endif %}Reg
         {%- if not hide_node_func(child_node) %}
             {%- if isinstance(child_node, systemrdlRegNode) or isinstance(child_node, systemrdlRegfileNode) %}
     @property
-                {%- if isinstance(child_node, systemrdlRegNode) -%}
-                {%- set property_name = safe_node_name(child_node) -%}
-                {%- elif isinstance(child_node, systemrdlRegfileNode) -%}
+                {%- if isinstance(child_node, (systemrdlRegNode, systemrdlRegfileNode)) -%}
                 {%- set property_name = safe_node_name(child_node) -%}
                 {% else %}
                 {{ raise_template_error('unexpected type') }}
                  {%- endif %}
-    def {{property_name}}(self) -> {% if child_node.is_array -%}{{get_fully_qualified_type_name(child_node)}}_array{% else %}{{get_fully_qualified_type_name(child_node)}}{%- endif -%}:
+    def {{property_name}}(self) -> '{% if child_node.is_array -%}{{get_fully_qualified_type_name(child_node)}}_array{% else %}{{get_fully_qualified_type_name(child_node)}}{%- endif -%}':
         """
         Property to access {{child_node.inst_name}} {% if child_node.is_array -%}array{% endif %}
 
@@ -210,7 +212,7 @@ class {{node.fully_qualified_type_name}}({% if asyncoutput %}Async{% endif %}Reg
     {% endif %}
 
      {%- if node.instance.is_array %}
-class {{node.fully_qualified_type_name}}_array({% if asyncoutput %}Async{% endif %}RegFileArray):
+class {{node.python_class_name}}_array({% if asyncoutput %}Async{% endif %}RegFileArray):
     """
     Class to represent a regfile array in the register model
     """
@@ -228,12 +230,12 @@ class {{node.fully_qualified_type_name}}_array({% if asyncoutput %}Async{% endif
 
     @property
     def _element_datatype(self) -> Type[Node]:
-        return {{node.fully_qualified_type_name}}
+        return {{node.python_class_name}}
     {%- endif %}
 {%- endmacro %}
 
 {%- macro addrmap_class(node) %}
-class {{node.fully_qualified_type_name}}({% if asyncoutput %}Async{% endif %}AddressMap):
+class {{node.python_class_name}}({% if asyncoutput %}Async{% endif %}AddressMap):
     """
     Class to represent a address map in the register model
 
@@ -268,21 +270,15 @@ class {{node.fully_qualified_type_name}}({% if asyncoutput %}Async{% endif %}Add
         return {{node.instance.size}}
 
         {%- for child_node in node.instance.children(unroll=False) -%}
-            {%- if isinstance(child_node, systemrdlRegNode) or isinstance(child_node, systemrdlRegfileNode) or isinstance(child_node, systemrdlAddrmapNode) or isinstance(child_node, systemrdlMemNode) %}
+            {%- if isinstance(child_node, (systemrdlRegNode, systemrdlRegfileNode, systemrdlAddrmapNode, systemrdlMemNode)) %}
                 {%- if not hide_node_func(child_node) %}
     @property
-    {%- if isinstance(child_node, systemrdlRegNode) -%}
-    {%- set property_name = safe_node_name(child_node) -%}
-    {%- elif isinstance(child_node, systemrdlRegfileNode) -%}
-    {%- set property_name = safe_node_name(child_node) -%}
-    {%- elif isinstance(child_node, systemrdlAddrmapNode) -%}
-    {%- set property_name = safe_node_name(child_node) -%}
-    {%- elif isinstance(child_node, systemrdlMemNode) %}
+    {%- if isinstance(child_node, (systemrdlRegNode, systemrdlRegfileNode, systemrdlAddrmapNode, systemrdlMemNode)) -%}
     {%- set property_name = safe_node_name(child_node) -%}
     {% else %}
     {{ raise_template_error('unexpected type') }}
     {%- endif %}
-    def {{property_name}}(self) -> {% if child_node.is_array -%}{{get_fully_qualified_type_name(child_node)}}_array{% else %}{{get_fully_qualified_type_name(child_node)}}{%- endif -%}:
+    def {{property_name}}(self) -> '{% if child_node.is_array -%}{{get_fully_qualified_type_name(child_node)}}_array{% else %}{{get_fully_qualified_type_name(child_node)}}{%- endif -%}':
         """
         Property to access {{child_node.inst_name}} {% if child_node.is_array -%}array{% endif %}
 
@@ -312,7 +308,7 @@ class {{node.fully_qualified_type_name}}({% if asyncoutput %}Async{% endif %}Add
     {% endif %}
 
     {%- if node.instance.is_array %}
-class {{node.fully_qualified_type_name}}_array({% if asyncoutput %}Async{% endif %}AddressMapArray):
+class {{node.python_class_name}}_array({% if asyncoutput %}Async{% endif %}AddressMapArray):
     """
     Class to represent a addrmap array in the register model
     """
@@ -330,7 +326,7 @@ class {{node.fully_qualified_type_name}}_array({% if asyncoutput %}Async{% endif
 
     @property
     def _element_datatype(self) -> Type[Node]:
-        return {{node.fully_qualified_type_name}}
+        return {{node.python_class_name}}
     {%- endif %}
 {%- endmacro %}
 
@@ -374,17 +370,11 @@ class {{node.fully_qualified_type_name}}_array({% if asyncoutput %}Async{% endif
 {%- endmacro %}
 
 
-{% for property_enum in dependent_property_enum %}
-@unique
-class {{property_enum.type_name}}_property_enumcls({% if legacy_enum_type %}IntEnum{% else %}SystemRDLEnum{% endif %}):
-    {% for value_of_enum_needed in property_enum -%}
-    {{ value_of_enum_needed.name.upper() }} = {% if legacy_enum_type %}{{ value_of_enum_needed.value }}{% else %}SystemRDLEnumEntry(int_value={{value_of_enum_needed.value}}, name={%- if value_of_enum_needed.rdl_name is not none -%}'{{value_of_enum_needed.rdl_name}}'{% else %}None{% endif %}, desc={%- if value_of_enum_needed.rdl_desc is not none -%}'{{value_of_enum_needed.rdl_desc}}'{% else %}None{% endif %}){% endif %}  {%- if value_of_enum_needed.rdl_desc is not none -%}# {{ value_of_enum_needed.rdl_desc }} {%- endif %}
-    {% endfor %}
-{% endfor %}
+
 
 {% if uses_enum %}
 # root level enum definitions
-{%- for enum_needed in get_dependent_enum(top_node, hide_node_func) %}
+{%- for enum_needed in unique_enums %}
 @unique
 class {{get_fully_qualified_enum_type(enum_needed)}}_enumcls({% if legacy_enum_type %}IntEnum{% else %}SystemRDLEnum{% endif %}):
 
@@ -396,7 +386,7 @@ class {{get_fully_qualified_enum_type(enum_needed)}}_enumcls({% if legacy_enum_t
 
 
 # regfile, register and field definitions
-{%- for unique_node in get_dependent_component(top_node.parent) -%}
+{%- for unique_node in unique_components -%}
 {# the get_dependent_component already strips out hidden items so there is no need to check here
    for hidden items #}
     {% if isinstance(unique_node.instance, systemrdlRegNode) %}

@@ -54,7 +54,23 @@ def enum_hash(enum: UserEnumMeta) -> int:
 def __node_hash_components(node: Node,
                            udp_to_include: Optional[list[str]],
                            include_name_and_desc: bool = True) -> list[Any]:
+
     value_to_hash = []
+
+    if isinstance(node, FieldNode):
+        value_to_hash.append('Field')
+    elif isinstance(node, RegNode):
+        value_to_hash.append('Register')
+    elif isinstance(node, RegfileNode):
+        value_to_hash.append('Register File')
+    elif isinstance(node, AddrmapNode):
+        value_to_hash.append('Address Map')
+    elif isinstance(node, MemNode):
+        value_to_hash.append('Memory')
+    else:
+        raise TypeError(f'Unhandled node type: {type(node)}')
+
+
     if include_name_and_desc:
         name = node.get_property('name', default=None)
         if name is not None:

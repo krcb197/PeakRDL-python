@@ -24,6 +24,7 @@ from shutil import copy
 from typing import NoReturn, Any, Optional, Union
 from collections.abc import Iterable
 from functools import partial
+import sys
 
 import jinja2 as jj
 from systemrdl import RDLWalker
@@ -44,8 +45,9 @@ from .systemrdl_node_utility_functions import get_reg_writable_fields, \
     get_field_default_value, get_enum_values, get_properties_to_include, get_reg_fields, \
     HideNodeCallback, hide_based_on_property, get_reg_accesswidth, get_reg_regwidth, \
     get_memory_accesswidth,is_encoded_field
-from .unique_component_iterator import get_dependent_component
-from .class_names import get_fully_qualified_type_name, fully_qualified_enum_type
+from .unique_component_iterator import UniqueComponents
+from .class_names import fully_qualified_enum_type
+from .systemrdl_node_hashes import enum_hash
 
 from .lib import get_array_typecode
 
@@ -56,6 +58,15 @@ from ._node_walkers import AddressMaps, OwnedbyAddressMap
 from .__about__ import __version__
 
 file_path = os.path.dirname(__file__)
+
+# same bit of code exists in base so flags as duplicate
+# pylint: disable=duplicate-code
+if sys.version_info >= (3, 10):
+    # type guarding was introduced in python 3.10
+    from typing import TypeGuard
+else:
+    from typing_extensions import TypeGuard
+# pylint: enable=duplicate-code
 
 
 class PythonExportTemplateError(Exception):
@@ -312,6 +323,10 @@ class PythonExporter:
                         count +=1
             return count
 
+        unique_component_walker = UniqueComponents(hide_node_callback=hide_node_func,
+                                                   udp_to_include=udp_to_include)
+        RDLWalker(unroll=True).walk(top_block.parent, unique_component_walker,
+                                    skip_top=False)
 
         context = {
             'print': print,
@@ -334,13 +349,11 @@ class PythonExporter:
             'str': str,
             'uses_enum': uses_enum(top_block),
             'uses_memory': uses_memory(top_block),
-            'get_fully_qualified_type_name': partial(get_fully_qualified_type_name,
-                                                     hide_node_callback=hide_node_func,
-                                                     udp_to_include=udp_to_include),
-            'get_dependent_component': partial(get_dependent_component,
-                                               hide_node_callback=hide_node_func,
-                                               udp_to_include=udp_to_include),
-            'get_dependent_enum': self._get_dependent_enum,
+            'get_fully_qualified_type_name': partial(
+                unique_component_walker.python_class_name,
+                async_library_classes=asyncoutput),
+            'unique_components': reversed(unique_component_walker.nodes.values()),
+            'unique_enums': self._get_dependent_enum(unique_component_walker),
             'get_enum_values': get_enum_values,
             'get_fully_qualified_enum_type': fully_qualified_enum_type,
             'get_field_bitmask_hex_string': get_field_bitmask_hex_string,
@@ -360,9 +373,8 @@ class PythonExporter:
             'legacy_block_access': legacy_block_access,
             'udp_to_include': udp_to_include,
             'get_properties_to_include': get_properties_to_include,
-            'dependent_property_enum':
-                self._get_dependent_property_enum(node=top_block,
-                                                  udp_to_include=udp_to_include),
+            'unique_property_enums':
+                self._get_dependent_property_enum(unique_component_walker),
             'hide_node_func': hide_node_func,
             'visible_nonsignal_node' : visible_nonsignal_node,
             'legacy_enum_type': legacy_enum_type,
@@ -380,6 +392,22 @@ class PythonExporter:
         self.__stream_jinja_template(template_name="addrmap.py.jinja",
                                      target_package=package.reg_model,
                                      target_name=top_block.inst_name + '.py',
+                                     template_context=context)
+
+        context = {
+            'top_node': top_block,
+            'version': __version__,
+            'unique_property_enums':
+                self._get_dependent_property_enum(unique_component_walker),
+            'skip_lib_copy': skip_lib_copy,
+            'legacy_enum_type': legacy_enum_type,
+        }
+
+        context.update(self.user_template_context)
+
+        self.__stream_jinja_template(template_name="property_enums.py.jinja",
+                                     target_package=package.reg_model,
+                                     target_name=top_block.inst_name + '_property_enums.py',
                                      template_context=context)
 
     def __export_simulator(self, *,
@@ -577,9 +605,6 @@ class PythonExporter:
                 'legacy_block_access': legacy_block_access,
                 'udp_to_include': udp_to_include,
                 'get_properties_to_include': get_properties_to_include,
-                'dependent_property_enum':
-                    self._get_dependent_property_enum(node=top_block,
-                                                      udp_to_include=udp_to_include),
                 'hide_node_func': hide_node_func,
                 'legacy_enum_type': legacy_enum_type,
                 'skip_systemrdl_name_and_desc_properties': skip_systemrdl_name_and_desc_properties
@@ -762,56 +787,56 @@ class PythonExporter:
         """
         raise PythonExportTemplateError(message)
 
-
-
-
-    def _get_dependent_enum(
-            self, node: Union[AddrmapNode, RootNode], hide_node_func: HideNodeCallback) -> \
-            Iterable[UserEnumMeta]:
+    @staticmethod
+    def _get_dependent_enum(unique_components: UniqueComponents) -> Iterable[UserEnumMeta]:
         """
         iterable of enums which is used by a descendant of the input node,
         this list is de-duplicated
         """
+        def is_encoded_field_filter(node: Node) -> TypeGuard[FieldNode]:
+            if isinstance(node, FieldNode):
+                return is_encoded_field(node)
+            return False
+
+        unique_field_components = \
+            filter(is_encoded_field_filter,
+                   [component.instance for component in unique_components.nodes.values()])
+
         enum_needed = []
-        for child_node in node.descendants():
-            if isinstance(child_node, FieldNode):
-                field_enum = child_node.get_property('encode')
-                if field_enum is not None:
-                    enum_name = fully_qualified_enum_type(field_enum)
+        for encoded_field in unique_field_components:
+            field_enum = encoded_field.get_property('encode')
+            if field_enum is None:
+                raise RuntimeError('All field found here should be encoded (due to prefilter)')
 
-                    if enum_name not in enum_needed:
-                        enum_needed.append(enum_name)
-                        yield field_enum
+            field_enum_hash = enum_hash(field_enum)
 
-    def _get_dependent_property_enum(self, node: Node,
-                                     udp_to_include: Optional[list[str]]) -> \
+            if field_enum_hash not in enum_needed:
+                enum_needed.append(field_enum_hash)
+                yield field_enum
+
+    @staticmethod
+    def _get_dependent_property_enum( unique_components: UniqueComponents) -> \
             list[UserEnumMeta]:
         """
         iterable of enums which is used by a descendant of the input node,
         this list is de-duplicated
         """
-        if udp_to_include is None:
-            return []
-
         enum_needed: list[UserEnumMeta] = []
 
-        def update_enum_list(node_to_process: Node) -> None:
+        def walk_property_struct_node(value: Any) -> None:
+            if isinstance(value, UserEnum) and type(value) not in enum_needed:
+                enum_type = type(value)
+                if not isinstance(enum_type, UserEnumMeta):
+                    raise TypeError(f'enum type should be UserEnumMeta, got {type(enum_type)}')
+                enum_needed.append(enum_type)
 
-            def walk_property_struct_node(value: Any) -> None:
-                if isinstance(value, UserEnum) and type(value) not in enum_needed:
-                    enum_type = type(value)
-                    if not isinstance(enum_type, UserEnumMeta):
-                        raise TypeError(f'enum type should be UserEnumMeta, got {type(enum_type)}')
-                    enum_needed.append(enum_type)
+            if isinstance(value, UserStruct):
+                for sub_value in value.members.values():
+                    walk_property_struct_node(sub_value)
 
-                if isinstance(value, UserStruct):
-                    for sub_value in value.members.values():
-                        walk_property_struct_node(sub_value)
-
-            node_properties = get_properties_to_include(node=node_to_process,
-                                                        udp_to_include=udp_to_include)
-            for node_property_name in node_properties:
-                node_property = node_to_process.get_property(node_property_name)
+        for node in unique_components.nodes.values():
+            for node_property_name in node.properties_to_include:
+                node_property = node.instance.get_property(node_property_name)
                 if isinstance(node_property, UserEnum) and type(node_property) not in enum_needed:
                     enum_type = type(node_property)
                     if not isinstance(enum_type, UserEnumMeta):
@@ -821,12 +846,5 @@ class PythonExporter:
                 if isinstance(node_property, UserStruct):
                     for sub_value in node_property.members.values():
                         walk_property_struct_node(sub_value)
-
-        update_enum_list(node_to_process=node)
-
-        for child_node in node.descendants():
-            if not isinstance(child_node, Node):
-                raise TypeError(f'child_node must be an Node got {type(child_node)}')
-            update_enum_list(node_to_process=child_node)
 
         return enum_needed

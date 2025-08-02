@@ -1,0 +1,38 @@
+{#
+peakrdl-python is a tool to generate Python Register Access Layer (RAL) from SystemRDL
+Copyright (C) 2021 - 2023
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <https://www.gnu.org/licenses/>.
+#}
+
+{% include "header.py.jinja" with context %}
+{% if legacy_enum_type %}
+from enum import IntEnum
+{% endif %}
+from enum import unique
+
+{% if not legacy_enum_type %}
+from {% if skip_lib_copy %}peakrdl_python.{% else %}..{% endif %}lib import SystemRDLEnum, SystemRDLEnumEntry
+{% endif %}
+
+{% for property_enum in unique_property_enums %}
+@unique
+class {{property_enum.type_name}}_property_enumcls({% if legacy_enum_type %}IntEnum{% else %}SystemRDLEnum{% endif %}):
+    {% for value_of_enum_needed in property_enum -%}
+    {{ value_of_enum_needed.name.upper() }} = {% if legacy_enum_type %}{{ value_of_enum_needed.value }}{% else %}SystemRDLEnumEntry(int_value={{value_of_enum_needed.value}}, name={%- if value_of_enum_needed.rdl_name is not none -%}'{{value_of_enum_needed.rdl_name}}'{% else %}None{% endif %}, desc={%- if value_of_enum_needed.rdl_desc is not none -%}'{{value_of_enum_needed.rdl_desc}}'{% else %}None{% endif %}){% endif %}  {%- if value_of_enum_needed.rdl_desc is not none -%}# {{ value_of_enum_needed.rdl_desc }} {%- endif %}
+    {% endfor %}
+{% endfor %}
+
+if __name__ == '__main__':
+    pass

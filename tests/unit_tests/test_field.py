@@ -107,14 +107,10 @@ class TestField(CallBackTestWrapper):
             # pylint: disable-next=too-many-arguments
             def __init__(self, *,
                          address: int,
-                         accesswidth: int,
-                         width: int,
                          logger_handle: str,
                          inst_name: str,
                          parent: AddressMap):
                 super().__init__(address=address,
-                                 accesswidth=accesswidth,
-                                 width=width,
                                  logger_handle=logger_handle,
                                  inst_name=inst_name,
                                  parent=parent)
@@ -128,6 +124,14 @@ class TestField(CallBackTestWrapper):
                     logger_handle=logger_handle + '.dut',
                     inst_name='dut',
                     field_type=field_payload)
+
+            @property
+            def width(self) -> int:
+                return 32
+
+            @property
+            def accesswidth(self) -> int:
+                return 32
 
             @property
             def readable_fields(self) -> Iterator[FieldReadOnly]:
@@ -185,8 +189,6 @@ class TestField(CallBackTestWrapper):
                     logger_handle=logger_handle + '.dut_reg_wrapper',
                     inst_name='dut_reg_wrapper',
                     parent=self,
-                    width=32,
-                    accesswidth=32,
                     address=address)
 
             def get_memories(self, unroll: bool = False) -> \

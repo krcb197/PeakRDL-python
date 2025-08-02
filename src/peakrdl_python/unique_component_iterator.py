@@ -18,35 +18,23 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 The methods for building the main iterator that is used in the templates for building the
 code.
 """
-from typing import Optional, Union, TYPE_CHECKING
-from collections.abc import Iterable
-from dataclasses import dataclass
-from functools import cached_property
-import sys
+from typing import Optional
+from dataclasses import dataclass, field
+
 from logging import getLogger
 
 from systemrdl.node import Node
 from systemrdl.node import RegNode
-from systemrdl.node import RootNode
-from systemrdl.node import AddressableNode
 from systemrdl.node import FieldNode
 from systemrdl.node import MemNode
 from systemrdl.node import AddrmapNode
 from systemrdl.node import RegfileNode
-from systemrdl import RDLListener, WalkerAction, RDLWalker
+from systemrdl import RDLListener, WalkerAction
 
 from .systemrdl_node_hashes import node_hash
 from .systemrdl_node_utility_functions import HideNodeCallback
 from .systemrdl_node_utility_functions import get_properties_to_include
-from .class_names import get_fully_qualified_type_name_precalculated_hash
 from .class_names import get_base_class_name
-
-# pylint: disable=duplicate-code
-if sys.version_info >= (3, 11):
-    from typing import Self
-else:
-    from typing_extensions import Self
-# pylint: enable=duplicate-code
 
 @dataclass(frozen=True)
 class PeakRDLPythonUniqueComponents:
@@ -54,17 +42,16 @@ class PeakRDLPythonUniqueComponents:
     Dataclass to hold a node that needs to be made into a python class
     """
     instance: Node
-    udp_to_include: Optional[list[str]]
-    hide_node_callback: HideNodeCallback
+    instance_hash: int
+    parent_walker: 'UniqueComponents'
+    python_class_name: str = field(init=False)
+    optimal_python_class_name: bool =  field(init=False)
 
-    @cached_property
-    def fully_qualified_type_name(self) -> str:
-        """
-        Return the python class name to use with the component generated in the register model
-        """
-        return get_fully_qualified_type_name_precalculated_hash(
-            node=self.instance,
-            node_hash=self.__system_rdl_type_hash)
+    def __post_init__(self) -> None:
+        python_class_name, optimal_python_class_name = self.__determine_python_class_name()
+        object.__setattr__(self, 'python_class_name', python_class_name)
+        object.__setattr__(self, 'optimal_python_class_name', optimal_python_class_name)
+
 
     def base_class(self, async_library_classes: bool) -> str:
         """
@@ -74,17 +61,6 @@ class PeakRDLPythonUniqueComponents:
         return get_base_class_name(node=self.instance,
                                    async_library_classes=async_library_classes)
 
-    @cached_property
-    def __system_rdl_type_hash(self) -> int:
-        nodal_hash_result = node_hash(node=self.instance, udp_to_include=self.udp_to_include,
-                  hide_node_callback=self.hide_node_callback,
-                  include_name_and_desc=True)
-        if nodal_hash_result is None:
-            # The hash of None is a special case where the Field can just use the baseclass,
-            # therefore should not have an UniqueComponent Entry
-            raise RuntimeError('hash is None')
-        return nodal_hash_result
-
     @property
     def properties_to_include(self) -> list[str]:
         """
@@ -92,16 +68,43 @@ class PeakRDLPythonUniqueComponents:
         Node
         """
         return get_properties_to_include(node=self.instance,
-                                         udp_to_include=self.udp_to_include)
+                                         udp_to_include=self.parent_walker.udp_to_include)
 
-    def __hash__(self) -> int:
-        return self.__system_rdl_type_hash
+    def __determine_python_class_name(self) -> tuple[str, bool]:
+        """
+        Returns the fully qualified class type name with a pre-calculated hash to save time
+        """
+        scope_path = self.instance.inst.get_scope_path(scope_separator='_')
 
-    def __eq__(self, other:object) -> bool:
-        if not isinstance(other, PeakRDLPythonUniqueComponents):
-            raise TypeError('Comparison failed')
+        # the node.inst.type_name may include a suffix for the reset value, peak_rdl python passes
+        # the reset value in when the component is initialised so this is not needed. Therefore,
+        # the orginal_def version plus the peakrdl_python hash needs to be used
+        if self.instance.inst.original_def is None:
+            inst_type_name = self.instance.inst_name
+            ideal_class_name = False
+        else:
+            inbound_inst_type_name = self.instance.inst.original_def.type_name
+            ideal_class_name = True
+            if inbound_inst_type_name is None:
+                inst_type_name = self.instance.inst_name
+                ideal_class_name = False
+            else:
+                inst_type_name = inbound_inst_type_name
 
-        return hash(self) == hash(other)
+        if self.instance_hash < 0:
+            if (scope_path == '') or (scope_path is None):
+                return (inst_type_name + '_neg_' + hex(-self.instance_hash) + '_cls',
+                        ideal_class_name)
+
+            return (scope_path + '_' + inst_type_name + '_neg_' + hex(-self.instance_hash) + '_cls',
+                    ideal_class_name)
+
+        if (scope_path == '') or (scope_path is None):
+            return (inst_type_name + '_' + hex(self.instance_hash) + '_cls',
+                    ideal_class_name)
+
+        return (scope_path + '_' + inst_type_name + '_' + hex(self.instance_hash) + '_cls',
+                ideal_class_name)
 
 @dataclass(frozen=True)
 class PeakRDLPythonUniqueRegisterComponents(PeakRDLPythonUniqueComponents):
@@ -131,9 +134,6 @@ class PeakRDLPythonUniqueRegisterComponents(PeakRDLPythonUniqueComponents):
         """
         return not self.instance.has_sw_readable and self.instance.has_sw_writable
 
-    def __hash__(self) -> int:
-        return super().__hash__()
-
 class UniqueComponents(RDLListener):
     """
     class intended to be used as part of the walker/listener protocol to find all the items
@@ -146,118 +146,142 @@ class UniqueComponents(RDLListener):
 
         self.__hide_node_callback = hide_node_callback
         self.__udp_to_include = udp_to_include
-        self.nodes: list[PeakRDLPythonUniqueComponents] = []
+        self.nodes: dict[int, PeakRDLPythonUniqueComponents] = {}
         self.__logger = getLogger('peakrdl_python.UniqueComponents')
 
-    def __is_equivalent_node_in_list(self, node:Node) -> bool:
+    @property
+    def hide_node_callback(self) -> HideNodeCallback:
+        """
+        Callback to determine if a node is hidden or not
+        """
+        return self.__hide_node_callback
 
-        provide_node = self.__build_peak_rdl_unique_component(node)
-        node_to_tested_hash = hash(provide_node)
-        self.__logger.debug(f'Node under test hash:{node_to_tested_hash}')
+    @property
+    def udp_to_include(self) -> Optional[list[str]]:
+        """
+        List of user defined properties to include
+        """
+        return self.__udp_to_include
 
-        for node_to_test in self.nodes:
-            if provide_node == node_to_test:
-                if provide_node.fully_qualified_type_name != node_to_test.fully_qualified_type_name:
-                    raise RuntimeError(f'The fully qualified class names for items with matching '
-                                       f'hashes should also match')
-                return True
+    def __test_and_add(self, potential_unique_node:PeakRDLPythonUniqueComponents) -> bool:
+        """
+        Tests whether a unique component is in the set of nodes to generate already and add it
+        if it new.
 
+        Args:
+            potential_unique_node: A potential component to add
+
+        Returns: True if the component has been added, False if it has not been added (which
+                 allows descendants to be skipped
+
+        """
+        self.__logger.debug(f'Node under test hash:{potential_unique_node.instance_hash}')
+
+        if potential_unique_node.instance_hash in self.nodes:
+            # The node is already in the node set, however, if the new node has a better
+            # python class name use the new one
+            if self.nodes[potential_unique_node.instance_hash].optimal_python_class_name is False:
+                if potential_unique_node.optimal_python_class_name is True:
+                    self.nodes[potential_unique_node.instance_hash] = potential_unique_node
+
+            return True
+
+        self.nodes[potential_unique_node.instance_hash] = potential_unique_node
         return False
 
-    def __build_peak_rdl_unique_component(self, node: Node) -> PeakRDLPythonUniqueComponents:
+    def __build_peak_rdl_unique_component(self, node: Node) -> \
+            Optional[PeakRDLPythonUniqueComponents]:
+
+        nodal_hash_result = node_hash(node=node, udp_to_include=self.udp_to_include,
+                                      hide_node_callback=self.hide_node_callback,
+                                      include_name_and_desc=True)
+        if nodal_hash_result is None:
+            return None
+
+        if isinstance(node, RegNode):
+            return PeakRDLPythonUniqueRegisterComponents(instance=node,
+                                                         instance_hash=nodal_hash_result,
+                                                         parent_walker=self)
         return PeakRDLPythonUniqueComponents(instance=node,
-                                             hide_node_callback=self.__hide_node_callback,
-                                             udp_to_include=self.__udp_to_include)
+                                             instance_hash=nodal_hash_result,
+                                             parent_walker=self)
 
-    def __add_node_to_list(self, node: Node) -> None:
+    def __enter_non_field_node(self, node: Node) -> Optional[WalkerAction]:
+        """
+        Handler for all node types other than Field
+        """
+        full_node_name = '.'.join(node.get_path_segments())
+        self.__logger.debug(f'Analysing node:{full_node_name}')
 
-        self.nodes.append(self.__build_peak_rdl_unique_component(node))
+        if self.__hide_node_callback(node):
+            return WalkerAction.SkipDescendants
 
-    def __add_reg_node_to_list(self, node: RegNode) -> None:
+        potential_unique_node = self.__build_peak_rdl_unique_component(node)
 
-        self.nodes.append(PeakRDLPythonUniqueRegisterComponents(
-            instance=node,
-            hide_node_callback=self.__hide_node_callback,
-            udp_to_include=self.__udp_to_include))
+        if potential_unique_node is None:
+            raise RuntimeError('This node type should not have a hash of None')
+
+        if self.__test_and_add(potential_unique_node):
+            return WalkerAction.SkipDescendants
+
+        return WalkerAction.Continue
 
     def enter_Reg(self, node: RegNode) -> Optional[WalkerAction]:
-        if self.__hide_node_callback(node):
-            return WalkerAction.SkipDescendants
-
-        if self.__is_equivalent_node_in_list(node):
-            return WalkerAction.SkipDescendants
-
-        self.__add_reg_node_to_list(node)
-        return WalkerAction.Continue
+        return self.__enter_non_field_node(node)
 
     def enter_Mem(self, node: MemNode) -> Optional[WalkerAction]:
-        if self.__hide_node_callback(node):
-            return WalkerAction.SkipDescendants
-
-        if self.__is_equivalent_node_in_list(node):
-            return WalkerAction.SkipDescendants
-
-        self.__add_node_to_list(node)
-        return WalkerAction.Continue
+        return self.__enter_non_field_node(node)
 
     def enter_Field(self, node: FieldNode) -> Optional[WalkerAction]:
 
         full_node_name = '.'.join(node.get_path_segments())
-        self.__logger.debug(f'Analysing Field:{full_node_name}')
+        self.__logger.debug(f'Analysing node:{full_node_name}')
 
         if self.__hide_node_callback(node):
             return WalkerAction.SkipDescendants
 
-        if node_hash(node=node, udp_to_include=self.__udp_to_include,
-                     hide_node_callback=self.__hide_node_callback,
-                     include_name_and_desc=True) is None:
-            # This is special case where the field has no attributes that need a field definition
-            # to be created so it is not included in the list of things to construct
+        potential_unique_node = self.__build_peak_rdl_unique_component(node)
+
+        if potential_unique_node is None:
             return WalkerAction.SkipDescendants
 
-        if self.__is_equivalent_node_in_list(node):
+        if self.__test_and_add(potential_unique_node):
             return WalkerAction.SkipDescendants
 
-        self.__add_node_to_list(node)
         return WalkerAction.Continue
 
     def enter_Addrmap(self, node: AddrmapNode) -> Optional[WalkerAction]:
-        if self.__hide_node_callback(node):
-            return WalkerAction.SkipDescendants
-
-        if self.__is_equivalent_node_in_list(node):
-            return WalkerAction.SkipDescendants
-
-        self.__add_node_to_list(node)
-        return WalkerAction.Continue
+        return self.__enter_non_field_node(node)
 
     def enter_Regfile(self, node: RegfileNode) -> Optional[WalkerAction]:
-        if self.__hide_node_callback(node):
-            return WalkerAction.SkipDescendants
+        return self.__enter_non_field_node(node)
 
-        if self.__is_equivalent_node_in_list(node):
-            return WalkerAction.SkipDescendants
+    def python_class_name(self, node: Node, async_library_classes: bool) -> str:
+        """
+        Lookup the python class nameto be used for a given node
 
-        self.__add_node_to_list(node)
-        return WalkerAction.Continue
+        Args:
+            node: node
+            async_library_classes: whether base classes returned are async or not
 
-def get_dependent_component(node: Union[AddressableNode, RootNode],
-                            hide_node_callback: HideNodeCallback,
-                            udp_to_include: Optional[list[str]]) -> \
-        Iterable[PeakRDLPythonUniqueComponents]:
-    """
-    iterable of nodes that have a component which is used by a
-    descendant, this list is de-duplicated and reversed to components
-    are declared before their parents who use them
+        Returns: classname as a string
 
-    Args:
-        node: node to be analysed
-        hide_node_callback: callback to determine if the node should be hidden
-    """
-    unique_component_walker = UniqueComponents(hide_node_callback=hide_node_callback,
-                                               udp_to_include=udp_to_include)
-    # running the walker populated the blocks with all the address maps in within the
-    # top block, including the top_block itself
-    RDLWalker(unroll=True).walk(node, unique_component_walker, skip_top=False)
+        """
 
-    return reversed(unique_component_walker.nodes)
+        nodal_hash_result = node_hash(node=node, udp_to_include=self.udp_to_include,
+                                      hide_node_callback=self.hide_node_callback,
+                                      include_name_and_desc=True)
+
+        if nodal_hash_result is None:
+            # This is special case where the field has no attributes that need a field definition
+            # to be created so it is not included in the list of things to construct, therefore the
+            # base classes are directly used
+            if not isinstance(node, FieldNode):
+                raise TypeError(f'This code should occur for a FieldNode, got {type(node)}')
+            return get_base_class_name(node,
+                                       async_library_classes=async_library_classes)
+
+        if nodal_hash_result not in self.nodes:
+            raise RuntimeError(f'The node hash for {node.inst_name} is not in the table')
+        python_class_name = self.nodes[nodal_hash_result].python_class_name
+        return python_class_name

@@ -24,7 +24,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 {% from 'addrmap_system_rdl_name_mapping.py.jinja' import systemrdl_python_child_name_map with context %}
 
 {%- macro memory_class(node) %}
-class {{node.fully_qualified_type_name}}({{node.base_class(asyncoutput)}}{% if legacy_block_access %}Legacy{% endif %}):
+class {{node.python_class_name}}({{node.base_class(asyncoutput)}}{% if legacy_block_access %}Legacy{% endif %}):
     """
     Class to represent a memory in the register model
 
@@ -57,7 +57,7 @@ class {{node.fully_qualified_type_name}}({{node.base_class(asyncoutput)}}{% if l
             {%-  if not hide_node_func(child_node) %}
                 {%- if isinstance(child_node, systemrdlRegNode) %}
     @property
-    def {{safe_node_name(child_node)}}(self) -> {% if child_node.is_array -%}{{get_fully_qualified_type_name(child_node)}}_array_cls{% else %}{{get_fully_qualified_type_name(child_node)}}_cls{%- endif -%}:
+    def {{safe_node_name(child_node)}}(self) -> '{% if child_node.is_array -%}{{get_fully_qualified_type_name(child_node)}}_array{% else %}{{get_fully_qualified_type_name(child_node)}}{%- endif -%}':
         """
         Property to access {{child_node.inst_name}} register {% if child_node.is_array -%}array{% endif %}
 
@@ -81,7 +81,7 @@ class {{node.fully_qualified_type_name}}({{node.base_class(asyncoutput)}}{% if l
     {{ universal_properties(node.instance) }}
 
     {%- if node.instance.is_array %}
-class {{node.fully_qualified_type_name}}_array({{node.base_class(asyncoutput)}}Array):
+class {{node.python_class_name}}_array({{node.base_class(asyncoutput)}}Array):
     """
     Class to represent a memory array in the register model
     """
@@ -99,7 +99,7 @@ class {{node.fully_qualified_type_name}}_array({{node.base_class(asyncoutput)}}A
 
     @property
     def _element_datatype(self) -> Type[Node]:
-        return {{node.fully_qualified_type_name}}
+        return {{node.python_class_name}}
 
     {{ universal_properties(node.instance) }}
     {%- endif %}

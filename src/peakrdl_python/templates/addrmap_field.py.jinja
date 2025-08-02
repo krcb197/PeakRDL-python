@@ -20,7 +20,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 {% from 'addrmap_universal_property.py.jinja' import universal_properties with context %}
 
 {%- macro field_class(node) %}
-class {{node.fully_qualified_type_name}}({{node.base_class(asyncoutput)}}):
+class {{node.python_class_name}}({{node.base_class(asyncoutput)}}):
     """
     Class to represent a register field in the register model
 

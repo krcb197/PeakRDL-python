@@ -77,8 +77,6 @@ class ArrayBase(CallBackTestWrapper, ABC):
                                                          inst_name='dut',
                                                          parent=self,
                                                          address=address,
-                                                         width=32,
-                                                         accesswidth=32,
                                                          stride=dut_stride,
                                                          dimensions=dut_dimensions)
 

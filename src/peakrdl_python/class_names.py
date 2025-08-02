@@ -17,16 +17,12 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 A module for determining the classes names to use
 """
-from typing import Optional
 from systemrdl.node import Node
 from systemrdl.node import FieldNode
 from systemrdl.node import RegNode
 from systemrdl.node import MemNode
 from systemrdl.rdltypes.user_enum import UserEnumMeta
-from .systemrdl_node_utility_functions import HideNodeCallback
 from .systemrdl_node_utility_functions import is_encoded_field
-
-from .systemrdl_node_hashes import node_hash as calculate_node_hash
 
 def __get_field_get_base_class_name(node: FieldNode, async_library_classes: bool) -> str:
     if not isinstance(node, FieldNode):
@@ -101,62 +97,6 @@ def get_base_class_name(node: Node, async_library_classes: bool) -> str:
         return __get_mem_get_base_class_name(node, async_library_classes=async_library_classes)
 
     raise TypeError(f'Unhandled node type: {type(node)}')
-
-
-def get_fully_qualified_type_name_precalculated_hash(
-        node: Node,
-        node_hash: Optional[int]) -> str:
-    """
-    Returns the fully qualified class type name with a pre-calculated hash to save time
-    """
-    if not isinstance(node, Node):
-        raise TypeError(f'Expected a System RDL Node from the complier, got {type(node)}')
-
-    scope_path = node.inst.get_scope_path(scope_separator='_')
-
-    # the node.inst.type_name may include a suffix for the reset value, peak_rdl python passes
-    # the reset value in when the component is initialised so this is not needed. Therefore,
-    # the orginal_def version plus the peakrdl_python hash needs to be used
-    inst_type_name = node.inst.original_def.type_name
-    if inst_type_name is None:
-        inst_type_name = node.inst_name
-
-    if node_hash is None:
-        # This is special case where the field has no attributes that need a field definition
-        # to be created so it is not included in the list of things to construct, therefore the
-        # base classes are directly used
-        if not isinstance(node, FieldNode):
-            raise TypeError(f'This code should occur for a FieldNode, got {type(node)}')
-        return get_base_class_name(node, False)
-
-
-    if node_hash < 0:
-        if (scope_path == '') or (scope_path is None):
-            return inst_type_name + '_neg_' + hex(-node_hash) + '_cls'
-
-        return scope_path + '_' + inst_type_name + '_neg_' + hex(-node_hash) + '_cls'
-
-    if (scope_path == '') or (scope_path is None):
-        return inst_type_name + '_' + hex(node_hash) + '_cls'
-
-    return scope_path + '_' + inst_type_name + '_' + hex(node_hash) + '_cls'
-
-def get_fully_qualified_type_name(node: Node,
-                                  udp_to_include: Optional[list[str]],
-                                  hide_node_callback: HideNodeCallback,
-                                  include_name_and_desc: bool = True) -> str:
-    """
-    Returns the fully qualified class type name, i.e. with scope prefix
-    """
-
-    node_hash = calculate_node_hash(node=node,
-                                    udp_to_include=udp_to_include,
-                                    hide_node_callback=hide_node_callback,
-                                    include_name_and_desc=include_name_and_desc)
-
-    return get_fully_qualified_type_name_precalculated_hash(
-        node=node,
-        node_hash=node_hash, )
 
 def fully_qualified_enum_type(field_enum: UserEnumMeta) -> str:
     """
