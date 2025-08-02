@@ -1,5 +1,6 @@
 """
-An example to turn on GPIO 0 with the RAL
+An example to turn on GPIO 0 with a Hardware Abstaction Layer, built on top of the peakrdl-python
+Register Abstraction Layer (RAL)
 """
 from gpio.reg_model.gpio import gpio_cls as GPIO
 from gpio.sim.gpio import gpio_simulator_cls as HardwareSimulator

@@ -1,3 +1,6 @@
+"""
+A demonstration of user defined properties generated with peakrdl-python
+"""
 from user_defined_property.reg_model.user_defined_property import user_defined_property_cls
 from user_defined_property.sim_lib.dummy_callbacks import dummy_read, dummy_write
 from user_defined_property.lib.callbacks import NormalCallbackSet

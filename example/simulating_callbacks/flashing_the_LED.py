@@ -1,3 +1,6 @@
+"""
+A demonstration of extended simulator behaviour in peakrdl-python
+"""
 import tkinter
 import tkinter as tk
 

@@ -1,4 +1,6 @@
-import json
+"""
+A demonstration of traversing the register model generated with peakrdl-python
+"""
 from typing import Union
 
 from chip_with_registers.reg_model.chip_with_registers import chip_with_registers_cls
@@ -11,7 +13,7 @@ from chip_with_registers.lib import NormalCallbackSet,  RegWriteOnly, RegReadWri
 class chip_with_registers_cls_with_reset(chip_with_registers_cls):
     """
     Extends the chip_with_registers_cls class adding methods to reset all the registers to
-    there defined reset values
+    their defined reset values
     """
 
     @staticmethod

@@ -1,5 +1,5 @@
 """
-A demonstration of using enumeration
+A demonstration of using enumeration for peakrdl-python
 """
 from enumerated_fields.lib import NormalCallbackSet
 
