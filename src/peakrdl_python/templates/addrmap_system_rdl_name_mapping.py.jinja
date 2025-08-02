@@ -38,13 +38,13 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
             {%- if not isinstance(child_node, systemrdlSignalNode) %}
                 {% if not hide_node_func(child_node) %}
     @overload
-    def get_child_by_system_rdl_name(self, name: Literal["{{child_node.inst_name}}"]) -> '{{get_fully_qualified_type_name(child_node)}}_cls': ...
+    def get_child_by_system_rdl_name(self, name: Literal["{{child_node.inst_name}}"]) -> '{{get_fully_qualified_type_name(child_node)}}': ...
                 {% endif %}
             {%- endif %}
         {%- endfor %}
 
     @overload
-    def get_child_by_system_rdl_name(self, name: str) -> Union[{%- for child_node in node.children(unroll=False) -%}{%- if not isinstance(child_node, systemrdlSignalNode) %}{% if not hide_node_func(child_node) %}'{{get_fully_qualified_type_name(child_node)}}_cls', {% endif %}{%- endif %}{%- endfor %}]: ...
+    def get_child_by_system_rdl_name(self, name: str) -> Union[{%- for child_node in node.children(unroll=False) -%}{%- if not isinstance(child_node, systemrdlSignalNode) %}{% if not hide_node_func(child_node) %}'{{get_fully_qualified_type_name(child_node)}}', {% endif %}{%- endif %}{%- endfor %}]: ...
 
     def get_child_by_system_rdl_name(self, name: Any) -> Any:
         return super().get_child_by_system_rdl_name(name)
