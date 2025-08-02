@@ -333,6 +333,11 @@ def __regfile_hash(node: RegfileNode,
                     node=child, udp_to_include=udp_to_include,
                     hide_node_callback=hide_node_callback,
                     include_name_and_desc=include_name_and_desc)
+            elif isinstance(child, RegfileNode):
+                value_to_hash += __regfile_instance_hash(
+                    node=child, udp_to_include=udp_to_include,
+                    hide_node_callback=hide_node_callback,
+                    include_name_and_desc=include_name_and_desc)
             else:
                 raise TypeError(f'Unhandled child type, {type(child)}')
 
