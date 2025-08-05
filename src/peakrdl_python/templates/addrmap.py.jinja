@@ -160,8 +160,6 @@ class {{get_fully_qualified_type_name(node)}}_cls({% if asyncoutput %}Async{% en
 
     __slots__ : list[str] = [{%- for child_node in node.children(unroll=False) -%}'__{{child_node.inst_name}}'{% if not loop.last %}, {% endif %}{%- endfor %}]
 
-    {% if asyncoutput %}AsyncCallbackSet{% else %}NormalCallbackSet{% endif %}
-
     def __init__(self,
                  address: int,
                  logger_handle:str,
