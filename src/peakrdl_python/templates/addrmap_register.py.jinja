@@ -52,7 +52,7 @@ class {{node.python_class_name}}({{node.base_class(asyncoutput)}}):
 
         # build the field attributes
         {% for child_node in get_reg_fields(node.instance) %}
-        self.__{{child_node.inst_name}}:{{get_fully_qualified_type_name(child_node)}} = {{get_fully_qualified_type_name(child_node)}}(
+        self.__{{child_node.inst_name}} = {{get_fully_qualified_type_name(child_node)}}(
             parent_register=self,
             size_props=FieldSizeProps(
                 width={{child_node.width}},
