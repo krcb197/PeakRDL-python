@@ -17,15 +17,16 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #}
 {%- macro register_class_attributes(node) %}
         {%- if node.is_array %}
-    self.__{{node.inst_name}} = {{get_fully_qualified_type_name(node)}}_array(address=self.address+{{node.raw_address_offset}},
-                                                                              stride={{node.array_stride}},
-                                                                              dimensions=tuple({{node.array_dimensions}}),
-                                                                              logger_handle=logger_handle+'.{{node.inst_name}}',
-                                                                              inst_name='{{node.inst_name}}', parent=self)
+    self.__{{node.inst_name}}:{{get_fully_qualified_type_name(node)}}_array = {{get_fully_qualified_type_name(node)}}_array(address=self.address+{{node.raw_address_offset}},
+                                                                                  stride={{node.array_stride}},
+                                                                                  dimensions=tuple({{node.array_dimensions}}),
+                                                                                  logger_handle=logger_handle+'.{{node.inst_name}}',
+                                                                                  inst_name='{{node.inst_name}}', parent=self)
         {%- else %}
-    self.__{{node.inst_name}} = {{get_fully_qualified_type_name(node)}}(address=self.address+{{node.address_offset}},
-                                                                        logger_handle=logger_handle+'.{{node.inst_name}}',
-                                                                        inst_name='{{node.inst_name}}', parent=self)
+    self.__{{node.inst_name}}:{{get_fully_qualified_type_name(node)}} = {{get_fully_qualified_type_name(node)}}(
+                                                                 address=self.address+{{node.address_offset}},
+                                                                 logger_handle=logger_handle+'.{{node.inst_name}}',
+                                                                 inst_name='{{node.inst_name}}', parent=self)
 
         {%- endif %}
 
