@@ -81,3 +81,21 @@ def legal_register_width(width_in_bits: int) -> bool:
     must be a power of 2 and greater than 8
     """
     return (width_in_bits >= 8) and is_power_two(width_in_bits)
+
+
+def calculate_bitmask(high:int, low:int) -> int:
+    """
+    Calculate an integer bitmask based on the high and low bit positions
+    """
+    if not isinstance(high, int):
+        raise TypeError(f'high must be an int, got {type(high)}')
+    if high < 0:
+        raise ValueError('high must be greater than 0')
+    if not isinstance(low, int):
+        raise TypeError(f'low must be an int, got {type(low)}')
+    if low < 0:
+        raise ValueError('low must be greater than 0')
+    if high < low:
+        raise ValueError(f'low must be great than or equal to high, got: {low=}, {high=}')
+
+    return ((1 << (high - low + 1)) - 1) << low

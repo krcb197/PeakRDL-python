@@ -62,8 +62,6 @@ class RegTestBase(CallBackTestWrapper, ABC):
                 self.__dut = reg_type(logger_handle='dut',
                                       inst_name='dut',
                                       parent=self,
-                                      width=32,
-                                      accesswidth=32,
                                       address=address)
 
             def get_memories(self, unroll: bool = False) -> \

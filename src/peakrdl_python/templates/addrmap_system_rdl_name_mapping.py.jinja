@@ -27,7 +27,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
         {%- for child_node in node.children(unroll=False) -%}
             {%- if not isinstance(child_node, systemrdlSignalNode) %}
                 {% if not hide_node_func(child_node) %}
-    def get_child_by_system_rdl_name(self, name: Any) -> {{get_fully_qualified_type_name(child_node)}}_cls:
+    def get_child_by_system_rdl_name(self, name: Any) -> '{{get_fully_qualified_type_name(child_node)}}':
         return super().get_child_by_system_rdl_name(name)
                 {% endif %}
             {%- endif %}
@@ -38,13 +38,13 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
             {%- if not isinstance(child_node, systemrdlSignalNode) %}
                 {% if not hide_node_func(child_node) %}
     @overload
-    def get_child_by_system_rdl_name(self, name: Literal["{{child_node.inst_name}}"]) -> {{get_fully_qualified_type_name(child_node)}}_cls: ...
+    def get_child_by_system_rdl_name(self, name: Literal["{{child_node.inst_name}}"]) -> '{{get_fully_qualified_type_name(child_node)}}': ...
                 {% endif %}
             {%- endif %}
         {%- endfor %}
 
     @overload
-    def get_child_by_system_rdl_name(self, name: str) -> Union[{%- for child_node in node.children(unroll=False) -%}{%- if not isinstance(child_node, systemrdlSignalNode) %}{% if not hide_node_func(child_node) %}{{get_fully_qualified_type_name(child_node)}}_cls, {% endif %}{%- endif %}{%- endfor %}]: ...
+    def get_child_by_system_rdl_name(self, name: str) -> Union[{%- for child_node in node.children(unroll=False) -%}{%- if not isinstance(child_node, systemrdlSignalNode) %}{% if not hide_node_func(child_node) %}'{{get_fully_qualified_type_name(child_node)}}', {% endif %}{%- endif %}{%- endfor %}]: ...
 
     def get_child_by_system_rdl_name(self, name: Any) -> Any:
         return super().get_child_by_system_rdl_name(name)
@@ -54,13 +54,6 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 {%- macro systemrdl_python_child_name_map(node) %}
     @property
     def systemrdl_python_child_name_map(self) -> dict[str, str]:
-        """
-        In some cases systemRDL names need to be converted make them python safe, this dictionary
-        is used to map the original systemRDL names to the names of the python attributes of this
-        class
-
-        Returns: dictionary whose key is the systemRDL names and value it the property name
-        """
         return {
             {%- for child_node in node.children(unroll=False) -%}
                 {%- if not hide_node_func(child_node) %}

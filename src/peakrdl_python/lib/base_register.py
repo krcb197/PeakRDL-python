@@ -44,13 +44,11 @@ class BaseReg(Node, ABC):
         circumstances however, it is useful for type checking
     """
 
-    __slots__: list[str] = ['__width', '__accesswidth']
+    __slots__: list[str] = []
 
     # pylint: disable=too-many-arguments,duplicate-code
     def __init__(self, *,
                  address: int,
-                 width: int,
-                 accesswidth: int,
                  logger_handle: str,
                  inst_name: str,
                  parent: Union[AddressMap, AsyncAddressMap, RegFile, AsyncRegFile, BaseMemory,
@@ -60,16 +58,16 @@ class BaseReg(Node, ABC):
                          logger_handle=logger_handle,
                          inst_name=inst_name,
                          parent=parent)
-        if not isinstance(width, int):
-            raise TypeError(f'width should be int but got {(type(width))}')
-        if not legal_register_width(width_in_bits=width):
-            raise ValueError(f'Unsupported register width {width:d}')
-        self.__width = width
-        if not isinstance(accesswidth, int):
-            raise TypeError(f'accesswidth should be int but got {(type(accesswidth))}')
-        if not legal_register_width(width_in_bits=accesswidth):
-            raise ValueError(f'Unsupported access width {accesswidth:d}')
-        self.__accesswidth = accesswidth
+
+        # check the properties have been set up correctly
+        if not isinstance(self.width, int):
+            raise TypeError(f'width should be int but got {(type(self.width))}')
+        if not legal_register_width(width_in_bits=self.width):
+            raise ValueError(f'Unsupported register width {self.width:d}')
+        if not isinstance(self.accesswidth, int):
+            raise TypeError(f'accesswidth should be int but got {(type(self.accesswidth))}')
+        if not legal_register_width(width_in_bits=self.accesswidth):
+            raise ValueError(f'Unsupported access width {self.accesswidth:d}')
     # pylint: enable=too-many-arguments,duplicate-code
 
     @property
@@ -100,25 +98,25 @@ class BaseReg(Node, ABC):
             raise ValueError('data out of range')
 
     @property
+    @abstractmethod
     def width(self) -> int:
         """
         The width of the register in bits, this uses the `regwidth` systemRDL property
         """
-        return self.__width
 
     @property
+    @abstractmethod
     def accesswidth(self) -> int:
         """
         The access width of the register in bits, this uses the `accesswidth` systemRDL property
         """
-        return self.__accesswidth
 
     @property
     def size(self) -> int:
         """
         Total Number of bytes of address the node occupies
         """
-        return self.__width >> 3
+        return self.width >> 3
 
     @property
     @abstractmethod
@@ -144,28 +142,24 @@ class BaseRegArray(NodeArray[BaseRegArrayElementType], ABC):
     """
     # pylint: disable=too-many-arguments,duplicate-code
 
-    __slots__: list[str] = ['__width', '__accesswidth']
+    __slots__: list[str] = []
 
     def __init__(self, *,
                  logger_handle: str, inst_name: str,
                  parent: Union[AddressMap, AsyncAddressMap, RegFile, AsyncRegFile, BaseMemory],
-                 width: int,
-                 accesswidth: int,
                  address: int,
                  stride: int,
                  dimensions: tuple[int, ...],
                  elements: Optional[dict[tuple[int, ...], BaseRegArrayElementType]] = None):
 
-        if not isinstance(width, int):
-            raise TypeError(f'width should be int but got {(type(width))}')
-        if not legal_register_width(width_in_bits=width):
-            raise ValueError(f'Unsupported register width {width:d}')
-        self.__width = width
-        if not isinstance(accesswidth, int):
-            raise TypeError(f'accesswidth should be int but got {(type(accesswidth))}')
-        if not legal_register_width(width_in_bits=accesswidth):
-            raise ValueError(f'Unsupported access width {accesswidth:d}')
-        self.__accesswidth = accesswidth
+        if not isinstance(self.width, int):
+            raise TypeError(f'width should be int but got {(type(self.width))}')
+        if not legal_register_width(width_in_bits=self.width):
+            raise ValueError(f'Unsupported register width {self.width:d}')
+        if not isinstance(self.accesswidth, int):
+            raise TypeError(f'accesswidth should be int but got {(type(self.accesswidth))}')
+        if not legal_register_width(width_in_bits=self.accesswidth):
+            raise ValueError(f'Unsupported access width {self.accesswidth:d}')
 
         if not issubclass(self._element_datatype, BaseReg):
             raise TypeError(f'{self._element_datatype}')
@@ -175,18 +169,18 @@ class BaseRegArray(NodeArray[BaseRegArrayElementType], ABC):
                          stride=stride, dimensions=dimensions, elements=elements)
 
     @property
+    @abstractmethod
     def width(self) -> int:
         """
         The width of the register in bits, this uses the `regwidth` systemRDL property
         """
-        return self.__width
 
     @property
+    @abstractmethod
     def accesswidth(self) -> int:
         """
         The access width of the register in bits, this uses the `accesswidth` systemRDL property
         """
-        return self.__accesswidth
 
     def _build_element(self, indices: tuple[int, ...]) -> BaseRegArrayElementType:
 
@@ -194,8 +188,6 @@ class BaseRegArray(NodeArray[BaseRegArrayElementType], ABC):
             logger_handle=self._build_element_logger_handle(indices=indices),
             address=self._address_calculator(indices),
             inst_name=self._build_element_inst_name(indices=indices),
-            width=self.width,
-            accesswidth=self.accesswidth,
             parent=self)
 
     def _sub_instance(self, elements: dict[tuple[int, ...], BaseRegArrayElementType]) ->\
@@ -207,8 +199,6 @@ class BaseRegArray(NodeArray[BaseRegArrayElementType], ABC):
                               inst_name=self.inst_name,
                               parent=self.parent,
                               address=self.address,
-                              width=self.width,
-                              accesswidth=self.accesswidth,
                               stride=self.stride,
                               dimensions=self.dimensions,
                               elements=elements)

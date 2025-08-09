@@ -20,23 +20,16 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 {% from 'addrmap_universal_property.py.jinja' import universal_properties with context %}
 
 {%- macro field_class(node) %}
-    {% if node.is_sw_readable and node.is_sw_writable %}
-class {{get_fully_qualified_type_name(node)}}_cls(Field{%- if 'encode' in node.list_properties() -%}Enum{% endif %}{% if asyncoutput %}Async{% endif %}ReadWrite):
-    {% elif node.is_sw_readable and not node.is_sw_writable %}
-class {{get_fully_qualified_type_name(node)}}_cls(Field{%- if 'encode' in node.list_properties() -%}Enum{% endif %}{% if asyncoutput %}Async{% endif %}ReadOnly):
-    {% elif not node.is_sw_readable and node.is_sw_writable %}
-class {{get_fully_qualified_type_name(node)}}_cls(Field{%- if 'encode' in node.list_properties() -%}Enum{% endif %}{% if asyncoutput %}Async{% endif %}WriteOnly):
-    {% endif %}
+class {{node.python_class_name}}({{node.base_class(asyncoutput)}}):
     """
     Class to represent a register field in the register model
 
-    {{get_table_block(node) | indent}}
+    {{get_table_block(node.instance) | indent}}
     """
-
     __slots__ : list[str] = []
 
     {{ udp_property(node) }}
 
-    {{ universal_properties(node) }}
+    {{ universal_properties(node.instance) }}
 
 {%- endmacro -%}

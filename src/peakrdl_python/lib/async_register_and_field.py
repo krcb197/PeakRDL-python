@@ -72,8 +72,6 @@ class AsyncReg(BaseReg, ABC):
     # pylint: disable=too-many-arguments,duplicate-code
     def __init__(self, *,
                  address: int,
-                 width: int,
-                 accesswidth: int,
                  logger_handle: str,
                  inst_name: str,
                  parent: Union[AsyncAddressMap, AsyncRegFile, AsyncMemory, 'AsyncRegArray']):
@@ -88,8 +86,8 @@ class AsyncReg(BaseReg, ABC):
         if not isinstance(parent._callbacks, (AsyncCallbackSet, AsyncCallbackSetLegacy)):
             raise TypeError(f'callback set type is wrong, got {type(parent._callbacks)}')
 
-        super().__init__(address=address, width=width, accesswidth=accesswidth,
-                         logger_handle=logger_handle, inst_name=inst_name, parent=parent)
+        super().__init__(address=address, logger_handle=logger_handle,
+                         inst_name=inst_name, parent=parent)
 
     @property
     def _callbacks(self) -> Union[AsyncCallbackSet, AsyncCallbackSetLegacy]:
@@ -129,8 +127,6 @@ class RegAsyncReadOnly(AsyncReg, ABC):
     # pylint: disable=too-many-arguments, duplicate-code
     def __init__(self, *,
                  address: int,
-                 width: int,
-                 accesswidth: int,
                  logger_handle: str,
                  inst_name: str,
                  parent: Union[AsyncAddressMap, AsyncRegFile, ReadableAsyncMemory,
@@ -139,7 +135,7 @@ class RegAsyncReadOnly(AsyncReg, ABC):
         super().__init__(address=address,
                          logger_handle=logger_handle,
                          inst_name=inst_name,
-                         parent=parent, width=width, accesswidth=accesswidth)
+                         parent=parent)
 
         self.__in_context_manager: bool = False
         self.__register_state: int = 0
@@ -235,8 +231,6 @@ class RegAsyncWriteOnly(AsyncReg, ABC):
     # pylint: disable=too-many-arguments, duplicate-code, useless-parent-delegation
     def __init__(self, *,
                  address: int,
-                 width: int,
-                 accesswidth: int,
                  logger_handle: str,
                  inst_name: str,
                  parent: Union[AsyncAddressMap, AsyncRegFile,
@@ -245,7 +239,7 @@ class RegAsyncWriteOnly(AsyncReg, ABC):
         super().__init__(address=address,
                          logger_handle=logger_handle,
                          inst_name=inst_name,
-                         parent=parent, width=width, accesswidth=accesswidth)
+                         parent=parent)
     # pylint: enable=too-many-arguments, duplicate-code
 
     async def write(self, data: int) -> None:
@@ -264,7 +258,7 @@ class RegAsyncWriteOnly(AsyncReg, ABC):
         self._validate_data(data=data)
 
         # pylint: disable=duplicate-code
-        self._logger.info('Writing data:%X to %X', data, self.address)
+        self._logger.info(f'Writing data:0x{data:X} to 0x{self.address:X}')
         # pylint: enable=duplicate-code
 
         if self._callbacks.write_callback is not None:
@@ -333,8 +327,6 @@ class RegAsyncReadWrite(RegAsyncReadOnly, RegAsyncWriteOnly, ABC):
     # pylint: disable=too-many-arguments, duplicate-code
     def __init__(self, *,
                  address: int,
-                 width: int,
-                 accesswidth: int,
                  logger_handle: str,
                  inst_name: str,
                  parent: Union[AsyncAddressMap, AsyncRegFile, MemoryAsyncReadWrite,
@@ -343,7 +335,7 @@ class RegAsyncReadWrite(RegAsyncReadOnly, RegAsyncWriteOnly, ABC):
         super().__init__(address=address,
                          logger_handle=logger_handle,
                          inst_name=inst_name,
-                         parent=parent, width=width, accesswidth=accesswidth)
+                         parent=parent)
 
         self.__in_read_write_context_manager: bool = False
         self.__in_read_context_manager: bool = False
@@ -519,8 +511,6 @@ class AsyncRegArray(BaseRegArray, ABC):
     def __init__(self, *,
                  logger_handle: str, inst_name: str,
                  parent: Union[AsyncAddressMap, AsyncRegFile, AsyncMemory],
-                 width: int,
-                 accesswidth: int,
                  address: int,
                  stride: int,
                  dimensions: tuple[int, ...],
@@ -534,7 +524,7 @@ class AsyncRegArray(BaseRegArray, ABC):
             raise TypeError(f'callback set type is wrong, got {type(parent._callbacks)}')
 
         super().__init__(logger_handle=logger_handle, inst_name=inst_name,
-                         parent=parent, address=address, width=width, accesswidth=accesswidth,
+                         parent=parent, address=address,
                          stride=stride, dimensions=dimensions, elements=elements)
 
     @property
@@ -857,8 +847,6 @@ class RegAsyncReadOnlyArray(AsyncRegArray, ABC):
                  parent: Union[AsyncRegFile, AsyncAddressMap, ReadableAsyncMemory,
                                ReadableAsyncMemoryLegacy],
                  address: int,
-                 width: int,
-                 accesswidth: int,
                  stride: int,
                  dimensions: tuple[int, ...],
                  elements: Optional[dict[tuple[int, ...], RegAsyncReadOnly]] = None):
@@ -871,7 +859,7 @@ class RegAsyncReadOnlyArray(AsyncRegArray, ABC):
                             f'got {type(parent)}')
 
         super().__init__(logger_handle=logger_handle, inst_name=inst_name,
-                         parent=parent, address=address, width=width, accesswidth=accesswidth,
+                         parent=parent, address=address,
                          stride=stride, dimensions=dimensions, elements=elements)
     # pylint: enable=too-many-arguments,duplicate-code
 
@@ -912,8 +900,6 @@ class RegAsyncWriteOnlyArray(AsyncRegArray, ABC):
                  parent: Union[AsyncRegFile, AsyncAddressMap,
                                WritableAsyncMemory, WritableAsyncMemoryLegacy],
                  address: int,
-                 width: int,
-                 accesswidth: int,
                  stride: int,
                  dimensions: tuple[int, ...],
                  elements: Optional[dict[tuple[int, ...], RegAsyncWriteOnly]] = None):
@@ -926,7 +912,7 @@ class RegAsyncWriteOnlyArray(AsyncRegArray, ABC):
                             f'got {type(parent)}')
 
         super().__init__(logger_handle=logger_handle, inst_name=inst_name,
-                         parent=parent, address=address, width=width, accesswidth=accesswidth,
+                         parent=parent, address=address,
                          stride=stride, dimensions=dimensions, elements=elements)
     # pylint: enable=too-many-arguments,duplicate-code
 
@@ -967,8 +953,6 @@ class RegAsyncReadWriteArray(AsyncRegArray, ABC):
                  parent: Union[AsyncRegFile, AsyncAddressMap,
                                MemoryAsyncReadWrite, MemoryAsyncReadWriteLegacy],
                  address: int,
-                 width: int,
-                 accesswidth: int,
                  stride: int,
                  dimensions: tuple[int, ...],
                  elements: Optional[dict[tuple[int, ...], RegAsyncReadWrite]] = None):
@@ -980,7 +964,7 @@ class RegAsyncReadWriteArray(AsyncRegArray, ABC):
                             f'got {type(parent)}')
 
         super().__init__(logger_handle=logger_handle, inst_name=inst_name,
-                         parent=parent, address=address, width=width, accesswidth=accesswidth,
+                         parent=parent, address=address,
                          stride=stride, dimensions=dimensions, elements=elements)
     # pylint: enable=too-many-arguments,duplicate-code
 

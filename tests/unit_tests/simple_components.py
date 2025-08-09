@@ -28,14 +28,10 @@ class ReadOnlyRegisterToTest(RegReadOnly):
     # pylint: disable=duplicate-code,too-many-arguments
     def __init__(self, *,
                  address: int,
-                 accesswidth:int,
-                 width:int,
                  logger_handle: str,
                  inst_name: str,
                  parent: AddressMap):
         super().__init__(address=address,
-                         accesswidth=accesswidth,
-                         width=width,
                          logger_handle=logger_handle,
                          inst_name=inst_name,
                          parent=parent)
@@ -55,6 +51,14 @@ class ReadOnlyRegisterToTest(RegReadOnly):
             logger_handle=logger_handle + '.field',
             inst_name='field',
             field_type=int)
+
+    @property
+    def width(self) -> int:
+        return 32
+
+    @property
+    def accesswidth(self) -> int:
+        return 32
 
     @property
     def readable_fields(self) -> Iterator[FieldReadOnly]:
@@ -107,14 +111,10 @@ class WriteOnlyRegisterToTest(RegWriteOnly):
 
     def __init__(self, *,
                  address: int,
-                 accesswidth: int,
-                 width: int,
                  logger_handle: str,
                  inst_name: str,
                  parent: AddressMap):
         super().__init__(address=address,
-                         accesswidth=accesswidth,
-                         width=width,
                          logger_handle=logger_handle,
                          inst_name=inst_name,
                          parent=parent)
@@ -134,6 +134,14 @@ class WriteOnlyRegisterToTest(RegWriteOnly):
             logger_handle=logger_handle + '.field',
             inst_name='field',
             field_type=int)
+
+    @property
+    def width(self) -> int:
+        return 32
+
+    @property
+    def accesswidth(self) -> int:
+        return 32
 
     @property
     def writable_fields(self) -> Iterator[FieldWriteOnly]:
@@ -189,14 +197,10 @@ class ReadWriteRegisterToTest(RegReadWrite):
 
     def __init__(self, *,
                  address: int,
-                 accesswidth: int,
-                 width: int,
                  logger_handle: str,
                  inst_name: str,
                  parent: AddressMap):
         super().__init__(address=address,
-                         accesswidth=accesswidth,
-                         width=width,
                          logger_handle=logger_handle,
                          inst_name=inst_name,
                          parent=parent)
@@ -216,6 +220,14 @@ class ReadWriteRegisterToTest(RegReadWrite):
             logger_handle=logger_handle + '.field',
             inst_name='field',
             field_type=int)
+
+    @property
+    def width(self) -> int:
+        return 32
+
+    @property
+    def accesswidth(self) -> int:
+        return 32
 
     @property
     def readable_fields(self) -> Iterator[FieldReadOnly]:
@@ -270,6 +282,14 @@ class ReadOnlyRegisterArrayToTest(RegReadOnlyArray):
     __slots__: list[str] = []
 
     @property
+    def width(self) -> int:
+        return 32
+
+    @property
+    def accesswidth(self) -> int:
+        return 32
+
+    @property
     def _element_datatype(self) -> type[Node]:
         return ReadOnlyRegisterToTest
 
@@ -281,6 +301,14 @@ class WriteOnlyRegisterArrayToTest(RegWriteOnlyArray):
     __slots__: list[str] = []
 
     @property
+    def width(self) -> int:
+        return 32
+
+    @property
+    def accesswidth(self) -> int:
+        return 32
+
+    @property
     def _element_datatype(self) -> type[Node]:
         return WriteOnlyRegisterToTest
 
@@ -290,6 +318,14 @@ class ReadWriteRegisterArrayToTest(RegReadWriteArray):
     Class to represent a register array in the register model
     """
     __slots__: list[str] = []
+
+    @property
+    def width(self) -> int:
+        return 32
+
+    @property
+    def accesswidth(self) -> int:
+        return 32
 
     @property
     def _element_datatype(self) -> type[Node]:

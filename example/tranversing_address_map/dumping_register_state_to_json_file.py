@@ -1,3 +1,6 @@
+"""
+A demonstration of traversing the register model generated with peakrdl-python
+"""
 import json
 from typing import Union
 

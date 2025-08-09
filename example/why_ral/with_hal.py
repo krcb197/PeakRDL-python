@@ -1,9 +1,17 @@
 """
-An example to turn on GPIO 0 with the RAL
+An example to turn on GPIO 0 with a Hardware Abstaction Layer, built on top of the peakrdl-python
+Register Abstraction Layer (RAL)
 """
+from enum import Enum, auto
 from gpio.reg_model.gpio import gpio_cls as GPIO
 from gpio.sim.gpio import gpio_simulator_cls as HardwareSimulator
-from gpio.reg_model.gpio import gpio_gpio_direction_enc_enumcls as GPIO_DIR_ENUM
+
+class GPIODir(Enum):
+    """
+    Enumeration for GPIO direction
+    """
+    IN = auto()
+    OUT = auto()
 
 from gpio.lib import NormalCallbackSet
 
@@ -23,12 +31,25 @@ class HAL:
             return getattr(self._ral.data_out, f'gpio_{self._chn}_out')
 
         @property
-        def direction(self) -> GPIO_DIR_ENUM:
-            return self.__direction_field.read()
+        def __gpio_enum(self):
+            return self.__direction_field.enum_cls
+
+        @property
+        def direction(self) -> GPIODir:
+            ral_enum_value = self.__direction_field.read()
+            if ral_enum_value is self.__gpio_enum.GPIO_IN:
+                return GPIODir.IN
+            if ral_enum_value is self.__gpio_enum.GPIO_OUT:
+                return GPIODir.OUT
+            raise ValueError(f'Unable to map {ral_enum_value}')
 
         @direction.setter
-        def direction(self, dir: GPIO_DIR_ENUM):
-            self.__direction_field.write(dir)
+        def direction(self, dir: GPIODir):
+            mappping_dict = {
+                GPIODir.IN: self.__gpio_enum.GPIO_IN,
+                GPIODir.OUT: self.__gpio_enum.GPIO_OUT,
+            }
+            self.__direction_field.write(mappping_dict[dir])
 
         @property
         def data_out(self) -> bool:
@@ -36,8 +57,8 @@ class HAL:
 
         @data_out.setter
         def data_out(self, dir: bool):
-            if self.direction is not GPIO_DIR_ENUM.GPIO_OUT:
-                self.direction = GPIO_DIR_ENUM.GPIO_OUT
+            if self.direction is not GPIODir.OUT:
+                self.direction = GPIODir.OUT
             self.__data_out_field.write(dir)
 
 

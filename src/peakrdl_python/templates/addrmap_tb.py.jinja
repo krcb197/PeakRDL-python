@@ -38,10 +38,7 @@ from enum import IntEnum
 from {% if skip_lib_copy %}peakrdl_python.{% else %}..{% endif %}lib import RegisterWriteVerifyError, UnsupportedWidthError
 
 from ..reg_model.{{top_node.inst_name}} import {{top_node.inst_name}}_cls
-{% for property_enum in dependent_property_enum %}
-from ..reg_model.{{top_node.inst_name}} import {{property_enum.type_name}}_property_enumcls
-{% endfor %}
-
+from ..reg_model.{{top_node.inst_name}}_property_enums import *
 
 {% if asyncoutput %}
 from {% if skip_lib_copy %}peakrdl_python.{% else %}..{% endif %}lib import FieldAsyncReadOnly, FieldAsyncWriteOnly, FieldAsyncReadWrite
@@ -849,7 +846,7 @@ class {{fq_block_name}}_single_access({{top_node.inst_name}}_TestCase): # type: 
         {% if node.has_sw_writable and node.has_sw_readable %}
         with self.subTest(msg='register: {{'.'.join(node.get_path_segments())}}'):
             {% if asyncoutput %}await {% endif %}write_field_combinations(reg=self.dut.{{'.'.join(get_python_path_segments(node))}},
-                               writable_fields = [ {% for field in get_reg_writable_fields(node, hide_node_func) -%}
+                               writable_fields = [ {% for field in get_reg_writable_fields(node) -%}
                                                    '{{ safe_node_name(field) }}' {%- if not loop.last -%},{%- endif %}
                                                    {% endfor -%} ])
         {%- endif %}
@@ -909,13 +906,13 @@ class {{fq_block_name}}_single_access({{top_node.inst_name}}_TestCase): # type: 
             # {{'.'.join(node.get_path_segments())}}
             {% if node.has_sw_readable -%}
             {% if asyncoutput %}await {% endif %}write_field_combinations(reg=self.dut.{{'.'.join(get_python_path_segments(node))}},
-                                       writable_fields = [ {% for field in get_reg_writable_fields(node, hide_node_func) -%}
+                                       writable_fields = [ {% for field in get_reg_writable_fields(node) -%}
                                                            '{{ safe_node_name(field) }}' {%- if not loop.last -%},{%- endif %}
                                                            {% endfor -%} ])
             {% else -%}
             kwargs = {}
             expected_value = 0
-            {% for field in get_reg_writable_fields(node, hide_node_func) %}
+            {% for field in get_reg_writable_fields(node) %}
             {%- if 'encode' in field.list_properties() %}
             rand_enum_value = random_enum_reg_value(self.dut.{{'.'.join(get_python_path_segments(field))}}.enum_cls)
             rand_field_value = rand_enum_value.value

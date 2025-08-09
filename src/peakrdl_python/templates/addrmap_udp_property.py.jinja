@@ -33,13 +33,13 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 {%- macro udp_property(node) %}
 
-    {% set property_list = get_properties_to_include(node,udp_to_include) %}
+    {% set property_list = node.properties_to_include %}
     {% if property_list %}
     @property
     def udp(self) -> UDPStruct:
         return {
             {% for property_name in property_list %}
-            {{udp_property_dict_entry(property_name, node.get_property(property_name))}}
+            {{udp_property_dict_entry(property_name, node.instance.get_property(property_name))}}
             {% endfor %}
                }
 

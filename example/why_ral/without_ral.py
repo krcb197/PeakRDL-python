@@ -1,5 +1,5 @@
 """
-An example to turn on GPIO 0 with just read and write
+An example to turn on GPIO 0 with just read and write, without using peakrdl-python
 """
 
 class HardwareSimulator:

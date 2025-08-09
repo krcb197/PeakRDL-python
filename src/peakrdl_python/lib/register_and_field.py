@@ -71,8 +71,6 @@ class Reg(BaseReg, ABC):
     # pylint: disable=too-many-arguments,duplicate-code
     def __init__(self, *,
                  address: int,
-                 width: int,
-                 accesswidth: int,
                  logger_handle: str,
                  inst_name: str,
                  parent: Union[AddressMap, RegFile, Memory, 'RegArray']):
@@ -86,8 +84,8 @@ class Reg(BaseReg, ABC):
         if not isinstance(parent._callbacks, (NormalCallbackSet, NormalCallbackSetLegacy)):
             raise TypeError(f'callback set type is wrong, got {type(parent._callbacks)}')
 
-        super().__init__(address=address, width=width, accesswidth=accesswidth,
-                         logger_handle=logger_handle, inst_name=inst_name, parent=parent)
+        super().__init__(address=address, logger_handle=logger_handle,
+                         inst_name=inst_name, parent=parent)
 
     @property
     def _callbacks(self) -> Union[NormalCallbackSet, NormalCallbackSetLegacy]:
@@ -128,8 +126,6 @@ class RegArray(BaseRegArray, ABC):
     def __init__(self, *,
                  logger_handle: str, inst_name: str,
                  parent: Union[AddressMap, RegFile, Memory],
-                 width: int,
-                 accesswidth: int,
                  address: int,
                  stride: int,
                  dimensions: tuple[int, ...],
@@ -143,7 +139,7 @@ class RegArray(BaseRegArray, ABC):
             raise TypeError(f'callback set type is wrong, got {type(parent._callbacks)}')
 
         super().__init__(logger_handle=logger_handle, inst_name=inst_name,
-                         parent=parent, address=address, width=width, accesswidth=accesswidth,
+                         parent=parent, address=address,
                          stride=stride, dimensions=dimensions, elements=elements)
 
     @property
@@ -470,8 +466,6 @@ class RegReadOnly(Reg, ABC):
     # pylint: disable=too-many-arguments, duplicate-code
     def __init__(self, *,
                  address: int,
-                 width: int,
-                 accesswidth: int,
                  logger_handle: str,
                  inst_name: str,
                  parent: Union[AddressMap, RegFile, ReadableMemory, ReadableMemoryLegacy ]):
@@ -479,7 +473,7 @@ class RegReadOnly(Reg, ABC):
         super().__init__(address=address,
                          logger_handle=logger_handle,
                          inst_name=inst_name,
-                         parent=parent, width=width, accesswidth=accesswidth)
+                         parent=parent)
 
         self.__in_context_manager: bool = False
         self.__register_state: int = 0
@@ -567,8 +561,6 @@ class RegWriteOnly(Reg, ABC):
     # pylint: disable=too-many-arguments, duplicate-code, useless-parent-delegation
     def __init__(self, *,
                  address: int,
-                 width: int,
-                 accesswidth: int,
                  logger_handle: str,
                  inst_name: str,
                  parent: Union[AddressMap, RegFile, WritableMemory, WritableMemoryLegacy]):
@@ -576,7 +568,7 @@ class RegWriteOnly(Reg, ABC):
         super().__init__(address=address,
                          logger_handle=logger_handle,
                          inst_name=inst_name,
-                         parent=parent, width=width, accesswidth=accesswidth)
+                         parent=parent)
     # pylint: enable=too-many-arguments, duplicate-code
 
     def write(self, data: int) -> None:
@@ -593,7 +585,7 @@ class RegWriteOnly(Reg, ABC):
         # this method check the types and range checks the data
         self._validate_data(data=data)
 
-        self._logger.info('Writing data:%X to %X', data, self.address)
+        self._logger.info(f'Writing data:0x{data:X} to 0x{self.address:X}')
 
         if self._callbacks.write_callback is not None:
             self._callbacks.write_callback(addr=self.address,
@@ -658,8 +650,6 @@ class RegReadWrite(RegReadOnly, RegWriteOnly, ABC):
     # pylint: disable=too-many-arguments, duplicate-code
     def __init__(self, *,
                  address: int,
-                 width: int,
-                 accesswidth: int,
                  logger_handle: str,
                  inst_name: str,
                  parent: Union[AddressMap, RegFile, MemoryReadWrite, MemoryReadWriteLegacy]):
@@ -667,7 +657,7 @@ class RegReadWrite(RegReadOnly, RegWriteOnly, ABC):
         super().__init__(address=address,
                          logger_handle=logger_handle,
                          inst_name=inst_name,
-                         parent=parent, width=width, accesswidth=accesswidth)
+                         parent=parent)
 
         self.__in_read_write_context_manager: bool = False
         self.__in_read_context_manager: bool = False
@@ -826,8 +816,6 @@ class RegReadOnlyArray(RegArray, ABC):
                  logger_handle: str, inst_name: str,
                  parent: Union[RegFile, AddressMap, ReadableMemory, ReadableMemoryLegacy],
                  address: int,
-                 width: int,
-                 accesswidth: int,
                  stride: int,
                  dimensions: tuple[int, ...],
                  elements: Optional[dict[tuple[int, ...], RegReadOnly]] = None):
@@ -842,7 +830,7 @@ class RegReadOnlyArray(RegArray, ABC):
             raise TypeError(f'callback set type is wrong, got {type(parent._callbacks)}')
 
         super().__init__(logger_handle=logger_handle, inst_name=inst_name,
-                         parent=parent, address=address, width=width, accesswidth=accesswidth,
+                         parent=parent, address=address,
                          stride=stride, dimensions=dimensions, elements=elements)
     # pylint: enable=too-many-arguments,duplicate-code
 
@@ -879,8 +867,6 @@ class RegWriteOnlyArray(RegArray, ABC):
                  logger_handle: str, inst_name: str,
                  parent: Union[RegFile, AddressMap, WritableMemory, WritableMemoryLegacy],
                  address: int,
-                 width: int,
-                 accesswidth: int,
                  stride: int,
                  dimensions: tuple[int, ...],
                  elements: Optional[dict[tuple[int, ...], RegWriteOnly]] = None):
@@ -895,7 +881,7 @@ class RegWriteOnlyArray(RegArray, ABC):
             raise TypeError(f'callback set type is wrong, got {type(parent._callbacks)}')
 
         super().__init__(logger_handle=logger_handle, inst_name=inst_name,
-                         parent=parent, address=address, width=width, accesswidth=accesswidth,
+                         parent=parent, address=address,
                          stride=stride, dimensions=dimensions, elements=elements)
     # pylint: enable=too-many-arguments,duplicate-code
 
@@ -932,8 +918,6 @@ class RegReadWriteArray(RegArray, ABC):
                  logger_handle: str, inst_name: str,
                  parent: Union[RegFile, AddressMap, MemoryReadWrite, MemoryReadWriteLegacy],
                  address: int,
-                 width: int,
-                 accesswidth: int,
                  stride: int,
                  dimensions: tuple[int, ...],
                  elements: Optional[dict[tuple[int, ...], RegReadWrite]] = None):
@@ -946,7 +930,7 @@ class RegReadWriteArray(RegArray, ABC):
             raise TypeError(f'callback set type is wrong, got {type(parent._callbacks)}')
 
         super().__init__(logger_handle=logger_handle, inst_name=inst_name,
-                         parent=parent, address=address, width=width, accesswidth=accesswidth,
+                         parent=parent, address=address,
                          stride=stride, dimensions=dimensions, elements=elements)
 
     # pylint: enable=too-many-arguments,duplicate-code
