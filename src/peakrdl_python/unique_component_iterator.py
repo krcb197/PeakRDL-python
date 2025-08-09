@@ -20,6 +20,8 @@ code.
 """
 from typing import Optional
 from dataclasses import dataclass, field
+from collections.abc import Iterator
+from itertools import filterfalse
 
 from logging import getLogger
 
@@ -105,6 +107,17 @@ class PeakRDLPythonUniqueComponents:
 
         return (scope_path + '_' + inst_type_name + '_' + hex(self.instance_hash) + '_cls',
                 ideal_class_name)
+
+    def children(self, unroll:bool) -> Iterator[Node]:
+        yield from filterfalse(self.parent_walker.hide_node_callback, self.instance.children(unroll=unroll))
+
+    @property
+    def zero_children(self):
+        """
+        This condition can happen if the children are hidden
+        """
+        return len(tuple(self.children(unroll=False))) == 0
+
 
 @dataclass(frozen=True)
 class PeakRDLPythonUniqueRegisterComponents(PeakRDLPythonUniqueComponents):
