@@ -393,11 +393,13 @@ def node_hash(node: Node,
     if isinstance(node, FieldNode):
         hash_content = __field_hash(node=node, udp_to_include=udp_to_include,
                                     include_name_and_desc=include_name_and_desc)
-        # This is a special case, if there is a single entry for access type, then there is no
-        # need to make a special class, it is permitted to use the base classes from the
+        # This is a special case, if there is a two entry for type and access type, then there is
+        # no need to make a special class, it is permitted to use the base classes from the
         # library
-        if len(hash_content) == 1:
-            if isinstance(hash_content[0], AccessType):
+        if len(hash_content) == 2:
+            if (isinstance(hash_content[0], str) and
+                    hash_content[0] == 'Field' and
+                    isinstance(hash_content[1], AccessType)):
                 return None
             raise TypeError(f'Unexpected content in the hash_content, {type(hash_content[0])}')
 
