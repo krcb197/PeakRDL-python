@@ -175,23 +175,16 @@ class {{node.python_class_name}}({% if asyncoutput %}Async{% endif %}RegFile):
         return {{node.instance.size}}
 
     # properties for Register and RegisterFiles
-    {%- for child_node in node.instance.children(unroll=False) %}
-        {%- if not hide_node_func(child_node) %}
-            {%- if isinstance(child_node, systemrdlRegNode) or isinstance(child_node, systemrdlRegfileNode) %}
+    {%- for child_node in node.children(unroll=False) %}
+        {%- if isinstance(child_node, (systemrdlRegNode, systemrdlRegfileNode)) %}
     @property
-                {%- if isinstance(child_node, (systemrdlRegNode, systemrdlRegfileNode)) -%}
-                {%- set property_name = safe_node_name(child_node) -%}
-                {% else %}
-                {{ raise_template_error('unexpected type') }}
-                 {%- endif %}
-    def {{property_name}}(self) -> '{% if child_node.is_array -%}{{get_fully_qualified_type_name(child_node)}}_array{% else %}{{get_fully_qualified_type_name(child_node)}}{%- endif -%}':
+    def {{safe_node_name(child_node)}}(self) -> '{% if child_node.is_array -%}{{get_fully_qualified_type_name(child_node)}}_array{% else %}{{get_fully_qualified_type_name(child_node)}}{%- endif -%}':
         """
         Property to access {{child_node.inst_name}} {% if child_node.is_array -%}array{% endif %}
 
         {{get_table_block(child_node) | indent(8)}}
         """
         return self.__{{child_node.inst_name}}
-            {%- endif %}
         {%- endif %}
     {% endfor %}
 
