@@ -21,7 +21,7 @@ asynchronous registers and fields
 """
 from enum import Enum
 from typing import Union, Optional, TypeVar, cast
-from collections.abc import AsyncGenerator, Iterator
+from collections.abc import AsyncGenerator, Iterator, Iterable
 from abc import ABC, abstractmethod
 from contextlib import asynccontextmanager
 from array import array as Array
@@ -29,7 +29,7 @@ import sys
 from warnings import warn
 
 from .utility_functions import get_array_typecode
-from .base import AsyncAddressMap, AsyncRegFile
+from .sections import AsyncAddressMap, AsyncRegFile
 from .async_memory import  MemoryAsyncReadOnly, MemoryAsyncWriteOnly, MemoryAsyncReadWrite, \
     AsyncMemory, ReadableAsyncMemory, WritableAsyncMemory
 from .async_memory import  MemoryAsyncReadOnlyLegacy, MemoryAsyncWriteOnlyLegacy, \
@@ -58,7 +58,9 @@ else:
 # pylint: disable=redefined-slots-in-subclass,too-many-lines
 
 
-class AsyncReg(BaseReg, ABC):
+class AsyncReg(BaseReg,
+               Iterable[Union['FieldAsyncReadOnly', 'FieldAsyncWriteOnly', 'FieldAsyncReadWrite']],
+               ABC):
     """
         base class of async register wrappers
 
@@ -101,12 +103,12 @@ class AsyncReg(BaseReg, ABC):
         raise TypeError(f'unhandled parent callback type: {type(self.parent._callbacks)}')
 
     @property
-    @abstractmethod
     def fields(self) -> \
             Iterator[Union['FieldAsyncReadOnly', 'FieldAsyncWriteOnly', 'FieldAsyncReadWrite']]:
         """
         generator that produces has all the fields within the register
         """
+        yield from iter(self)
 
 
 class RegAsyncReadOnly(AsyncReg, ABC):

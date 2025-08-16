@@ -64,22 +64,6 @@ class RegTestBase(CallBackTestWrapper, ABC):
                                       parent=self,
                                       address=address)
 
-            def get_memories(self, unroll: bool = False) -> \
-                    Iterator[Union[Memory, tuple[Memory, ...]]]:
-                raise NotImplementedError('Not implemented in the testing')
-
-            def get_sections(self, unroll: bool = False) -> \
-                    Iterator[Union[Union[AddressMap, RegFile],
-                                   tuple[Union[AddressMap, RegFile], ...]]]:
-                raise NotImplementedError('Not implemented in the testing')
-
-            def get_registers(self, unroll: bool = False) -> \
-                    Iterator[Union[Reg, RegArray]]:
-                """
-                generator that produces all the readable_registers of this node
-                """
-                raise NotImplementedError('Not implemented in the testing')
-
             @property
             def systemrdl_python_child_name_map(self) -> dict[str, str]:
 
@@ -97,6 +81,9 @@ class RegTestBase(CallBackTestWrapper, ABC):
             @property
             def size(self) -> int:
                 return self.dut.size
+
+            def __iter__(self) -> Iterator[Union[Node, NodeArray]]:
+                yield self.dut
 
         super().setUp()
         self.dut_wrapper = DUTWrapper(callbacks=self.callbacks, address=self.address,

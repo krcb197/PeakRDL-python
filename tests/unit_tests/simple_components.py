@@ -67,8 +67,7 @@ class ReadOnlyRegisterToTest(RegReadOnly):
         """
         yield self.field
 
-    @property
-    def fields(self) -> Iterator[FieldReadOnly]:
+    def __iter__(self) -> Iterator[FieldReadOnly]:
         """
         generator that produces has all the readable fields within the register
         """
@@ -150,8 +149,7 @@ class WriteOnlyRegisterToTest(RegWriteOnly):
         """
         yield self.field
 
-    @property
-    def fields(self) -> Iterator[FieldWriteOnly]:
+    def __iter__(self) -> Iterator[FieldWriteOnly]:
         """
         generator that produces has all the readable fields within the register
         """
@@ -236,8 +234,7 @@ class ReadWriteRegisterToTest(RegReadWrite):
         """
         yield self.field
 
-    @property
-    def fields(self) -> Iterator[FieldReadOnly]:
+    def __iter__(self) -> Iterator[FieldReadOnly]:
         """
         generator that produces has all the readable fields within the register
         """

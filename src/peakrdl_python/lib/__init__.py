@@ -27,15 +27,15 @@ from .callbacks import NormalCallbackSet, NormalCallbackSetLegacy
 from .callbacks import AsyncCallbackSet, AsyncCallbackSetLegacy
 from .callbacks import CallbackSet
 
-from .base import AddressMap
-from .base import RegFile
-from .base import AddressMapArray
-from .base import RegFileArray
+from .sections import AddressMap
+from .sections import RegFile
+from .sections import AddressMapArray
+from .sections import RegFileArray
 
-from .base import AsyncAddressMap
-from .base import AsyncRegFile
-from .base import AsyncAddressMapArray
-from .base import AsyncRegFileArray
+from .sections import AsyncAddressMap
+from .sections import AsyncRegFile
+from .sections import AsyncAddressMapArray
+from .sections import AsyncRegFileArray
 
 from .register_and_field import Reg
 from .register_and_field import RegArray
@@ -110,5 +110,6 @@ from .async_memory import AsyncMemoryArray
 from .utility_functions import get_array_typecode
 from .utility_functions import UnsupportedWidthError
 from .base import Node
+from .base import NodeArray
 from .base import Base
 from .base import UDPStruct

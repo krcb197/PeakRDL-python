@@ -43,7 +43,7 @@ import warnings
 
 from contextlib import {% if asyncoutput %}async{% endif %}contextmanager
 
-from {% if skip_lib_copy %}peakrdl_python.{% else %}..{% endif %}lib import Node, Base
+from {% if skip_lib_copy %}peakrdl_python.{% else %}..{% endif %}lib import Node, NodeArray, Base
 from {% if skip_lib_copy %}peakrdl_python.{% else %}..{% endif %}lib import UDPStruct
 
 from {% if skip_lib_copy %}peakrdl_python.{% else %}..{% endif %}lib  import AddressMapArray, RegFileArray
@@ -101,11 +101,11 @@ from .{{top_node.inst_name}}_property_enums import {{property_enum.type_name}}_p
 {% from 'addrmap_register.py.jinja' import register_class with context %}
 {% from 'addrmap_memory.py.jinja' import memory_class with context %}
 {% from 'reg_definitions.py.jinja' import register_class_attributes with context %}
-{% from 'reg_definitions.py.jinja' import child_register_getter with context %}
 {% from 'addrmap_udp_property.py.jinja' import udp_property with context %}
 {% from 'addrmap_universal_property.py.jinja' import universal_properties with context %}
 {% from 'addrmap_system_rdl_name_mapping.py.jinja' import get_child_by_system_rdl_name with context %}
 {% from 'addrmap_system_rdl_name_mapping.py.jinja' import systemrdl_python_child_name_map with context %}
+{% from 'child_definitions.py.jinja' import node_children_iterator with context %}
 
 {%- macro regfile_or_addr_instance(node) %}
     {%- if not hide_node_func(node) %}
@@ -173,23 +173,16 @@ class {{node.python_class_name}}({% if asyncoutput %}Async{% endif %}RegFile):
         return {{node.instance.size}}
 
     # properties for Register and RegisterFiles
-    {%- for child_node in node.instance.children(unroll=False) %}
-        {%- if not hide_node_func(child_node) %}
-            {%- if isinstance(child_node, systemrdlRegNode) or isinstance(child_node, systemrdlRegfileNode) %}
+    {%- for child_node in node.children(unroll=False) %}
+        {%- if isinstance(child_node, (systemrdlRegNode, systemrdlRegfileNode)) %}
     @property
-                {%- if isinstance(child_node, (systemrdlRegNode, systemrdlRegfileNode)) -%}
-                {%- set property_name = safe_node_name(child_node) -%}
-                {% else %}
-                {{ raise_template_error('unexpected type') }}
-                 {%- endif %}
-    def {{property_name}}(self) -> '{% if child_node.is_array -%}{{get_fully_qualified_type_name(child_node)}}_array{% else %}{{get_fully_qualified_type_name(child_node)}}{%- endif -%}':
+    def {{safe_node_name(child_node)}}(self) -> '{% if child_node.is_array -%}{{get_fully_qualified_type_name(child_node)}}_array{% else %}{{get_fully_qualified_type_name(child_node)}}{%- endif -%}':
         """
         Property to access {{child_node.inst_name}} {% if child_node.is_array -%}array{% endif %}
 
         {{get_table_block(child_node) | indent(8)}}
         """
         return self.__{{child_node.inst_name}}
-            {%- endif %}
         {%- endif %}
     {% endfor %}
 
@@ -201,13 +194,7 @@ class {{node.python_class_name}}({% if asyncoutput %}Async{% endif %}RegFile):
 
     {{ universal_properties(node.instance) }}
 
-    {{ child_register_getter(node.instance) }}
-
-        {% if asyncoutput %}
-    {{ child_getter(node.instance, "get_sections", "AsyncRegFile, AsyncRegFileArray", systemrdlRegfileNode) }}
-    {% else %}
-    {{ child_getter(node.instance, "get_sections", "RegFile, RegFileArray", systemrdlRegfileNode) }}
-    {% endif %}
+    {{ node_children_iterator(node) }}
 
      {%- if node.instance.is_array %}
 class {{node.python_class_name}}_array({% if asyncoutput %}Async{% endif %}RegFileArray):
@@ -267,23 +254,16 @@ class {{node.python_class_name}}({% if asyncoutput %}Async{% endif %}AddressMap)
     def size(self) -> int:
         return {{node.instance.size}}
 
-        {%- for child_node in node.instance.children(unroll=False) -%}
+        {%- for child_node in node.children(unroll=False) -%}
             {%- if isinstance(child_node, (systemrdlRegNode, systemrdlRegfileNode, systemrdlAddrmapNode, systemrdlMemNode)) %}
-                {%- if not hide_node_func(child_node) %}
     @property
-    {%- if isinstance(child_node, (systemrdlRegNode, systemrdlRegfileNode, systemrdlAddrmapNode, systemrdlMemNode)) -%}
-    {%- set property_name = safe_node_name(child_node) -%}
-    {% else %}
-    {{ raise_template_error('unexpected type') }}
-    {%- endif %}
-    def {{property_name}}(self) -> '{% if child_node.is_array -%}{{get_fully_qualified_type_name(child_node)}}_array{% else %}{{get_fully_qualified_type_name(child_node)}}{%- endif -%}':
+    def {{safe_node_name(child_node)}}(self) -> '{% if child_node.is_array -%}{{get_fully_qualified_type_name(child_node)}}_array{% else %}{{get_fully_qualified_type_name(child_node)}}{%- endif -%}':
         """
         Property to access {{child_node.inst_name}} {% if child_node.is_array -%}array{% endif %}
 
         {{get_table_block(child_node) | indent(8)}}
         """
         return self.__{{child_node.inst_name}}
-                {%- endif %}
             {%- endif %}
         {% endfor %}
 
@@ -295,15 +275,7 @@ class {{node.python_class_name}}({% if asyncoutput %}Async{% endif %}AddressMap)
 
     {{ universal_properties(node.instance) }}
 
-    {{ child_register_getter(node.instance) }}
-    {% if asyncoutput %}
-    {{ child_getter(node.instance, "get_sections", "AsyncAddressMap, AsyncRegFile, AsyncAddressMapArray, AsyncRegFileArray", (systemrdlAddrmapNode, systemrdlRegfileNode)) }}
-    {{ child_getter(node.instance, "get_memories",    "AsyncMemory, AsyncMemoryArray",     systemrdlMemNode) }}
-    {% else %}
-    {{ child_getter(node.instance, "get_sections", "AddressMap, RegFile, AddressMapArray, RegFileArray", (systemrdlAddrmapNode, systemrdlRegfileNode)) }}
-    {{ child_getter(node.instance, "get_memories",    "Memory, MemoryArray",     systemrdlMemNode) }}
-
-    {% endif %}
+    {{ node_children_iterator(node) }}
 
     {%- if node.instance.is_array %}
 class {{node.python_class_name}}_array({% if asyncoutput %}Async{% endif %}AddressMapArray):
@@ -327,48 +299,6 @@ class {{node.python_class_name}}_array({% if asyncoutput %}Async{% endif %}Addre
         return {{node.python_class_name}}
     {%- endif %}
 {%- endmacro %}
-
-{%- macro child_getter(node, getter_name, child_type, child_rdltype) %}
-    def {{getter_name}}(self, unroll:bool=False) -> Iterator[Union[{{child_type}}]]:
-        """
-        generator that produces all the {{child_type}} children of this node
-        """
-        {% for child_node in node.children(unroll=False) -%}
-            {%- if isinstance(child_node, child_rdltype) %}
-                {%- if not hide_node_func(child_node) %}
-
-                    {%- if isinstance(child_node, systemrdlRegNode) -%}
-                    {%- set property_name = safe_node_name(child_node) -%}
-                    {%- elif isinstance(child_node, systemrdlRegfileNode) -%}
-                    {%- set property_name = safe_node_name(child_node) -%}
-                    {%- elif isinstance(child_node, systemrdlAddrmapNode) -%}
-                    {%- set property_name = safe_node_name(child_node) -%}
-                    {%- elif isinstance(child_node, systemrdlMemNode) %}
-                    {%- set property_name = safe_node_name(child_node) -%}
-                    {% else %}
-                    {{ raise_template_error('unexpected type') }}
-                    {%- endif %}
-
-
-                    {% if child_node.is_array %}
-        if unroll:
-            for child in self.{{property_name}}:
-                yield child
-        else:
-            yield self.{{property_name}}
-                    {% else %}
-        yield self.{{property_name}}
-                    {%- endif %}
-                {%- endif -%}
-            {%- endif -%}
-        {% endfor %}
-
-        # Empty generator in case there are no children of this type
-        if False: yield
-{%- endmacro %}
-
-
-
 
 {% if uses_enum %}
 # root level enum definitions

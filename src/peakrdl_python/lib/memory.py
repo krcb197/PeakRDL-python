@@ -21,11 +21,12 @@ memories
 """
 from array import array as Array
 from typing import Union, TYPE_CHECKING
-from collections.abc import Iterator
-from abc import ABC, abstractmethod
+from collections.abc import Iterator, Iterable
+from abc import ABC
 import sys
 
-from .base import Node, AddressMap, AsyncAddressMap, NodeArray
+from .base import Node, NodeArray
+from .sections import AddressMap, AsyncAddressMap
 from .utility_functions import get_array_typecode
 
 from .callbacks import NormalCallbackSet, NormalCallbackSetLegacy
@@ -59,6 +60,7 @@ class BaseMemory(Node, ABC):
     """
 
     __slots__: list[str] = ['__memwidth', '__entries', '__accesswidth']
+    _is_mem = True
 
     # pylint: disable=too-many-arguments
     def __init__(self, *,
@@ -167,8 +169,7 @@ class BaseMemory(Node, ABC):
         """
         return self.__accesswidth
 
-
-class Memory(BaseMemory, ABC):
+class Memory(BaseMemory, Iterable[Union['Reg', 'RegArray']], ABC):
     """
     base class of non_async memory wrappers
 
@@ -177,6 +178,7 @@ class Memory(BaseMemory, ABC):
         circumstances however, it is useful for type checking
     """
     __slots__: list[str] = []
+
 
     # pylint: disable=too-many-arguments
     def __init__(self, *,
@@ -208,15 +210,30 @@ class Memory(BaseMemory, ABC):
                          entries=entries,
                          parent=parent)
 
-    @abstractmethod
-    def get_registers(self, unroll: bool = False) -> \
-            Iterator[Union['Reg', 'RegArray']]:
+    def get_children(self, unroll: bool = False) -> Iterator[Union['Reg', 'RegArray']]:
         """
-        generator that produces all the readable_registers of this node
+        generator that produces all the registers of this node
 
         Args:
             unroll: Whether to unroll child array or not
         """
+        if unroll:
+            for child in iter(self):
+                if isinstance(child, NodeArray):
+                    yield from child
+                else:
+                    yield child
+        else:
+            yield from iter(self)
+
+    def get_registers(self, unroll: bool = False) -> Iterator[Union['Reg', 'RegArray']]:
+        """
+        generator that produces all the registers of this node
+
+        Args:
+            unroll: Whether to unroll child array or not
+        """
+        yield from self.get_children(unroll=unroll)
 
 
 class _MemoryReadOnly(Memory, ABC):
@@ -690,6 +707,7 @@ class MemoryReadOnlyArray(NodeArray, ABC):
     base class for a array of read only memories
     """
     __slots__: list[str] = []
+    _is_mem = True
 
     # pylint: disable-next=too-many-arguments
     def __init__(self, *,
@@ -709,6 +727,7 @@ class MemoryWriteOnlyArray(NodeArray, ABC):
     base class for a array of write only memories
     """
     __slots__: list[str] = []
+    _is_mem = True
 
     # pylint: disable-next=too-many-arguments
     def __init__(self, *,
@@ -728,6 +747,7 @@ class MemoryReadWriteArray(MemoryReadOnlyArray, MemoryWriteOnlyArray, ABC):
     base class for a array of read and write memories
     """
     __slots__: list[str] = []
+    _is_mem = True
 
     # pylint: disable-next=too-many-arguments
     def __init__(self, *,

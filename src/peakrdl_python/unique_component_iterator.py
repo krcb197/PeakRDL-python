@@ -20,6 +20,8 @@ code.
 """
 from typing import Optional
 from dataclasses import dataclass, field
+from collections.abc import Iterator
+from itertools import filterfalse
 
 from logging import getLogger
 
@@ -29,6 +31,7 @@ from systemrdl.node import FieldNode
 from systemrdl.node import MemNode
 from systemrdl.node import AddrmapNode
 from systemrdl.node import RegfileNode
+from systemrdl.node import SignalNode
 from systemrdl import RDLListener, WalkerAction
 
 from .systemrdl_node_hashes import node_hash
@@ -105,6 +108,27 @@ class PeakRDLPythonUniqueComponents:
 
         return (scope_path + '_' + inst_type_name + '_' + hex(self.instance_hash) + '_cls',
                 ideal_class_name)
+
+    def children(self, unroll:bool, exclude_signals:bool=True) -> Iterator[Node]:
+        """
+        Iterator for all the systemRDL nodes which are not hidden
+        """
+        if exclude_signals:
+            child_nodes = filter(lambda node : not isinstance(node, SignalNode),
+                                 self.instance.children(unroll=unroll))
+            yield from filterfalse(self.parent_walker.hide_node_callback,
+                                   child_nodes)
+        else:
+            yield from filterfalse(self.parent_walker.hide_node_callback,
+                                   self.instance.children(unroll=unroll))
+
+    @property
+    def zero_children(self) -> int:
+        """
+        This condition can happen if the children are hidden
+        """
+        return len(tuple(self.children(unroll=False))) == 0
+
 
 @dataclass(frozen=True)
 class PeakRDLPythonUniqueRegisterComponents(PeakRDLPythonUniqueComponents):
