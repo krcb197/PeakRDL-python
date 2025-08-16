@@ -152,8 +152,6 @@ class {{node.python_class_name}}({% if asyncoutput %}Async{% endif %}RegFile):
 
     __slots__ : list[str] = [{%- for child_node in node.instance.children(unroll=False) -%}'__{{child_node.inst_name}}'{% if not loop.last %}, {% endif %}{%- endfor %}]
 
-    {% if asyncoutput %}AsyncCallbackSet{% else %}NormalCallbackSet{% endif %}
-
     def __init__(self,
                  address: int,
                  logger_handle:str,
@@ -379,7 +377,7 @@ class {{node.python_class_name}}_array({% if asyncoutput %}Async{% endif %}Addre
 class {{get_fully_qualified_enum_type(enum_needed)}}_enumcls({% if legacy_enum_type %}IntEnum{% else %}SystemRDLEnum{% endif %}):
 
     {% for value_of_enum_needed in enum_needed -%}
-    {{ value_of_enum_needed.name.upper() }} = {% if legacy_enum_type %}{{ value_of_enum_needed.value }}{% else %}SystemRDLEnumEntry(int_value={{value_of_enum_needed.value}}, name={%- if value_of_enum_needed.rdl_name is not none -%}'{{value_of_enum_needed.rdl_name}}'{% else %}None{% endif %}, desc={%- if value_of_enum_needed.rdl_desc is not none -%}'{{value_of_enum_needed.rdl_desc}}'{% else %}None{% endif %}){% endif %}  {%- if value_of_enum_needed.rdl_desc is not none -%}# {{ value_of_enum_needed.rdl_desc }} {%- endif %}
+    {{ value_of_enum_needed.name.upper() }} = {% if legacy_enum_type %}{{ value_of_enum_needed.value }}{% else %}SystemRDLEnumEntry(int_value={{value_of_enum_needed.value}}, name={%- if value_of_enum_needed.rdl_name is not none -%}'{{value_of_enum_needed.rdl_name}}'{% else %}None{% endif %}, desc={%- if value_of_enum_needed.rdl_desc is not none -%}'{{value_of_enum_needed.rdl_desc}}'{% else %}None{% endif %}){% endif %}  {%- if value_of_enum_needed.rdl_desc is not none %}  # {{ value_of_enum_needed.rdl_desc }} {%- endif %}
     {% endfor %}
 {% endfor -%}
 {% endif %}
