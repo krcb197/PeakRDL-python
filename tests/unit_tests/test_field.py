@@ -15,8 +15,9 @@ from peakrdl_python.lib import FieldEnumReadOnly, FieldEnumWriteOnly, FieldEnumR
 from peakrdl_python.lib import RegReadOnly, RegWriteOnly, RegReadWrite, Reg
 from peakrdl_python.lib import FieldSizeProps
 from peakrdl_python.lib.utility_functions import swap_msb_lsb_ordering, calculate_bitmask
-from peakrdl_python.lib import AddressMap, CallbackSet, RegFile, Memory, RegArray, FieldMiscProps
+from peakrdl_python.lib import AddressMap, CallbackSet, FieldMiscProps
 from peakrdl_python.lib import SystemRDLEnum, SystemRDLEnumEntry
+from peakrdl_python.lib import Node, NodeArray
 
 from .simple_components import CallBackTestWrapper
 
@@ -149,8 +150,7 @@ class TestField(CallBackTestWrapper):
                 """
                 yield self.field
 
-            @property
-            def fields(self) -> Iterator[FieldReadOnly]:
+            def __iter__(self) -> Iterator[FieldReadOnly]:
                 """
                 generator that produces has all the readable fields within the register
                 """
@@ -200,21 +200,6 @@ class TestField(CallBackTestWrapper):
                     parent=self,
                     address=address)
 
-            def get_memories(self, unroll: bool = False) -> \
-                    Iterator[Union[Memory, tuple[Memory, ...]]]:
-                raise NotImplementedError('Not implemented in the testing')
-
-            def get_sections(self, unroll: bool = False) -> \
-                    Iterator[Union[Union[AddressMap, RegFile],
-                    tuple[Union[AddressMap, RegFile], ...]]]:
-                raise NotImplementedError('Not implemented in the testing')
-
-            def get_registers(self, unroll: bool = False) -> \
-                    Iterator[Union[Reg, RegArray]]:
-                """
-                generator that produces all the readable_registers of this node
-                """
-                raise NotImplementedError('Not implemented in the testing')
 
             @property
             def systemrdl_python_child_name_map(self) -> dict[str, str]:
@@ -232,6 +217,9 @@ class TestField(CallBackTestWrapper):
             @property
             def size(self) -> int:
                 return self.dut_reg_wrapper.size
+
+            def __iter__(self) ->  Iterator[Union[Node, NodeArray]]:
+                yield self.dut_reg_wrapper
 
 
 
