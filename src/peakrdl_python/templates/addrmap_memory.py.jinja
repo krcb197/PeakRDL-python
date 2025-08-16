@@ -17,11 +17,11 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #}
 
 {% from 'reg_definitions.py.jinja' import register_class_attributes with context %}
-{% from 'reg_definitions.py.jinja' import child_register_getter with context %}
 {% from 'addrmap_udp_property.py.jinja' import udp_property with context %}
 {% from 'addrmap_universal_property.py.jinja' import universal_properties with context %}
 {% from 'addrmap_system_rdl_name_mapping.py.jinja' import get_child_by_system_rdl_name with context %}
 {% from 'addrmap_system_rdl_name_mapping.py.jinja' import systemrdl_python_child_name_map with context %}
+{% from 'child_definitions.py.jinja' import reg_children_iterator with context %}
 
 {%- macro memory_class(node) %}
 class {{node.python_class_name}}({{node.base_class(asyncoutput)}}{% if legacy_block_access %}Legacy{% endif %}):
@@ -47,15 +47,12 @@ class {{node.python_class_name}}({{node.base_class(asyncoutput)}}{% if legacy_bl
                          inst_name=inst_name,
                          parent=parent)
 
-        {% for child_node in node.instance.children(unroll=False) -%}
-                {%- if not hide_node_func(child_node) %}
+        {% for child_node in node.children(unroll=False) -%}
             {{ register_class_attributes(child_node) | indent }}
-                {% endif %}
         {% endfor %}
 
-        {%- for child_node in node.instance.children(unroll=False) -%}
-            {%-  if not hide_node_func(child_node) %}
-                {%- if isinstance(child_node, systemrdlRegNode) %}
+        {%- for child_node in node.children(unroll=False) -%}
+            {%- if isinstance(child_node, systemrdlRegNode) %}
     @property
     def {{safe_node_name(child_node)}}(self) -> '{% if child_node.is_array -%}{{get_fully_qualified_type_name(child_node)}}_array{% else %}{{get_fully_qualified_type_name(child_node)}}{%- endif -%}':
         """
@@ -64,13 +61,10 @@ class {{node.python_class_name}}({{node.base_class(asyncoutput)}}{% if legacy_bl
         {{get_table_block(child_node) | indent(8)}}
         """
         return self.__{{child_node.inst_name}}
-                {% else %}
-            {{ raise_template_error('unexpected type') }}
-                {%- endif %}
             {%- endif %}
         {% endfor %}
 
-    {{ child_register_getter(node.instance) }}
+    {{ reg_children_iterator(node) }}
 
     {{ systemrdl_python_child_name_map(node.instance) }}
 

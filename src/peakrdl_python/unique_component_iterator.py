@@ -109,10 +109,14 @@ class PeakRDLPythonUniqueComponents:
                 ideal_class_name)
 
     def children(self, unroll:bool) -> Iterator[Node]:
-        yield from filterfalse(self.parent_walker.hide_node_callback, self.instance.children(unroll=unroll))
+        """
+        Iterator for all the systemRDL nodes which are not hidden
+        """
+        yield from filterfalse(self.parent_walker.hide_node_callback,
+                               self.instance.children(unroll=unroll))
 
     @property
-    def zero_children(self):
+    def zero_children(self) -> int:
         """
         This condition can happen if the children are hidden
         """

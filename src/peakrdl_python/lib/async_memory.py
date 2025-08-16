@@ -21,11 +21,12 @@ memories
 """
 from array import array as Array
 from typing import Union, TYPE_CHECKING
-from abc import ABC, abstractmethod
-from collections.abc import Iterator
+from abc import ABC
+from collections.abc import Iterator, Iterable
 import sys
 
-from .base import AsyncAddressMap, NodeArray
+from .base import NodeArray
+from .sections import AsyncAddressMap
 from .memory import BaseMemory
 
 from .callbacks import AsyncCallbackSet, AsyncCallbackSetLegacy
@@ -47,7 +48,7 @@ if TYPE_CHECKING:
 # pylint: disable=duplicate-code
 
 
-class AsyncMemory(BaseMemory, ABC):
+class AsyncMemory(BaseMemory, Iterable[Union['AsyncReg', 'AsyncRegArray']], ABC):
     """
     base class of non_async memory wrappers
 
@@ -87,15 +88,31 @@ class AsyncMemory(BaseMemory, ABC):
                          entries=entries,
                          parent=parent)
 
-    @abstractmethod
-    def get_registers(self, unroll: bool = False) -> \
-            Iterator[Union['AsyncReg', 'AsyncRegArray']]:
+    def get_children(self, unroll: bool = False) -> Iterator[Union['AsyncReg', 'AsyncRegArray']]:
         """
-        generator that produces all the readable_registers of this node
+        generator that produces all the registers of this node
 
         Args:
             unroll: Whether to unroll child array or not
         """
+        if unroll:
+            for child in iter(self):
+                if isinstance(child, NodeArray):
+                    yield from child
+                else:
+                    yield child
+        else:
+            yield from iter(self)
+
+    def get_registers(self, unroll: bool = False) -> \
+            Iterator[Union['AsyncReg', 'AsyncRegArray']]:
+        """
+        generator that produces all the registers of this node
+
+        Args:
+            unroll: Whether to unroll child array or not
+        """
+        yield from self.get_children(unroll=unroll)
 
 
 class _MemoryAsyncReadOnly(AsyncMemory, ABC):
@@ -557,6 +574,7 @@ class MemoryAsyncReadOnlyArray(NodeArray, ABC):
     base class for a array of asynchronous read only memories
     """
     __slots__: list[str] = []
+    _is_mem = True
 
     # pylint: disable-next=too-many-arguments
     def __init__(self, *,
@@ -579,6 +597,7 @@ class MemoryAsyncWriteOnlyArray(NodeArray, ABC):
     base class for a array of asynchronous write only memories
     """
     __slots__: list[str] = []
+    _is_mem = True
 
     # pylint: disable-next=too-many-arguments
     def __init__(self, *,
@@ -601,6 +620,7 @@ class MemoryAsyncReadWriteArray(MemoryAsyncReadOnlyArray, MemoryAsyncWriteOnlyAr
     base class for a array of asynchronous read and write memories
     """
     __slots__: list[str] = []
+    _is_mem = True
 
     # pylint: disable-next=too-many-arguments
     def __init__(self, *,

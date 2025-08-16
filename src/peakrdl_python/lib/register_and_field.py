@@ -21,14 +21,14 @@ registers and fields
 """
 from enum import Enum
 from typing import Union, cast, Optional, TypeVar
-from collections.abc import Generator, Iterator
+from collections.abc import Generator, Iterator, Iterable
 from abc import ABC, abstractmethod
 from contextlib import contextmanager
 from array import array as Array
 import sys
 from warnings import warn
 
-from .base import AddressMap, RegFile
+from .sections import AddressMap, RegFile
 from .utility_functions import get_array_typecode
 from .memory import  MemoryReadOnly, MemoryWriteOnly, MemoryReadWrite, Memory, \
     ReadableMemory, WritableMemory
@@ -57,7 +57,7 @@ else:
 # pylint: disable=redefined-slots-in-subclass,too-many-lines
 
 
-class Reg(BaseReg, ABC):
+class Reg(BaseReg, Iterable[Union['FieldReadOnly', 'FieldWriteOnly', 'FieldReadWrite']], ABC):
     """
         base class of non-async register wrappers
 
@@ -99,11 +99,11 @@ class Reg(BaseReg, ABC):
         raise TypeError(f'unhandled parent callback type: {type(self.parent._callbacks)}')
 
     @property
-    @abstractmethod
     def fields(self) -> Iterator[Union['FieldReadOnly', 'FieldWriteOnly', 'FieldReadWrite']]:
         """
         generator that produces has all the fields within the register
         """
+        yield from iter(self)
 
 
 # pylint: disable-next=invalid-name
