@@ -26,16 +26,9 @@ from typing import overload
 from typing import Literal
 from typing import Any
 from typing import NoReturn
-{% if asyncoutput -%}
-from typing import AsyncGenerator
-{% else %}
-from typing import Generator
-{% endif %}
 import warnings
 {% if legacy_block_access %}from array import array as Array{% endif %}
 
-
-from contextlib import {% if asyncoutput %}async{% endif %}contextmanager
 
 from {% if skip_lib_copy %}peakrdl_python.{% else %}..{% endif %}lib import Node, NodeArray, Base
 from {% if skip_lib_copy %}peakrdl_python.{% else %}..{% endif %}lib import UDPStruct
@@ -298,7 +291,7 @@ class {{node.python_class_name}}_array({% if asyncoutput %}Async{% endif %}Addre
     {%- endif %}
 {%- endmacro %}
 
-# regfile, register and field definitions
+# addrmap, regfile, memor and register definitions
 {%- for unique_node in unique_components -%}
 {# the get_dependent_component already strips out hidden items so there is no need to check here
    for hidden items #}

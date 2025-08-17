@@ -395,11 +395,17 @@ class PythonExporter:
             'top_node': top_block,
             'version': __version__,
             'systemrdlFieldNode': FieldNode,
+            'systemrdlUserStruct': UserStruct,
+            'systemrdlUserEnum': UserEnum,
             'isinstance': isinstance,
+            'type': type,
+            'str': str,
             'asyncoutput': asyncoutput,
             'unique_fields':
                 filter(lambda component: isinstance(component.instance, FieldNode),
                        unique_component_walker.nodes.values()),
+            'unique_property_enums':
+                self._get_dependent_property_enum(unique_component_walker),
             'get_table_block': get_table_block,
             'skip_lib_copy': skip_lib_copy,
             'uses_enum': uses_enum(top_block),

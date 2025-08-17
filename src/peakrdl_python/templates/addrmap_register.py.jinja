@@ -96,7 +96,7 @@ class {{node.python_class_name}}({{node.base_class(asyncoutput)}}):
     # build the properties for the fields
     {% for child_node in get_reg_fields(node.instance) %}
     @property
-    def {{safe_node_name(child_node)}}(self) -> '{{get_fully_qualified_type_name(child_node)}}':
+    def {{safe_node_name(child_node)}}(self) -> {{get_fully_qualified_type_name(child_node)}}:
         """
         Property to access {{child_node.inst_name}} field of the register
 
