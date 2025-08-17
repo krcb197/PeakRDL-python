@@ -15,6 +15,16 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #}
+{% include "header.py.jinja" with context %}
+
+{% if asyncoutput -%}
+from {% if skip_lib_copy %}peakrdl_python.{% else %}..{% endif %}lib import FieldAsyncReadOnly, FieldAsyncWriteOnly, FieldAsyncReadWrite, Field
+{% if uses_enum %}from {% if skip_lib_copy %}peakrdl_python.{% else %}..{% endif %}lib import FieldEnumAsyncReadOnly, FieldEnumAsyncWriteOnly, FieldEnumAsyncReadWrite{% endif %}
+{%- else -%}
+from {% if skip_lib_copy %}peakrdl_python.{% else %}..{% endif %}lib import FieldReadOnly, FieldWriteOnly, FieldReadWrite, Field
+{% if uses_enum %}from {% if skip_lib_copy %}peakrdl_python.{% else %}..{% endif %}lib import FieldEnumReadOnly, FieldEnumWriteOnly, FieldEnumReadWrite{% endif %}
+{%- endif %}
+from {% if skip_lib_copy %}peakrdl_python.{% else %}..{% endif %}lib import FieldSizeProps, FieldMiscProps
 
 {% from 'addrmap_udp_property.py.jinja' import udp_property with context %}
 {% from 'addrmap_universal_property.py.jinja' import universal_properties with context %}
@@ -33,3 +43,17 @@ class {{node.python_class_name}}({{node.base_class(asyncoutput)}}):
     {{ universal_properties(node.instance) }}
 
 {%- endmacro -%}
+
+# field definitions
+{%- for unique_node in unique_fields -%}
+{# the get_dependent_component already strips out hidden items so there is no need to check here
+   for hidden items #}
+    {% if isinstance(unique_node.instance, systemrdlFieldNode) %}
+    {{ field_class(unique_node)  }}
+    {% else %}
+    {{ raise_template_error('Encountered unhandled type') }}
+    {% endif %}
+{% endfor %}
+
+if __name__ == '__main__':
+    pass

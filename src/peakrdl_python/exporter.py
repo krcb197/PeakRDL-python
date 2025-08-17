@@ -25,6 +25,7 @@ from typing import NoReturn, Any, Optional, Union
 from collections.abc import Iterable
 from functools import partial
 import sys
+from itertools import filterfalse
 
 import jinja2 as jj
 from systemrdl import RDLWalker
@@ -342,9 +343,6 @@ class PythonExporter:
             'systemrdlUserEnum': UserEnum,
             'systemrdlUserStruct': UserStruct,
             'asyncoutput': asyncoutput,
-            'OnWriteType': OnWriteType,
-            'OnReadType': OnReadType,
-            'PropertyReference': PropertyReference,
             'isinstance': isinstance,
             'str': str,
             'uses_enum': uses_enum(top_block),
@@ -352,18 +350,17 @@ class PythonExporter:
             'get_fully_qualified_type_name': partial(
                 unique_component_walker.python_class_name,
                 async_library_classes=asyncoutput),
-            'unique_components': reversed(unique_component_walker.nodes.values()),
+            'unique_components':
+                filterfalse(lambda component: isinstance(component.instance, FieldNode),
+                            reversed(unique_component_walker.nodes.values())),
+            'unique_fields':
+                filter(lambda component: isinstance(component.instance, FieldNode),
+                            unique_component_walker.nodes.values()),
             'unique_enums': self._get_dependent_enum(unique_component_walker),
             'get_enum_values': get_enum_values,
             'get_fully_qualified_enum_type': fully_qualified_enum_type,
-            'get_field_bitmask_hex_string': get_field_bitmask_hex_string,
-            'get_field_inv_bitmask_hex_string': get_field_inv_bitmask_hex_string,
-            'get_field_max_value_hex_string': get_field_max_value_hex_string,
-            'get_reg_max_value_hex_string': get_reg_max_value_hex_string,
             'get_table_block': get_table_block,
             'get_reg_fields': partial(get_reg_fields, hide_node_callback=hide_node_func) ,
-            'get_memory_max_entry_value_hex_string': get_memory_max_entry_value_hex_string,
-            'get_memory_width_bytes': get_memory_width_bytes,
             'get_field_default_value': get_field_default_value,
             'raise_template_error': self._raise_template_error,
             'get_python_path_segments': get_python_path_segments,
@@ -394,6 +391,32 @@ class PythonExporter:
                                      target_name=top_block.inst_name + '.py',
                                      template_context=context)
 
+        # fields
+        context = {
+            'top_node': top_block,
+            'version': __version__,
+            'systemrdlFieldNode': FieldNode,
+            'isinstance': isinstance,
+            'asyncoutput': asyncoutput,
+            'unique_fields':
+                filter(lambda component: isinstance(component.instance, FieldNode),
+                       unique_component_walker.nodes.values()),
+            'get_table_block': get_table_block,
+            'skip_lib_copy': skip_lib_copy,
+            'uses_enum': uses_enum(top_block),
+            'legacy_enum_type': legacy_enum_type,
+            'skip_systemrdl_name_and_desc_properties': skip_systemrdl_name_and_desc_properties,
+            'raise_template_error': self._raise_template_error,
+        }
+
+        context.update(self.user_template_context)
+
+        self.__stream_jinja_template(template_name="addrmap_field.py.jinja",
+                                     target_package=package.reg_model,
+                                     target_name=top_block.inst_name + '_fields.py',
+                                     template_context=context)
+
+        # field enumerations
         if uses_enum(top_block):
             context = {
                 'top_node': top_block,
@@ -411,6 +434,7 @@ class PythonExporter:
                                          target_name=top_block.inst_name + '_field_enums.py',
                                          template_context=context)
 
+        # property enumerations
         context = {
             'top_node': top_block,
             'version': __version__,

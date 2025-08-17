@@ -92,8 +92,10 @@ from .{{top_node.inst_name}}_field_enums import {{get_fully_qualified_enum_type(
 from .{{top_node.inst_name}}_property_enums import {{property_enum.type_name}}_property_enumcls
 {% endfor %}
 
+{%- for unique_node in unique_fields -%}
+from .{{top_node.inst_name}}_fields import {{unique_node.python_class_name}}
+{% endfor %}
 
-{% from 'addrmap_field.py.jinja' import field_class with context %}
 {% from 'addrmap_register.py.jinja' import register_class with context %}
 {% from 'addrmap_memory.py.jinja' import memory_class with context %}
 {% from 'reg_definitions.py.jinja' import register_class_attributes with context %}
@@ -306,10 +308,10 @@ class {{node.python_class_name}}_array({% if asyncoutput %}Async{% endif %}Addre
     {{ regfile_class(unique_node) }}
     {% elif isinstance(unique_node.instance, systemrdlAddrmapNode) %}
     {{ addrmap_class(unique_node) }}
-    {% elif isinstance(unique_node.instance, systemrdlFieldNode) %}
-    {{ field_class(unique_node)  }}
     {% elif isinstance(unique_node.instance, systemrdlMemNode) %}
     {{ memory_class(unique_node)  }}
+    {% else %}
+    {{ raise_template_error('Encountered unhandled type') }}
     {% endif %}
 {% endfor %}
 
