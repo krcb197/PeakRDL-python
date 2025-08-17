@@ -362,7 +362,6 @@ class PythonExporter:
             'get_reg_fields': partial(get_reg_fields, hide_node_callback=hide_node_func) ,
             'get_field_default_value': get_field_default_value,
             'raise_template_error': self._raise_template_error,
-            'get_python_path_segments': get_python_path_segments,
             'safe_node_name': safe_node_name,
             'skip_lib_copy': skip_lib_copy,
             'version': __version__,
