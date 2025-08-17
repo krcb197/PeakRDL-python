@@ -465,7 +465,7 @@ class PythonExporter:
 
         # as a result of issue 202, where two registers existed at that same address,
         # rather than iterating through the registers within the Jinja template
-        # we iterate through them in in advance so that cases of two registers at that same
+        # we iterate through them in advance so that cases of two registers at that same
         # address can be identified
         reg_dict:dict[int, Union[list[RegNode],RegNode]] = {}
         for node in filter(lambda x : isinstance(x, RegNode),  top_block.descendants(unroll=True)):
