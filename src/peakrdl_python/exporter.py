@@ -33,7 +33,6 @@ from systemrdl import RDLWalker
 from systemrdl.node import RootNode, Node, RegNode, AddrmapNode, RegfileNode
 from systemrdl.node import FieldNode, MemNode, AddressableNode
 from systemrdl.node import SignalNode
-from systemrdl.rdltypes import OnReadType, OnWriteType, PropertyReference
 from systemrdl.rdltypes.user_enum import UserEnum, UserEnumMeta
 from systemrdl.rdltypes.user_struct import UserStruct
 
