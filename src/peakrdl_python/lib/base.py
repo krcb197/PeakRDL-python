@@ -250,19 +250,19 @@ class NodeArray(Base, Sequence[NodeArrayElementType]):
         else:
             new_elements: dict[tuple[int, ...], NodeArrayElementType] = {}
             for indices in product(*[range(dim) for dim in self.dimensions]):
-                new_elements[indices] = self._build_element(indices=indices)
+                new_elements[indices] = self.__build_element(indices=indices)
 
             self.__elements = new_elements
 
-    def _build_element(self, indices: tuple[int, ...]) -> NodeArrayElementType:
+    def __build_element(self, indices: tuple[int, ...]) -> NodeArrayElementType:
 
         return self._element_datatype(
-                    logger_handle=self._build_element_logger_handle(indices=indices),
-                    address=self._address_calculator(indices),
-                    inst_name=self._build_element_inst_name(indices=indices),
+                    logger_handle=self.__build_element_logger_handle(indices=indices),
+                    address=self.__address_calculator(indices),
+                    inst_name=self.__build_element_inst_name(indices=indices),
                     parent=self)
 
-    def _build_element_logger_handle(self, indices: tuple[int, ...]) -> str:
+    def __build_element_logger_handle(self, indices: tuple[int, ...]) -> str:
         """
         Build the logger handle for an element in the array
 
@@ -273,7 +273,7 @@ class NodeArray(Base, Sequence[NodeArrayElementType]):
         """
         return self._logger.name + '[' + ','.join([str(item) for item in indices]) + ']'
 
-    def _build_element_inst_name(self, indices: tuple[int, ...]) -> str:
+    def __build_element_inst_name(self, indices: tuple[int, ...]) -> str:
         """
         Build the logger handle for an element in the array
 
@@ -315,7 +315,7 @@ class NodeArray(Base, Sequence[NodeArrayElementType]):
                 raise TypeError(f'elements should be a {self._element_datatype} '
                                 f'but got {type(item)}')
 
-    def _address_calculator(self, indices: tuple[int, ...]) -> int:
+    def __address_calculator(self, indices: tuple[int, ...]) -> int:
         def cal_addr(dimensions: tuple[int,...], indices: tuple[int, ...], base_address: int,
                      stride: int) -> int:
             """
@@ -339,7 +339,7 @@ class NodeArray(Base, Sequence[NodeArrayElementType]):
         return cal_addr(self.dimensions, base_address=self.address,
                         stride=self.stride, indices=indices)
 
-    def _sub_instance(self, elements: dict[tuple[int, ...], NodeArrayElementType]) -> \
+    def __sub_instance(self, elements: dict[tuple[int, ...], NodeArrayElementType]) -> \
             NodeArray[NodeArrayElementType]:
         if not isinstance(self.parent, Node):
             raise RuntimeError('Parent of a Node Array must be Node')

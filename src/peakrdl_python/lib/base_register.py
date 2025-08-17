@@ -186,27 +186,6 @@ class BaseRegArray(NodeArray[BaseRegArrayElementType], ABC):
         The access width of the register in bits, this uses the `accesswidth` systemRDL property
         """
 
-    def _build_element(self, indices: tuple[int, ...]) -> BaseRegArrayElementType:
-
-        return self._element_datatype(
-            logger_handle=self._build_element_logger_handle(indices=indices),
-            address=self._address_calculator(indices),
-            inst_name=self._build_element_inst_name(indices=indices),
-            parent=self)
-
-    def _sub_instance(self, elements: dict[tuple[int, ...], BaseRegArrayElementType]) ->\
-            NodeArray[BaseRegArrayElementType]:
-        if not isinstance(self.parent, (AddressMap, AsyncAddressMap, RegFile,
-                                        AsyncRegFile, BaseMemory)):
-            raise RuntimeError('Parent of a Node Array must be Node')
-        return self.__class__(logger_handle=self._logger.name,
-                              inst_name=self.inst_name,
-                              parent=self.parent,
-                              address=self.address,
-                              stride=self.stride,
-                              dimensions=self.dimensions,
-                              elements=elements)
-
     @property
     @abstractmethod
     def _element_datatype(self) -> type[BaseRegArrayElementType]:
