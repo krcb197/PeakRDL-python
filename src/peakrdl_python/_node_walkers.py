@@ -51,7 +51,7 @@ class AddressMaps(RDLListener):
 class OwnedbyAddressMap(RDLListener):
     """
     class intended to be used as part of the walker/listener protocol to find all the items owned
-    by an address map but not the descendents of any address map
+    by an address map but not the descendants of any address map
     """
     def __init__(self, hide_node_callback: HideNodeCallback) -> None:
         super().__init__()
