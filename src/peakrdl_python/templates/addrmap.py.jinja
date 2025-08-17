@@ -17,13 +17,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #}
 
 {% include "header.py.jinja" with context %}
-{% if uses_enum %}
-from enum import EnumMeta
-{% endif %}
-{% if legacy_enum_type %}
-from enum import IntEnum
-{% endif %}
-from enum import unique
+
 from typing import Iterator
 from typing import Optional
 from typing import Union
@@ -82,14 +76,16 @@ from {% if skip_lib_copy %}peakrdl_python.{% else %}..{% endif %}lib import Read
 {%- endif %}
 from {% if skip_lib_copy %}peakrdl_python.{% else %}..{% endif %}lib import FieldSizeProps, FieldMiscProps
 
-{% if not legacy_enum_type %}
-from {% if skip_lib_copy %}peakrdl_python.{% else %}..{% endif %}lib import SystemRDLEnum, SystemRDLEnumEntry
-{% endif %}
-
 {% if asyncoutput %}
 from {% if skip_lib_copy %}peakrdl_python.{% else %}..{% endif %}lib import AsyncCallbackSet, AsyncCallbackSetLegacy
 {% else %}
 from {% if skip_lib_copy %}peakrdl_python.{% else %}..{% endif %}lib import NormalCallbackSet, NormalCallbackSetLegacy
+{% endif %}
+
+{% if uses_enum %}
+{%- for enum_needed in unique_enums %}
+from .{{top_node.inst_name}}_field_enums import {{get_fully_qualified_enum_type(enum_needed)}}_enumcls
+{% endfor %}
 {% endif %}
 
 {% for property_enum in unique_property_enums %}
@@ -299,19 +295,6 @@ class {{node.python_class_name}}_array({% if asyncoutput %}Async{% endif %}Addre
         return {{node.python_class_name}}
     {%- endif %}
 {%- endmacro %}
-
-{% if uses_enum %}
-# root level enum definitions
-{%- for enum_needed in unique_enums %}
-@unique
-class {{get_fully_qualified_enum_type(enum_needed)}}_enumcls({% if legacy_enum_type %}IntEnum{% else %}SystemRDLEnum{% endif %}):
-
-    {% for value_of_enum_needed in enum_needed -%}
-    {{ value_of_enum_needed.name.upper() }} = {% if legacy_enum_type %}{{ value_of_enum_needed.value }}{% else %}SystemRDLEnumEntry(int_value={{value_of_enum_needed.value}}, name={%- if value_of_enum_needed.rdl_name is not none -%}'{{value_of_enum_needed.rdl_name}}'{% else %}None{% endif %}, desc={%- if value_of_enum_needed.rdl_desc is not none -%}'{{value_of_enum_needed.rdl_desc}}'{% else %}None{% endif %}){% endif %}  {%- if value_of_enum_needed.rdl_desc is not none %}  # {{ value_of_enum_needed.rdl_desc }} {%- endif %}
-    {% endfor %}
-{% endfor -%}
-{% endif %}
-
 
 # regfile, register and field definitions
 {%- for unique_node in unique_components -%}

@@ -394,6 +394,23 @@ class PythonExporter:
                                      target_name=top_block.inst_name + '.py',
                                      template_context=context)
 
+        if uses_enum(top_block):
+            context = {
+                'top_node': top_block,
+                'version': __version__,
+                'unique_enums': self._get_dependent_enum(unique_component_walker),
+                'get_fully_qualified_enum_type': fully_qualified_enum_type,
+                'skip_lib_copy': skip_lib_copy,
+                'legacy_enum_type': legacy_enum_type,
+            }
+
+            context.update(self.user_template_context)
+
+            self.__stream_jinja_template(template_name="field_enums.py.jinja",
+                                         target_package=package.reg_model,
+                                         target_name=top_block.inst_name + '_field_enums.py',
+                                         template_context=context)
+
         context = {
             'top_node': top_block,
             'version': __version__,
