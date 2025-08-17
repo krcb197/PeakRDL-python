@@ -368,7 +368,7 @@ class NodeArray(Base, Sequence[NodeArrayElementType]):
                     return True
                 return False
 
-            return self._sub_instance(elements=dict(filter(filter_1d_func, self.items())))
+            return self.__sub_instance(elements=dict(filter(filter_1d_func, self.items())))
 
         if isinstance(item, int):
             if (item, ) not in self.__elements:
@@ -415,7 +415,7 @@ class NodeArray(Base, Sequence[NodeArrayElementType]):
                     return True
                 return False
 
-            return self._sub_instance(elements=dict(filter(filter_nd_func, self.items())))
+            return self.__sub_instance(elements=dict(filter(filter_nd_func, self.items())))
 
         raise IndexError('attempting a single dimensional array access on a multidimension'
                          ' array')
