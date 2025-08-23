@@ -1,0 +1,25 @@
+addrmap {{top_level_addrmap_name}} {
+
+    {% for register in registers %}
+    reg {
+        default sw = rw;
+        default hw = r;
+        name = "{{register.name}}";
+        desc = "{{register.name}} description";
+        {% for field in register.fields %}
+        {% if field.encoding %}
+        enum field_{{field.name}}_encoding {
+            {% for encoding in field.encoding.encodings -%}
+            {{encoding.name}} = {{encoding.value}} { desc = "{{encoding.name}} in {{field.name}} inside {{register.name}}"; };
+            {% endfor %}
+        };
+        {% endif %}
+        field { name="{{field.name}}";
+                desc="{{field.name}} inside {{register.name}}";
+                fieldwidth={{field.width}};
+                {% if field.encoding %}encode = field_{{field.name}}_encoding;{% endif %}
+                } field_{{field.name}};
+        {% endfor %}
+    } reg_{{register.name}};
+    {% endfor %}
+};

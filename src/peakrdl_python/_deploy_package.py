@@ -70,7 +70,7 @@ class PythonPackage:
         with self._init_path.open('w', encoding='utf-8') as fid:
             fid.write('pass\n')
 
-    def create_empty_package(self, cleanup: bool) -> None:
+    def create_empty_package(self, cleanup: bool, create_init:bool=True) -> None:
         """
         make the package folder (if it does not already exist), populate the __init__.py and
         optionally remove any existing python files
@@ -87,7 +87,8 @@ class PythonPackage:
                     os.remove(file.resolve())
         else:
             self.path.mkdir(parents=True, exist_ok=False)
-        self._make_empty_init_file()
+        if create_init:
+            self._make_empty_init_file()
 
 
 class CopiedPythonPackage(PythonPackage):
@@ -138,7 +139,11 @@ class Package(PythonPackage):
 
         if include_libraries:
             self.lib = self.child_ref_package('lib', self.template_lib_package)
+
         self.reg_model = self.child_package('reg_model')
+        self.reg_model.registers = self.reg_model.child_package('registers')
+        self.reg_model.registers.fields = self.reg_model.registers.child_package('fields')
+        self.reg_model.registers.field_enum = self.reg_model.registers.child_package('field_enum')
 
         if include_tests:
             self.tests = self.child_package('tests')
@@ -177,6 +182,9 @@ class Package(PythonPackage):
         super().create_empty_package(cleanup=cleanup)
         # make all the child packages folders and their __init__.py
         self.reg_model.create_empty_package(cleanup=cleanup)
+        self.reg_model.registers.create_empty_package(cleanup=cleanup, create_init=False)
+        self.reg_model.registers.fields.create_empty_package(cleanup=cleanup, create_init=False)
+        self.reg_model.registers.field_enum.create_empty_package(cleanup=cleanup, create_init=False)
         if self._include_tests:
             self.tests.create_empty_package(cleanup=cleanup)
         if self._include_libraries:

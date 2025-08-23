@@ -24,7 +24,7 @@ from typing import NoReturn, Any, Optional, Union
 from collections.abc import Iterable
 from functools import partial
 import sys
-from itertools import filterfalse
+from itertools import filterfalse, batched
 
 import jinja2 as jj
 from systemrdl import RDLWalker
@@ -189,17 +189,14 @@ class PythonExporter:
                 unique_component_walker.python_class_name,
                 async_library_classes=asyncoutput),
             'unique_components':
-                filterfalse(lambda component: isinstance(component.instance, FieldNode),
+                filterfalse(lambda component: isinstance(component.instance, (FieldNode, RegNode)),
                             reversed(unique_component_walker.nodes.values())),
-            'unique_fields':
-                filter(lambda component: isinstance(component.instance, FieldNode),
+            'dependent_registers':
+                filter(lambda component: isinstance(component.instance, RegNode),
                             unique_component_walker.nodes.values()),
             'unique_enums': self._get_dependent_enum(unique_component_walker),
             'get_enum_values': get_enum_values,
-            'get_fully_qualified_enum_type': fully_qualified_enum_type,
             'get_table_block': get_table_block,
-            'get_reg_fields': partial(get_reg_fields, hide_node_callback=hide_node_func) ,
-            'get_field_default_value': get_field_default_value,
             'raise_template_error': self._raise_template_error,
             'safe_node_name': safe_node_name,
             'skip_lib_copy': skip_lib_copy,
@@ -213,10 +210,7 @@ class PythonExporter:
             'visible_nonsignal_node' : visible_nonsignal_node,
             'legacy_enum_type': legacy_enum_type,
             'skip_systemrdl_name_and_desc_properties': skip_systemrdl_name_and_desc_properties,
-            'get_reg_accesswidth': get_reg_accesswidth,
-            'get_reg_regwidth': get_reg_regwidth,
             'get_memory_accesswidth': get_memory_accesswidth,
-            'is_encoded_field': is_encoded_field
         }
         if legacy_block_access is True:
             context['get_array_typecode'] = get_array_typecode
@@ -228,54 +222,176 @@ class PythonExporter:
                                      target_name=top_block.inst_name + '.py',
                                      template_context=context)
 
-        # fields
-        context = {
-            'top_node': top_block,
-            'version': __version__,
-            'systemrdlFieldNode': FieldNode,
-            'systemrdlUserStruct': UserStruct,
-            'systemrdlUserEnum': UserEnum,
-            'isinstance': isinstance,
-            'type': type,
-            'str': str,
-            'asyncoutput': asyncoutput,
-            'unique_fields':
-                filter(lambda component: isinstance(component.instance, FieldNode),
-                       unique_component_walker.nodes.values()),
-            'unique_property_enums':
-                self._get_dependent_property_enum(unique_component_walker),
-            'get_table_block': get_table_block,
-            'skip_lib_copy': skip_lib_copy,
-            'uses_enum': uses_enum(top_block),
-            'legacy_enum_type': legacy_enum_type,
-            'skip_systemrdl_name_and_desc_properties': skip_systemrdl_name_and_desc_properties,
-            'raise_template_error': self._raise_template_error,
-        }
+        # registers which are broken up to multiple files to prevent anything getting too big
+        with package.reg_model.registers.child_module_path('__init__.py').open('w', encoding='utf-8') as init_fid:
+            # put the header on the field package __init__.py
+            template_context = {'top_node': top_block,
+                                'version': __version__, }
+            context.update(self.user_template_context)
+            template = self.jj_env.get_template('header.py.jinja')
+            stream = template.stream(template_context)
+            stream.dump(init_fid)
+            init_fid.write('\n')
+            # keep the file open so that each batch of fields can be added to it
 
-        context.update(self.user_template_context)
+            for index, unique_register_subset in enumerate(
+                    batched(
+                        filter(
+                            lambda component: isinstance(component.instance, RegNode),
+                            unique_component_walker.nodes.values()),
+                        n=20)  # 20 registers per file
+            ):
 
-        self.__stream_jinja_template(template_name="addrmap_field.py.jinja",
-                                     target_package=package.reg_model,
-                                     target_name=top_block.inst_name + '_fields.py',
-                                     template_context=context)
+                # make list of all the field and field enum class names that need to be pulled into
+                # the module associated with this batch of registers
+                dependent_field_cls_names = []
+                dependent_field_enum_cls_names = []
+                for register in unique_register_subset:
+                    for field in register.instance.fields():
+                        field_cls = unique_component_walker.python_class_name(async_library_classes=asyncoutput,
+                                                                              node=field)
+                        if field_cls not in dependent_field_cls_names:
+                            if field_cls not in ('FieldReadOnly', 'FieldWriteOnly', 'FieldReadWrite', 'FieldEnumReadOnly', 'FieldEnumWriteOnly', 'FieldEnumReadWrite'):
+                                dependent_field_cls_names.append(field_cls)
+                        if is_encoded_field(field):
+                            field_enum_cls = fully_qualified_enum_type(field.get_property('encode')) + '_enumcls'
+                            if field_enum_cls not in dependent_field_enum_cls_names:
+                                dependent_field_enum_cls_names.append(field_enum_cls)
+
+
+                context = {
+                    'top_node': top_block,
+                    'version': __version__,
+                    'systemrdlRegNode': RegNode,
+                    'systemrdlSignalNode': SignalNode,
+                    'systemrdlUserStruct': UserStruct,
+                    'systemrdlUserEnum': UserEnum,
+                    'isinstance': isinstance,
+                    'type': type,
+                    'str': str,
+                    'asyncoutput': asyncoutput,
+                    'unique_registers': unique_register_subset,
+                    'unique_property_enums':
+                        self._get_dependent_property_enum(unique_component_walker),
+                    'get_table_block': get_table_block,
+                    'get_fully_qualified_type_name': partial(
+                        unique_component_walker.python_class_name,
+                        async_library_classes=asyncoutput),
+                    'get_fully_qualified_enum_type': fully_qualified_enum_type,
+                    'get_field_default_value': get_field_default_value,
+                    'get_reg_accesswidth': get_reg_accesswidth,
+                    'get_reg_regwidth': get_reg_regwidth,
+                    'is_encoded_field': is_encoded_field,
+                    'skip_lib_copy': skip_lib_copy,
+                    'uses_enum': uses_enum(top_block),
+                    'legacy_enum_type': legacy_enum_type,
+                    'legacy_block_access': legacy_block_access,
+                    'skip_systemrdl_name_and_desc_properties': skip_systemrdl_name_and_desc_properties,
+                    'raise_template_error': self._raise_template_error,
+                    'safe_node_name': safe_node_name,
+                    'dependent_enums': dependent_field_enum_cls_names,
+                    'dependent_fields': dependent_field_cls_names,
+                    'hide_node_func': hide_node_func,
+                    'visible_nonsignal_node': visible_nonsignal_node,
+                }
+
+                context.update(self.user_template_context)
+                register_module_name = top_block.inst_name + f'_registers{index}'
+                self.__stream_jinja_template(template_name="addrmap_register.py.jinja",
+                                             target_package=package.reg_model.registers,
+                                             target_name=register_module_name + '.py',
+                                             template_context=context)
+
+                init_fid.writelines((f'from .{register_module_name} import {register.python_class_name}\n' for register in unique_register_subset))
+
+        # fields which are broken up to
+        with package.reg_model.registers.fields.child_module_path('__init__.py').open('w', encoding='utf-8') as init_fid:
+            # put the header on the field package __init__.py
+            template_context = {'top_node': top_block,
+                                'version': __version__, }
+            context.update(self.user_template_context)
+            template = self.jj_env.get_template('header.py.jinja')
+            stream = template.stream(template_context)
+            stream.dump(init_fid)
+            init_fid.write('\n')
+            # keep the file open so that each batch of fields can be added to it
+
+            for index, unique_fields_subset in enumerate(
+                    batched(
+                        filter(
+                            lambda component: isinstance(component.instance, FieldNode),
+                            unique_component_walker.nodes.values()),
+                        n=25)  # 25 register classes per file
+            ):
+
+                context = {
+                    'top_node': top_block,
+                    'version': __version__,
+                    'systemrdlFieldNode': FieldNode,
+                    'systemrdlUserStruct': UserStruct,
+                    'systemrdlUserEnum': UserEnum,
+                    'isinstance': isinstance,
+                    'type': type,
+                    'str': str,
+                    'asyncoutput': asyncoutput,
+                    'unique_fields': unique_fields_subset,
+                    'unique_property_enums':
+                        self._get_dependent_property_enum(unique_component_walker),
+                    'get_table_block': get_table_block,
+                    'skip_lib_copy': skip_lib_copy,
+                    'uses_enum': uses_enum(top_block),
+                    'legacy_enum_type': legacy_enum_type,
+                    'skip_systemrdl_name_and_desc_properties': skip_systemrdl_name_and_desc_properties,
+                    'raise_template_error': self._raise_template_error,
+                }
+
+                context.update(self.user_template_context)
+                field_module_name = top_block.inst_name + f'_fields{index}'
+                self.__stream_jinja_template(template_name="addrmap_field.py.jinja",
+                                             target_package=package.reg_model.registers.fields,
+                                             target_name=field_module_name + '.py',
+                                             template_context=context)
+
+                init_fid.writelines((f'from .{field_module_name} import {field.python_class_name}\n' for field in unique_fields_subset))
 
         # field enumerations
         if uses_enum(top_block):
-            context = {
-                'top_node': top_block,
-                'version': __version__,
-                'unique_enums': self._get_dependent_enum(unique_component_walker),
-                'get_fully_qualified_enum_type': fully_qualified_enum_type,
-                'skip_lib_copy': skip_lib_copy,
-                'legacy_enum_type': legacy_enum_type,
-            }
+            with package.reg_model.registers.field_enum.child_module_path('__init__.py').open('w', encoding='utf-8') as init_fid:
+                # put the header on the field package __init__.py
+                template_context = {'top_node': top_block,
+                                    'version': __version__, }
+                context.update(self.user_template_context)
+                template = self.jj_env.get_template('header.py.jinja')
+                stream = template.stream(template_context)
+                stream.dump(init_fid)
+                init_fid.write('\n')
+                # keep the file open so that each batch of fields can be added to it
 
-            context.update(self.user_template_context)
+                for index, unique_enums_subset in enumerate(
+                        batched(
+                            self._get_dependent_enum(unique_component_walker),
+                            n=50)  # 50 field enumeration definitions per file
+                ):
 
-            self.__stream_jinja_template(template_name="field_enums.py.jinja",
-                                         target_package=package.reg_model,
-                                         target_name=top_block.inst_name + '_field_enums.py',
-                                         template_context=context)
+                    context = {
+                        'top_node': top_block,
+                        'version': __version__,
+                        'unique_enums': unique_enums_subset,
+                        'get_fully_qualified_enum_type': fully_qualified_enum_type,
+                        'skip_lib_copy': skip_lib_copy,
+                        'legacy_enum_type': legacy_enum_type,
+                    }
+
+                    context.update(self.user_template_context)
+                    field_enum_module_name = top_block.inst_name + f'_fields_enums{index}'
+                    self.__stream_jinja_template(template_name="field_enums.py.jinja",
+                                                 target_package=package.reg_model.registers.field_enum,
+                                                 target_name=field_enum_module_name + '.py',
+                                                 template_context=context)
+
+                    init_fid.writelines(
+                        (f'from .{field_enum_module_name} import {fully_qualified_enum_type(field_enum)}_enumcls\n' for field_enum in
+                         unique_enums_subset))
 
         # property enumerations
         context = {
