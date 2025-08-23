@@ -20,6 +20,9 @@ Classes to represent the package that is generated
 import os
 from pathlib import Path
 from shutil import copy
+from typing import TextIO
+from contextlib import contextmanager
+from collections.abc import Generator
 
 class PythonPackage:
     """
@@ -49,25 +52,26 @@ class PythonPackage:
         """
         return PythonPackage(path=self.path / name)
 
-    def child_module_path(self, name: str) -> Path:
+    def child_path(self, name: str) -> Path:
         """
-        return a child module within the package
-
-        Args:
-            name: name of module
-
-        Returns:
-            None
-
+        return a child path within the package, this can be used of a sub-package or module
         """
-        return Path(self.path) / name
+        return self.path / name
+
+    @contextmanager
+    def init_file_stream(self) -> Generator[TextIO]:
+        """
+        Generator for a __init__.py file that allows content to be streamed to it
+        """
+        with self._init_path.open('w', encoding='utf-8') as fid:
+            yield fid
 
     @property
     def _init_path(self) -> Path:
-        return self.child_module_path('__init__.py')
+        return self.child_path('__init__.py')
 
     def _make_empty_init_file(self) -> None:
-        with self._init_path.open('w', encoding='utf-8') as fid:
+        with self.init_file_stream() as fid:
             fid.write('pass\n')
 
     def create_empty_package(self, cleanup: bool) -> None:
@@ -87,6 +91,7 @@ class PythonPackage:
                     os.remove(file.resolve())
         else:
             self.path.mkdir(parents=True, exist_ok=False)
+
         self._make_empty_init_file()
 
 
@@ -100,16 +105,7 @@ class CopiedPythonPackage(PythonPackage):
         self._ref_package = ref_package
 
     def create_empty_package(self, cleanup: bool) -> None:
-        """
-        make the package folder (if it does not already exist), populate the __init__.py and
-        optionally remove any existing python files
 
-        Args:
-            cleanup (bool) : delete any existing python files in the package
-
-        Returns:
-            None
-        """
         super().create_empty_package(cleanup=cleanup)
 
         # copy all the python source code that is part of the library which comes as part of the
@@ -120,7 +116,35 @@ class CopiedPythonPackage(PythonPackage):
             copy(src=file_in_package, dst=self.path)
 
 
-class Package(PythonPackage):
+class _GeneratedRegModelRegistersPackage(PythonPackage):
+
+    def __init__(self, path: Path):
+        super().__init__(path=path)
+
+        self.fields = self.child_package('fields')
+        self.field_enum = self.child_package('field_enum')
+
+    def create_empty_package(self, cleanup: bool) -> None:
+
+        # make the folder for this package and populate the empty __init__.py
+        super().create_empty_package(cleanup=cleanup)
+        self.fields.create_empty_package(cleanup=cleanup)
+        self.field_enum.create_empty_package(cleanup=cleanup)
+
+class _GeneratedRegModelPackage(PythonPackage):
+
+    def __init__(self, path: Path):
+        super().__init__(path=path)
+
+        self.registers = _GeneratedRegModelRegistersPackage(self.child_path('registers'))
+
+    def create_empty_package(self, cleanup: bool) -> None:
+        # make the folder for this package and populate the empty __init__.py
+        super().create_empty_package(cleanup=cleanup)
+        self.registers.create_empty_package(cleanup=cleanup)
+
+
+class GeneratedPackage(PythonPackage):
     """
     Class to define the package being generated
 
@@ -138,7 +162,8 @@ class Package(PythonPackage):
 
         if include_libraries:
             self.lib = self.child_ref_package('lib', self.template_lib_package)
-        self.reg_model = self.child_package('reg_model')
+
+        self.reg_model = _GeneratedRegModelPackage(self.child_path('reg_model'))
 
         if include_tests:
             self.tests = self.child_package('tests')
@@ -160,23 +185,13 @@ class Package(PythonPackage):
         """
         return CopiedPythonPackage(path=self.path / name, ref_package=ref_package)
 
-    def create_empty_package(self, cleanup: bool, ) -> None:
-        """
-        create the directories and __init__.py files associated with the exported package
-
-        Args:
-            package_path: directory for the package output
-            cleanup (bool): delete existing python files
-
-        Returns:
-            None
-
-        """
+    def create_empty_package(self, cleanup: bool) -> None:
 
         # make the folder for this package and populate the empty __init__.py
         super().create_empty_package(cleanup=cleanup)
-        # make all the child packages folders and their __init__.py
+
         self.reg_model.create_empty_package(cleanup=cleanup)
+
         if self._include_tests:
             self.tests.create_empty_package(cleanup=cleanup)
         if self._include_libraries:

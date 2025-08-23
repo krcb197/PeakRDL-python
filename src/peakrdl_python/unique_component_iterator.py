@@ -51,6 +51,8 @@ class PeakRDLPythonUniqueComponents:
     optimal_python_class_name: bool =  field(init=False)
 
     def __post_init__(self) -> None:
+        if not isinstance(self.instance, Node):
+            raise TypeError(f'instance must be a node got {type(self.instance)}')
         python_class_name, optimal_python_class_name = self.__determine_python_class_name()
         object.__setattr__(self, 'python_class_name', python_class_name)
         object.__setattr__(self, 'optimal_python_class_name', optimal_python_class_name)
@@ -137,6 +139,11 @@ class PeakRDLPythonUniqueRegisterComponents(PeakRDLPythonUniqueComponents):
     """
     instance: RegNode
 
+    def __post_init__(self) -> None:
+        super().__post_init__()
+        if not isinstance(self.instance, RegNode):
+            raise TypeError(f'instance must be a node got {type(self.instance)}')
+
     @property
     def read_write(self) -> bool:
         """
@@ -157,6 +164,12 @@ class PeakRDLPythonUniqueRegisterComponents(PeakRDLPythonUniqueComponents):
         Determine if the register is write-only
         """
         return not self.instance.has_sw_readable and self.instance.has_sw_writable
+
+    def fields(self) -> Iterator[FieldNode]:
+        """
+        Iterator for all the systemRDL nodes which are not hidden
+        """
+        yield from self.instance.fields()
 
 class UniqueComponents(RDLListener):
     """
@@ -318,3 +331,8 @@ class UniqueComponents(RDLListener):
                                       include_name_and_desc=True)
         self.__name_hash_cache[full_instance_name] = nodal_hash_result
         return nodal_hash_result
+
+    def register_nodes(self) -> Iterator[PeakRDLPythonUniqueRegisterComponents]:
+        yield from filter(
+            lambda component: isinstance(component, PeakRDLPythonUniqueRegisterComponents),
+            self.nodes.values())
