@@ -19,8 +19,7 @@ Main Classes for the peakrdl-python
 """
 import os
 import re
-from pathlib import Path
-from shutil import copy
+
 from typing import NoReturn, Any, Optional, Union
 from collections.abc import Iterable
 from functools import partial
@@ -55,6 +54,8 @@ from .safe_name_utility import get_python_path_segments, safe_node_name
 
 from ._node_walkers import AddressMaps, OwnedbyAddressMap
 
+from ._deploy_package import Package, PythonPackage
+
 from .__about__ import __version__
 
 file_path = os.path.dirname(__file__)
@@ -75,168 +76,6 @@ class PythonExportTemplateError(Exception):
     """
 
 
-class _PythonPackage:
-    """
-    Class to represent a python package
-    """
-
-    def __init__(self, path: Path):
-        self._path = path
-
-    @property
-    def path(self) -> Path:
-        """
-        path of the package
-        """
-        return self._path
-
-    def child_package(self, name: str) -> '_PythonPackage':
-        """
-        provide a child package within the current package
-
-        Args:
-            name: name of child package
-
-        Returns:
-            None
-
-        """
-        return _PythonPackage(path=self.path / name)
-
-    def child_module_path(self, name: str) -> Path:
-        """
-        return a child module within the package
-
-        Args:
-            name: name of module
-
-        Returns:
-            None
-
-        """
-        return Path(self.path) / name
-
-    @property
-    def _init_path(self) -> Path:
-        return self.child_module_path('__init__.py')
-
-    def _make_empty_init_file(self) -> None:
-        with self._init_path.open('w', encoding='utf-8') as fid:
-            fid.write('pass\n')
-
-    def create_empty_package(self, cleanup: bool) -> None:
-        """
-        make the package folder (if it does not already exist), populate the __init__.py and
-        optionally remove any existing python files
-
-        Args:
-            cleanup (bool) : delete any existing python files in the package
-
-        Returns:
-            None
-        """
-        if self.path.exists():
-            if cleanup:
-                for file in self.path.glob('*.py'):
-                    os.remove(file.resolve())
-        else:
-            self.path.mkdir(parents=True, exist_ok=False)
-        self._make_empty_init_file()
-
-
-class _CopiedPythonPackage(_PythonPackage):
-    """
-    Class to represent a python package, which is copied from another
-    """
-
-    def __init__(self, path: Path, ref_package: _PythonPackage):
-        super().__init__(path=path)
-        self._ref_package = ref_package
-
-    def create_empty_package(self, cleanup: bool) -> None:
-        """
-        make the package folder (if it does not already exist), populate the __init__.py and
-        optionally remove any existing python files
-
-        Args:
-            cleanup (bool) : delete any existing python files in the package
-
-        Returns:
-            None
-        """
-        super().create_empty_package(cleanup=cleanup)
-
-        # copy all the python source code that is part of the library which comes as part of the
-        # peakrdl-python to the lib direction of the generated package
-        files_in_package = self._ref_package.path.glob('*.py')
-
-        for file_in_package in files_in_package:
-            copy(src=file_in_package, dst=self.path)
-
-
-class _Package(_PythonPackage):
-    """
-    Class to define the package being generated
-
-    Args:
-        include_tests (bool): include the tests package
-    """
-    template_lib_package = _PythonPackage(Path(__file__).parent / 'lib')
-    template_sim_lib_package = _PythonPackage(Path(__file__).parent / 'sim_lib')
-
-    def __init__(self, path: str, package_name: str, include_tests: bool, include_libraries: bool):
-        super().__init__(Path(path) / package_name)
-
-        self._include_tests = include_tests
-        self._include_libraries = include_libraries
-
-        if include_libraries:
-            self.lib = self.child_ref_package('lib', self.template_lib_package)
-        self.reg_model = self.child_package('reg_model')
-
-        if include_tests:
-            self.tests = self.child_package('tests')
-
-        if include_libraries:
-            self.sim_lib = self.child_ref_package('sim_lib', self.template_sim_lib_package)
-        self.sim = self.child_package('sim')
-
-    def child_ref_package(self, name: str, ref_package: _PythonPackage) -> '_CopiedPythonPackage':
-        """
-        provide a child package within the current package
-
-        Args:
-            name: name of child package
-
-        Returns:
-            None
-
-        """
-        return _CopiedPythonPackage(path=self.path / name, ref_package=ref_package)
-
-    def create_empty_package(self, cleanup: bool, ) -> None:
-        """
-        create the directories and __init__.py files associated with the exported package
-
-        Args:
-            package_path: directory for the package output
-            cleanup (bool): delete existing python files
-
-        Returns:
-            None
-
-        """
-
-        # make the folder for this package and populate the empty __init__.py
-        super().create_empty_package(cleanup=cleanup)
-        # make all the child packages folders and their __init__.py
-        self.reg_model.create_empty_package(cleanup=cleanup)
-        if self._include_tests:
-            self.tests.create_empty_package(cleanup=cleanup)
-        if self._include_libraries:
-            self.lib.create_empty_package(cleanup=cleanup)
-            self.sim_lib.create_empty_package(cleanup=cleanup)
-        self.sim.create_empty_package(cleanup=cleanup)
 
 
 class PythonExporter:
@@ -292,7 +131,7 @@ class PythonExporter:
 
     def __stream_jinja_template(self,
                                 template_name: str,
-                                target_package: _PythonPackage,
+                                target_package: PythonPackage,
                                 target_name: str,
                                 template_context: dict[str, Any]) -> None:
 
@@ -306,7 +145,7 @@ class PythonExporter:
     # pylint: disable-next=too-many-arguments
     def __export_reg_model(self, *,
                            top_block: AddrmapNode,
-                           package: _Package,
+                           package: Package,
                            skip_lib_copy: bool,
                            asyncoutput: bool,
                            legacy_block_access: bool,
@@ -457,7 +296,7 @@ class PythonExporter:
 
     def __export_simulator(self, *,
                            top_block: AddrmapNode,
-                           package: _Package,
+                           package: Package,
                            skip_lib_copy: bool,
                            asyncoutput: bool,
                            legacy_block_access: bool) -> None:
@@ -506,7 +345,7 @@ class PythonExporter:
 
     def __export_example(self, *,
                          top_block: AddrmapNode,
-                         package: _Package,
+                         package: Package,
                          skip_lib_copy: bool,
                          asyncoutput: bool,
                          legacy_block_access: bool) -> None:
@@ -532,7 +371,7 @@ class PythonExporter:
     # pylint: disable-next=too-many-arguments
     def __export_base_tests(self, *,
                             top_block: AddrmapNode,
-                            package: _Package,
+                            package: Package,
                             skip_lib_copy: bool,
                             asyncoutput: bool,
                             legacy_block_access: bool,
@@ -572,7 +411,7 @@ class PythonExporter:
     # pylint: disable-next=too-many-arguments
     def __export_tests(self, *,
                        top_block: AddrmapNode,
-                       package: _Package,
+                       package: Package,
                        skip_lib_copy: bool,
                        asyncoutput: bool,
                        legacy_block_access: bool,
@@ -752,10 +591,10 @@ class PythonExporter:
 
         if not isinstance(path, str):
             raise TypeError(f'path should be a str but got {type(path)}')
-        package = _Package(path=path,
-                           package_name=node.inst_name,
-                           include_tests=not skip_test_case_generation,
-                           include_libraries=not skip_library_copy)
+        package = Package(path=path,
+                          package_name=node.inst_name,
+                          include_tests=not skip_test_case_generation,
+                          include_libraries=not skip_library_copy)
         package.create_empty_package(cleanup=delete_existing_package_content)
 
         self._validate_udp_to_include(udp_to_include=user_defined_properties_to_include)
