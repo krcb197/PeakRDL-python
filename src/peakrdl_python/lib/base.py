@@ -204,7 +204,7 @@ class NodeArray(Base, Sequence[NodeArrayElementType]):
     """
 
     # pylint: disable=too-few-public-methods
-    __slots__: list[str] = ['__elements', '__address',
+    __slots__: list[str] = ['__elements', '__element_indices', '__address',
                             '__stride', '__dimensions']
     _is_reg = False
     _is_mem = False
@@ -217,7 +217,7 @@ class NodeArray(Base, Sequence[NodeArrayElementType]):
                  address: int,
                  stride: int,
                  dimensions: tuple[int, ...],
-                 elements: Optional[dict[tuple[int, ...], NodeArrayElementType]] = None):
+                 elements: Optional[tuple[tuple[int, ...], tuple[NodeArrayElementType]]] = None):
 
         super().__init__(logger_handle=logger_handle, inst_name=inst_name, parent=parent)
 
@@ -248,11 +248,12 @@ class NodeArray(Base, Sequence[NodeArrayElementType]):
             self.__check_init_element(elements)
             self.__elements = elements
         else:
-            new_elements: dict[tuple[int, ...], NodeArrayElementType] = {}
-            for indices in product(*[range(dim) for dim in self.dimensions]):
-                new_elements[indices] = self.__build_element(indices=indices)
-
-            self.__elements = new_elements
+            # build the full set of indices
+            self.__element_indices = \
+                (indices
+                 for indices in product(*[range(dim) for dim in self.dimensions]))
+            self.__elements = (self.__build_element(indices=index)
+                               for index in self.__element_indices)
 
     def __build_element(self, indices: tuple[int, ...]) -> NodeArrayElementType:
 
@@ -284,7 +285,8 @@ class NodeArray(Base, Sequence[NodeArrayElementType]):
         """
         return self.inst_name + '[' + ']['.join([str(item) for item in indices]) + ']'
 
-    def __check_init_element(self, elements: dict[tuple[int, ...], NodeArrayElementType]) -> None:
+    def __check_init_element(self,
+                             elements: tuple[tuple[int, ...], tuple[NodeArrayElementType]]) -> None:
         """
         Used in the __init__ to check that the elements passed in are valid
         Args:
@@ -293,10 +295,10 @@ class NodeArray(Base, Sequence[NodeArrayElementType]):
         Returns:
 
         """
-        if not isinstance(elements, dict):
+        if not isinstance(elements, tuple):
             raise TypeError(f'elements should be a dictionary but got {type(elements)}')
 
-        for index, item in elements.items():
+        for index, item in zip(elements[0], elements[1]):
             if not isinstance(index, tuple):
                 raise TypeError(f'element index should be a tuple but got {type(index)}')
 
@@ -314,6 +316,8 @@ class NodeArray(Base, Sequence[NodeArrayElementType]):
             if not isinstance(item, self._element_datatype):
                 raise TypeError(f'elements should be a {self._element_datatype} '
                                 f'but got {type(item)}')
+
+            # TODO check the index converted to an address matches the address in the item
 
     def __address_calculator(self, indices: tuple[int, ...]) -> int:
         def cal_addr(dimensions: tuple[int,...], indices: tuple[int, ...], base_address: int,
@@ -371,8 +375,9 @@ class NodeArray(Base, Sequence[NodeArrayElementType]):
             return self.__sub_instance(elements=dict(filter(filter_1d_func, self.items())))
 
         if isinstance(item, int):
-            if (item, ) not in self.__elements:
+            if (item, ) not in self.__element_indices:
                 raise IndexError(f'{item:d} in in the array')
+            # TODO get the index of the item in __element_indices
             return self.__elements[(item, )]
 
         raise TypeError(f'Array index must either being an int or a slice, got {type(item)}')
