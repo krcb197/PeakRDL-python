@@ -333,6 +333,9 @@ class UniqueComponents(RDLListener):
         return nodal_hash_result
 
     def register_nodes(self) -> Iterator[PeakRDLPythonUniqueRegisterComponents]:
+        """
+        Iterator though all the unique register nodes
+        """
         yield from filter(
             lambda component: isinstance(component, PeakRDLPythonUniqueRegisterComponents),
             self.nodes.values())
