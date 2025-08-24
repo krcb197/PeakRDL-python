@@ -25,40 +25,40 @@ from typing import Any
 from typing import NoReturn
 from typing import Type
 
-from {% if skip_lib_copy %}peakrdl_python.{% else %}..{% endif %}lib import Node, NodeArray, Base
-from {% if skip_lib_copy %}peakrdl_python.{% else %}..{% endif %}lib import UDPStruct
+from {% if skip_lib_copy %}peakrdl_python.{% else %}...{% endif %}lib import Node, NodeArray, Base
+from {% if skip_lib_copy %}peakrdl_python.{% else %}...{% endif %}lib import UDPStruct
 
 {% if asyncoutput -%}
-from {% if skip_lib_copy %}peakrdl_python.{% else %}..{% endif %}lib import AsyncMemory
-from {% if skip_lib_copy %}peakrdl_python.{% else %}..{% endif %}lib import AsyncAddressMap
-from {% if skip_lib_copy %}peakrdl_python.{% else %}..{% endif %}lib import AsyncRegFile
-from {% if skip_lib_copy %}peakrdl_python.{% else %}..{% endif %}lib import MemoryAsyncReadOnly{% if legacy_block_access %}Legacy{% endif %}, MemoryAsyncWriteOnly{% if legacy_block_access %}Legacy{% endif %}, MemoryAsyncReadWrite{% if legacy_block_access %}Legacy{% endif %}
-from {% if skip_lib_copy %}peakrdl_python.{% else %}..{% endif %}lib import AsyncReg
-from {% if skip_lib_copy %}peakrdl_python.{% else %}..{% endif %}lib import RegAsyncReadOnly, RegAsyncWriteOnly, RegAsyncReadWrite
-from {% if skip_lib_copy %}peakrdl_python.{% else %}..{% endif %}lib import RegAsyncReadOnlyArray, RegAsyncWriteOnlyArray, RegAsyncReadWriteArray
-from {% if skip_lib_copy %}peakrdl_python.{% else %}..{% endif %}lib import ReadableAsyncMemory{% if legacy_block_access %}Legacy{% endif %}, WritableAsyncMemory{% if legacy_block_access %}Legacy{% endif %}
-from {% if skip_lib_copy %}peakrdl_python.{% else %}..{% endif %}lib import FieldAsyncReadOnly, FieldAsyncWriteOnly, FieldAsyncReadWrite, Field
-{% if uses_enum %}from {% if skip_lib_copy %}peakrdl_python.{% else %}..{% endif %}lib import FieldEnumAsyncReadOnly, FieldEnumAsyncWriteOnly, FieldEnumAsyncReadWrite{% endif %}
+from {% if skip_lib_copy %}peakrdl_python.{% else %}...{% endif %}lib import AsyncMemory
+from {% if skip_lib_copy %}peakrdl_python.{% else %}...{% endif %}lib import AsyncAddressMap
+from {% if skip_lib_copy %}peakrdl_python.{% else %}...{% endif %}lib import AsyncRegFile
+from {% if skip_lib_copy %}peakrdl_python.{% else %}...{% endif %}lib import MemoryAsyncReadOnly{% if legacy_block_access %}Legacy{% endif %}, MemoryAsyncWriteOnly{% if legacy_block_access %}Legacy{% endif %}, MemoryAsyncReadWrite{% if legacy_block_access %}Legacy{% endif %}
+from {% if skip_lib_copy %}peakrdl_python.{% else %}...{% endif %}lib import AsyncReg
+from {% if skip_lib_copy %}peakrdl_python.{% else %}...{% endif %}lib import RegAsyncReadOnly, RegAsyncWriteOnly, RegAsyncReadWrite
+from {% if skip_lib_copy %}peakrdl_python.{% else %}...{% endif %}lib import RegAsyncReadOnlyArray, RegAsyncWriteOnlyArray, RegAsyncReadWriteArray
+from {% if skip_lib_copy %}peakrdl_python.{% else %}...{% endif %}lib import ReadableAsyncMemory{% if legacy_block_access %}Legacy{% endif %}, WritableAsyncMemory{% if legacy_block_access %}Legacy{% endif %}
+from {% if skip_lib_copy %}peakrdl_python.{% else %}...{% endif %}lib import FieldAsyncReadOnly, FieldAsyncWriteOnly, FieldAsyncReadWrite, Field
+{% if uses_enum %}from {% if skip_lib_copy %}peakrdl_python.{% else %}...{% endif %}lib import FieldEnumAsyncReadOnly, FieldEnumAsyncWriteOnly, FieldEnumAsyncReadWrite{% endif %}
 {%- else -%}
-from {% if skip_lib_copy %}peakrdl_python.{% else %}..{% endif %}lib import Memory
-from {% if skip_lib_copy %}peakrdl_python.{% else %}..{% endif %}lib import AddressMap
-from {% if skip_lib_copy %}peakrdl_python.{% else %}..{% endif %}lib import RegFile
-from {% if skip_lib_copy %}peakrdl_python.{% else %}..{% endif %}lib import MemoryReadOnly{% if legacy_block_access %}Legacy{% endif %}, MemoryWriteOnly{% if legacy_block_access %}Legacy{% endif %}, MemoryReadWrite{% if legacy_block_access %}Legacy{% endif %}
-from {% if skip_lib_copy %}peakrdl_python.{% else %}..{% endif %}lib import Reg, RegArray
-from {% if skip_lib_copy %}peakrdl_python.{% else %}..{% endif %}lib import RegReadOnly, RegWriteOnly, RegReadWrite
-from {% if skip_lib_copy %}peakrdl_python.{% else %}..{% endif %}lib import RegReadOnlyArray, RegWriteOnlyArray, RegReadWriteArray
-from {% if skip_lib_copy %}peakrdl_python.{% else %}..{% endif %}lib import ReadableMemory{% if legacy_block_access %}Legacy{% endif %}, WritableMemory{% if legacy_block_access %}Legacy{% endif %}
-from {% if skip_lib_copy %}peakrdl_python.{% else %}..{% endif %}lib import FieldReadOnly, FieldWriteOnly, FieldReadWrite, Field
-{% if uses_enum %}from {% if skip_lib_copy %}peakrdl_python.{% else %}..{% endif %}lib import FieldEnumReadOnly, FieldEnumWriteOnly, FieldEnumReadWrite{% endif %}
+from {% if skip_lib_copy %}peakrdl_python.{% else %}...{% endif %}lib import Memory
+from {% if skip_lib_copy %}peakrdl_python.{% else %}...{% endif %}lib import AddressMap
+from {% if skip_lib_copy %}peakrdl_python.{% else %}...{% endif %}lib import RegFile
+from {% if skip_lib_copy %}peakrdl_python.{% else %}...{% endif %}lib import MemoryReadOnly{% if legacy_block_access %}Legacy{% endif %}, MemoryWriteOnly{% if legacy_block_access %}Legacy{% endif %}, MemoryReadWrite{% if legacy_block_access %}Legacy{% endif %}
+from {% if skip_lib_copy %}peakrdl_python.{% else %}...{% endif %}lib import Reg, RegArray
+from {% if skip_lib_copy %}peakrdl_python.{% else %}...{% endif %}lib import RegReadOnly, RegWriteOnly, RegReadWrite
+from {% if skip_lib_copy %}peakrdl_python.{% else %}...{% endif %}lib import RegReadOnlyArray, RegWriteOnlyArray, RegReadWriteArray
+from {% if skip_lib_copy %}peakrdl_python.{% else %}...{% endif %}lib import ReadableMemory{% if legacy_block_access %}Legacy{% endif %}, WritableMemory{% if legacy_block_access %}Legacy{% endif %}
+from {% if skip_lib_copy %}peakrdl_python.{% else %}...{% endif %}lib import FieldReadOnly, FieldWriteOnly, FieldReadWrite, Field
+{% if uses_enum %}from {% if skip_lib_copy %}peakrdl_python.{% else %}...{% endif %}lib import FieldEnumReadOnly, FieldEnumWriteOnly, FieldEnumReadWrite{% endif %}
 {%- endif %}
-from {% if skip_lib_copy %}peakrdl_python.{% else %}..{% endif %}lib import FieldSizeProps, FieldMiscProps
+from {% if skip_lib_copy %}peakrdl_python.{% else %}...{% endif %}lib import FieldSizeProps, FieldMiscProps
 
 {% for enum_needed in dependent_enums %}
 from .field_enum import {{enum_needed}}
 {%- endfor %}
 
 {% for property_enum in unique_property_enums %}
-from .{{top_node.inst_name}}_property_enums import {{property_enum.type_name}}_property_enumcls
+from ..{{top_node.inst_name}}_property_enums import {{property_enum.type_name}}_property_enumcls
 {% endfor %}
 
 {% for field_cls in dependent_fields %}

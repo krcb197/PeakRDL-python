@@ -23,7 +23,7 @@ from enum import IntEnum
 from enum import unique
 
 {% if not legacy_enum_type %}
-from {% if skip_lib_copy %}peakrdl_python.{% else %}..{% endif %}lib import SystemRDLEnum, SystemRDLEnumEntry
+from {% if skip_lib_copy %}peakrdl_python.{% else %}....{% endif %}lib import SystemRDLEnum, SystemRDLEnumEntry
 {% endif %}
 
 # root level enum definitions
