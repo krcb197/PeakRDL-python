@@ -258,7 +258,7 @@ class PythonExporter:
             package=package,
             skip_lib_copy=skip_lib_copy,
             asyncoutput=asyncoutput,
-            legacy_block_access=asyncoutput,
+            legacy_block_access=legacy_block_access,
             hide_node_func=hide_node_func,
             legacy_enum_type=legacy_enum_type,
             skip_systemrdl_name_and_desc_properties=skip_systemrdl_name_and_desc_properties,
