@@ -25,7 +25,7 @@ from collections.abc import Callable
 from collections.abc import Iterable
 from functools import partial
 import sys
-from itertools import filterfalse, batched
+from itertools import filterfalse
 
 import jinja2 as jj
 from systemrdl import RDLWalker
@@ -68,6 +68,17 @@ if sys.version_info >= (3, 10):
     from typing import TypeGuard
 else:
     from typing_extensions import TypeGuard
+# pylint: enable=duplicate-code
+
+# same bit of code exists in base so flags as duplicate
+# pylint: disable=duplicate-code
+if sys.version_info >= (3, 13):
+    # the batched iterator was introduced in the python standard library at version 3.13
+    # 3.12 did have a version without strict but to make this more consistent stick with this
+    # full implementation even though this module does not use the strict option
+    from itertools import batched
+else:
+    from more_itertools import batched
 # pylint: enable=duplicate-code
 
 
