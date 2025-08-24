@@ -169,7 +169,8 @@ class PeakRDLPythonUniqueRegisterComponents(PeakRDLPythonUniqueComponents):
         """
         Iterator for all the systemRDL nodes which are not hidden
         """
-        yield from self.instance.fields()
+        yield from filterfalse(self.parent_walker.hide_node_callback,
+                               self.instance.fields())
 
 class UniqueComponents(RDLListener):
     """
