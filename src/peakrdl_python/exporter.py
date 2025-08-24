@@ -366,6 +366,7 @@ class PythonExporter:
                     'top_node': top_block,
                     'version': __version__,
                     'systemrdlRegNode': RegNode,
+                    'systemrdlFieldNode': FieldNode,
                     'systemrdlSignalNode': SignalNode,
                     'systemrdlUserStruct': UserStruct,
                     'systemrdlUserEnum': UserEnum,
