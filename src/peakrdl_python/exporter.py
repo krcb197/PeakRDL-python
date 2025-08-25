@@ -81,6 +81,9 @@ else:
     from more_itertools import batched
 # pylint: enable=duplicate-code
 
+DEFAULT_ENUM_FIELD_CLASS_PER_GENERATED_FILE = 50
+DEFAULT_FIELD_CLASS_PER_GENERATED_FILE = 25
+DEFAULT_REGISTER_CLASS_PER_GENERATED_FILE = 25
 
 class PythonExportTemplateError(Exception):
     """
@@ -185,7 +188,10 @@ class PythonExporter:
                            udp_to_include: Optional[list[str]],
                            hide_node_func: HideNodeCallback,
                            legacy_enum_type: bool,
-                           skip_systemrdl_name_and_desc_properties: bool) -> None:
+                           skip_systemrdl_name_and_desc_properties: bool,
+                           register_class_per_generated_file: int,
+                           field_class_per_generated_file: int,
+                           enum_field_class_per_generated_file: int) -> None:
 
         def visible_nonsignal_node(node: Node) -> int:
             count = 0
@@ -263,7 +269,9 @@ class PythonExporter:
             legacy_enum_type=legacy_enum_type,
             skip_systemrdl_name_and_desc_properties=skip_systemrdl_name_and_desc_properties,
             unique_component_walker=unique_component_walker,
-            visible_nonsignal_node=visible_nonsignal_node)
+            visible_nonsignal_node=visible_nonsignal_node,
+            register_class_per_generated_file=register_class_per_generated_file,
+        )
 
         self.__export_reg_model_fields(
             top_block=top_block,
@@ -272,7 +280,8 @@ class PythonExporter:
             asyncoutput=asyncoutput,
             legacy_enum_type=legacy_enum_type,
             skip_systemrdl_name_and_desc_properties=skip_systemrdl_name_and_desc_properties,
-            unique_component_walker=unique_component_walker)
+            unique_component_walker=unique_component_walker,
+            field_class_per_generated_file=field_class_per_generated_file)
 
 
         # field enumerations
@@ -283,7 +292,8 @@ class PythonExporter:
                 skip_lib_copy=skip_lib_copy,
                 legacy_enum_type=legacy_enum_type,
                 skip_systemrdl_name_and_desc_properties=skip_systemrdl_name_and_desc_properties,
-                unique_component_walker=unique_component_walker)
+                unique_component_walker=unique_component_walker,
+                enum_field_class_per_generated_file=enum_field_class_per_generated_file)
 
         # property enumerations
         context = {
@@ -313,7 +323,8 @@ class PythonExporter:
                                      legacy_enum_type: bool,
                                      skip_systemrdl_name_and_desc_properties: bool,
                                      unique_component_walker: UniqueComponents,
-                                     visible_nonsignal_node: Callable[[Node], int]) -> None:
+                                     visible_nonsignal_node: Callable[[Node], int],
+                                     register_class_per_generated_file: int) -> None:
         """
         Sub function of the __export_reg_model which exports the register class definitions into
         a batch of files within the registers sub-package of the main reg_model package
@@ -337,7 +348,7 @@ class PythonExporter:
             for index, unique_register_subset in enumerate(
                     batched(
                         unique_component_walker.register_nodes(),
-                        n=20)  # 20 registers per file
+                        n=register_class_per_generated_file)
             ):
 
                 # make list of all the field and field enum class names that need to be pulled into
@@ -418,7 +429,9 @@ class PythonExporter:
                                   asyncoutput: bool,
                                   legacy_enum_type: bool,
                                   skip_systemrdl_name_and_desc_properties: bool,
-                                  unique_component_walker: UniqueComponents, ) -> None:
+                                  unique_component_walker: UniqueComponents,
+                                  field_class_per_generated_file: int
+                                  ) -> None:
         """
         Sub function of the __export_reg_model which exports the field class definitions into
         a batch of files within the registers.fields sub-package of the main reg_model package
@@ -433,7 +446,7 @@ class PythonExporter:
                         filter(
                             lambda component: isinstance(component.instance, FieldNode),
                             unique_component_walker.nodes.values()),
-                        n=25)  # 25 field classes per file
+                        n=field_class_per_generated_file)
             ):
 
                 context = {
@@ -475,7 +488,8 @@ class PythonExporter:
                                        skip_lib_copy: bool,
                                        legacy_enum_type: bool,
                                        skip_systemrdl_name_and_desc_properties: bool,
-                                       unique_component_walker: UniqueComponents, ) -> None:
+                                       unique_component_walker: UniqueComponents,
+                                       enum_field_class_per_generated_file) -> None:
         """
         Sub function of the __export_reg_model which exports the field enumeration class
         definitions into a batch of files within the registers.field_enus sub-packaage of the main
@@ -492,7 +506,7 @@ class PythonExporter:
             for index, unique_enums_subset in enumerate(
                     batched(
                         self._get_dependent_enum(unique_component_walker),
-                        n=50)  # 50 field enumeration definitions per file
+                        n=enum_field_class_per_generated_file)
             ):
                 context = {
                     'top_node': top_block,
@@ -754,7 +768,14 @@ class PythonExporter:
                user_defined_properties_to_include: Optional[list[str]] = None,
                hidden_inst_name_regex: Optional[str] = None,
                legacy_enum_type: bool = True,
-               skip_systemrdl_name_and_desc_properties: bool = False) -> str:
+               skip_systemrdl_name_and_desc_properties: bool = False,
+               register_class_per_generated_file: int =
+                   DEFAULT_REGISTER_CLASS_PER_GENERATED_FILE,
+               field_class_per_generated_file: int =
+                   DEFAULT_FIELD_CLASS_PER_GENERATED_FILE,
+               enum_field_class_per_generated_file: int =
+                   DEFAULT_ENUM_FIELD_CLASS_PER_GENERATED_FILE,
+               ) -> str:
         """
         Generated Python Code and Testbench
 
@@ -798,6 +819,21 @@ class PythonExporter:
                                                              desc as properties of the built
                                                              python. Setting this option to
                                                              ``True`` will exclude them.
+            register_class_per_generated_file : Number of register class definitions to put in
+                                                each python module of the generated code.
+                                                Make sure this is set to ensure the file does not
+                                                get too big otherwise the generation and loading
+                                                is slow.
+            field_class_per_generated_file  : Number of register class definitions to put in
+                                              each python module of the generated code.
+                                              Make sure this is set to ensure the file does not
+                                              get too big otherwise the generation and loading
+                                              is slow.
+            enum_field_class_per_generated_file : Number of register class definitions to put in
+                                                  each python module of the generated code.
+                                                  Make sure this is set to ensure the file does not
+                                                  get too big otherwise the generation and loading
+                                                  is slow.
 
         Returns:
             modules that have been exported:
@@ -853,7 +889,11 @@ class PythonExporter:
             udp_to_include=user_defined_properties_to_include,
             hide_node_func=hide_node_func,
             legacy_enum_type=legacy_enum_type,
-            skip_systemrdl_name_and_desc_properties=skip_systemrdl_name_and_desc_properties)
+            skip_systemrdl_name_and_desc_properties=skip_systemrdl_name_and_desc_properties,
+            register_class_per_generated_file=register_class_per_generated_file,
+            field_class_per_generated_file=field_class_per_generated_file,
+            enum_field_class_per_generated_file=enum_field_class_per_generated_file,
+        )
 
         self.__export_simulator(top_block=top_block, package=package, asyncoutput=asyncoutput,
                                 skip_lib_copy=skip_library_copy,
