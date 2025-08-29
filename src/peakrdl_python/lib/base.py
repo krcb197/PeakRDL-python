@@ -26,7 +26,7 @@ from abc import ABC, abstractmethod
 from itertools import product
 from functools import reduce
 from operator import mul
-from enum import IntEnum
+from enum import IntEnum, Enum, auto
 
 from .callbacks import CallbackSet, CallbackSetLegacy
 
@@ -112,6 +112,15 @@ class Base(ABC):
         """
         return None
 
+class IterationClassification(Enum):
+    """
+    Enumation to classify different node types so they can be filtered for the purpose of
+    iteration
+    """
+    REGISTER = auto()
+    MEMORY = auto()
+    SECTION = auto()
+
 # FieldType = TypeVar('NodeElementType', bound=Node|NodeArray)
 # However, python 3.9 does not support the combination so the binding was removed
 # pylint: disable-next=invalid-name
@@ -124,14 +133,25 @@ class Node(Base ,ABC):
         circumstances however, it is useful for type checking
     """
 
-    __slots__ = ['__address']
-
-
     # in order to avoid circular import loops, the node class needs to keep track of its type
     # so that this can be used in the iteration filters
-    _is_reg = False
-    _is_mem = False
-    _is_section = False
+    _iteration_classification: IterationClassification
+
+    __slots__ = ['__address','_iteration_classification']
+
+    def __init_subclass__(cls, **kwargs:Any) -> None:
+        super().__init_subclass__(**kwargs)
+
+        # python does not have the concept of an abstract class attribute, this is the recommended
+        # design pattern, to check that the subclass as set a class attribute
+
+        if not hasattr(cls, "_iteration_classification"):
+            raise AttributeError(f"{cls.__name__} must define class attribute "
+                                 "'_iteration_classification'")
+        if not isinstance(cls._iteration_classification, IterationClassification):
+            raise TypeError('_iteration_classification should be a IterationClassification '
+                            f'but got {type(cls._iteration_classification)}')
+
 
     def __init__(self, *,
                  address: int,
@@ -144,10 +164,6 @@ class Node(Base ,ABC):
             raise TypeError(f'address should be int but got {type(address)}')
 
         self.__address = address
-
-        if sum((self._is_reg, self._is_mem, self._is_section)) != 1:
-            raise RuntimeError('Something is wrong with the setup: '
-                               f'{self._is_reg=}, {self._is_mem=}, {self._is_section=}')
 
     @property
     def address(self) -> int:
@@ -205,10 +221,25 @@ class NodeArray(Base, Sequence[NodeArrayElementType]):
 
     # pylint: disable=too-few-public-methods
     __slots__: list[str] = ['__elements', '__address',
-                            '__stride', '__dimensions']
-    _is_reg = False
-    _is_mem = False
-    _is_section = False
+                            '__stride', '__dimensions',
+                            '_iteration_classification']
+
+    # in order to avoid circular import loops, the node class needs to keep track of its type
+    # so that this can be used in the iteration filters
+    _iteration_classification: IterationClassification
+
+    def __init_subclass__(cls, **kwargs:Any) -> None:
+        super().__init_subclass__(**kwargs)
+
+        # python does not have the concept of an abstract class attribute, this is the recommended
+        # design pattern, to check that the subclass as set a class attribute
+
+        if not hasattr(cls, "_iteration_classification"):
+            raise AttributeError(f"{cls.__name__} must define class attribute "
+                                 "'_iteration_classification'")
+        if not isinstance(cls._iteration_classification, IterationClassification):
+            raise TypeError('_iteration_classification should be a IterationClassification '
+                            f'but got {type(cls._iteration_classification)}')
 
     # pylint: disable-next=too-many-arguments
     def __init__(self, *, logger_handle: str,
@@ -220,10 +251,6 @@ class NodeArray(Base, Sequence[NodeArrayElementType]):
                  elements: Optional[dict[tuple[int, ...], NodeArrayElementType]] = None):
 
         super().__init__(logger_handle=logger_handle, inst_name=inst_name, parent=parent)
-
-        if sum((self._is_reg, self._is_mem, self._is_section)) != 1:
-            raise RuntimeError('Something is wrong with the setup: '
-                               f'{self._is_reg=}, {self._is_mem=}, {self._is_section=}')
 
         if not isinstance(address, int):
             raise TypeError(f'address should be a int but got {type(dimensions)}')
