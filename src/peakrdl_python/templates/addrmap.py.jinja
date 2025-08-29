@@ -80,11 +80,11 @@ from .{{top_node.inst_name}}_property_enums import {{property_enum.type_name}}_p
 {% endfor %}
 
 {%- for node in dependent_registers -%}
-from .registers import {{node.python_class_name}}{% if node.instance.is_array %}_array{% endif %}
+from ._registers import {{node.python_class_name}}{% if node.instance.is_array %}_array{% endif %}
 {% endfor %}
 
 {%- for node in dependent_memories -%}
-from .memories import {{node.python_class_name}}{% if node.instance.is_array %}_array{% endif %}
+from ._memories import {{node.python_class_name}}{% if node.instance.is_array %}_array{% endif %}
 {% endfor %}
 
 {% from 'reg_definitions.py.jinja' import register_class_attributes with context %}

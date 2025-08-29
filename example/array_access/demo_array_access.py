@@ -1,7 +1,7 @@
 """
 A demonstration of array access for peakrdl-python
 """
-from array_access.reg_model.array_access import array_access_cls
+from array_access.reg_model import RegModel
 from array_access.sim.array_access import array_access_simulator_cls
 from array_access.lib.callbacks import NormalCallbackSet
 
@@ -11,7 +11,7 @@ if __name__ == '__main__':
     sim = array_access_simulator_cls(0)
 
     # create an instance of the class
-    regmodel = array_access_cls(callbacks=NormalCallbackSet(read_callback=sim.read))
+    regmodel = RegModel(callbacks=NormalCallbackSet(read_callback=sim.read))
 
     # access a entry in the 1D array
     print(regmodel.reg_array_1D[0].field_a.read())

@@ -257,10 +257,18 @@ class PythonExporter:
         if legacy_block_access is True:
             context['get_array_typecode'] = get_array_typecode
 
+        module_name = top_block.inst_name
         self.__stream_jinja_template(template_name="addrmap.py.jinja",
                                      target_package=package.reg_model,
-                                     target_name=top_block.inst_name + '.py',
+                                     target_name=module_name + '.py',
                                      template_context=context)
+
+        with package.reg_model.init_file_stream() as init_fid:
+            # put the header on the reg_model package __init__.py
+            self.__insert_header(file_stream=init_fid,
+                                 top_block=top_block)
+            init_fid.write(f'from .{module_name} import {top_block.inst_name}_cls as RegModel\n')
+
 
         if uses_memory(top_block):
             self.__export_reg_model_memories(
@@ -598,7 +606,7 @@ class PythonExporter:
                                        enum_field_class_per_generated_file: int) -> None:
         """
         Sub function of the __export_reg_model which exports the field enumeration class
-        definitions into a batch of files within the registers.field_enus sub-packaage of the main
+        definitions into a batch of files within the registers.field_enums sub-packaage of the main
         reg_model package
         """
         def init_line_entry(module_name:str, field_enum:UserEnumMeta) -> str:

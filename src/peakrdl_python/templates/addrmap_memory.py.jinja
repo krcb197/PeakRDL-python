@@ -46,7 +46,7 @@ from {% if skip_lib_copy %}peakrdl_python.{% else %}...{% endif %}lib import Reg
 {%- endif %}
 
 {% for register_cls in dependent_registers %}
-from ..registers import {{register_cls}}
+from .._registers import {{register_cls}}
 {%- endfor %}
 
 {% from 'reg_definitions.py.jinja' import register_class_attributes with context %}

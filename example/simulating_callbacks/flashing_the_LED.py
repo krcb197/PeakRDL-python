@@ -4,7 +4,7 @@ A demonstration of extended simulator behaviour in peakrdl-python
 import tkinter
 import tkinter as tk
 
-from mychip.reg_model.mychip import mychip_cls
+from mychip.reg_model import RegModel
 from mychip.sim.mychip import mychip_simulator_cls
 from mychip.lib import NormalCallbackSet
 
@@ -91,7 +91,7 @@ if __name__ == '__main__':
                                   write_callback=chip_simulator.write)
 
     # created an instance of the register model and connect the callbacks to the simulator
-    mychip = mychip_cls(callbacks=callbacks)
+    mychip = RegModel(callbacks=callbacks)
 
     # configure the GPIO.PIN_0 as an output
     mychip.GPIO.GPIO_dir.PIN_0.write(mychip.GPIO.GPIO_dir.PIN_0.enum_cls.DIR_OUT)

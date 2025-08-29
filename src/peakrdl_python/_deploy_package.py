@@ -137,8 +137,8 @@ class _GeneratedRegModelPackage(PythonPackage):
     def __init__(self, path: Path):
         super().__init__(path=path)
 
-        self.registers = _GeneratedRegModelRegistersPackage(self.child_path('registers'))
-        self.memories = self.child_package('memories')
+        self.registers = _GeneratedRegModelRegistersPackage(self.child_path('_registers'))
+        self.memories = self.child_package('_memories')
 
     def create_empty_package(self, cleanup: bool) -> None:
         # make the folder for this package and populate the empty __init__.py
