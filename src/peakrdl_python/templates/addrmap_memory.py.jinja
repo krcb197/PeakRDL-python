@@ -28,6 +28,9 @@ from typing import NoReturn
 import warnings
 {% if legacy_block_access %}from array import array as Array{% endif %}
 
+from {% if skip_lib_copy %}peakrdl_python.{% else %}...{% endif %}lib import Node, NodeArray, Base
+from {% if skip_lib_copy %}peakrdl_python.{% else %}...{% endif %}lib import UDPStruct
+
 {% if asyncoutput -%}
 from {% if skip_lib_copy %}peakrdl_python.{% else %}...{% endif %}lib import AsyncMemory, AsyncMemoryArray
 from {% if skip_lib_copy %}peakrdl_python.{% else %}...{% endif %}lib import AsyncAddressMap
@@ -83,7 +86,7 @@ class {{node.python_class_name}}({{node.base_class(asyncoutput)}}{% if legacy_bl
 
         {%- for child_node in node.registers(unroll=False) %}
     @property
-    def {{safe_node_name(child_node)}}(self) -> '{% if child_node.is_array -%}{{get_fully_qualified_type_name(child_node)}}_array{% else %}{{get_fully_qualified_type_name(child_node)}}{%- endif -%}':
+    def {{safe_node_name(child_node)}}(self) -> {% if child_node.is_array -%}{{get_fully_qualified_type_name(child_node)}}_array{% else %}{{get_fully_qualified_type_name(child_node)}}{%- endif -%}:
         """
         Property to access {{child_node.inst_name}} register {% if child_node.is_array -%}array{% endif %}
 
