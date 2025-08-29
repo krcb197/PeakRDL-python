@@ -118,11 +118,11 @@ class {{node.python_class_name}}({{node.base_class(asyncoutput)}}):
 
     @property
     def width(self) -> int:
-        return {{get_reg_regwidth(node.instance)}}
+        return {{node.regwidth}}
 
     @property
     def accesswidth(self) -> int:
-        return {{get_reg_accesswidth(node.instance)}}
+        return {{node.accesswidth}}
 
 
 
@@ -173,11 +173,11 @@ class {{node.python_class_name}}_array({{node.base_class(asyncoutput)}}Array):
 
     @property
     def width(self) -> int:
-        return {{get_reg_regwidth(node.instance)}}
+        return {{node.regwidth}}
 
     @property
     def accesswidth(self) -> int:
-        return {{get_reg_accesswidth(node.instance)}}
+        return {{node.accesswidth}}
 
     @property
     def _element_datatype(self) -> Type[Node]:

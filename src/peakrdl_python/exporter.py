@@ -17,6 +17,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 Main Classes for the peakrdl-python
 """
+# pylint:disable=too-many-lines
 import os
 import re
 
@@ -43,9 +44,11 @@ from .systemrdl_node_utility_functions import get_reg_writable_fields, \
     uses_enum, uses_memory, \
     get_memory_max_entry_value_hex_string, get_memory_width_bytes, \
     get_field_default_value, get_enum_values, get_properties_to_include, \
-    HideNodeCallback, hide_based_on_property, get_reg_accesswidth, get_reg_regwidth, \
-    get_memory_accesswidth,is_encoded_field
-from .unique_component_iterator import UniqueComponents, PeakRDLPythonUniqueRegisterComponents
+    HideNodeCallback, hide_based_on_property,  \
+    is_encoded_field
+from .unique_component_iterator import UniqueComponents
+from .unique_component_iterator import PeakRDLPythonUniqueRegisterComponents
+from .unique_component_iterator import PeakRDLPythonUniqueMemoryComponents
 from .class_names import fully_qualified_enum_type, get_field_get_base_class_name
 from .systemrdl_node_hashes import enum_hash
 
@@ -84,14 +87,12 @@ else:
 DEFAULT_ENUM_FIELD_CLASS_PER_GENERATED_FILE = 50
 DEFAULT_FIELD_CLASS_PER_GENERATED_FILE = 25
 DEFAULT_REGISTER_CLASS_PER_GENERATED_FILE = 25
+DEFAULT_MEMORY_CLASS_PER_GENERATED_FILE = 50
 
 class PythonExportTemplateError(Exception):
     """
     Exception for hading errors in the templating
     """
-
-
-
 
 class PythonExporter:
     """
@@ -150,6 +151,9 @@ class PythonExporter:
                                 target_name: str,
                                 template_context: dict[str, Any]) -> None:
 
+        template_context.update(self.user_template_context)
+        template_context['version'] = __version__
+
         template = self.jj_env.get_template(template_name)
         module_path = target_package.child_path(target_name)
 
@@ -178,7 +182,7 @@ class PythonExporter:
         stream.dump(file_stream)
         file_stream.write('\n')
 
-    # pylint: disable-next=too-many-arguments
+    # pylint: disable-next=too-many-arguments,too-many-locals
     def __export_reg_model(self, *,
                            top_block: AddrmapNode,
                            package: GeneratedPackage,
@@ -191,7 +195,8 @@ class PythonExporter:
                            skip_systemrdl_name_and_desc_properties: bool,
                            register_class_per_generated_file: int,
                            field_class_per_generated_file: int,
-                           enum_field_class_per_generated_file: int) -> None:
+                           enum_field_class_per_generated_file: int,
+                           memory_class_per_generated_file: int) -> None:
 
         def visible_nonsignal_node(node: Node) -> int:
             count = 0
@@ -205,6 +210,10 @@ class PythonExporter:
                                                    udp_to_include=udp_to_include)
         RDLWalker(unroll=True).walk(top_block.parent, unique_component_walker,
                                     skip_top=False)
+
+        top_file_components = filterfalse(
+            lambda component: isinstance(component.instance, (FieldNode, RegNode, MemNode)),
+            reversed(unique_component_walker.nodes.values()))
 
         context = {
             'print': print,
@@ -223,21 +232,18 @@ class PythonExporter:
             'isinstance': isinstance,
             'str': str,
             'uses_enum': uses_enum(top_block),
-            'uses_memory': uses_memory(top_block),
             'get_fully_qualified_type_name': partial(
                 unique_component_walker.python_class_name,
                 async_library_classes=asyncoutput),
-            'unique_components':
-                filterfalse(lambda component: isinstance(component.instance, (FieldNode, RegNode)),
-                            reversed(unique_component_walker.nodes.values())),
+            'unique_components': top_file_components,
             'dependent_registers': unique_component_walker.register_nodes(),
+            'dependent_memories': unique_component_walker.memory_nodes(),
             'unique_enums': self._get_dependent_enum(unique_component_walker),
             'get_enum_values': get_enum_values,
             'get_table_block': get_table_block,
             'raise_template_error': self._raise_template_error,
             'safe_node_name': safe_node_name,
             'skip_lib_copy': skip_lib_copy,
-            'version': __version__,
             'legacy_block_access': legacy_block_access,
             'udp_to_include': udp_to_include,
             'get_properties_to_include': get_properties_to_include,
@@ -247,17 +253,29 @@ class PythonExporter:
             'visible_nonsignal_node' : visible_nonsignal_node,
             'legacy_enum_type': legacy_enum_type,
             'skip_systemrdl_name_and_desc_properties': skip_systemrdl_name_and_desc_properties,
-            'get_memory_accesswidth': get_memory_accesswidth,
         }
         if legacy_block_access is True:
             context['get_array_typecode'] = get_array_typecode
-
-        context.update(self.user_template_context)
 
         self.__stream_jinja_template(template_name="addrmap.py.jinja",
                                      target_package=package.reg_model,
                                      target_name=top_block.inst_name + '.py',
                                      template_context=context)
+
+        if uses_memory(top_block):
+            self.__export_reg_model_memories(
+                top_block=top_block,
+                package=package,
+                skip_lib_copy=skip_lib_copy,
+                asyncoutput=asyncoutput,
+                legacy_block_access=legacy_block_access,
+                hide_node_func=hide_node_func,
+                legacy_enum_type=legacy_enum_type,
+                skip_systemrdl_name_and_desc_properties=skip_systemrdl_name_and_desc_properties,
+                unique_component_walker=unique_component_walker,
+                visible_nonsignal_node=visible_nonsignal_node,
+                memory_class_per_generated_file=memory_class_per_generated_file,
+            )
 
         self.__export_reg_model_registers(
             top_block=top_block,
@@ -298,14 +316,11 @@ class PythonExporter:
         # property enumerations
         context = {
             'top_node': top_block,
-            'version': __version__,
             'unique_property_enums':
                 self._get_dependent_property_enum(unique_component_walker),
             'skip_lib_copy': skip_lib_copy,
             'legacy_enum_type': legacy_enum_type,
         }
-
-        context.update(self.user_template_context)
 
         self.__stream_jinja_template(template_name="property_enums.py.jinja",
                                      target_package=package.reg_model,
@@ -329,8 +344,9 @@ class PythonExporter:
         Sub function of the __export_reg_model which exports the register class definitions into
         a batch of files within the registers sub-package of the main reg_model package
         """
-        def init_line_entry(module_name:str,
-                            register:PeakRDLPythonUniqueRegisterComponents) -> str:
+
+        def init_line_entry(module_name: str,
+                            register: PeakRDLPythonUniqueRegisterComponents) -> str:
             base_entry = f'from .{module_name} import {register.python_class_name}'
             array_entry = base_entry + '_array'
 
@@ -369,13 +385,13 @@ class PythonExporter:
                             encoding_enum = field.get_property('encode')
                             if encoding_enum is None:
                                 raise RuntimeError('This should never happen')
-                            field_enum_cls = fully_qualified_enum_type(encoding_enum) + '_enumcls'
+                            field_enum_cls = fully_qualified_enum_type(
+                                encoding_enum) + '_enumcls'
                             if field_enum_cls not in dependent_field_enum_cls:
                                 dependent_field_enum_cls.append(field_enum_cls)
 
                 context = {
                     'top_node': top_block,
-                    'version': __version__,
                     'systemrdlRegNode': RegNode,
                     'systemrdlFieldNode': FieldNode,
                     'systemrdlSignalNode': SignalNode,
@@ -394,8 +410,6 @@ class PythonExporter:
                         async_library_classes=asyncoutput),
                     'get_fully_qualified_enum_type': fully_qualified_enum_type,
                     'get_field_default_value': get_field_default_value,
-                    'get_reg_accesswidth': get_reg_accesswidth,
-                    'get_reg_regwidth': get_reg_regwidth,
                     'is_encoded_field': is_encoded_field,
                     'skip_lib_copy': skip_lib_copy,
                     'uses_enum': uses_enum(top_block),
@@ -411,15 +425,109 @@ class PythonExporter:
                     'visible_nonsignal_node': visible_nonsignal_node,
                 }
 
-                context.update(self.user_template_context)
                 module_name = top_block.inst_name + f'_registers{index}'
                 self.__stream_jinja_template(template_name="addrmap_register.py.jinja",
                                              target_package=package.reg_model.registers,
                                              target_name=module_name + '.py',
                                              template_context=context)
 
-                init_fid.writelines( (init_line_entry(module_name,register)
-                                      for register in unique_register_subset))
+                init_fid.writelines((init_line_entry(module_name, register)
+                                     for register in unique_register_subset))
+
+    # pylint: disable-next=too-many-arguments,too-many-locals
+    def __export_reg_model_memories(self, *,
+                                     top_block: AddrmapNode,
+                                     package: GeneratedPackage,
+                                     skip_lib_copy: bool,
+                                     asyncoutput: bool,
+                                     legacy_block_access: bool,
+                                     hide_node_func: HideNodeCallback,
+                                     legacy_enum_type: bool,
+                                     skip_systemrdl_name_and_desc_properties: bool,
+                                     unique_component_walker: UniqueComponents,
+                                     visible_nonsignal_node: Callable[[Node], int],
+                                     memory_class_per_generated_file: int) -> None:
+        """
+        Sub function of the __export_reg_model which exports the memory class definitions into
+        a batch of files within the memories sub-package of the main reg_model package
+        """
+        def init_line_entry(module_name:str,
+                            memory:PeakRDLPythonUniqueMemoryComponents) -> str:
+            base_entry = f'from .{module_name} import {memory.python_class_name}'
+            array_entry = base_entry + '_array'
+
+            if memory.instance.is_array:
+                return f'{base_entry}\n{array_entry}\n'
+
+            return f'{base_entry}\n'
+
+        # registers which are broken up to multiple files to prevent anything getting too big
+        with package.reg_model.memories.init_file_stream() as init_fid:
+            # put the header on the field package __init__.py
+            self.__insert_header(file_stream=init_fid,
+                                 top_block=top_block)
+
+            for index, unique_memory_subset in enumerate(
+                    batched(
+                        unique_component_walker.memory_nodes(),
+                        n=memory_class_per_generated_file)
+            ):
+
+                # make list of all the register class names that need to be pulled into
+                # the module associated with this batch of memories
+                dependent_reg_cls = []
+                for memory in unique_memory_subset:
+                    for register in memory.registers(unroll=False):
+                        register_cls = unique_component_walker.python_class_name(
+                            async_library_classes=asyncoutput,
+                            node=register)
+                        if register.is_array:
+                            register_cls += '_array'
+                        if register_cls not in dependent_reg_cls:
+                            dependent_reg_cls.append(register_cls)
+
+                context = {
+                    'top_node': top_block,
+                    'systemrdlMemNode': MemNode,
+                    'systemrdlFieldNode': FieldNode,
+                    'systemrdlSignalNode': SignalNode,
+                    'systemrdlUserStruct': UserStruct,
+                    'systemrdlUserEnum': UserEnum,
+                    'isinstance': isinstance,
+                    'type': type,
+                    'str': str,
+                    'asyncoutput': asyncoutput,
+                    'unique_memories': unique_memory_subset,
+                    'unique_property_enums':
+                        self._get_dependent_property_enum(unique_component_walker),
+                    'get_table_block': get_table_block,
+                    'get_fully_qualified_type_name': partial(
+                        unique_component_walker.python_class_name,
+                        async_library_classes=asyncoutput),
+                    'get_fully_qualified_enum_type': fully_qualified_enum_type,
+                    'get_field_default_value': get_field_default_value,
+                    'is_encoded_field': is_encoded_field,
+                    'skip_lib_copy': skip_lib_copy,
+                    'uses_enum': uses_enum(top_block),
+                    'legacy_enum_type': legacy_enum_type,
+                    'legacy_block_access': legacy_block_access,
+                    'skip_systemrdl_name_and_desc_properties':
+                        skip_systemrdl_name_and_desc_properties,
+                    'raise_template_error': self._raise_template_error,
+                    'safe_node_name': safe_node_name,
+                    'hide_node_func': hide_node_func,
+                    'visible_nonsignal_node': visible_nonsignal_node,
+                    'dependent_registers': dependent_reg_cls,
+                }
+
+                module_name = top_block.inst_name + f'_memories{index}'
+                self.__stream_jinja_template(template_name="addrmap_memory.py.jinja",
+                                             target_package=package.reg_model.memories,
+                                             target_name=module_name + '.py',
+                                             template_context=context)
+
+                init_fid.writelines( (init_line_entry(module_name,memory)
+                                      for memory in unique_memory_subset))
 
     # pylint: disable-next=too-many-arguments
     def __export_reg_model_fields(self, *,
@@ -451,7 +559,6 @@ class PythonExporter:
 
                 context = {
                     'top_node': top_block,
-                    'version': __version__,
                     'systemrdlFieldNode': FieldNode,
                     'systemrdlUserStruct': UserStruct,
                     'systemrdlUserEnum': UserEnum,
@@ -471,7 +578,6 @@ class PythonExporter:
                     'raise_template_error': self._raise_template_error,
                 }
 
-                context.update(self.user_template_context)
                 module_name = top_block.inst_name + f'_fields{index}'
                 self.__stream_jinja_template(template_name="addrmap_field.py.jinja",
                                              target_package=package.reg_model.registers.fields,
@@ -489,7 +595,7 @@ class PythonExporter:
                                        legacy_enum_type: bool,
                                        skip_systemrdl_name_and_desc_properties: bool,
                                        unique_component_walker: UniqueComponents,
-                                       enum_field_class_per_generated_file) -> None:
+                                       enum_field_class_per_generated_file: int) -> None:
         """
         Sub function of the __export_reg_model which exports the field enumeration class
         definitions into a batch of files within the registers.field_enus sub-packaage of the main
@@ -510,7 +616,6 @@ class PythonExporter:
             ):
                 context = {
                     'top_node': top_block,
-                    'version': __version__,
                     'unique_enums': unique_enums_subset,
                     'get_fully_qualified_enum_type': fully_qualified_enum_type,
                     'skip_lib_copy': skip_lib_copy,
@@ -519,7 +624,6 @@ class PythonExporter:
                         skip_systemrdl_name_and_desc_properties
                 }
 
-                context.update(self.user_template_context)
                 field_enum_module_name = top_block.inst_name + f'_fields_enums{index}'
                 self.__stream_jinja_template(template_name="field_enums.py.jinja",
                                              target_package=package.reg_model.registers.field_enum,
@@ -567,12 +671,9 @@ class PythonExporter:
             'isinstance': isinstance,
             'asyncoutput': asyncoutput,
             'skip_lib_copy': skip_lib_copy,
-            'version': __version__,
             'legacy_block_access': legacy_block_access,
             'list': list
         }
-
-        context.update(self.user_template_context)
 
         self.__stream_jinja_template(template_name="sim_addrmap.py.jinja",
                                      target_package=package.sim,
@@ -593,11 +694,8 @@ class PythonExporter:
             'isinstance': isinstance,
             'asyncoutput': asyncoutput,
             'skip_lib_copy': skip_lib_copy,
-            'version': __version__,
             'legacy_block_access': legacy_block_access,
         }
-
-        context.update(self.user_template_context)
 
         self.__stream_jinja_template(template_name="example.py.jinja",
                                      target_package=package,
@@ -612,27 +710,14 @@ class PythonExporter:
                             asyncoutput: bool,
                             legacy_block_access: bool,
                             legacy_enum_type: bool) -> None:
-        """
-
-        Args:
-            top_block:
-            package:
-            asyncoutput:
-
-        Returns:
-
-        """
 
         context = {
             'top_node': top_block,
             'asyncoutput': asyncoutput,
             'skip_lib_copy': skip_lib_copy,
-            'version': __version__,
             'legacy_block_access': legacy_block_access,
             'legacy_enum_type': legacy_enum_type
         }
-
-        context.update(self.user_template_context)
 
         self.__stream_jinja_template(template_name="baseclass_tb.py.jinja",
                                      target_package=package.tests,
@@ -720,7 +805,6 @@ class PythonExporter:
                 'asyncoutput': asyncoutput,
                 'uses_enum': uses_enum(block),
                 'skip_lib_copy': skip_lib_copy,
-                'version': __version__,
                 'get_array_typecode': get_array_typecode,
                 'legacy_block_access': legacy_block_access,
                 'udp_to_include': udp_to_include,
@@ -775,6 +859,8 @@ class PythonExporter:
                    DEFAULT_FIELD_CLASS_PER_GENERATED_FILE,
                enum_field_class_per_generated_file: int =
                    DEFAULT_ENUM_FIELD_CLASS_PER_GENERATED_FILE,
+               memory_class_per_generated_file: int =
+                   DEFAULT_MEMORY_CLASS_PER_GENERATED_FILE,
                ) -> str:
         """
         Generated Python Code and Testbench
@@ -834,6 +920,11 @@ class PythonExporter:
                                                   Make sure this is set to ensure the file does not
                                                   get too big otherwise the generation and loading
                                                   is slow.
+            memory_class_per_generated_file : Number of memory class definitions to put in
+                                              each python module of the generated code.
+                                              Make sure this is set to ensure the file does not
+                                              get too big otherwise the generation and loading
+                                              is slow.
 
         Returns:
             modules that have been exported:
@@ -893,6 +984,7 @@ class PythonExporter:
             register_class_per_generated_file=register_class_per_generated_file,
             field_class_per_generated_file=field_class_per_generated_file,
             enum_field_class_per_generated_file=enum_field_class_per_generated_file,
+            memory_class_per_generated_file=memory_class_per_generated_file,
         )
 
         self.__export_simulator(top_block=top_block, package=package, asyncoutput=asyncoutput,

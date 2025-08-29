@@ -83,7 +83,10 @@ from .{{top_node.inst_name}}_property_enums import {{property_enum.type_name}}_p
 from .registers import {{node.python_class_name}}{% if node.instance.is_array %}_array{% endif %}
 {% endfor %}
 
-{% from 'addrmap_memory.py.jinja' import memory_class with context %}
+{%- for node in dependent_memories -%}
+from .memories import {{node.python_class_name}}{% if node.instance.is_array %}_array{% endif %}
+{% endfor %}
+
 {% from 'reg_definitions.py.jinja' import register_class_attributes with context %}
 {% from 'addrmap_udp_property.py.jinja' import udp_property with context %}
 {% from 'addrmap_universal_property.py.jinja' import universal_properties with context %}
@@ -292,8 +295,6 @@ class {{node.python_class_name}}_array({% if asyncoutput %}Async{% endif %}Addre
     {{ regfile_class(unique_node) }}
     {% elif isinstance(unique_node.instance, systemrdlAddrmapNode) %}
     {{ addrmap_class(unique_node) }}
-    {% elif isinstance(unique_node.instance, systemrdlMemNode) %}
-    {{ memory_class(unique_node)  }}
     {% else %}
     {{ raise_template_error('Encountered unhandled type') }}
     {% endif %}

@@ -131,17 +131,20 @@ class _GeneratedRegModelRegistersPackage(PythonPackage):
         self.fields.create_empty_package(cleanup=cleanup)
         self.field_enum.create_empty_package(cleanup=cleanup)
 
+
 class _GeneratedRegModelPackage(PythonPackage):
 
     def __init__(self, path: Path):
         super().__init__(path=path)
 
         self.registers = _GeneratedRegModelRegistersPackage(self.child_path('registers'))
+        self.memories = self.child_package('memories')
 
     def create_empty_package(self, cleanup: bool) -> None:
         # make the folder for this package and populate the empty __init__.py
         super().create_empty_package(cleanup=cleanup)
         self.registers.create_empty_package(cleanup=cleanup)
+        self.memories.create_empty_package(cleanup=cleanup)
 
 
 class GeneratedPackage(PythonPackage):
