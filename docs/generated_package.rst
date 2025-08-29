@@ -30,6 +30,16 @@ In the folder structure above:
     than building the whole register model in a single python module. This helps avoid
     excessively large files which helps speed up the generation and loading time.
 
+Top Level Classes
+-----------------
+
+.. versionchanged:: 2.0.0
+
+    A new class aliases were added to the ``reg_model`` and ``sim`` packages to allow the register
+    model and simulator to be imported more easily. See the example below using ``RegModel`` and
+    ``Simulator``.
+
+
 Running the Unit Tests
 ======================
 
