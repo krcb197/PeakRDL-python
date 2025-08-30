@@ -37,9 +37,7 @@ class TestTopAndInner(unittest.TestCase):
         """
         test_case = 'addr_map'
         test_case_file = test_case +'.rdl'
-        test_case_reg_model_cls = test_case + '_cls'
         inner_addr_map = 'child_c'
-        inner_case_reg_model_cls = inner_addr_map + '_cls'
 
         # compile the code for the test
         rdlc = compiler_with_udp_registers()
@@ -71,24 +69,24 @@ class TestTopAndInner(unittest.TestCase):
             # add the temp directory to the python path so that it can be imported from
             sys.path.append(tmpdirname)
 
-            def generate_instance(regmodel_name: str, regmodel_cls: str) -> AddressMap:
+            def generate_instance(regmodel_name: str) -> AddressMap:
                 """
                 Import the register model python code and make an instance of the address map
                 """
 
                 reg_model_module = __import__(
-                    regmodel_name + '.reg_model.' + regmodel_name,
-                    globals(), locals(), [regmodel_cls],
+                    regmodel_name + '.reg_model',
+                    globals(), locals(), ['RegModel'],
                     0)
-                dut_cls = getattr(reg_model_module, regmodel_cls)
+                dut_cls = getattr(reg_model_module, 'RegModel')
 
                 return dut_cls(callbacks=NormalCallbackSet(
                     read_block_callback=dummy_read_block,
                     write_block_callback=dummy_write_block))
 
 
-            yield (generate_instance(test_case, test_case_reg_model_cls),
-                   generate_instance(inner_addr_map, inner_case_reg_model_cls))
+            yield (generate_instance(test_case),
+                   generate_instance(inner_addr_map))
 
             sys.path.remove(tmpdirname)
 

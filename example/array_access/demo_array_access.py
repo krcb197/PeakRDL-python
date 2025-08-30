@@ -2,13 +2,13 @@
 A demonstration of array access for peakrdl-python
 """
 from array_access.reg_model import RegModel
-from array_access.sim.array_access import array_access_simulator_cls
+from array_access.sim import Simulator
 from array_access.lib.callbacks import NormalCallbackSet
 
 if __name__ == '__main__':
 
     # setup the simple simulator
-    sim = array_access_simulator_cls(0)
+    sim = Simulator(0)
 
     # create an instance of the class
     regmodel = RegModel(callbacks=NormalCallbackSet(read_callback=sim.read))

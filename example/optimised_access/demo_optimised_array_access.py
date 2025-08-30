@@ -2,7 +2,7 @@
 PeakRDL Python example to show the different methods to access the a register array
 """
 from optimised_array_access.reg_model import RegModel
-from optimised_array_access.sim.optimised_array_access import optimised_array_access_simulator_cls
+from optimised_array_access.sim import Simulator
 
 from optimised_array_access.lib import NormalCallbackSet
 
@@ -12,7 +12,7 @@ if __name__ == '__main__':
 
     # create an instance of the address map with the simulated callback necessary to demonstrate
     # the example
-    sim = optimised_array_access_simulator_cls(0)
+    sim = Simulator(0)
     dut = RegModel(callbacks=NormalCallbackSet(read_block_callback=sim.read_block,
                                                                  write_block_callback=sim.write_block,
                                                                  read_callback=sim.read,

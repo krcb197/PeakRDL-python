@@ -9,7 +9,7 @@ if __name__ == '__main__':
 
     # create an instance of the class
     regmodel = RegModel(callbacks=NormalCallbackSet(read_callback=dummy_read,
-                                                                     write_callback=dummy_write))
+                                                    write_callback=dummy_write))
 
     # loop through the fields in the register access model and print out the value of the
     # component_usage property

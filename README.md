@@ -38,20 +38,20 @@ assumes that peakrdl has been installed.
    the RAL without connecting to real hardware. Enter the following code into a file:
    ```python
    """
-   An demonstration of using peakrdl-python using the accelera generic example
+   A demonstration of using peakrdl-python using the accelera generic example
    """
    # import the top level RAL class
-   from some_register_map.reg_model.some_register_map import some_register_map_cls
+   from some_register_map.reg_model import RegModel
    # import the simulator class
-   from some_register_map.sim.some_register_map import some_register_map_simulator_cls
+   from some_register_map.sim import Simulator
    
    from some_register_map.lib import NormalCallbackSet
    
    if __name__ == '__main__':
        # create an instance of the RAL with the callbacks directed at the hardware simulator
-       hw_sim = some_register_map_simulator_cls(0)
-       ral = some_register_map_cls(callbacks=NormalCallbackSet(read_callback=hw_sim.read,
-                                                               write_callback=hw_sim.write))
+       hw_sim = Simulator(0)
+       ral = RegModel(callbacks=NormalCallbackSet(read_callback=hw_sim.read,
+                                                  write_callback=hw_sim.write))
    
        # read chip ID
        chip_id_part_number = ral.chip_id_reg.part_num.read()
@@ -99,6 +99,6 @@ _Legacy Enumeration Types_ in the documentation
 Version 2.0 introduced a significant change to the process for building the register model python
 code. This change was intended to reduce the size of the generated code by only generating 
 python classes for systemRDL components that required unique classes. The previous versions were 
-more conservative and tended to generate a lot of duplicate classes. 
+more conservative and tended to generate a lot of duplicate classes.
 
 

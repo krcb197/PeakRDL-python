@@ -90,6 +90,21 @@ class PathologicalRegisterInstance:
             bits_left -= width_next_field
             yield PathologicalFieldInstance(name=next(field_name), width=width_next_field)
 
+@dataclass
+class PathologicalAddrmapInstance:
+    name:str
+
+    @property
+    def registers(self):
+        """
+        A generator to make a random set of fields
+        """
+        reg_name = name_generator()
+        register_instances_per_addr = random.randint(10, 50)
+        for _ in range(register_instances_per_addr):
+            yield PathologicalRegisterInstance(name=next(reg_name))
+
+
 
 def register_generator():
 

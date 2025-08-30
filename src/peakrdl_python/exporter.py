@@ -683,10 +683,18 @@ class PythonExporter:
             'list': list
         }
 
+        module_name = top_block.inst_name
         self.__stream_jinja_template(template_name="sim_addrmap.py.jinja",
                                      target_package=package.sim,
-                                     target_name=top_block.inst_name + '.py',
+                                     target_name=module_name + '.py',
                                      template_context=context)
+
+        with package.sim.init_file_stream() as init_fid:
+            # put the header on the simulator package __init__.py
+            self.__insert_header(file_stream=init_fid,
+                                 top_block=top_block)
+            init_fid.write(
+                f'from .{module_name} import {top_block.inst_name}_simulator_cls as Simulator\n')
 
     def __export_example(self, *,
                          top_block: AddrmapNode,
