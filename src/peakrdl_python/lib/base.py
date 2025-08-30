@@ -148,9 +148,10 @@ class Node(Base ,ABC):
         if not hasattr(cls, "_iteration_classification"):
             raise AttributeError(f"{cls.__name__} must define class attribute "
                                  "'_iteration_classification'")
-        if not isinstance(cls._iteration_classification, IterationClassification):
-            raise TypeError('_iteration_classification should be a IterationClassification '
-                            f'but got {type(cls._iteration_classification)}')
+            classification = getattr(cls, "_iteration_classification")
+            if not isinstance(classification, IterationClassification):
+                raise TypeError('_iteration_classification should be a IterationClassification '
+                                f'but got {type(classification)}')
 
 
     def __init__(self, *,
@@ -237,9 +238,10 @@ class NodeArray(Base, Sequence[NodeArrayElementType]):
         if not hasattr(cls, "_iteration_classification"):
             raise AttributeError(f"{cls.__name__} must define class attribute "
                                  "'_iteration_classification'")
-        if not isinstance(cls._iteration_classification, IterationClassification):
-            raise TypeError('_iteration_classification should be a IterationClassification '
-                            f'but got {type(cls._iteration_classification)}')
+            classification = getattr(cls, "_iteration_classification")
+            if not isinstance(classification, IterationClassification):
+                raise TypeError('_iteration_classification should be a IterationClassification '
+                                f'but got {type(classification)}')
 
     # pylint: disable-next=too-many-arguments
     def __init__(self, *, logger_handle: str,
