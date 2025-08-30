@@ -126,6 +126,14 @@ class Exporter(ExporterSubcommandPlugin):
                                     'python module of the generated code. Make sure this is set '
                                     'to ensure the file does not get too big otherwise the '
                                     'generation and loading is slow')
+        arg_group.add_argument('--memory_class_per_generated_file',
+                               dest='memory_class_per_generated_file',
+                               type=int,
+                               default=DEFAULT_MEMORY_CLASS_PER_GENERATED_FILE,
+                               help='Number of memory class definitions to put in each '
+                                    'python module of the generated code. Make sure this is set '
+                                    'to ensure the file does not get too big otherwise the '
+                                    'generation and loading is slow')
 
     def do_export(self, top_node: 'AddrmapNode', options: 'argparse.Namespace') -> None:
         """
@@ -164,5 +172,6 @@ class Exporter(ExporterSubcommandPlugin):
                 options.skip_systemrdl_name_and_desc_properties,
             register_class_per_generated_file=options.register_class_per_generated_file,
             field_class_per_generated_file=options.field_class_per_generated_file,
-            enum_field_class_per_generated_file=options.enum_field_class_per_generated_file
+            enum_field_class_per_generated_file=options.enum_field_class_per_generated_file,
+            memory_class_per_generated_file=options.memory_class_per_generated_file
         )
