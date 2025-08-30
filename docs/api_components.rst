@@ -18,22 +18,22 @@ Base Classes
 Address Maps
 ============
 
-.. autoclass:: peakrdl_python.lib.base.AddressMap
+.. autoclass:: peakrdl_python.lib.sections.AddressMap
     :members:
     :inherited-members:
 
-.. autoclass:: peakrdl_python.lib.base.AddressMapArray
+.. autoclass:: peakrdl_python.lib.sections.AddressMapArray
     :members:
     :inherited-members:
 
 Register Files
 ==============
 
-.. autoclass:: peakrdl_python.lib.base.RegFile
+.. autoclass:: peakrdl_python.lib.sections.RegFile
     :members:
     :inherited-members:
 
-.. autoclass:: peakrdl_python.lib.base.RegFileArray
+.. autoclass:: peakrdl_python.lib.sections.RegFileArray
     :members:
     :inherited-members:
 
