@@ -31,6 +31,7 @@ from .exporter import PythonExporter
 from .exporter import DEFAULT_REGISTER_CLASS_PER_GENERATED_FILE
 from .exporter import DEFAULT_FIELD_CLASS_PER_GENERATED_FILE
 from .exporter import DEFAULT_ENUM_FIELD_CLASS_PER_GENERATED_FILE
+from .exporter import DEFAULT_MEMORY_CLASS_PER_GENERATED_FILE
 from .compiler_udp import PythonHideUDP, PythonInstNameUDP
 
 if TYPE_CHECKING:
