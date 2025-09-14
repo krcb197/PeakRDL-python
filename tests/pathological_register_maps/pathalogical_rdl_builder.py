@@ -72,6 +72,27 @@ class _PathologicalInstanceWithRegisters(_PathologicalInstance):
                                                name_prefix=self.child_prefix)
 
 @dataclass
+class _PathologicalInstanceWithRegistersAndRegFiles(_PathologicalInstanceWithRegisters):
+
+    regfile_recursion_depth: int = 2
+
+    @property
+    def register_files(self):
+        """
+        A generator to make a random set of register files
+        """
+        name = name_generator()
+        reg_file_instances = random.randint(0, self.regfile_recursion_depth)
+        for _ in range(reg_file_instances):
+            yield PathologicalRegFileInstance(name=next(name),
+                                               name_prefix=self.child_prefix,
+                                              regfile_recursion_depth=self.regfile_recursion_depth-1)
+
+@dataclass
+class PathologicalRegFileInstance(_PathologicalInstanceWithRegistersAndRegFiles):
+    ...
+
+@dataclass
 class PathologicalFieldEncodingEntry:
     value: int
     name: str
@@ -125,7 +146,20 @@ class PathologicalMemoryInstance(_PathologicalInstanceWithRegisters):
 
 
 @dataclass
-class PathologicalAddrmapInstance(_PathologicalInstanceWithRegisters):
+class PathologicalAddrmapInstance(_PathologicalInstanceWithRegistersAndRegFiles):
+    addrmap_recursion_depth: int = 1
+
+    @property
+    def addrmaps(self):
+        """
+        A generator to make a random set of addrmaps
+        """
+        name = name_generator()
+        reg_file_instances = random.randint(0, self.addrmap_recursion_depth)
+        for _ in range(reg_file_instances):
+            yield PathologicalAddrmapInstance(name=next(name),
+                                              name_prefix=self.child_prefix,
+                                              addrmap_recursion_depth=self.addrmap_recursion_depth - 1)
 
     @property
     def memories(self):

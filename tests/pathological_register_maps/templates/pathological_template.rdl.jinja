@@ -35,6 +35,22 @@
     } mem_{{memory.name_prefix}}_{{memory.name}};
 {% endmacro %}
 
+{% macro regfile_definition(regfile) %}
+    regfile {
+        name = "{{regfile.name}}";
+        desc = "{{regfile.name_prefix}}_{{regfile.name}} description";
+
+        {% for register in regfile.registers %}
+        {{ register_definition(register) | indent(4) }}
+        {% endfor %}
+
+        {% for child_regfile in regfile.register_files %}
+        {{ regfile_definition(child_regfile) | indent(4) }}
+        {% endfor %}
+
+    } regfile_{{regfile.name_prefix}}_{{regfile.name}};
+{% endmacro %}
+
 {% macro addmap_defintion(addrmap) %}
     addrmap {
         {% for register in addrmap.registers %}
@@ -43,6 +59,14 @@
 
         {% for memory in addrmap.memories %}
         {{ memory_definition(memory) | indent(4) }}
+        {% endfor %}
+
+        {% for regfile in addrmap.register_files %}
+        {{ regfile_definition(regfile) | indent(4) }}
+        {% endfor %}
+
+        {% for child_addrmap in addrmap.addrmaps %}
+        {{ addmap_defintion(child_addrmap) | indent(4) }}
         {% endfor %}
 
     } addrmap_{{addrmap.name_prefix}}_{{addrmap.name}};
