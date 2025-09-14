@@ -563,17 +563,21 @@ class {{fq_block_name}}_single_access({{top_node.inst_name}}_TestCase): # type: 
                     {# for enumerated fields of with larger sizes look for up to 100 illegal values #}
                 for field_value in { random.randint(0, {{get_field_max_value_hex_string(node)}}+1) for _ in range(100)  } - { {%- for value_of_enum_needed in node.get_property('encode') -%}{{value_of_enum_needed.value}}{% if not loop.last %}, {% endif %}{%- endfor %} }:
                     {% endif %}
+                    read_callback_mock.reset_mock()
+                    random_reg_value = random.randrange(0, {{get_reg_max_value_hex_string(node.parent)}} + 1)
+                    {% if node.msb == node.high -%}
+                    read_callback_mock.return_value = (random_reg_value & {{get_field_inv_bitmask_hex_string(node)}}) | \
+                                     ({{get_field_bitmask_hex_string(node)}} & (field_value << {{node.low}}))
+                    {% else -%}
+                    read_callback_mock.return_value = (random_reg_value & {{get_field_inv_bitmask_hex_string(node)}}) | \
+                                     ({{get_field_bitmask_hex_string(node)}} & (self._reverse_bits(value=field_value, number_bits={{node.width}}) << {{node.low}}))
+                    {% endif -%}
                     with self.assertRaises(ValueError):
-                        read_callback_mock.reset_mock()
-                        random_reg_value = random.randrange(0, {{get_reg_max_value_hex_string(node.parent)}} + 1)
-                        {% if node.msb == node.high -%}
-                        read_callback_mock.return_value = (random_reg_value & {{get_field_inv_bitmask_hex_string(node)}}) | \
-                                         ({{get_field_bitmask_hex_string(node)}} & (field_value << {{node.low}}))
-                        {% else -%}
-                        read_callback_mock.return_value = (random_reg_value & {{get_field_inv_bitmask_hex_string(node)}}) | \
-                                         ({{get_field_bitmask_hex_string(node)}} & (self._reverse_bits(value=field_value, number_bits={{node.width}}) << {{node.low}}))
-                        {% endif -%}
                         _ = {% if asyncoutput %}await {%endif %}self.dut.{{'.'.join(get_python_path_segments(node))}}.read() # type: ignore[union-attr]
+                    read_callback_mock.assert_called_once_with(
+                                        addr={{node.parent.absolute_address}},
+                                        width={{node.parent.size * 8}},
+                                        accesswidth=self.dut.{{'.'.join(get_python_path_segments(node))}}.parent_register.accesswidth) # type: ignore[union-attr]
                 {% endif %}
                 write_callback_mock.assert_not_called()
                 {% endif %}
