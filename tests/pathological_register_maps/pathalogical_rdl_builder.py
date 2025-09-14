@@ -46,37 +46,63 @@ def name_generator():
         n += 1  # increase length after exhausting current size
 
 
-@dataclass
-class PathologicalFieldEnumInstanceEntry:
-    name: str
-    value: int
+
 
 @dataclass
-class PathologicalFieldEnumInstance:
+class _PathologicalInstance:
+    name_prefix: str
+    name:str
+
+    @property
+    def child_prefix(self) -> str:
+        return self.name_prefix + '_' + self.name
+
+@dataclass
+class _PathologicalInstanceWithRegisters(_PathologicalInstance):
+
+    @property
+    def registers(self):
+        """
+        A generator to make a random set of fields
+        """
+        reg_name = name_generator()
+        register_instances_per_addr = random.randint(10, 50)
+        for _ in range(register_instances_per_addr):
+            yield PathologicalRegisterInstance(name=next(reg_name),
+                                               name_prefix=self.child_prefix)
+
+@dataclass
+class PathologicalFieldEncodingEntry:
+    value: int
+    name: str
+
+@dataclass
+class PathologicalFieldEncoding:
+
     width: int
 
     @property
     def encodings(self):
         enum_name = name_generator()
         pos_values = 2**self.width
-        # make up to 10 possible_enumeration_values
-        for value in range(min(pos_values, 10)):
-            yield PathologicalFieldEnumInstanceEntry(name=next(enum_name), value=value)
+        # in order to avoid the number of enumeration entries getting silly, it is capped to
+        # 10
+        entries = min(pos_values-1, 10)
+        for value in random.sample(range(0, pos_values), entries):
+            yield PathologicalFieldEncodingEntry(name=next(enum_name), value=value)
 
 @dataclass
-class PathologicalFieldInstance:
-    name:str
+class PathologicalFieldInstance(_PathologicalInstance):
     width:int
-    encoding: Optional[PathologicalFieldEnumInstance] = field(init=False)
+    encoding: Optional[PathologicalFieldEncoding] = field(init=False)
 
     def __post_init__(self):
         self.encoding = None
         if random.randint(0, 1) == 1:
-            self.encoding = PathologicalFieldEnumInstance(width=self.width)
+            self.encoding = PathologicalFieldEncoding(width=self.width)
 
 @dataclass
-class PathologicalRegisterInstance:
-    name:str
+class PathologicalRegisterInstance(_PathologicalInstance):
 
     @property
     def fields(self):
@@ -88,29 +114,29 @@ class PathologicalRegisterInstance:
         while bits_left > 0:
             width_next_field = random.randint(1, bits_left)
             bits_left -= width_next_field
-            yield PathologicalFieldInstance(name=next(field_name), width=width_next_field)
+            yield PathologicalFieldInstance(name=next(field_name), width=width_next_field,
+                                            name_prefix=self.child_prefix)
 
 @dataclass
-class PathologicalAddrmapInstance:
-    name:str
+class PathologicalMemoryInstance(_PathologicalInstanceWithRegisters):
+
+    # the class can have up to 50 registers so needs to have a depth of minium of 50
+    depth: int = field(default_factory=lambda: random.randint(50, 50000))
+
+
+@dataclass
+class PathologicalAddrmapInstance(_PathologicalInstanceWithRegisters):
 
     @property
-    def registers(self):
+    def memories(self):
         """
         A generator to make a random set of fields
         """
-        reg_name = name_generator()
-        register_instances_per_addr = random.randint(10, 50)
+        mem_name = name_generator()
+        register_instances_per_addr = random.randint(0, 5)
         for _ in range(register_instances_per_addr):
-            yield PathologicalRegisterInstance(name=next(reg_name))
-
-
-
-def register_generator():
-
-    reg_name_generator = name_generator()
-    while True:
-        yield PathologicalRegisterInstance(name=next(reg_name_generator))
+            yield PathologicalMemoryInstance(name=next(mem_name),
+                                               name_prefix=self.child_prefix)
 
 
 class PathologicalRDL:
@@ -130,11 +156,15 @@ class PathologicalRDL:
 
     def export_code(self, filename:Path, addrmap_name:str):
 
-        reg_gen = register_generator()
+        reg_gen = self.register_generator()
+        addrmap_gen = self.addrmap_generator()
+        memory_gen = self.memory_generator()
 
         template_context = {
             'top_level_addrmap_name' : addrmap_name,
-            'registers' : ( next(reg_gen) for _ in range(300) )
+            'registers' : ( next(reg_gen) for _ in range(10) ),
+            'addrmaps' : ( next(addrmap_gen) for _ in range(10) ),
+            'memories' : ( next(memory_gen) for _ in range(10) )
         }
 
         template = self.jj_env.get_template('pathological_template.rdl.jinja')
@@ -142,6 +172,30 @@ class PathologicalRDL:
         with filename.open('w', encoding='utf-8') as fp:
             stream = template.stream(template_context)
             stream.dump(fp)
+
+    @staticmethod
+    def register_generator():
+
+        reg_name_generator = name_generator()
+        while True:
+            yield PathologicalRegisterInstance(name=next(reg_name_generator),
+                                               name_prefix='top_level_regs')
+
+    @staticmethod
+    def memory_generator():
+
+        mem_name_generator = name_generator()
+        while True:
+            yield PathologicalMemoryInstance(name=next(mem_name_generator),
+                                               name_prefix='top_level_mem')
+
+    @staticmethod
+    def addrmap_generator():
+
+        reg_name_generator = name_generator()
+        while True:
+            yield PathologicalAddrmapInstance(name=next(reg_name_generator),
+                                              name_prefix='top_level_addr')
 
 
 if __name__ == '__main__':
