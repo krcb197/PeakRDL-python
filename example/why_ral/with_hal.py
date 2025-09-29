@@ -3,8 +3,8 @@ An example to turn on GPIO 0 with a Hardware Abstaction Layer, built on top of t
 Register Abstraction Layer (RAL)
 """
 from enum import Enum, auto
-from gpio.reg_model.gpio import gpio_cls as GPIO
-from gpio.sim.gpio import gpio_simulator_cls as HardwareSimulator
+from gpio.reg_model import RegModel as GPIO
+from gpio.sim import Simulator as HardwareSimulator
 
 class GPIODir(Enum):
     """

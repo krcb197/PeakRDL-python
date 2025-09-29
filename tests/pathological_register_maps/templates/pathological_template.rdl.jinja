@@ -1,0 +1,89 @@
+{% macro register_definition(register) %}
+    reg {
+        default sw = rw;
+        default hw = r;
+        name = "{{register.name}}";
+        desc = "{{register.name_prefix}}_{{register.name}} description";
+        {% for field in register.fields %}
+            {% if field.encoding %}
+        enum field_{{field.name_prefix}}_{{field.name}}_encoding {
+            {% for encoding in field.encoding.encodings -%}
+            {{encoding.name}} = {{encoding.value}} { desc = "{{encoding.name}} in {{field.name}} inside {{register.name_prefix}}_{{register.name}}"; };
+            {% endfor %}
+        };
+            {% endif %}
+        field { name="{{field.name}}";
+                desc="{{field.name}} inside {{register.name_prefix}}_{{register.name}}";
+                fieldwidth={{field.width}};
+                {% if field.encoding %}encode = field_{{field.name_prefix}}_{{field.name}}_encoding;{% endif %}
+                } field_{{field.name}};
+        {% endfor %}
+    } reg_{{register.name_prefix}}_{{register.name}};
+{% endmacro %}
+
+{% macro memory_definition(memory) %}
+    external mem {
+        name = "{{memory.name}}";
+        desc = "{{memory.name_prefix}}_{{memory.name}} description";
+        mementries = {{memory.depth}};
+        memwidth = 32;
+
+        {% for register in memory.registers %}
+        {{ register_definition(register) | indent(4) }}
+        {% endfor %}
+
+    } mem_{{memory.name_prefix}}_{{memory.name}};
+{% endmacro %}
+
+{% macro regfile_definition(regfile) %}
+    regfile {
+        name = "{{regfile.name}}";
+        desc = "{{regfile.name_prefix}}_{{regfile.name}} description";
+
+        {% for register in regfile.registers %}
+        {{ register_definition(register) | indent(4) }}
+        {% endfor %}
+
+        {% for child_regfile in regfile.register_files %}
+        {{ regfile_definition(child_regfile) | indent(4) }}
+        {% endfor %}
+
+    } regfile_{{regfile.name_prefix}}_{{regfile.name}};
+{% endmacro %}
+
+{% macro addmap_defintion(addrmap) %}
+    addrmap {
+        {% for register in addrmap.registers %}
+        {{ register_definition(register) | indent(4) }}
+        {% endfor %}
+
+        {% for memory in addrmap.memories %}
+        {{ memory_definition(memory) | indent(4) }}
+        {% endfor %}
+
+        {% for regfile in addrmap.register_files %}
+        {{ regfile_definition(regfile) | indent(4) }}
+        {% endfor %}
+
+        {% for child_addrmap in addrmap.addrmaps %}
+        {{ addmap_defintion(child_addrmap) | indent(4) }}
+        {% endfor %}
+
+    } addrmap_{{addrmap.name_prefix}}_{{addrmap.name}};
+{% endmacro %}
+
+
+addrmap {{top_level_addrmap_name}} {
+
+    {% for register in registers %}
+    {{ register_definition(register) }}
+    {% endfor %}
+
+    {% for memory in memories %}
+    {{ memory_definition(memory)  }}
+    {% endfor %}
+
+    {% for addrmap in addrmaps %}
+    {{ addmap_defintion(addrmap) }}
+    {% endfor %}
+};

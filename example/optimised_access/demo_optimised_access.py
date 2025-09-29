@@ -1,8 +1,8 @@
 """
 PeakRDL Python example to show the different methods to access the fields of a register
 """
-from optimised_access.reg_model.optimised_access import optimised_access_cls
-from optimised_access.sim.optimised_access import optimised_access_simulator_cls
+from optimised_access.reg_model import RegModel
+from optimised_access.sim import Simulator
 
 from optimised_access.lib import NormalCallbackSet
 
@@ -11,8 +11,8 @@ if __name__ == '__main__':
 
     # create an instance of the address map with the simulated callback necessary to demonstrate
     # the example
-    sim = optimised_access_simulator_cls(0)
-    dut = optimised_access_cls(callbacks=NormalCallbackSet(read_callback=sim.read,
+    sim = Simulator(0)
+    dut = RegModel(callbacks=NormalCallbackSet(read_callback=sim.read,
                                                            write_callback=sim.write))
 
     # configure the GPIO 0 and GPIO 1 without affecting the state of the GPIO 2 and GPIO 3

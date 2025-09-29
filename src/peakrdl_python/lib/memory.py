@@ -25,7 +25,7 @@ from collections.abc import Iterator, Iterable
 from abc import ABC
 import sys
 
-from .base import Node, NodeArray
+from .base import Node, NodeArray, IterationClassification
 from .sections import AddressMap, AsyncAddressMap
 from .utility_functions import get_array_typecode
 
@@ -60,7 +60,7 @@ class BaseMemory(Node, ABC):
     """
 
     __slots__: list[str] = ['__memwidth', '__entries', '__accesswidth']
-    _is_mem = True
+    _iteration_classification = IterationClassification.MEMORY
 
     # pylint: disable=too-many-arguments
     def __init__(self, *,
@@ -707,7 +707,7 @@ class MemoryReadOnlyArray(NodeArray, ABC):
     base class for a array of read only memories
     """
     __slots__: list[str] = []
-    _is_mem = True
+    _iteration_classification = IterationClassification.MEMORY
 
     # pylint: disable-next=too-many-arguments
     def __init__(self, *,
@@ -727,7 +727,7 @@ class MemoryWriteOnlyArray(NodeArray, ABC):
     base class for a array of write only memories
     """
     __slots__: list[str] = []
-    _is_mem = True
+    _iteration_classification = IterationClassification.MEMORY
 
     # pylint: disable-next=too-many-arguments
     def __init__(self, *,
@@ -747,7 +747,7 @@ class MemoryReadWriteArray(MemoryReadOnlyArray, MemoryWriteOnlyArray, ABC):
     base class for a array of read and write memories
     """
     __slots__: list[str] = []
-    _is_mem = True
+    _iteration_classification = IterationClassification.MEMORY
 
     # pylint: disable-next=too-many-arguments
     def __init__(self, *,

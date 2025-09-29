@@ -17,13 +17,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #}
 
 {% include "header.py.jinja" with context %}
-{% if uses_enum %}
-from enum import EnumMeta
-{% endif %}
-{% if legacy_enum_type %}
-from enum import IntEnum
-{% endif %}
-from enum import unique
+
 from typing import Iterator
 from typing import Optional
 from typing import Union
@@ -32,16 +26,9 @@ from typing import overload
 from typing import Literal
 from typing import Any
 from typing import NoReturn
-{% if asyncoutput -%}
-from typing import AsyncGenerator
-{% else %}
-from typing import Generator
-{% endif %}
 import warnings
 {% if legacy_block_access %}from array import array as Array{% endif %}
 
-
-from contextlib import {% if asyncoutput %}async{% endif %}contextmanager
 
 from {% if skip_lib_copy %}peakrdl_python.{% else %}..{% endif %}lib import Node, NodeArray, Base
 from {% if skip_lib_copy %}peakrdl_python.{% else %}..{% endif %}lib import UDPStruct
@@ -80,11 +67,7 @@ from {% if skip_lib_copy %}peakrdl_python.{% else %}..{% endif %}lib import Read
 from {% if skip_lib_copy %}peakrdl_python.{% else %}..{% endif %}lib import ReadableMemory{% if legacy_block_access %}Legacy{% endif %}, WritableMemory{% if legacy_block_access %}Legacy{% endif %}
 from {% if skip_lib_copy %}peakrdl_python.{% else %}..{% endif %}lib import ReadableRegisterArray, WriteableRegisterArray
 {%- endif %}
-from {% if skip_lib_copy %}peakrdl_python.{% else %}..{% endif %}lib import FieldSizeProps, FieldMiscProps
 
-{% if not legacy_enum_type %}
-from {% if skip_lib_copy %}peakrdl_python.{% else %}..{% endif %}lib import SystemRDLEnum, SystemRDLEnumEntry
-{% endif %}
 
 {% if asyncoutput %}
 from {% if skip_lib_copy %}peakrdl_python.{% else %}..{% endif %}lib import AsyncCallbackSet, AsyncCallbackSetLegacy
@@ -96,10 +79,14 @@ from {% if skip_lib_copy %}peakrdl_python.{% else %}..{% endif %}lib import Norm
 from .{{top_node.inst_name}}_property_enums import {{property_enum.type_name}}_property_enumcls
 {% endfor %}
 
+{%- for node in dependent_registers -%}
+from ._registers import {{node.python_class_name}}{% if node.instance.is_array %}_array{% endif %}
+{% endfor %}
 
-{% from 'addrmap_field.py.jinja' import field_class with context %}
-{% from 'addrmap_register.py.jinja' import register_class with context %}
-{% from 'addrmap_memory.py.jinja' import memory_class with context %}
+{%- for node in dependent_memories -%}
+from ._memories import {{node.python_class_name}}{% if node.instance.is_array %}_array{% endif %}
+{% endfor %}
+
 {% from 'reg_definitions.py.jinja' import register_class_attributes with context %}
 {% from 'addrmap_udp_property.py.jinja' import udp_property with context %}
 {% from 'addrmap_universal_property.py.jinja' import universal_properties with context %}
@@ -300,33 +287,16 @@ class {{node.python_class_name}}_array({% if asyncoutput %}Async{% endif %}Addre
     {%- endif %}
 {%- endmacro %}
 
-{% if uses_enum %}
-# root level enum definitions
-{%- for enum_needed in unique_enums %}
-@unique
-class {{get_fully_qualified_enum_type(enum_needed)}}_enumcls({% if legacy_enum_type %}IntEnum{% else %}SystemRDLEnum{% endif %}):
-
-    {% for value_of_enum_needed in enum_needed -%}
-    {{ value_of_enum_needed.name.upper() }} = {% if legacy_enum_type %}{{ value_of_enum_needed.value }}{% else %}SystemRDLEnumEntry(int_value={{value_of_enum_needed.value}}, name={%- if value_of_enum_needed.rdl_name is not none -%}'{{value_of_enum_needed.rdl_name}}'{% else %}None{% endif %}, desc={%- if value_of_enum_needed.rdl_desc is not none -%}'{{value_of_enum_needed.rdl_desc}}'{% else %}None{% endif %}){% endif %}  {%- if value_of_enum_needed.rdl_desc is not none %}  # {{ value_of_enum_needed.rdl_desc }} {%- endif %}
-    {% endfor %}
-{% endfor -%}
-{% endif %}
-
-
-# regfile, register and field definitions
+# addrmap, regfile, memor and register definitions
 {%- for unique_node in unique_components -%}
 {# the get_dependent_component already strips out hidden items so there is no need to check here
    for hidden items #}
-    {% if isinstance(unique_node.instance, systemrdlRegNode) %}
-    {{ register_class(unique_node)  }}
-    {% elif isinstance(unique_node.instance, systemrdlRegfileNode) %}
+    {% if isinstance(unique_node.instance, systemrdlRegfileNode) %}
     {{ regfile_class(unique_node) }}
     {% elif isinstance(unique_node.instance, systemrdlAddrmapNode) %}
     {{ addrmap_class(unique_node) }}
-    {% elif isinstance(unique_node.instance, systemrdlFieldNode) %}
-    {{ field_class(unique_node)  }}
-    {% elif isinstance(unique_node.instance, systemrdlMemNode) %}
-    {{ memory_class(unique_node)  }}
+    {% else %}
+    {{ raise_template_error('Encountered unhandled type') }}
     {% endif %}
 {% endfor %}
 

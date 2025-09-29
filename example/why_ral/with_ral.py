@@ -1,8 +1,8 @@
 """
 An example to turn on GPIO 0 with the RAL, with using peakrdl-python
 """
-from gpio.reg_model.gpio import gpio_cls as GPIO
-from gpio.sim.gpio import gpio_simulator_cls as HardwareSimulator
+from gpio.reg_model import RegModel as GPIO
+from gpio.sim import Simulator as HardwareSimulator
 
 from gpio.lib import NormalCallbackSet
 

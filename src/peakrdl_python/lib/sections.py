@@ -27,7 +27,7 @@ from abc import ABC, abstractmethod
 import sys
 from enum import IntEnum
 
-from .base import Node, NodeArray
+from .base import Node, NodeArray, IterationClassification
 
 from .callbacks import NormalCallbackSet, AsyncCallbackSet
 from .callbacks import NormalCallbackSetLegacy, AsyncCallbackSetLegacy
@@ -60,7 +60,7 @@ class BaseSection(Node, Iterable[Union[Node, NodeArray]], ABC):
         circumstances however, it is useful for type checking
     """
     __slots__: list[str] = []
-    _is_section = True
+    _iteration_classification = IterationClassification.SECTION
 
     def get_children(self, unroll: bool = False) -> Iterator[Union[Node, NodeArray]]:
         """
@@ -141,7 +141,7 @@ class Section(BaseSection, ABC):
         def is_reg(node: Union[Node, NodeArray]) -> TypeGuard[Union[Reg, RegArray]]:
             # The _is_reg is needed within this library to avoid circular imports
             # pylint:disable-next=protected-access
-            return node._is_reg
+            return node._iteration_classification is IterationClassification.REGISTER
 
         yield from filter(is_reg, self.get_children(unroll=unroll))
 
@@ -217,7 +217,7 @@ class AddressMap(Section, ABC):
                 TypeGuard[Union['Memory', 'MemoryArray']]:
             # The _is_mem is needed within this library to avoid circular imports
             # pylint:disable-next=protected-access
-            return node._is_mem
+            return node._iteration_classification is IterationClassification.MEMORY
 
         yield from filter(is_mem, self.get_children(unroll=unroll))
 
@@ -297,7 +297,7 @@ class AsyncSection(BaseSection, ABC):
         def is_reg(node: Union[Node, NodeArray]) -> TypeGuard[Union[AsyncReg, AsyncRegArray]]:
             # The _is_reg is needed within this library to avoid circular imports
             # pylint:disable-next=protected-access
-            return node._is_reg
+            return node._iteration_classification is IterationClassification.REGISTER
 
         yield from filter(is_reg, self.get_children(unroll=unroll))
 
@@ -381,7 +381,7 @@ class AsyncAddressMap(AsyncSection, ABC):
                 TypeGuard[Union['AsyncMemory', 'AsyncMemoryArray']]:
             # The _is_mem is needed within this library to avoid circular imports
             # pylint:disable-next=protected-access
-            return node._is_mem
+            return node._iteration_classification is IterationClassification.MEMORY
 
         yield from filter(is_mem, self.get_children(unroll=unroll))
 
@@ -403,7 +403,8 @@ class AddressMapArray(NodeArray, ABC):
     base class for a array of address maps
     """
     __slots__: list[str] = []
-    _is_section = True
+    _iteration_classification = IterationClassification.SECTION
+
 
     # pylint: disable-next=too-many-arguments
     def __init__(self, *, logger_handle: str, inst_name: str,
@@ -421,7 +422,8 @@ class AsyncAddressMapArray(NodeArray, ABC):
     base class for a array of address maps
     """
     __slots__: list[str] = []
-    _is_section = True
+    _iteration_classification = IterationClassification.SECTION
+
 
     # pylint: disable-next=too-many-arguments
     def __init__(self, *, logger_handle: str, inst_name: str,
@@ -548,7 +550,7 @@ class RegFileArray(NodeArray, ABC):
     base class for a array of register files
     """
     __slots__: list[str] = []
-    _is_section = True
+    _iteration_classification = IterationClassification.SECTION
 
     # pylint: disable-next=too-many-arguments
     def __init__(self, *,
@@ -568,7 +570,7 @@ class AsyncRegFileArray(NodeArray, ABC):
     base class for a array of register files
     """
     __slots__: list[str] = []
-    _is_section = True
+    _iteration_classification = IterationClassification.SECTION
 
     # pylint: disable-next=too-many-arguments
     def __init__(self, *,

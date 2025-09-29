@@ -25,7 +25,7 @@ from abc import ABC
 from collections.abc import Iterator, Iterable
 import sys
 
-from .base import NodeArray
+from .base import NodeArray, IterationClassification
 from .sections import AsyncAddressMap
 from .memory import BaseMemory
 
@@ -574,7 +574,7 @@ class MemoryAsyncReadOnlyArray(NodeArray, ABC):
     base class for a array of asynchronous read only memories
     """
     __slots__: list[str] = []
-    _is_mem = True
+    _iteration_classification = IterationClassification.MEMORY
 
     # pylint: disable-next=too-many-arguments
     def __init__(self, *,
@@ -597,7 +597,7 @@ class MemoryAsyncWriteOnlyArray(NodeArray, ABC):
     base class for a array of asynchronous write only memories
     """
     __slots__: list[str] = []
-    _is_mem = True
+    _iteration_classification = IterationClassification.MEMORY
 
     # pylint: disable-next=too-many-arguments
     def __init__(self, *,
@@ -620,7 +620,7 @@ class MemoryAsyncReadWriteArray(MemoryAsyncReadOnlyArray, MemoryAsyncWriteOnlyAr
     base class for a array of asynchronous read and write memories
     """
     __slots__: list[str] = []
-    _is_mem = True
+    _iteration_classification = IterationClassification.MEMORY
 
     # pylint: disable-next=too-many-arguments
     def __init__(self, *,

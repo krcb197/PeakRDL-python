@@ -45,7 +45,6 @@ class TestExportHidden(unittest.TestCase):
     test_case_path = test_cases
     test_case_name = 'hidden_property.rdl'
     test_case_top_level = 'hidden_property'
-    test_case_reg_model_cls = test_case_top_level + '_cls'
 
     @contextmanager
     def build_python_wrappers_and_make_instance(self, show_hidden):
@@ -86,12 +85,12 @@ class TestExportHidden(unittest.TestCase):
             # add the temp directory to the python path so that it can be imported from
             sys.path.append(tmpdirname)
 
-            reg_model_module = __import__( temp_package_name + '.' + self.test_case_top_level +
-                '.reg_model.' + self.test_case_top_level,
-                globals(), locals(), [self.test_case_reg_model_cls], 0)
-            dut_cls = getattr(reg_model_module, self.test_case_reg_model_cls)
-            peakrdl_python_package = __import__(temp_package_name + '.' +
-                                                self.test_case_top_level + '.lib',
+            reg_model_module = __import__(
+                temp_package_name + '.' + self.test_case_top_level + '.reg_model',
+                globals(), locals(), ['RegModel'], 0)
+            dut_cls = getattr(reg_model_module, 'RegModel')
+            peakrdl_python_package = __import__(
+                temp_package_name + '.' + self.test_case_top_level + '.lib',
                 globals(), locals(), ['CallbackSet'], 0)
             callbackset_cls = getattr(peakrdl_python_package, 'NormalCallbackSet')
             dummy_operations_module = __import__(temp_package_name + '.' +

@@ -4,8 +4,8 @@ A demonstration of traversing the register model generated with peakrdl-python
 import json
 from typing import Union
 
-from chip_with_registers.reg_model.chip_with_registers import chip_with_registers_cls
-from chip_with_registers.sim.chip_with_registers import chip_with_registers_simulator_cls
+from chip_with_registers.reg_model import RegModel
+from chip_with_registers.sim import Simulator
 
 from chip_with_registers.lib import NormalCallbackSet, RegReadOnly, RegReadWrite, \
     MemoryReadOnly, MemoryReadWrite, RegFile, AddressMap, RegReadOnlyArray, RegReadWriteArray, \
@@ -139,8 +139,8 @@ if __name__ == '__main__':
 
     # create an instance of the address map with the simulated callback necessary to demonstrate
     # the example
-    sim = chip_with_registers_simulator_cls(0)
-    dut = chip_with_registers_cls(callbacks=NormalCallbackSet(read_callback=sim.read,
+    sim = Simulator(0)
+    dut = RegModel(callbacks=NormalCallbackSet(read_callback=sim.read,
                                                               write_callback=sim.write))
 
     # generate an instance of the RegisterDumper and write the registers to a file

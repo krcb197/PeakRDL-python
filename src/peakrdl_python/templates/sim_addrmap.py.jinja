@@ -33,6 +33,7 @@ from {% if skip_lib_copy %}peakrdl_python.{% else %}..{% endif %}sim_lib.simulat
 {%- macro single_reg_entry(node) %}
     {% if isinstance(node.parent, systemrdlMemNode) %}MemoryRegister(memory=self.memory_for_address_with_exception({{node.absolute_address}}).memory,memory_address_offset={{node.address_offset}},{% else %}Register({% endif %}width={{node.size*8}}, full_inst_name='{{'.'.join(node.get_path_segments())}}', readable={{node.has_sw_readable}}, writable={{node.has_sw_writable}},
                                          fields=[
+
                                                 {%- for field in node.fields() -%}
                                                 FieldDefinition(high={{field.high}}, low={{field.low}}, msb={{field.msb}}, lsb={{field.lsb}}, inst_name='{{field.inst_name}}'),
                                                 {%- endfor %}

@@ -38,7 +38,6 @@ class TestAlternativeTemplates(unittest.TestCase):
         and clean up afterwards
         """
         test_case_file = test_case +'.rdl'
-        test_case_reg_model_cls = test_case + '_cls'
 
         # compile the code for the test
         rdlc = compiler_with_udp_registers()
@@ -67,10 +66,10 @@ class TestAlternativeTemplates(unittest.TestCase):
             sys.path.append(tmpdirname)
 
             reg_model_module = __import__(
-                test_case + '.reg_model.' + test_case,
-                globals(), locals(), [test_case_reg_model_cls],
+                test_case + '.reg_model',
+                globals(), locals(), ['RegModel'],
                 0)
-            dut_cls = getattr(reg_model_module, test_case_reg_model_cls)
+            dut_cls = getattr(reg_model_module, 'RegModel')
             peakrdl_python_package = __import__(test_case + '.lib',
                                                 globals(), locals(), ['CallbackSet'], 0)
             callbackset_cls = getattr(peakrdl_python_package, 'NormalCallbackSet')
