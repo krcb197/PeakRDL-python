@@ -23,7 +23,7 @@ from typing import Union, Optional, TypeVar
 from abc import ABC, abstractmethod
 
 
-from .base import Node, NodeArray
+from .base import Node, NodeArray, IterationClassification
 from .sections import AddressMap, RegFile
 from .utility_functions import legal_register_width
 from .sections import AsyncAddressMap, AsyncRegFile
@@ -44,7 +44,7 @@ class BaseReg(Node, ABC):
         It is not expected that this class will be instantiated under normal
         circumstances however, it is useful for type checking
     """
-    _is_reg = True
+    _iteration_classification = IterationClassification.REGISTER
 
     __slots__: list[str] = []
 
@@ -146,7 +146,7 @@ class BaseRegArray(NodeArray[BaseRegArrayElementType], ABC):
     # pylint: disable=too-many-arguments,duplicate-code
 
     __slots__: list[str] = []
-    _is_reg = True
+    _iteration_classification = IterationClassification.REGISTER
 
     def __init__(self, *,
                  logger_handle: str, inst_name: str,

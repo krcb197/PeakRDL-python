@@ -25,7 +25,14 @@ from systemrdl.rdltypes.user_enum import UserEnumMeta
 from .systemrdl_node_utility_functions import is_encoded_field
 from .systemrdl_node_hashes import enum_hash
 
-def __get_field_get_base_class_name(node: FieldNode, async_library_classes: bool) -> str:
+def get_field_get_base_class_name(node: FieldNode, async_library_classes: bool) -> str:
+    """
+    Provide the library base class name (as a string) for a System RDL Field Node. This takes
+    into account whether it is:
+
+    - enumerated
+    - read only / write only / read write
+    """
     if not isinstance(node, FieldNode):
         raise TypeError(f'node should be FieldNode, got: {type(node)}')
 
@@ -89,7 +96,7 @@ def get_base_class_name(node: Node, async_library_classes: bool) -> str:
     Returns the base class from the library to use with the node instance
     """
     if isinstance(node, FieldNode):
-        return __get_field_get_base_class_name(node, async_library_classes=async_library_classes)
+        return get_field_get_base_class_name(node, async_library_classes=async_library_classes)
 
     if isinstance(node, RegNode):
         return __get_reg_get_base_class_name(node, async_library_classes=async_library_classes)

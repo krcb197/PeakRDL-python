@@ -10,7 +10,9 @@ requires-python = ">=3.9.2"
 dependencies = [
     "systemrdl-compiler>=1.29.3", # this is needed to make sure all the latest type checking
     "jinja2",
-    "typing-extensions;python_version<'3.11'"
+    "typing-extensions;python_version<'3.11'",
+    # the batched fucntion was adopted into the standard python library at 3.13
+    "more_itertools;python_version<'3.13'"
 ]
 
 authors = [

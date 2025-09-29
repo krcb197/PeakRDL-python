@@ -4,11 +4,11 @@ A demonstration of extended simulator behaviour in peakrdl-python
 import tkinter
 import tkinter as tk
 
-from mychip.reg_model.mychip import mychip_cls
-from mychip.sim.mychip import mychip_simulator_cls
+from mychip.reg_model import RegModel
+from mychip.sim import Simulator
 from mychip.lib import NormalCallbackSet
 
-class ChipSim(mychip_simulator_cls):
+class ChipSim(Simulator):
 
     def __init__(self):
 
@@ -54,7 +54,7 @@ class ChipSim(mychip_simulator_cls):
             self.LED.itemconfig(self.LED_inner, fill='black')
 
 
-def timer_event(chip: mychip_cls, sim_kt_root: tkinter.Tk) -> None:
+def timer_event(chip: RegModel, sim_kt_root: tkinter.Tk) -> None:
     """
     timer event which will invert the state of the LED and then set the timer event to run
     in 2s
@@ -91,7 +91,7 @@ if __name__ == '__main__':
                                   write_callback=chip_simulator.write)
 
     # created an instance of the register model and connect the callbacks to the simulator
-    mychip = mychip_cls(callbacks=callbacks)
+    mychip = RegModel(callbacks=callbacks)
 
     # configure the GPIO.PIN_0 as an output
     mychip.GPIO.GPIO_dir.PIN_0.write(mychip.GPIO.GPIO_dir.PIN_0.enum_cls.DIR_OUT)

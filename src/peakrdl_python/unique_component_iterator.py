@@ -37,6 +37,8 @@ from systemrdl import RDLListener, WalkerAction
 from .systemrdl_node_hashes import node_hash
 from .systemrdl_node_utility_functions import HideNodeCallback
 from .systemrdl_node_utility_functions import get_properties_to_include
+from .systemrdl_node_utility_functions import get_reg_regwidth, get_reg_accesswidth
+from .systemrdl_node_utility_functions import get_memory_accesswidth
 from .class_names import get_base_class_name
 
 @dataclass(frozen=True)
@@ -51,6 +53,8 @@ class PeakRDLPythonUniqueComponents:
     optimal_python_class_name: bool =  field(init=False)
 
     def __post_init__(self) -> None:
+        if not isinstance(self.instance, Node):
+            raise TypeError(f'instance must be a node got {type(self.instance)}')
         python_class_name, optimal_python_class_name = self.__determine_python_class_name()
         object.__setattr__(self, 'python_class_name', python_class_name)
         object.__setattr__(self, 'optimal_python_class_name', optimal_python_class_name)
@@ -137,6 +141,11 @@ class PeakRDLPythonUniqueRegisterComponents(PeakRDLPythonUniqueComponents):
     """
     instance: RegNode
 
+    def __post_init__(self) -> None:
+        super().__post_init__()
+        if not isinstance(self.instance, RegNode):
+            raise TypeError(f'instance must be a RegNode got {type(self.instance)}')
+
     @property
     def read_write(self) -> bool:
         """
@@ -157,6 +166,56 @@ class PeakRDLPythonUniqueRegisterComponents(PeakRDLPythonUniqueComponents):
         Determine if the register is write-only
         """
         return not self.instance.has_sw_readable and self.instance.has_sw_writable
+
+    @property
+    def regwidth(self) -> int:
+        """
+        register width in bits
+        """
+        return get_reg_regwidth(self.instance)
+
+    @property
+    def accesswidth(self) -> int:
+        """
+        register access width in bits
+        """
+        return get_reg_accesswidth(self.instance)
+
+
+    def fields(self) -> Iterator[FieldNode]:
+        """
+        Iterator for all the systemRDL nodes which are not hidden
+        """
+        yield from filterfalse(self.parent_walker.hide_node_callback,
+                               self.instance.fields())
+
+@dataclass(frozen=True)
+class PeakRDLPythonUniqueMemoryComponents(PeakRDLPythonUniqueComponents):
+    """
+    Dataclass to hold a register node that needs to be made into a python class
+    """
+    instance: MemNode
+
+    def __post_init__(self) -> None:
+        super().__post_init__()
+        if not isinstance(self.instance, MemNode):
+            raise TypeError(f'instance must be a MemNode got {type(self.instance)}')
+
+    @property
+    def accesswidth(self) -> int:
+        """
+        memory access width in bits
+        """
+        return get_memory_accesswidth(self.instance)
+
+    def registers(self, unroll:bool) -> Iterator[RegNode]:
+        """
+        Iterator for all the systemRDL nodes which are not hidden
+        """
+        for child in self.children(unroll=unroll, exclude_signals=True):
+            if not isinstance(child, RegNode):
+                raise TypeError(f'child must be a RegNode got {type(child)}')
+            yield child
 
 class UniqueComponents(RDLListener):
     """
@@ -226,6 +285,10 @@ class UniqueComponents(RDLListener):
             return PeakRDLPythonUniqueRegisterComponents(instance=node,
                                                          instance_hash=nodal_hash_result,
                                                          parent_walker=self)
+        if isinstance(node, MemNode):
+            return PeakRDLPythonUniqueMemoryComponents(instance=node,
+                                                       instance_hash=nodal_hash_result,
+                                                       parent_walker=self)
         return PeakRDLPythonUniqueComponents(instance=node,
                                              instance_hash=nodal_hash_result,
                                              parent_walker=self)
@@ -318,3 +381,19 @@ class UniqueComponents(RDLListener):
                                       include_name_and_desc=True)
         self.__name_hash_cache[full_instance_name] = nodal_hash_result
         return nodal_hash_result
+
+    def register_nodes(self) -> Iterator[PeakRDLPythonUniqueRegisterComponents]:
+        """
+        Iterator though all the unique register nodes
+        """
+        yield from filter(
+            lambda component: isinstance(component, PeakRDLPythonUniqueRegisterComponents),
+            self.nodes.values())
+
+    def memory_nodes(self) -> Iterator[PeakRDLPythonUniqueMemoryComponents]:
+        """
+        Iterator though all the unique memory nodes
+        """
+        yield from filter(
+            lambda component: isinstance(component, PeakRDLPythonUniqueMemoryComponents),
+            self.nodes.values())

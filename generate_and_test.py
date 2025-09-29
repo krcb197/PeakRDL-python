@@ -175,9 +175,6 @@ if __name__ == '__main__':
         else:
             raise(RuntimeError('not a list'))
 
-    reg_model_class_name = CommandLineArgs.root_node +'_cls'
-    sim_class_name = CommandLineArgs.root_node + '_simulator_cls'
-
     rdlc.compile_file(CommandLineArgs.root_RDL_file)
     spec = rdlc.elaborate(top_def_name=CommandLineArgs.root_node).top
 
@@ -216,14 +213,14 @@ if __name__ == '__main__':
             cov.start()
 
         reg_model_module = __import__( 'generate_and_test_output.' +
-            CommandLineArgs.root_node + '.reg_model.' + CommandLineArgs.root_node,
-            globals(), locals(), [reg_model_class_name], 0)
+            CommandLineArgs.root_node + '.reg_model',
+            globals(), locals(), ['RegModel'], 0)
         sim_module = __import__( 'generate_and_test_output.' +
-            CommandLineArgs.root_node + '.sim.' + CommandLineArgs.root_node,
-            globals(), locals(), [sim_class_name], 0)
+            CommandLineArgs.root_node + '.sim',
+            globals(), locals(), ['Simulator'], 0)
 
 
-        dut_cls = getattr(reg_model_module, reg_model_class_name)
+        dut_cls = getattr(reg_model_module, 'RegModel')
 
         if CommandLineArgs.copy_libraries:
             peakrdl_python_package = __import__('generate_and_test_output.' + CommandLineArgs.root_node + '.lib',
@@ -243,7 +240,7 @@ if __name__ == '__main__':
             else:
                 callbackset_cls = getattr(peakrdl_python_package, 'NormalCallbackSet')
 
-        sim_cls = getattr(sim_module, sim_class_name)
+        sim_cls = getattr(sim_module, 'Simulator')
         sim = sim_cls(address=0)
         dut = dut_cls(callbacks=callbackset_cls(read_callback=sim.read,
                                                 write_callback=sim.write))

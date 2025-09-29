@@ -24,6 +24,22 @@ In the folder structure above:
 - ``lib`` - This is a package of base classes used by the register access layer (The copy of this can be skipped, see :ref:`skipping-lib-copy`)
 - ``sim_lib`` - This is a package of base classes used by the register access layer simulator (The copy of this can be skipped, see :ref:`skipping-lib-copy`)
 
+.. versionchanged:: 2.0.0
+
+    The ``reg_model`` was changed in version 2.0.0 to split it out into multiple modules rather
+    than building the whole register model in a single python module. This helps avoid
+    excessively large files which helps speed up the generation and loading time.
+
+Top Level Classes
+-----------------
+
+.. versionchanged:: 2.0.0
+
+    A new class aliases were added to the ``reg_model`` and ``sim`` packages to allow the register
+    model and simulator to be imported more easily. See the example below using ``RegModel`` and
+    ``Simulator``.
+
+
 Running the Unit Tests
 ======================
 

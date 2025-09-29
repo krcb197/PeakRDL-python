@@ -3,15 +3,15 @@ A demonstration of using enumeration for peakrdl-python
 """
 from enumerated_fields.lib import NormalCallbackSet
 
-from enumerated_fields.reg_model.enumerated_fields import enumerated_fields_cls as GPIO
-from enumerated_fields.sim.enumerated_fields import enumerated_fields_simulator_cls as HardwareSimulator
+from enumerated_fields.reg_model import RegModel
+from enumerated_fields.sim import Simulator
 
 if __name__ == '__main__':
 
     # create an instance of the hardware simulator
-    hw = HardwareSimulator(0)
+    hw = Simulator(0)
     # create an instance of the RAL with the callbacks directed at the hardware simulator
-    gpio = GPIO(callbacks=NormalCallbackSet(read_callback=hw.read, write_callback=hw.write))
+    gpio = RegModel(callbacks=NormalCallbackSet(read_callback=hw.read, write_callback=hw.write))
 
     # get the field values
     for field in gpio.gpio_strength.readable_fields:
