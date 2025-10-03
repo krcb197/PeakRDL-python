@@ -858,7 +858,7 @@ class RegReadOnlyArray(RegArray[RegReadOnly], ABC):
         return False
 
 
-class RegWriteOnlyArray(RegArray, ABC):
+class RegWriteOnlyArray(RegArray[RegWriteOnly], ABC):
     """
     base class for a array of write only registers
     """
@@ -910,7 +910,7 @@ class RegWriteOnlyArray(RegArray, ABC):
         return True
 
 
-class RegReadWriteArray(RegArray, ABC):
+class RegReadWriteArray(RegArray[RegReadWrite], ABC):
     """
     base class for a array of read and write registers
     """
