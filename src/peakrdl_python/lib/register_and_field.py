@@ -110,7 +110,7 @@ class Reg(BaseReg, Iterable[Union['FieldReadOnly', 'FieldWriteOnly', 'FieldReadW
 RegArrayElementType= TypeVar('RegArrayElementType', bound=BaseReg)
 
 
-class RegArray(BaseRegArray, ABC):
+class RegArray(BaseRegArray[RegArrayElementType], ABC):
     """
     base class of register array wrappers
 
@@ -129,7 +129,8 @@ class RegArray(BaseRegArray, ABC):
                  address: int,
                  stride: int,
                  dimensions: tuple[int, ...],
-                 elements: Optional[dict[tuple[int, ...], RegArrayElementType]] = None):
+                 elements: Optional[tuple[tuple[tuple[int, ...], ...],
+                                          tuple[RegArrayElementType, ...]]] = None):
 
         self.__in_context_manager: bool = False
         self.__register_cache: Optional[Union[Array, list[int]]] = None
@@ -805,7 +806,7 @@ ReadableRegister = Union[RegReadOnly, RegReadWrite]
 WritableRegister = Union[RegWriteOnly, RegReadWrite]
 
 
-class RegReadOnlyArray(RegArray, ABC):
+class RegReadOnlyArray(RegArray[RegReadOnly], ABC):
     """
     base class for a array of read only registers
     """
@@ -818,7 +819,8 @@ class RegReadOnlyArray(RegArray, ABC):
                  address: int,
                  stride: int,
                  dimensions: tuple[int, ...],
-                 elements: Optional[dict[tuple[int, ...], RegReadOnly]] = None):
+                 elements: Optional[tuple[tuple[tuple[int, ...], ...],
+                                    tuple[RegReadOnly, ...]]] = None):
 
         if not isinstance(parent, (RegFile, AddressMap, MemoryReadOnly, MemoryReadWrite,
                                    MemoryReadOnlyLegacy, MemoryReadWriteLegacy)):
@@ -869,7 +871,8 @@ class RegWriteOnlyArray(RegArray, ABC):
                  address: int,
                  stride: int,
                  dimensions: tuple[int, ...],
-                 elements: Optional[dict[tuple[int, ...], RegWriteOnly]] = None):
+                 elements: Optional[tuple[tuple[tuple[int, ...], ...],
+                                          tuple[RegWriteOnly, ...]]] = None):
 
         if not isinstance(parent, (RegFile, AddressMap, MemoryWriteOnly, MemoryReadWrite,
                                    MemoryWriteOnlyLegacy, MemoryReadWriteLegacy)):
@@ -920,7 +923,8 @@ class RegReadWriteArray(RegArray, ABC):
                  address: int,
                  stride: int,
                  dimensions: tuple[int, ...],
-                 elements: Optional[dict[tuple[int, ...], RegReadWrite]] = None):
+                 elements: Optional[tuple[tuple[tuple[int, ...], ...],
+                                          tuple[RegReadWrite, ...]]] = None):
 
         if not isinstance(parent, (RegFile, AddressMap, MemoryReadWrite, MemoryReadWriteLegacy)):
             raise TypeError('parent should be either RegFile, AddressMap, MemoryReadWrite '

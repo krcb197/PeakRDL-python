@@ -154,7 +154,8 @@ class BaseRegArray(NodeArray[BaseRegArrayElementType], ABC):
                  address: int,
                  stride: int,
                  dimensions: tuple[int, ...],
-                 elements: Optional[dict[tuple[int, ...], BaseRegArrayElementType]] = None):
+                 elements: Optional[tuple[tuple[tuple[int, ...], ...],
+                                          tuple[BaseRegArrayElementType, ...]]] = None):
 
         if not isinstance(self.width, int):
             raise TypeError(f'width should be int but got {(type(self.width))}')

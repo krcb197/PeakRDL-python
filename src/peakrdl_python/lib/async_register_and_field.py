@@ -497,7 +497,7 @@ WritableAsyncRegister = Union[RegAsyncWriteOnly, RegAsyncReadWrite]
 AsyncRegArrayElementType= TypeVar('AsyncRegArrayElementType', bound=AsyncReg)
 
 
-class AsyncRegArray(BaseRegArray, ABC):
+class AsyncRegArray(BaseRegArray[AsyncRegArrayElementType], ABC):
     """
     base class of register array wrappers
 
@@ -516,7 +516,8 @@ class AsyncRegArray(BaseRegArray, ABC):
                  address: int,
                  stride: int,
                  dimensions: tuple[int, ...],
-                 elements: Optional[dict[tuple[int, ...], AsyncRegArrayElementType]] = None):
+                 elements: Optional[tuple[tuple[tuple[int, ...], ...],
+                                    tuple[AsyncRegArrayElementType, ...]]] = None):
 
         self.__in_context_manager: bool = False
         self.__register_cache: Optional[Union[Array, list[int]]] = None
@@ -837,7 +838,7 @@ class AsyncRegArray(BaseRegArray, ABC):
         raise TypeError(f'unhandled parent callback type: {type(self.parent._callbacks)}')
 
 
-class RegAsyncReadOnlyArray(AsyncRegArray, ABC):
+class RegAsyncReadOnlyArray(AsyncRegArray[RegAsyncReadOnly], ABC):
     """
     base class for a array of async read only registers
     """
@@ -851,7 +852,8 @@ class RegAsyncReadOnlyArray(AsyncRegArray, ABC):
                  address: int,
                  stride: int,
                  dimensions: tuple[int, ...],
-                 elements: Optional[dict[tuple[int, ...], RegAsyncReadOnly]] = None):
+                 elements: Optional[tuple[tuple[tuple[int, ...], ...],
+                                          tuple[RegAsyncReadOnly, ...]]] = None):
 
         if not isinstance(parent, (AsyncRegFile, AsyncAddressMap,
                                    MemoryAsyncReadOnly, MemoryAsyncReadOnlyLegacy,
@@ -890,7 +892,7 @@ class RegAsyncReadOnlyArray(AsyncRegArray, ABC):
         return False
 
 
-class RegAsyncWriteOnlyArray(AsyncRegArray, ABC):
+class RegAsyncWriteOnlyArray(AsyncRegArray[RegAsyncWriteOnly], ABC):
     """
     base class for a array of async write only registers
     """
@@ -904,7 +906,8 @@ class RegAsyncWriteOnlyArray(AsyncRegArray, ABC):
                  address: int,
                  stride: int,
                  dimensions: tuple[int, ...],
-                 elements: Optional[dict[tuple[int, ...], RegAsyncWriteOnly]] = None):
+                 elements: Optional[tuple[tuple[tuple[int, ...], ...],
+                                          tuple[RegAsyncWriteOnly, ...]]] = None):
 
         if not isinstance(parent, (AsyncRegFile, AsyncAddressMap,
                                    MemoryAsyncWriteOnly, MemoryAsyncReadWrite,
@@ -943,7 +946,7 @@ class RegAsyncWriteOnlyArray(AsyncRegArray, ABC):
         return True
 
 
-class RegAsyncReadWriteArray(AsyncRegArray, ABC):
+class RegAsyncReadWriteArray(AsyncRegArray[RegAsyncReadWrite], ABC):
     """
     base class for a array of read and write registers
     """
@@ -957,7 +960,8 @@ class RegAsyncReadWriteArray(AsyncRegArray, ABC):
                  address: int,
                  stride: int,
                  dimensions: tuple[int, ...],
-                 elements: Optional[dict[tuple[int, ...], RegAsyncReadWrite]] = None):
+                 elements: Optional[tuple[tuple[tuple[int, ...]],
+                                          tuple[RegAsyncReadWrite]]] = None):
 
         if not isinstance(parent, (AsyncRegFile, AsyncAddressMap,
                                    MemoryAsyncReadWrite, MemoryAsyncReadWriteLegacy)):

@@ -250,7 +250,8 @@ class NodeArray(Base, Sequence[NodeArrayElementType]):
                  address: int,
                  stride: int,
                  dimensions: tuple[int, ...],
-                 elements: Optional[tuple[tuple[int, ...], tuple[NodeArrayElementType]]] = None):
+                 elements: Optional[tuple[tuple[tuple[int, ...], ...],
+                                          tuple[NodeArrayElementType, ...]]] = None):
 
         super().__init__(logger_handle=logger_handle, inst_name=inst_name, parent=parent)
 
@@ -275,14 +276,14 @@ class NodeArray(Base, Sequence[NodeArrayElementType]):
 
         if elements is not None:
             self.__check_init_element(elements)
-            self.__elements = elements
+            self.__element_indices = elements[0]
+            self.__elements = elements[1]
         else:
             # build the full set of indices
             self.__element_indices = \
-                (indices
-                 for indices in product(*[range(dim) for dim in self.dimensions]))
-            self.__elements = (self.__build_element(indices=index)
-                               for index in self.__element_indices)
+                tuple(indices for indices in product(*[range(dim) for dim in self.dimensions]))
+            self.__elements = tuple(self.__build_element(indices=index)
+                                    for index in self.__element_indices)
 
     def __build_element(self, indices: tuple[int, ...]) -> NodeArrayElementType:
 
@@ -315,7 +316,8 @@ class NodeArray(Base, Sequence[NodeArrayElementType]):
         return self.inst_name + '[' + ']['.join([str(item) for item in indices]) + ']'
 
     def __check_init_element(self,
-                             elements: tuple[tuple[int, ...], tuple[NodeArrayElementType]]) -> None:
+                             elements: tuple[tuple[tuple[int, ...], ...],
+                                             tuple[NodeArrayElementType, ...]]) -> None:
         """
         Used in the __init__ to check that the elements passed in are valid
         Args:
@@ -325,7 +327,7 @@ class NodeArray(Base, Sequence[NodeArrayElementType]):
 
         """
         if not isinstance(elements, tuple):
-            raise TypeError(f'elements should be a dictionary but got {type(elements)}')
+            raise TypeError(f'elements should be a tuple but got {type(elements)}')
 
         for index, item in zip(elements[0], elements[1]):
             if not isinstance(index, tuple):
@@ -346,7 +348,9 @@ class NodeArray(Base, Sequence[NodeArrayElementType]):
                 raise TypeError(f'elements should be a {self._element_datatype} '
                                 f'but got {type(item)}')
 
-            # TODO check the index converted to an address matches the address in the item
+            expected_address = self.__address_calculator(index)
+            if expected_address != item.address:
+                raise ValueError('Expected Address of the item and actual address differ')
 
     def __address_calculator(self, indices: tuple[int, ...]) -> int:
         def cal_addr(dimensions: tuple[int,...], indices: tuple[int, ...], base_address: int,
@@ -372,7 +376,8 @@ class NodeArray(Base, Sequence[NodeArrayElementType]):
         return cal_addr(self.dimensions, base_address=self.address,
                         stride=self.stride, indices=indices)
 
-    def __sub_instance(self, elements: dict[tuple[int, ...], NodeArrayElementType]) -> \
+    def __sub_instance(self, elements: tuple[tuple[tuple[int, ...],...],
+                                             tuple[NodeArrayElementType, ...]]) -> \
             NodeArray[NodeArrayElementType]:
         if not isinstance(self.parent, Node):
             raise RuntimeError('Parent of a Node Array must be Node')
@@ -389,25 +394,24 @@ class NodeArray(Base, Sequence[NodeArrayElementType]):
             return self.__getitem_nd(item)
 
         if isinstance(item, tuple):
+            if len(item) == 1:
+                return self.__getitem__(item[0])
             raise IndexError('attempting a multidimensional array access on a single dimension'
                              ' array')
 
         if isinstance(item, slice):
 
-            valid_items = [(i,) for i in range(*item.indices(self.dimensions[0]))]
-            def filter_1d_func(to_filter:tuple[tuple[int, ...], NodeArrayElementType]) -> bool:
-                index, _ = to_filter
-                if index in valid_items:
-                    return True
-                return False
+            valid_items = tuple((i,) for i in range(*item.indices(self.dimensions[0])))
 
-            return self.__sub_instance(elements=dict(filter(filter_1d_func, self.items())))
+            child_elements = ( valid_items,
+                               tuple(self.__getitem__(index) for index in valid_items) )
+            return self.__sub_instance(elements=child_elements)
 
         if isinstance(item, int):
             if (item, ) not in self.__element_indices:
                 raise IndexError(f'{item:d} in in the array')
-            # TODO get the index of the item in __element_indices
-            return self.__elements[(item, )]
+            index = self.__element_indices.index((item, ))
+            return self.__elements[index]
 
         raise TypeError(f'Array index must either being an int or a slice, got {type(item)}')
 
@@ -422,10 +426,11 @@ class NodeArray(Base, Sequence[NodeArrayElementType]):
 
             if all(isinstance(i, int) for i in item):
                 # single item access
-                if item not in self.__elements:
+                if item not in self.__element_indices:
                     msg = 'index[' + ','.join([str(i) for i in item]) + '] not in array'
                     raise IndexError(msg)
-                return self.__elements[item]
+                index = self.__element_indices.index(item)
+                return self.__elements[index]
 
             unpack_index_set = []
             for axis, sub_index in enumerate(item):
@@ -443,13 +448,9 @@ class NodeArray(Base, Sequence[NodeArrayElementType]):
 
             valid_items = tuple(product(*unpack_index_set))
 
-            def filter_nd_func(to_filter: tuple[tuple[int, ...], NodeArrayElementType]) -> bool:
-                index, _ = to_filter
-                if index in valid_items:
-                    return True
-                return False
-
-            return self.__sub_instance(elements=dict(filter(filter_nd_func, self.items())))
+            child_elements = ( valid_items,
+                               tuple(self[index] for index in valid_items) )
+            return self.__sub_instance(elements=child_elements)
 
         raise IndexError('attempting a single dimensional array access on a multidimension'
                          ' array')
@@ -458,13 +459,13 @@ class NodeArray(Base, Sequence[NodeArrayElementType]):
         return len(self.__elements)
 
     def __iter__(self) -> Iterator[NodeArrayElementType]:
-        yield from self.__elements.values()
+        yield from self.__elements
 
     def items(self) -> Iterator[tuple[tuple[int, ...], NodeArrayElementType]]:
         """
         iterate through all the items in an array but also return the index of the array
         """
-        yield from self.__elements.items()
+        yield from zip(self.__element_indices, self.__elements)
 
     @property
     def dimensions(self) -> Union[tuple[int, ...], tuple[int]]:
