@@ -41,7 +41,7 @@ from {% if skip_lib_copy %}peakrdl_python.{% else %}...{% endif %}lib import Asy
 from {% if skip_lib_copy %}peakrdl_python.{% else %}...{% endif %}lib import Memory, MemoryArray
 from {% if skip_lib_copy %}peakrdl_python.{% else %}...{% endif %}lib import AddressMap
 from {% if skip_lib_copy %}peakrdl_python.{% else %}...{% endif %}lib import MemoryReadOnly{% if legacy_block_access %}Legacy{% endif %}, MemoryWriteOnly{% if legacy_block_access %}Legacy{% endif %}, MemoryReadWrite{% if legacy_block_access %}Legacy{% endif %}
-from {% if skip_lib_copy %}peakrdl_python.{% else %}...{% endif %}lib import MemoryReadOnlyArray, MemoryWriteOnlyArray, MemoryReadWriteArray
+from {% if skip_lib_copy %}peakrdl_python.{% else %}...{% endif %}lib import MemoryReadOnly{% if legacy_block_access %}Legacy{% endif %}Array, MemoryWriteOnly{% if legacy_block_access %}Legacy{% endif %}Array, MemoryReadWrite{% if legacy_block_access %}Legacy{% endif %}Array
 from {% if skip_lib_copy %}peakrdl_python.{% else %}...{% endif %}lib import Reg, RegArray
 {%- endif %}
 
@@ -106,7 +106,7 @@ class {{node.python_class_name}}({{node.base_class(asyncoutput)}}{% if legacy_bl
     {{ universal_properties(node.instance) }}
 
     {%- if node.instance.is_array %}
-class {{node.python_class_name}}_array({{node.base_class(asyncoutput)}}Array):
+class {{node.python_class_name}}_array({{node.base_class(asyncoutput)}}{% if legacy_block_access %}Legacy{% endif %}Array):
     """
     Class to represent a memory array in the register model
     """

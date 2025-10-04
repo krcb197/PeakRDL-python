@@ -11,7 +11,8 @@ from itertools import product
 # pylint: disable-next=unused-wildcard-import, wildcard-import
 from peakrdl_python.lib import *
 
-from .simple_components import ReadOnlyRegisterArrayToTest, CallBackTestWrapper
+from .simple_components import ReadOnlyRegisterArrayToTest, ReadOnlyMemoryArrayToTest
+from .simple_components import CallBackTestWrapper
 
 # pylint: disable=logging-not-lazy,logging-fstring-interpolation
 
@@ -41,18 +42,25 @@ class ArrayBase(CallBackTestWrapper, ABC):
         Array address stride
         """
 
+    @abstractmethod
+    def calculate_address(self, indices: tuple[int, ...]) -> int:
+        """
+        address based on array index
+        """
+
+
+
+class RegArrayBase(ArrayBase, ABC):
+    """
+    Base of the Array indexing tests
+    """
+
     @property
     def dut(self) -> ReadOnlyRegisterArrayToTest:
         """
         Register Array under test
         """
         return self.__dut_warpper.dut
-
-    @abstractmethod
-    def calculate_address(self, indices: tuple[int, ...]) -> int:
-        """
-        address based on array index
-        """
 
     def setUp(self) -> None:
 
@@ -109,8 +117,85 @@ class ArrayBase(CallBackTestWrapper, ABC):
                                         logger_handle='dut_wrapper', inst_name='dut_wrapper',
                                         dut_stride=self.stride, dut_dimensions=self.dimensions)
 
+class MemArrayBase(ArrayBase, ABC):
+    """
+    Base of the Array indexing tests
+    """
 
-class Test1DArray(ArrayBase):
+
+
+    @property
+    def dut(self) -> ReadOnlyMemoryArrayToTest:
+        """
+        Register Array under test
+        """
+        return self.__dut_warpper.dut
+
+    @abstractmethod
+    def calculate_address(self, indices: tuple[int, ...]) -> int:
+        """
+        address based on array index
+        """
+
+    def setUp(self) -> None:
+
+        class MemDUTWrapper(AddressMap):
+            """
+            Address map to to wrap the register array being tested
+            """
+
+            # pylint: disable=too-many-arguments,duplicate-code
+            def __init__(self, *,
+                         callbacks: Optional[CallbackSet],
+                         address: int,
+                         logger_handle: str,
+                         inst_name: str,
+                         dut_stride : int,
+                         dut_dimensions : tuple[int, ...]):
+
+                super().__init__(callbacks=callbacks, address=address, logger_handle=logger_handle,
+                                 inst_name=inst_name, parent=None )
+
+                self.__dut = ReadOnlyMemoryArrayToTest(logger_handle='dut',
+                                                       inst_name='dut',
+                                                       parent=self,
+                                                       address=address,
+                                                       stride=dut_stride,
+                                                       dimensions=dut_dimensions)
+
+
+            @property
+            def systemrdl_python_child_name_map(self) -> dict[str, str]:
+
+                return {
+                    'dut': 'dut'
+                }
+
+            # pylint: enable=duplicate-code
+
+            @property
+            def dut(self) -> ReadOnlyMemoryArrayToTest:
+                """
+                Register Array under Test
+                """
+                return self.__dut
+
+            @property
+            def size(self) -> int:
+                return self.dut.size
+
+            def __iter__(self) -> Iterator[Union[Node, NodeArray]]:
+                yield self.dut
+
+        super().setUp()
+        self.__dut_warpper = MemDUTWrapper(
+            callbacks=self.callbacks, address=self.base_address,
+            logger_handle='dut_wrapper', inst_name='dut_wrapper',
+            dut_stride=ReadOnlyMemoryArrayToTest.DEFINED_ELEMENT_ENTRIES * 4,
+            dut_dimensions=self.dimensions)
+
+
+class Test1DRegArray(RegArrayBase):
     """
     Test for 1D arrays
     """
@@ -173,7 +258,7 @@ class Test1DArray(ArrayBase):
                     _ = subset_slice[index]
 
 
-class Test2DArray(ArrayBase):
+class Test2DRegArray(RegArrayBase):
     """
     Test for 2D arrays
     """
@@ -242,6 +327,68 @@ class Test2DArray(ArrayBase):
         chunk = self.dut[2:-2, 3:-3]
         for index, entry in zip(product(range(2,8), range(3,9)), chunk):
             self.assertEqual(entry.address, self.calculate_address(index))
+
+class Test1DMemArray(MemArrayBase):
+    """
+    Test for 1D arrays of Memories
+    """
+
+
+    @property
+    def dimensions(self) -> tuple[int, ...]:
+        return (10,)
+
+    @property
+    def stride(self) -> int:
+        return self.dut[0].size
+
+    @property
+    def base_address(self) -> int:
+        return 0
+
+    def calculate_address(self, indices: tuple[int, ...]) -> int:
+        return (indices[0] * self.stride) + self.base_address
+
+    def test_individual_access(self) -> None:
+        """
+        Test accessing individual array elements
+        """
+        for index in range(self.dimensions[0]):
+            self.assertEqual(self.dut[index].address, self.calculate_address((index,)))
+
+    def test_slice(self) -> None:
+        """
+        Test accessing slices of the array
+        """
+
+        full_slice = self.dut[:]
+
+        for index in range(self.dimensions[0]):
+            self.assertEqual(full_slice[index].address, self.calculate_address((index,)))
+
+        even_slice = self.dut[::2]
+        for index in range(self.dimensions[0]):
+            if index % 2 == 0:
+                self.assertEqual(even_slice[index].address, self.calculate_address((index,)))
+            else:
+                with self.assertRaises(IndexError):
+                    _ = even_slice[index]
+
+        odd_slice = self.dut[1::2]
+        for index in range(self.dimensions[0]):
+            if index % 2 == 1:
+                self.assertEqual(odd_slice[index].address, self.calculate_address((index,)))
+            else:
+                with self.assertRaises(IndexError):
+                    _ = odd_slice[index]
+
+        subset_slice = self.dut[2:-2]
+        for index in range(self.dimensions[0]):
+            if index in range(2,self.dimensions[0]-2):
+                self.assertEqual(subset_slice[index].address, self.calculate_address((index,)))
+            else:
+                with self.assertRaises(IndexError):
+                    _ = subset_slice[index]
 
 
 if __name__ == '__main__':
