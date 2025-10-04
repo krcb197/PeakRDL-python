@@ -92,12 +92,18 @@ from .memory import MemoryReadWrite, MemoryReadWriteLegacy
 from .memory import MemoryReadOnlyArray
 from .memory import MemoryWriteOnlyArray
 from .memory import MemoryReadWriteArray
+from .memory import MemoryReadOnlyLegacyArray
+from .memory import MemoryWriteOnlyLegacyArray
+from .memory import MemoryReadWriteLegacyArray
 from .async_memory import MemoryAsyncReadOnly, MemoryAsyncReadOnlyLegacy
 from .async_memory import MemoryAsyncWriteOnly, MemoryAsyncWriteOnlyLegacy
 from .async_memory import MemoryAsyncReadWrite, MemoryAsyncReadWriteLegacy
 from .async_memory import MemoryAsyncReadOnlyArray
 from .async_memory import MemoryAsyncWriteOnlyArray
 from .async_memory import MemoryAsyncReadWriteArray
+from .async_memory import MemoryAsyncReadOnlyLegacyArray
+from .async_memory import MemoryAsyncWriteOnlyLegacyArray
+from .async_memory import MemoryAsyncReadWriteLegacyArray
 from .memory import ReadableMemory, ReadableMemoryLegacy
 from .memory import WritableMemory, WritableMemoryLegacy
 from .memory import Memory
