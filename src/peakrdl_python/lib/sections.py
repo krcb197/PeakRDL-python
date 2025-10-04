@@ -415,6 +415,9 @@ class AddressMapArray(NodeArray[AddressMap], ABC):
                  elements: Optional[tuple[tuple[tuple[int, ...], ...],
                  tuple[AddressMap, ...]]] = None):
 
+        if not isinstance(parent, AddressMap):
+            raise TypeError(f'parent should be AddressMap got {type(parent)}')
+
         super().__init__(logger_handle=logger_handle, inst_name=inst_name,
                          parent=parent, address=address, stride=stride,
                          dimensions=dimensions, elements=elements)
@@ -437,6 +440,8 @@ class AsyncAddressMapArray(NodeArray[AsyncAddressMap], ABC):
                  elements: Optional[tuple[tuple[tuple[int, ...], ...],
                  tuple[AsyncAddressMap, ...]]] = None):
 
+        if not isinstance(parent, AsyncAddressMap):
+            raise TypeError(f'parent should be AsyncAddressMap got {type(parent)}')
         super().__init__(logger_handle=logger_handle, inst_name=inst_name,
                          parent=parent, address=address,
                          stride=stride, dimensions=dimensions, elements=elements)
@@ -567,6 +572,9 @@ class RegFileArray(NodeArray[RegFile], ABC):
                  elements: Optional[tuple[tuple[tuple[int, ...], ...],
                  tuple[RegFile, ...]]] = None):
 
+
+        if not isinstance(parent, (AddressMap,RegFile)):
+            raise TypeError(f'parent should be either AddressMap or RegFile got {type(parent)}')
         super().__init__(logger_handle=logger_handle, inst_name=inst_name,
                          parent=parent, address=address,
                          stride=stride, dimensions=dimensions, elements=elements)
@@ -588,6 +596,9 @@ class AsyncRegFileArray(NodeArray[AsyncRegFile], ABC):
                  dimensions: tuple[int, ...],
                  elements: Optional[tuple[tuple[tuple[int, ...], ...],
                  tuple[AsyncRegFile, ...]]] = None):
+
+        if not isinstance(parent, (AsyncAddressMap,AsyncRegFile)):
+            raise TypeError(f'parent should be either AsyncAddressMap or AsyncRegFile got {type(parent)}')
 
         super().__init__(logger_handle=logger_handle, inst_name=inst_name,
                          parent=parent, address=address,
