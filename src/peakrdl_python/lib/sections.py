@@ -598,7 +598,8 @@ class AsyncRegFileArray(NodeArray[AsyncRegFile], ABC):
                  tuple[AsyncRegFile, ...]]] = None):
 
         if not isinstance(parent, (AsyncAddressMap,AsyncRegFile)):
-            raise TypeError(f'parent should be either AsyncAddressMap or AsyncRegFile got {type(parent)}')
+            raise TypeError(f'parent should be either AsyncAddressMap or AsyncRegFile '
+                            f'got {type(parent)}')
 
         super().__init__(logger_handle=logger_handle, inst_name=inst_name,
                          parent=parent, address=address,
