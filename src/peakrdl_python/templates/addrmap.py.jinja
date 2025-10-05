@@ -201,7 +201,7 @@ class {{node.python_class_name}}_array({% if asyncoutput %}Async{% endif %}RegFi
                          stride=stride, dimensions=dimensions)
 
     @property
-    def _element_datatype(self) -> Type[Node]:
+    def _element_datatype(self) -> Type[{% if asyncoutput %}Async{% endif %}RegFile]:
         return {{node.python_class_name}}
     {%- endif %}
 {%- endmacro %}
@@ -282,7 +282,7 @@ class {{node.python_class_name}}_array({% if asyncoutput %}Async{% endif %}Addre
                          stride=stride, dimensions=dimensions)
 
     @property
-    def _element_datatype(self) -> Type[Node]:
+    def _element_datatype(self) -> Type[{% if asyncoutput %}Async{% endif %}AddressMap]:
         return {{node.python_class_name}}
     {%- endif %}
 {%- endmacro %}
