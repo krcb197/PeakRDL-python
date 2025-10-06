@@ -35,7 +35,7 @@ from {% if skip_lib_copy %}peakrdl_python.{% else %}...{% endif %}lib import UDP
 from {% if skip_lib_copy %}peakrdl_python.{% else %}...{% endif %}lib import AsyncMemory, AsyncMemoryArray
 from {% if skip_lib_copy %}peakrdl_python.{% else %}...{% endif %}lib import AsyncAddressMap
 from {% if skip_lib_copy %}peakrdl_python.{% else %}...{% endif %}lib import MemoryAsyncReadOnly{% if legacy_block_access %}Legacy{% endif %}, MemoryAsyncWriteOnly{% if legacy_block_access %}Legacy{% endif %}, MemoryAsyncReadWrite{% if legacy_block_access %}Legacy{% endif %}
-from {% if skip_lib_copy %}peakrdl_python.{% else %}...{% endif %}lib import MemoryAsyncReadOnlyArray, MemoryAsyncWriteOnlyArray, MemoryAsyncReadWriteArray
+from {% if skip_lib_copy %}peakrdl_python.{% else %}...{% endif %}lib import MemoryAsyncReadOnly{% if legacy_block_access %}Legacy{% endif %}Array, MemoryAsyncWriteOnly{% if legacy_block_access %}Legacy{% endif %}Array, MemoryAsyncReadWrite{% if legacy_block_access %}Legacy{% endif %}Array
 from {% if skip_lib_copy %}peakrdl_python.{% else %}...{% endif %}lib import AsyncReg, AsyncRegArray
 {%- else -%}
 from {% if skip_lib_copy %}peakrdl_python.{% else %}...{% endif %}lib import Memory, MemoryArray
@@ -123,7 +123,7 @@ class {{node.python_class_name}}_array({{node.base_class(asyncoutput)}}{% if leg
                          stride=stride, dimensions=dimensions)
 
     @property
-    def _element_datatype(self) -> Type[{{node.base_class(asyncoutput)}}]:
+    def _element_datatype(self) -> Type[{{node.base_class(asyncoutput)}}{% if legacy_block_access %}Legacy{% endif %}]:
         return {{node.python_class_name}}
 
     {{ universal_properties(node.instance) }}

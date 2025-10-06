@@ -199,9 +199,15 @@ class Memory(BaseMemory, Iterable[Union['Reg', 'RegArray']], ABC):
         """
         if not isinstance(parent, (AddressMap,
                                    MemoryWriteOnlyArray, MemoryReadOnlyArray,
-                                   MemoryReadWriteArray)):
+                                   MemoryReadWriteArray, MemoryWriteOnlyLegacyArray,
+                                   MemoryReadOnlyLegacyArray,
+                                   MemoryReadWriteLegacyArray)):
             raise TypeError(f'parent should be either AddressMap or Memory Array got '
                             f'{type(parent)}')
+
+        if not isinstance(parent._callbacks, (NormalCallbackSet, NormalCallbackSetLegacy)):
+            raise TypeError(f'callback set type is wrong, got {type(parent._callbacks)}')
+
         super().__init__(address=address,
                          logger_handle=logger_handle,
                          inst_name=inst_name,
@@ -209,6 +215,17 @@ class Memory(BaseMemory, Iterable[Union['Reg', 'RegArray']], ABC):
                          accesswidth=accesswidth,
                          entries=entries,
                          parent=parent)
+
+    @property
+    def _callbacks(self) -> Union[NormalCallbackSet, NormalCallbackSetLegacy]:
+        # pylint: disable=protected-access
+        if self.parent is None:
+            raise RuntimeError('Parent must be set')
+
+        if isinstance(self.parent._callbacks, (NormalCallbackSet, NormalCallbackSetLegacy)):
+            return self.parent._callbacks
+
+        raise TypeError(f'unhandled parent callback type: {type(self.parent._callbacks)}')
 
     def get_children(self, unroll: bool = False) -> Iterator[Union['Reg', 'RegArray']]:
         """
@@ -246,48 +263,6 @@ class _MemoryReadOnly(Memory, ABC):
     """
 
     __slots__: list[str] = []
-
-    # pylint: disable-next=too-many-arguments
-    def __init__(self, *,
-                 address: int,
-                 width: int,
-                 accesswidth: int,
-                 entries: int,
-                 logger_handle: str,
-                 inst_name: str,
-                 parent: Union[AddressMap, 'MemoryArray']):
-
-        if parent is None:
-            raise TypeError('parent should be either AddressMap or Memory Array '
-                            f'got {type(parent)}')
-
-        if not isinstance(parent, (AddressMap, MemoryWriteOnlyArray,
-                                   MemoryReadOnlyArray, MemoryReadWriteArray)):
-            raise TypeError('parent should be either AddressMap or Memory Array '
-                            f'got {type(parent)}')
-
-        if not isinstance(parent._callbacks, (NormalCallbackSet, NormalCallbackSetLegacy)):
-            raise TypeError(f'callback set type is wrong, got {type(parent._callbacks)}')
-
-        super().__init__(address=address,
-                         width=width,
-                         accesswidth=accesswidth,
-                         entries=entries,
-                         logger_handle=logger_handle,
-                         inst_name=inst_name,
-                         parent=parent)
-
-    # pylint: enable=too-many-arguments
-    @property
-    def _callbacks(self) -> Union[NormalCallbackSet, NormalCallbackSetLegacy]:
-        # pylint: disable=protected-access
-        if self.parent is None:
-            raise RuntimeError('Parent must be set')
-
-        if isinstance(self.parent._callbacks, (NormalCallbackSet, NormalCallbackSetLegacy)):
-            return self.parent._callbacks
-
-        raise TypeError(f'unhandled parent callback type: {type(self.parent._callbacks)}')
 
     def _read(self, start_entry: int, number_entries: int) -> list[int]:
         """
@@ -507,44 +482,6 @@ class _MemoryWriteOnly(Memory, ABC):
         circumstances however, it is useful for type checking
     """
     __slots__: list[str] = []
-
-    # pylint: disable-next=too-many-arguments
-    def __init__(self, *,
-                 address: int,
-                 width: int,
-                 accesswidth: int,
-                 entries: int,
-                 logger_handle: str,
-                 inst_name: str,
-                 parent: Union[AddressMap, 'MemoryArray']):
-
-        if not isinstance(parent, (AddressMap, MemoryWriteOnlyArray,
-                                   MemoryReadOnlyArray, MemoryReadWriteArray)):
-            raise TypeError('parent should be either AddressMap or Memory Array '
-                            f'got {type(parent)}')
-
-        if not isinstance(parent._callbacks, (NormalCallbackSet, NormalCallbackSetLegacy)):
-            raise TypeError(f'callback set type is wrong, got {type(parent._callbacks)}')
-
-        super().__init__(address=address,
-                         width=width,
-                         accesswidth=accesswidth,
-                         entries=entries,
-                         logger_handle=logger_handle,
-                         inst_name=inst_name,
-                         parent=parent)
-
-    # pylint: enable=too-many-arguments
-    @property
-    def _callbacks(self) -> Union[NormalCallbackSet, NormalCallbackSetLegacy]:
-        # pylint: disable=protected-access
-        if self.parent is None:
-            raise RuntimeError('Parent must be set')
-
-        if isinstance(self.parent._callbacks, (NormalCallbackSet, NormalCallbackSetLegacy)):
-            return self.parent._callbacks
-
-        raise TypeError(f'unhandled parent callback type: {type(self.parent._callbacks)}')
 
     def _write(self, start_entry: int, data: Union[Array, list[int]]) -> None:
         """

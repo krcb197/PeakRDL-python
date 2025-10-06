@@ -46,7 +46,7 @@ from {% if skip_lib_copy %}peakrdl_python.{% else %}..{% endif %}lib import Writ
 from {% if skip_lib_copy %}peakrdl_python.{% else %}..{% endif %}lib import RegAsyncReadWrite, RegAsyncReadOnly, RegAsyncWriteOnly
 from {% if skip_lib_copy %}peakrdl_python.{% else %}..{% endif %}lib import RegAsyncReadWriteArray, RegAsyncReadOnlyArray, RegAsyncWriteOnlyArray
 from {% if skip_lib_copy %}peakrdl_python.{% else %}..{% endif %}lib import MemoryAsyncReadOnly{% if legacy_block_access %}Legacy{% endif %}, MemoryAsyncWriteOnly{% if legacy_block_access %}Legacy{% endif %}, MemoryAsyncReadWrite{% if legacy_block_access %}Legacy{% endif %}
-from {% if skip_lib_copy %}peakrdl_python.{% else %}..{% endif %}lib import MemoryAsyncReadOnlyArray, MemoryAsyncWriteOnlyArray, MemoryAsyncReadWriteArray
+from {% if skip_lib_copy %}peakrdl_python.{% else %}..{% endif %}lib import MemoryAsyncReadOnly{% if legacy_block_access %}Legacy{% endif %}Array, MemoryAsyncWriteOnly{% if legacy_block_access %}Legacy{% endif %}Array, MemoryAsyncReadWrite{% if legacy_block_access %}Legacy{% endif %}Array
 from {% if skip_lib_copy %}peakrdl_python.{% else %}..{% endif %}lib import AsyncAddressMap, AsyncRegFile
 from {% if skip_lib_copy %}peakrdl_python.{% else %}..{% endif %}lib import AsyncAddressMapArray, AsyncRegFileArray
 from {% if skip_lib_copy %}peakrdl_python.{% else %}..{% endif %}lib import AsyncMemory
@@ -56,7 +56,7 @@ from {% if skip_lib_copy %}peakrdl_python.{% else %}..{% endif %}lib import Writ
 from {% if skip_lib_copy %}peakrdl_python.{% else %}..{% endif %}lib import RegReadWrite, RegReadOnly, RegWriteOnly
 from {% if skip_lib_copy %}peakrdl_python.{% else %}..{% endif %}lib import RegReadWriteArray, RegReadOnlyArray, RegWriteOnlyArray
 from {% if skip_lib_copy %}peakrdl_python.{% else %}..{% endif %}lib import MemoryReadOnly{% if legacy_block_access %}Legacy{% endif %}, MemoryWriteOnly{% if legacy_block_access %}Legacy{% endif %}, MemoryReadWrite{% if legacy_block_access %}Legacy{% endif %}
-from {% if skip_lib_copy %}peakrdl_python.{% else %}..{% endif %}lib import MemoryReadOnlyArray, MemoryWriteOnlyArray, MemoryReadWriteArray
+from {% if skip_lib_copy %}peakrdl_python.{% else %}..{% endif %}lib import MemoryReadOnly{% if legacy_block_access %}Legacy{% endif %}Array, MemoryWriteOnly{% if legacy_block_access %}Legacy{% endif %}Array, MemoryReadWrite{% if legacy_block_access %}Legacy{% endif %}Array
 from {% if skip_lib_copy %}peakrdl_python.{% else %}..{% endif %}lib import AddressMap, RegFile
 from {% if skip_lib_copy %}peakrdl_python.{% else %}..{% endif %}lib import AddressMapArray, RegFileArray
 from {% if skip_lib_copy %}peakrdl_python.{% else %}..{% endif %}lib import Memory
@@ -1163,7 +1163,7 @@ class {{fq_block_name}}_single_access({{top_node.inst_name}}_TestCase): # type: 
                               {% endfor %} ]
         memories = []
         for memory in self.dut.get_memories(unroll=False):  # type: ignore[union-attr]
-            self.assertIsInstance(memory, (Memory{% if asyncoutput %}Async{% endif %}ReadOnly{% if legacy_block_access %}Legacy{% endif %}, Memory{% if asyncoutput %}Async{% endif %}WriteOnly{% if legacy_block_access %}Legacy{% endif %}, Memory{% if asyncoutput %}Async{% endif %}ReadWrite{% if legacy_block_access %}Legacy{% endif %}, Memory{% if asyncoutput %}Async{% endif %}ReadOnlyArray, Memory{% if asyncoutput %}Async{% endif %}WriteOnlyArray, Memory{% if asyncoutput %}Async{% endif %}ReadWriteArray))
+            self.assertIsInstance(memory, (Memory{% if asyncoutput %}Async{% endif %}ReadOnly{% if legacy_block_access %}Legacy{% endif %}, Memory{% if asyncoutput %}Async{% endif %}WriteOnly{% if legacy_block_access %}Legacy{% endif %}, Memory{% if asyncoutput %}Async{% endif %}ReadWrite{% if legacy_block_access %}Legacy{% endif %}, Memory{% if asyncoutput %}Async{% endif %}ReadOnly{% if legacy_block_access %}Legacy{% endif %}Array, Memory{% if asyncoutput %}Async{% endif %}WriteOnly{% if legacy_block_access %}Legacy{% endif %}Array, Memory{% if asyncoutput %}Async{% endif %}ReadWrite{% if legacy_block_access %}Legacy{% endif %}Array))
             memories.append(memory)
         self.assertCountEqual(expected_memories, memories)
 
