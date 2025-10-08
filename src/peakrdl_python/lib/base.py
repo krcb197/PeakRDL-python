@@ -24,9 +24,8 @@ from typing import Optional, Union, TypeVar, Any
 from collections.abc import Iterator, Sequence
 from abc import ABC, abstractmethod
 from itertools import product
-from functools import reduce
-from operator import mul
 from enum import IntEnum, Enum, auto
+import math
 
 from .callbacks import CallbackSet, CallbackSetLegacy
 
@@ -367,7 +366,7 @@ class NodeArray(Base, Sequence[NodeArrayElementType]):
             if len(dimensions) == 1:
                 return (indices[0] * stride) + base_address
 
-            outer_offset = reduce(mul, dimensions[1::], 1) * stride * indices[0]
+            outer_offset = math.prod(dimensions[1::]) * stride * indices[0]
             return outer_offset + cal_addr(dimensions=dimensions[1::],
                                            indices=indices[1::],
                                            stride=self.stride,
@@ -505,4 +504,4 @@ class NodeArray(Base, Sequence[NodeArrayElementType]):
         """
         Total Number of bytes of address the array occupies
         """
-        return reduce(mul, self.dimensions, 1) * self.stride
+        return math.prod(self.dimensions) * self.stride
