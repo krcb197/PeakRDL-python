@@ -45,7 +45,7 @@ from .systemrdl_node_utility_functions import get_reg_writable_fields, \
     get_memory_max_entry_value_hex_string, get_memory_width_bytes, \
     get_field_default_value, get_enum_values, get_properties_to_include, \
     HideNodeCallback, hide_based_on_property,  \
-    is_encoded_field
+    is_encoded_field, full_slice_accessor
 from .unique_component_iterator import UniqueComponents
 from .unique_component_iterator import PeakRDLPythonUniqueRegisterComponents
 from .unique_component_iterator import PeakRDLPythonUniqueMemoryComponents
@@ -781,10 +781,27 @@ class PythonExporter:
             for memory in owned_elements.memories:
                 rolled_owned_reg += list(memory.registers(unroll=False))
 
-            def is_reg_array(item: RegNode) -> bool:
+            def is_node_array(item: AddressableNode) -> bool:
                 return item.is_array and not hide_node_func(item)
 
-            rolled_owned_reg_array = list(filter(is_reg_array, rolled_owned_reg))
+            rolled_owned_reg_array = list(filter(is_node_array, rolled_owned_reg))
+
+            def add_child_rolled_children(node: AddressableNode) -> list[AddressableNode]:
+                rolled_owned_child = list(filter(lambda x: isinstance(x, AddressableNode),
+                                                 list(node.children(unroll=False) )))
+                # only need to walk into RegFiles and Memory as this may contain a further
+                # array. A Register can not contain and array. An AddrMap children
+                # are considered in the next block in the sequence
+                for child_node in filter(lambda x: isinstance(x, (MemNode, RegfileNode)),
+                                         node.children(unroll=True)):
+                    rolled_owned_child += add_child_rolled_children(child_node)
+                return rolled_owned_child
+
+            rolled_owned_child = add_child_rolled_children(block)
+
+            rolled_owned_array = \
+                list(filter(is_node_array, rolled_owned_child))
+
 
             fq_block_name = '_'.join(block.get_path_segments(array_suffix='_{index:d}_'))
 
@@ -794,6 +811,7 @@ class PythonExporter:
                 'fq_block_name': fq_block_name,
                 'owned_elements': owned_elements,
                 'rolled_owned_reg_array': rolled_owned_reg_array,
+                'rolled_owned_array': rolled_owned_array,
                 'systemrdlFieldNode': FieldNode,
                 'systemrdlSignalNode': SignalNode,
                 'systemrdlRegNode': RegNode,
@@ -805,6 +823,7 @@ class PythonExporter:
                 'isinstance': isinstance,
                 'type': type,
                 'str': str,
+                'full_slice_accessor': full_slice_accessor,
                 'get_python_path_segments': get_python_path_segments,
                 'safe_node_name': safe_node_name,
                 'uses_memory': (len(owned_elements.memories) > 0),

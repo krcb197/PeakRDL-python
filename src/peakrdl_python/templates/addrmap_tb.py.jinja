@@ -62,7 +62,7 @@ from {% if skip_lib_copy %}peakrdl_python.{% else %}..{% endif %}lib import Addr
 from {% if skip_lib_copy %}peakrdl_python.{% else %}..{% endif %}lib import Memory
 {% endif %}
 
-
+from {% if skip_lib_copy %}peakrdl_python.{% else %}..{% endif %}lib import NodeArray
 from {% if skip_lib_copy %}peakrdl_python.{% else %}..{% endif %}lib import Field
 from {% if skip_lib_copy %}peakrdl_python.{% else %}..{% endif %}lib import Reg
 {% if not legacy_enum_type %}
@@ -1402,6 +1402,21 @@ class {{fq_block_name}}_single_access({{top_node.inst_name}}_TestCase): # type: 
                 _ = self.dut.{{'.'.join(get_python_path_segments(node))}} # type: ignore[attr-defined]
         {% endfor %}
     {% endif %}
+
+    def test_array_slicing(self) -> None:
+        """
+        Check slicing into array
+        """
+        full_slice:NodeArray
+        {% for node in rolled_owned_array %}
+        with self.subTest(msg='hidden_node: {{'.'.join(node.get_path_segments())}}'):
+            {% if node.parent ==  top_node %}
+            full_slice = self.dut.get_child_by_system_rdl_name('{{node.inst_name}}')
+            {% else %}
+            full_slice = self.dut.{{'.'.join(get_python_path_segments(node.parent))}}.get_child_by_system_rdl_name('{{node.inst_name}}')
+            {% endif %}
+            self.assertCountEqual(iter(full_slice{{full_slice_accessor(node)}}), iter(full_slice))
+        {% endfor %}
 
 
 

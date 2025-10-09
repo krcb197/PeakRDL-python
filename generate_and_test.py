@@ -255,5 +255,3 @@ if __name__ == '__main__':
         if CommandLineArgs.coverage_report:
             cov.stop()
             cov.html_report(directory=str(CommandLineArgs.coverage_report_path / CommandLineArgs.root_node))
-
-
