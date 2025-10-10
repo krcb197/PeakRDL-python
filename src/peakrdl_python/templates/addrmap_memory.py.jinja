@@ -112,16 +112,6 @@ class {{node.python_class_name}}_array({{node.base_class(asyncoutput)}}{% if leg
     """
     __slots__: list[str] = []
 
-    def __init__(self, logger_handle: str, inst_name: str,
-                 parent: {% if asyncoutput %}Async{% endif %}AddressMap,
-                 address: int,
-                 stride: int,
-                 dimensions: tuple[int, ...]):
-
-        super().__init__(logger_handle=logger_handle, inst_name=inst_name,
-                         parent=parent, address=address,
-                         stride=stride, dimensions=dimensions)
-
     @property
     def _element_datatype(self) -> Type[{{node.base_class(asyncoutput)}}{% if legacy_block_access %}Legacy{% endif %}]:
         return {{node.python_class_name}}
