@@ -18,6 +18,129 @@ addrmap different_array_types {
         field {} basicfield_a[31:0];
     } read_write_array_3D[6][7][8];
 
+    reg {
+        default sw = r;
+        default hw = w;
+        field {} basicfield_a[31:0];
+    } read_only_array[4];
+
+    reg {
+        default sw = r;
+        default hw = w;
+        field {} basicfield_a[31:0];
+    } read_only_array_2D[6][7];
+
+    reg {
+        default sw = r;
+        default hw = w;
+        field {} basicfield_a[31:0];
+    } read_only_array_3D[7][8][9];
+
+    reg {
+        default sw = w;
+        default hw = r;
+        field {} basicfield_a[31:0];
+    } write_only_array[5];
+
+    reg {
+        default sw = w;
+        default hw = r;
+        field {} basicfield_a[31:0];
+    } write_only_array_2D[5][6];
+
+    reg {
+        default sw = w;
+        default hw = r;
+        field {} basicfield_a[31:0];
+    } write_only_array_3D[7][8][9];
+
+    external mem {
+        mementries = 2;
+        memwidth = 32;
+        sw = rw;
+
+    } mem_read_write[5];
+
+    external mem {
+        mementries = 2;
+        memwidth = 32;
+        sw = rw;
+
+    } mem_read_write2D[6][7];
+
+    external mem {
+        mementries = 2;
+        memwidth = 32;
+        sw = rw;
+
+    } mem_read_write3D[4][5][6];
+
+    external mem {
+        mementries = 2;
+        memwidth = 32;
+        sw = r;
+
+    } mem_read_only[5];
+
+    external mem {
+        mementries = 2;
+        memwidth = 32;
+        sw = r;
+
+    } mem_read_only_2D[6][7];
+
+    external mem {
+        mementries = 2;
+        memwidth = 32;
+        sw = r;
+
+    } mem_read_only_3D[6][7][8];
+
+    external mem {
+        mementries = 2;
+        memwidth = 32;
+        sw = w;
+
+    } mem_write_only[5];
+
+    external mem {
+        mementries = 2;
+        memwidth = 32;
+        sw = w;
+
+    } mem_write_only_2D[6][7];
+
+    external mem {
+        mementries = 2;
+        memwidth = 32;
+        sw = w;
+
+    } mem_write_only_3D[7][8][9];
+
+    addrmap {
+         reg {
+            default sw = rw;
+            default hw = r;
+            field {} basicfield_a[31:0];
+        } register;
+    } addr_map_array[2];
+
+    addrmap {
+         reg {
+            default sw = rw;
+            default hw = r;
+            field {} basicfield_a[31:0];
+        } register;
+    } addr_map_array_2D[5][6];
+
+    addrmap {
+         reg {
+            default sw = rw;
+            default hw = r;
+            field {} basicfield_a[31:0];
+        } register;
+    } addr_map_array_3D[6][7][8];
+
     regfile {
         reg {
             default sw = rw;
