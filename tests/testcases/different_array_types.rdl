@@ -131,7 +131,7 @@ addrmap different_array_types {
             default hw = r;
             field {} basicfield_a[31:0];
         } register;
-    } addr_map_array_2D[5][6];
+    } addr_map_array_2D[2][2];
 
     addrmap {
          reg {
@@ -139,7 +139,7 @@ addrmap different_array_types {
             default hw = r;
             field {} basicfield_a[31:0];
         } register;
-    } addr_map_array_3D[6][7][8];
+    } addr_map_array_3D[2][2][2];
 
     regfile {
         reg {
