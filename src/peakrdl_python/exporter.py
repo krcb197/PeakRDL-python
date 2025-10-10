@@ -777,6 +777,8 @@ class PythonExporter:
             # global setting, the following code works but it is not elegant
             def add_child_rolled_children(node: AddressableNode) -> list[AddressableNode]:
                 def is_addressible_node(node: Node) -> TypeGuard[AddressableNode]:
+                    if hide_node_func(node):
+                        return False
                     return isinstance(node, AddressableNode)
                 rolled_owned_child = list(filter(is_addressible_node,
                                                  list(node.children(unroll=False) )))
@@ -784,6 +786,8 @@ class PythonExporter:
                 # array. A Register can not contain and array. An AddrMap children
                 # are considered in the next block in the sequence
                 def is_mem_or_regfile(node: Node) -> TypeGuard[Union[MemNode, RegfileNode]]:
+                    if hide_node_func(node):
+                        return False
                     return isinstance(node, (MemNode, RegfileNode))
 
                 rolled_owned_child +=\
