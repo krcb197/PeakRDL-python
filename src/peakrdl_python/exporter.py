@@ -26,7 +26,7 @@ from collections.abc import Callable
 from collections.abc import Iterable
 from functools import partial
 import sys
-from itertools import filterfalse
+from itertools import filterfalse, chain
 
 import jinja2 as jj
 from systemrdl import RDLWalker
@@ -775,33 +775,32 @@ class PythonExporter:
             # the arrays rolled up but parents within the address map e.g. a regfile unrolled
             # I have not found a way to do this with the Walker as the unroll seems to be a
             # global setting, the following code works but it is not elegant
-            rolled_owned_reg: list[RegNode] = list(block.registers(unroll=False))
-            for regfile in owned_elements.reg_files:
-                rolled_owned_reg += list(regfile.registers(unroll=False))
-            for memory in owned_elements.memories:
-                rolled_owned_reg += list(memory.registers(unroll=False))
-
-            def is_node_array(item: AddressableNode) -> bool:
-                return item.is_array and not hide_node_func(item)
-
-            rolled_owned_reg_array = list(filter(is_node_array, rolled_owned_reg))
-
             def add_child_rolled_children(node: AddressableNode) -> list[AddressableNode]:
-                rolled_owned_child = list(filter(lambda x: isinstance(x, AddressableNode),
+                def is_addressible_node(node: Node) -> TypeGuard[AddressableNode]:
+                    return isinstance(node, AddressableNode)
+                rolled_owned_child = list(filter(is_addressible_node,
                                                  list(node.children(unroll=False) )))
                 # only need to walk into RegFiles and Memory as this may contain a further
                 # array. A Register can not contain and array. An AddrMap children
                 # are considered in the next block in the sequence
-                for child_node in filter(lambda x: isinstance(x, (MemNode, RegfileNode)),
-                                         node.children(unroll=True)):
-                    rolled_owned_child += add_child_rolled_children(child_node)
+                def is_mem_or_regfile(node: Node) -> TypeGuard[Union[MemNode, RegfileNode]]:
+                    return isinstance(node, (MemNode, RegfileNode))
+
+                rolled_owned_child +=\
+                    list(chain.from_iterable(
+                        add_child_rolled_children(child_node) #pylint:disable=cell-var-from-loop
+                        for child_node in filter(is_mem_or_regfile, node.children(unroll=True))))
                 return rolled_owned_child
 
             rolled_owned_child = add_child_rolled_children(block)
-
+            def is_node_array(item: AddressableNode) -> bool:
+                return item.is_array and not hide_node_func(item)
             rolled_owned_array = \
                 list(filter(is_node_array, rolled_owned_child))
 
+            def is_reg_node(node: Node) -> TypeGuard[RegNode]:
+                return isinstance(node, RegNode)
+            rolled_owned_reg_array = list(filter(is_reg_node, rolled_owned_array))
 
             fq_block_name = '_'.join(block.get_path_segments(array_suffix='_{index:d}_'))
 
