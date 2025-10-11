@@ -421,10 +421,10 @@ class TestUDPDeclarations(unittest.TestCase):
 
     def test_bad_property_component_declaration(self):
         """
-        Test that the property not being defined as a string causes a problem
+        Test that the property with the correct components causes an error
         """
         system_rdl_code = \
-            'property python_inst_name { type = number; component = signal | reg; };' +\
+            'property python_inst_name { type = string; component = signal | reg; };' +\
             'addrmap name_of_addrmap { ' +\
             'reg {' +\
             '    python_inst_name="overidden_reg_a";'+\
@@ -442,7 +442,10 @@ class TestUDPDeclarations(unittest.TestCase):
         Test that the property setting to a python keyname causes an error
         """
         system_rdl_code = \
-            'property python_inst_name { type = number; component = signal | reg; };' +\
+            'property python_inst_name { ' + \
+            '    type = string; ' + \
+            '    component = addrmap | regfile | reg | field | mem; ' + \
+            '};' + \
             'addrmap name_of_addrmap { ' +\
             'reg {' +\
             '    python_inst_name="in";'+\

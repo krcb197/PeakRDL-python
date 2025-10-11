@@ -26,7 +26,7 @@ from collections.abc import Callable
 from collections.abc import Iterable
 from functools import partial
 import sys
-from itertools import filterfalse
+from itertools import filterfalse, chain
 
 import jinja2 as jj
 from systemrdl import RDLWalker
@@ -45,7 +45,7 @@ from .systemrdl_node_utility_functions import get_reg_writable_fields, \
     get_memory_max_entry_value_hex_string, get_memory_width_bytes, \
     get_field_default_value, get_enum_values, get_properties_to_include, \
     HideNodeCallback, hide_based_on_property,  \
-    is_encoded_field
+    is_encoded_field, full_slice_accessor
 from .unique_component_iterator import UniqueComponents
 from .unique_component_iterator import PeakRDLPythonUniqueRegisterComponents
 from .unique_component_iterator import PeakRDLPythonUniqueMemoryComponents
@@ -775,16 +775,36 @@ class PythonExporter:
             # the arrays rolled up but parents within the address map e.g. a regfile unrolled
             # I have not found a way to do this with the Walker as the unroll seems to be a
             # global setting, the following code works but it is not elegant
-            rolled_owned_reg: list[RegNode] = list(block.registers(unroll=False))
-            for regfile in owned_elements.reg_files:
-                rolled_owned_reg += list(regfile.registers(unroll=False))
-            for memory in owned_elements.memories:
-                rolled_owned_reg += list(memory.registers(unroll=False))
+            def add_child_rolled_children(node: AddressableNode) -> list[AddressableNode]:
+                def is_addressible_node(node: Node) -> TypeGuard[AddressableNode]:
+                    if hide_node_func(node):
+                        return False
+                    return isinstance(node, AddressableNode)
+                rolled_owned_child = list(filter(is_addressible_node,
+                                                 list(node.children(unroll=False) )))
+                # only need to walk into RegFiles and Memory as this may contain a further
+                # array. A Register can not contain and array. An AddrMap children
+                # are considered in the next block in the sequence
+                def is_mem_or_regfile(node: Node) -> TypeGuard[Union[MemNode, RegfileNode]]:
+                    if hide_node_func(node):
+                        return False
+                    return isinstance(node, (MemNode, RegfileNode))
 
-            def is_reg_array(item: RegNode) -> bool:
+                rolled_owned_child +=\
+                    list(chain.from_iterable(
+                        add_child_rolled_children(child_node) #pylint:disable=cell-var-from-loop
+                        for child_node in filter(is_mem_or_regfile, node.children(unroll=True))))
+                return rolled_owned_child
+
+            rolled_owned_child = add_child_rolled_children(block)
+            def is_node_array(item: AddressableNode) -> bool:
                 return item.is_array and not hide_node_func(item)
+            rolled_owned_array = \
+                list(filter(is_node_array, rolled_owned_child))
 
-            rolled_owned_reg_array = list(filter(is_reg_array, rolled_owned_reg))
+            def is_reg_node(node: Node) -> TypeGuard[RegNode]:
+                return isinstance(node, RegNode)
+            rolled_owned_reg_array = list(filter(is_reg_node, rolled_owned_array))
 
             fq_block_name = '_'.join(block.get_path_segments(array_suffix='_{index:d}_'))
 
@@ -794,6 +814,7 @@ class PythonExporter:
                 'fq_block_name': fq_block_name,
                 'owned_elements': owned_elements,
                 'rolled_owned_reg_array': rolled_owned_reg_array,
+                'rolled_owned_array': rolled_owned_array,
                 'systemrdlFieldNode': FieldNode,
                 'systemrdlSignalNode': SignalNode,
                 'systemrdlRegNode': RegNode,
@@ -805,6 +826,7 @@ class PythonExporter:
                 'isinstance': isinstance,
                 'type': type,
                 'str': str,
+                'full_slice_accessor': full_slice_accessor,
                 'get_python_path_segments': get_python_path_segments,
                 'safe_node_name': safe_node_name,
                 'uses_memory': (len(owned_elements.memories) > 0),

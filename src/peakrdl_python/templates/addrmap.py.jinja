@@ -190,18 +190,8 @@ class {{node.python_class_name}}_array({% if asyncoutput %}Async{% endif %}RegFi
     """
     __slots__: list[str] = []
 
-    def __init__(self, logger_handle: str, inst_name: str,
-                 parent: Union[{% if asyncoutput %}Async{% endif %}AddressMap, {% if asyncoutput %}Async{% endif %}RegFile],
-                 address: int,
-                 stride: int,
-                 dimensions: tuple[int, ...]):
-
-        super().__init__(logger_handle=logger_handle, inst_name=inst_name,
-                         parent=parent, address=address,
-                         stride=stride, dimensions=dimensions)
-
     @property
-    def _element_datatype(self) -> Type[Node]:
+    def _element_datatype(self) -> Type[{% if asyncoutput %}Async{% endif %}RegFile]:
         return {{node.python_class_name}}
     {%- endif %}
 {%- endmacro %}
@@ -271,18 +261,8 @@ class {{node.python_class_name}}_array({% if asyncoutput %}Async{% endif %}Addre
     """
     __slots__: list[str] = []
 
-    def __init__(self, logger_handle: str, inst_name: str,
-                 parent: {% if asyncoutput %}Async{% endif %}AddressMap,
-                 address: int,
-                 stride: int,
-                 dimensions: tuple[int, ...]):
-
-        super().__init__(logger_handle=logger_handle, inst_name=inst_name,
-                         parent=parent, address=address,
-                         stride=stride, dimensions=dimensions)
-
     @property
-    def _element_datatype(self) -> Type[Node]:
+    def _element_datatype(self) -> Type[{% if asyncoutput %}Async{% endif %}AddressMap]:
         return {{node.python_class_name}}
     {%- endif %}
 {%- endmacro %}

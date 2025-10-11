@@ -458,3 +458,15 @@ def is_encoded_field(node: FieldNode) -> bool:
     if not isinstance(node, FieldNode):
         raise TypeError(f'This should only be called on an FieldNode, got {type(node)}')
     return 'encode' in node.list_properties()
+
+def full_slice_accessor(node: AddressableNode) -> str:
+    """
+    Provides a node full access slice, for example if the node has 3 dimensions, this function
+    return "[:,:,:]"
+    """
+    if not node.is_array:
+        raise RuntimeError('node is expected to be an array')
+    dimensions = node.array_dimensions
+    if dimensions is None:
+        raise RuntimeError('array node should have dimensions')
+    return '[' + ','.join([':' for _ in range(len(dimensions))]) + ']'

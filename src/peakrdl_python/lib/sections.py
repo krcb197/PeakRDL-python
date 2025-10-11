@@ -398,7 +398,7 @@ class AsyncAddressMap(AsyncSection, ABC):
 
 
 
-class AddressMapArray(NodeArray, ABC):
+class AddressMapArray(NodeArray[AddressMap], ABC):
     """
     base class for a array of address maps
     """
@@ -411,13 +411,19 @@ class AddressMapArray(NodeArray, ABC):
                  parent: AddressMap,
                  address: int,
                  stride: int,
-                 dimensions: tuple[int, ...]):
+                 dimensions: tuple[int, ...],
+                 elements: Optional[tuple[tuple[tuple[int, ...], ...],
+                 tuple[AddressMap, ...]]] = None):
+
+        if not isinstance(parent, AddressMap):
+            raise TypeError(f'parent should be AddressMap got {type(parent)}')
 
         super().__init__(logger_handle=logger_handle, inst_name=inst_name,
-                         parent=parent, address=address, stride=stride, dimensions=dimensions)
+                         parent=parent, address=address, stride=stride,
+                         dimensions=dimensions, elements=elements)
 
 
-class AsyncAddressMapArray(NodeArray, ABC):
+class AsyncAddressMapArray(NodeArray[AsyncAddressMap], ABC):
     """
     base class for a array of address maps
     """
@@ -430,11 +436,15 @@ class AsyncAddressMapArray(NodeArray, ABC):
                  parent: AsyncAddressMap,
                  address: int,
                  stride: int,
-                 dimensions: tuple[int, ...]):
+                 dimensions: tuple[int, ...],
+                 elements: Optional[tuple[tuple[tuple[int, ...], ...],
+                 tuple[AsyncAddressMap, ...]]] = None):
 
+        if not isinstance(parent, AsyncAddressMap):
+            raise TypeError(f'parent should be AsyncAddressMap got {type(parent)}')
         super().__init__(logger_handle=logger_handle, inst_name=inst_name,
                          parent=parent, address=address,
-                         stride=stride, dimensions=dimensions)
+                         stride=stride, dimensions=dimensions, elements=elements)
 
 
 class RegFile(Section, ABC):
@@ -545,7 +555,7 @@ class AsyncRegFile(AsyncSection, ABC):
         raise TypeError(f'unhandled parent callback type: {type(self.parent._callbacks)}')
 
 
-class RegFileArray(NodeArray, ABC):
+class RegFileArray(NodeArray[RegFile], ABC):
     """
     base class for a array of register files
     """
@@ -558,14 +568,19 @@ class RegFileArray(NodeArray, ABC):
                  parent: Union[AddressMap, RegFile],
                  address: int,
                  stride: int,
-                 dimensions: tuple[int, ...]):
+                 dimensions: tuple[int, ...],
+                 elements: Optional[tuple[tuple[tuple[int, ...], ...],
+                 tuple[RegFile, ...]]] = None):
 
+
+        if not isinstance(parent, (AddressMap,RegFile)):
+            raise TypeError(f'parent should be either AddressMap or RegFile got {type(parent)}')
         super().__init__(logger_handle=logger_handle, inst_name=inst_name,
                          parent=parent, address=address,
-                         stride=stride, dimensions=dimensions)
+                         stride=stride, dimensions=dimensions, elements=elements)
 
 
-class AsyncRegFileArray(NodeArray, ABC):
+class AsyncRegFileArray(NodeArray[AsyncRegFile], ABC):
     """
     base class for a array of register files
     """
@@ -578,8 +593,14 @@ class AsyncRegFileArray(NodeArray, ABC):
                  parent: Union[AsyncAddressMap, AsyncRegFile],
                  address: int,
                  stride: int,
-                 dimensions: tuple[int, ...]):
+                 dimensions: tuple[int, ...],
+                 elements: Optional[tuple[tuple[tuple[int, ...], ...],
+                 tuple[AsyncRegFile, ...]]] = None):
+
+        if not isinstance(parent, (AsyncAddressMap,AsyncRegFile)):
+            raise TypeError(f'parent should be either AsyncAddressMap or AsyncRegFile '
+                            f'got {type(parent)}')
 
         super().__init__(logger_handle=logger_handle, inst_name=inst_name,
                          parent=parent, address=address,
-                         stride=stride, dimensions=dimensions)
+                         stride=stride, dimensions=dimensions, elements=elements)

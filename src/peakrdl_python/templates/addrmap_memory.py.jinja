@@ -35,13 +35,13 @@ from {% if skip_lib_copy %}peakrdl_python.{% else %}...{% endif %}lib import UDP
 from {% if skip_lib_copy %}peakrdl_python.{% else %}...{% endif %}lib import AsyncMemory, AsyncMemoryArray
 from {% if skip_lib_copy %}peakrdl_python.{% else %}...{% endif %}lib import AsyncAddressMap
 from {% if skip_lib_copy %}peakrdl_python.{% else %}...{% endif %}lib import MemoryAsyncReadOnly{% if legacy_block_access %}Legacy{% endif %}, MemoryAsyncWriteOnly{% if legacy_block_access %}Legacy{% endif %}, MemoryAsyncReadWrite{% if legacy_block_access %}Legacy{% endif %}
-from {% if skip_lib_copy %}peakrdl_python.{% else %}...{% endif %}lib import MemoryAsyncReadOnlyArray, MemoryAsyncWriteOnlyArray, MemoryAsyncReadWriteArray
+from {% if skip_lib_copy %}peakrdl_python.{% else %}...{% endif %}lib import MemoryAsyncReadOnly{% if legacy_block_access %}Legacy{% endif %}Array, MemoryAsyncWriteOnly{% if legacy_block_access %}Legacy{% endif %}Array, MemoryAsyncReadWrite{% if legacy_block_access %}Legacy{% endif %}Array
 from {% if skip_lib_copy %}peakrdl_python.{% else %}...{% endif %}lib import AsyncReg, AsyncRegArray
 {%- else -%}
 from {% if skip_lib_copy %}peakrdl_python.{% else %}...{% endif %}lib import Memory, MemoryArray
 from {% if skip_lib_copy %}peakrdl_python.{% else %}...{% endif %}lib import AddressMap
 from {% if skip_lib_copy %}peakrdl_python.{% else %}...{% endif %}lib import MemoryReadOnly{% if legacy_block_access %}Legacy{% endif %}, MemoryWriteOnly{% if legacy_block_access %}Legacy{% endif %}, MemoryReadWrite{% if legacy_block_access %}Legacy{% endif %}
-from {% if skip_lib_copy %}peakrdl_python.{% else %}...{% endif %}lib import MemoryReadOnlyArray, MemoryWriteOnlyArray, MemoryReadWriteArray
+from {% if skip_lib_copy %}peakrdl_python.{% else %}...{% endif %}lib import MemoryReadOnly{% if legacy_block_access %}Legacy{% endif %}Array, MemoryWriteOnly{% if legacy_block_access %}Legacy{% endif %}Array, MemoryReadWrite{% if legacy_block_access %}Legacy{% endif %}Array
 from {% if skip_lib_copy %}peakrdl_python.{% else %}...{% endif %}lib import Reg, RegArray
 {%- endif %}
 
@@ -106,24 +106,14 @@ class {{node.python_class_name}}({{node.base_class(asyncoutput)}}{% if legacy_bl
     {{ universal_properties(node.instance) }}
 
     {%- if node.instance.is_array %}
-class {{node.python_class_name}}_array({{node.base_class(asyncoutput)}}Array):
+class {{node.python_class_name}}_array({{node.base_class(asyncoutput)}}{% if legacy_block_access %}Legacy{% endif %}Array):
     """
     Class to represent a memory array in the register model
     """
     __slots__: list[str] = []
 
-    def __init__(self, logger_handle: str, inst_name: str,
-                 parent: {% if asyncoutput %}Async{% endif %}AddressMap,
-                 address: int,
-                 stride: int,
-                 dimensions: tuple[int, ...]):
-
-        super().__init__(logger_handle=logger_handle, inst_name=inst_name,
-                         parent=parent, address=address,
-                         stride=stride, dimensions=dimensions)
-
     @property
-    def _element_datatype(self) -> Type[Node]:
+    def _element_datatype(self) -> Type[{{node.base_class(asyncoutput)}}{% if legacy_block_access %}Legacy{% endif %}]:
         return {{node.python_class_name}}
 
     {{ universal_properties(node.instance) }}

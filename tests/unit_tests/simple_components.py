@@ -328,6 +328,55 @@ class ReadWriteRegisterArrayToTest(RegReadWriteArray):
     def _element_datatype(self) -> type[Node]:
         return ReadWriteRegisterToTest
 
+class ReadOnlyMemoryToTest(MemoryReadOnly):
+    """
+    Class to represent a register in the register model
+    """
+    __slots__: list[str] = []
+    DEFINED_ENTRIES = 6
+
+    # pylint: disable=duplicate-code,too-many-arguments
+    def __init__(self, *,
+                 address: int,
+                 logger_handle: str,
+                 inst_name: str,
+                 parent: AddressMap):
+        super().__init__(address=address,
+                         entries=self.DEFINED_ENTRIES,
+                         accesswidth=32,
+                         width=32,
+                         logger_handle=logger_handle,
+                         inst_name=inst_name,
+                         parent=parent)
+
+    @property
+    def systemrdl_python_child_name_map(self) -> dict[str, str]:
+        """
+        In some cases systemRDL names need to be converted make them python safe, this dictionary
+        is used to map the original systemRDL names to the names of the python attributes of this
+        class
+
+        Returns: dictionary whose key is the systemRDL names and value it the property name
+        """
+        return {
+
+        }
+
+    def __iter__(self) -> Iterator[Union[Reg, RegArray]]:
+        # Empty generator in case there are no children of this type
+        yield None
+
+class ReadOnlyMemoryArrayToTest(MemoryReadOnlyArray):
+    """
+    Class to represent a register array in the register model
+    """
+    __slots__: list[str] = []
+    DEFINED_ELEMENT_ENTRIES = ReadOnlyMemoryToTest.DEFINED_ENTRIES
+
+    @property
+    def _element_datatype(self) -> type[Node]:
+        return ReadOnlyMemoryToTest
+
 
 class CallBackTestWrapper(unittest.TestCase, ABC):
     """

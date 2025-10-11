@@ -180,7 +180,7 @@ class {{node.python_class_name}}_array({{node.base_class(asyncoutput)}}Array):
         return {{node.accesswidth}}
 
     @property
-    def _element_datatype(self) -> Type[Node]:
+    def _element_datatype(self) -> Type[{{node.base_class(asyncoutput)}}]:
         return {{node.python_class_name}}
 
     {{ universal_properties(node.instance) }}
