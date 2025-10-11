@@ -684,7 +684,7 @@ class PythonExporter:
         }
 
         module_name = top_block.inst_name
-        self.__stream_jinja_template(template_name="sim_addrmap.py.jinja",
+        self.__stream_jinja_template(template_name="addrmap_simulation.py.jinja",
                                      target_package=package.sim,
                                      target_name=module_name + '.py',
                                      template_context=context)
