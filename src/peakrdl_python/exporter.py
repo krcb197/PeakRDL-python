@@ -193,6 +193,7 @@ class PythonExporter:
                            hide_node_func: HideNodeCallback,
                            legacy_enum_type: bool,
                            skip_systemrdl_name_and_desc_properties: bool,
+                           skip_systemrdl_name_and_desc_in_docstring: bool,
                            register_class_per_generated_file: int,
                            field_class_per_generated_file: int,
                            enum_field_class_per_generated_file: int,
@@ -240,7 +241,9 @@ class PythonExporter:
             'dependent_memories': unique_component_walker.memory_nodes(),
             'unique_enums': self._get_dependent_enum(unique_component_walker),
             'get_enum_values': get_enum_values,
-            'get_table_block': get_table_block,
+            'get_table_block': partial(get_table_block,
+                                       skip_systemrdl_name_and_desc_in_docstring=
+                                          skip_systemrdl_name_and_desc_in_docstring),
             'raise_template_error': self._raise_template_error,
             'safe_node_name': safe_node_name,
             'skip_lib_copy': skip_lib_copy,
@@ -280,6 +283,8 @@ class PythonExporter:
                 hide_node_func=hide_node_func,
                 legacy_enum_type=legacy_enum_type,
                 skip_systemrdl_name_and_desc_properties=skip_systemrdl_name_and_desc_properties,
+                skip_systemrdl_name_and_desc_in_docstring=
+                   skip_systemrdl_name_and_desc_in_docstring,
                 unique_component_walker=unique_component_walker,
                 visible_nonsignal_node=visible_nonsignal_node,
                 memory_class_per_generated_file=memory_class_per_generated_file,
@@ -294,6 +299,7 @@ class PythonExporter:
             hide_node_func=hide_node_func,
             legacy_enum_type=legacy_enum_type,
             skip_systemrdl_name_and_desc_properties=skip_systemrdl_name_and_desc_properties,
+            skip_systemrdl_name_and_desc_in_docstring=skip_systemrdl_name_and_desc_in_docstring,
             unique_component_walker=unique_component_walker,
             visible_nonsignal_node=visible_nonsignal_node,
             register_class_per_generated_file=register_class_per_generated_file,
@@ -306,6 +312,7 @@ class PythonExporter:
             asyncoutput=asyncoutput,
             legacy_enum_type=legacy_enum_type,
             skip_systemrdl_name_and_desc_properties=skip_systemrdl_name_and_desc_properties,
+            skip_systemrdl_name_and_desc_in_docstring=skip_systemrdl_name_and_desc_in_docstring,
             unique_component_walker=unique_component_walker,
             field_class_per_generated_file=field_class_per_generated_file)
 
@@ -318,6 +325,8 @@ class PythonExporter:
                 skip_lib_copy=skip_lib_copy,
                 legacy_enum_type=legacy_enum_type,
                 skip_systemrdl_name_and_desc_properties=skip_systemrdl_name_and_desc_properties,
+                skip_systemrdl_name_and_desc_in_docstring=
+                   skip_systemrdl_name_and_desc_in_docstring,
                 unique_component_walker=unique_component_walker,
                 enum_field_class_per_generated_file=enum_field_class_per_generated_file)
 
@@ -345,6 +354,7 @@ class PythonExporter:
                                      hide_node_func: HideNodeCallback,
                                      legacy_enum_type: bool,
                                      skip_systemrdl_name_and_desc_properties: bool,
+                                     skip_systemrdl_name_and_desc_in_docstring: bool,
                                      unique_component_walker: UniqueComponents,
                                      visible_nonsignal_node: Callable[[Node], int],
                                      register_class_per_generated_file: int) -> None:
@@ -412,7 +422,9 @@ class PythonExporter:
                     'unique_registers': unique_register_subset,
                     'unique_property_enums':
                         self._get_dependent_property_enum(unique_component_walker),
-                    'get_table_block': get_table_block,
+                    'get_table_block': partial(get_table_block,
+                                               skip_systemrdl_name_and_desc_in_docstring=
+                                               skip_systemrdl_name_and_desc_in_docstring),
                     'get_fully_qualified_type_name': partial(
                         unique_component_walker.python_class_name,
                         async_library_classes=asyncoutput),
@@ -452,6 +464,7 @@ class PythonExporter:
                                      hide_node_func: HideNodeCallback,
                                      legacy_enum_type: bool,
                                      skip_systemrdl_name_and_desc_properties: bool,
+                                    skip_systemrdl_name_and_desc_in_docstring: bool,
                                      unique_component_walker: UniqueComponents,
                                      visible_nonsignal_node: Callable[[Node], int],
                                      memory_class_per_generated_file: int) -> None:
@@ -508,7 +521,9 @@ class PythonExporter:
                     'unique_memories': unique_memory_subset,
                     'unique_property_enums':
                         self._get_dependent_property_enum(unique_component_walker),
-                    'get_table_block': get_table_block,
+                    'get_table_block': partial(get_table_block,
+                                               skip_systemrdl_name_and_desc_in_docstring=
+                                               skip_systemrdl_name_and_desc_in_docstring),
                     'get_fully_qualified_type_name': partial(
                         unique_component_walker.python_class_name,
                         async_library_classes=asyncoutput),
@@ -545,6 +560,7 @@ class PythonExporter:
                                   asyncoutput: bool,
                                   legacy_enum_type: bool,
                                   skip_systemrdl_name_and_desc_properties: bool,
+                                  skip_systemrdl_name_and_desc_in_docstring: bool,
                                   unique_component_walker: UniqueComponents,
                                   field_class_per_generated_file: int
                                   ) -> None:
@@ -577,7 +593,9 @@ class PythonExporter:
                     'unique_fields': unique_fields_subset,
                     'unique_property_enums':
                         self._get_dependent_property_enum(unique_component_walker),
-                    'get_table_block': get_table_block,
+                    'get_table_block': partial(get_table_block,
+                                               skip_systemrdl_name_and_desc_in_docstring=
+                                               skip_systemrdl_name_and_desc_in_docstring),
                     'skip_lib_copy': skip_lib_copy,
                     'uses_enum': uses_enum(top_block),
                     'legacy_enum_type': legacy_enum_type,
@@ -602,6 +620,7 @@ class PythonExporter:
                                        skip_lib_copy: bool,
                                        legacy_enum_type: bool,
                                        skip_systemrdl_name_and_desc_properties: bool,
+                                       skip_systemrdl_name_and_desc_in_docstring: bool,
                                        unique_component_walker: UniqueComponents,
                                        enum_field_class_per_generated_file: int) -> None:
         """
@@ -891,6 +910,7 @@ class PythonExporter:
                hidden_inst_name_regex: Optional[str] = None,
                legacy_enum_type: bool = True,
                skip_systemrdl_name_and_desc_properties: bool = False,
+               skip_systemrdl_name_and_desc_in_docstring: bool = False,
                register_class_per_generated_file: int =
                    DEFAULT_REGISTER_CLASS_PER_GENERATED_FILE,
                field_class_per_generated_file: int =
@@ -943,6 +963,16 @@ class PythonExporter:
                                                              desc as properties of the built
                                                              python. Setting this option to
                                                              ``True`` will exclude them.
+            skip_systemrdl_name_and_desc_in_docstring (bool) : version 2.0 introduced the option
+                                                               skip the systemRDL name and desc as
+                                                               properties of the built python.
+                                                               Including them help developers use
+                                                               the package and allows
+                                                               autogenerated document generation
+                                                               for the python module. However it
+                                                               also increases file sizes. Setting
+                                                               this option to ``True`` will exclude
+                                                               them.
             register_class_per_generated_file : Number of register class definitions to put in
                                                 each python module of the generated code.
                                                 Make sure this is set to ensure the file does not
@@ -1019,6 +1049,7 @@ class PythonExporter:
             hide_node_func=hide_node_func,
             legacy_enum_type=legacy_enum_type,
             skip_systemrdl_name_and_desc_properties=skip_systemrdl_name_and_desc_properties,
+            skip_systemrdl_name_and_desc_in_docstring=skip_systemrdl_name_and_desc_in_docstring,
             register_class_per_generated_file=register_class_per_generated_file,
             field_class_per_generated_file=field_class_per_generated_file,
             enum_field_class_per_generated_file=enum_field_class_per_generated_file,

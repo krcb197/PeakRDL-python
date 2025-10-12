@@ -187,6 +187,8 @@ class {{node.python_class_name}}({% if asyncoutput %}Async{% endif %}RegFile):
 class {{node.python_class_name}}_array({% if asyncoutput %}Async{% endif %}RegFileArray):
     """
     Class to represent a regfile array in the register model
+
+    {{get_table_block(node.instance) | indent}}
     """
     __slots__: list[str] = []
 
@@ -258,6 +260,8 @@ class {{node.python_class_name}}({% if asyncoutput %}Async{% endif %}AddressMap)
 class {{node.python_class_name}}_array({% if asyncoutput %}Async{% endif %}AddressMapArray):
     """
     Class to represent a addrmap array in the register model
+
+    {{get_table_block(node.instance) | indent}}
     """
     __slots__: list[str] = []
 

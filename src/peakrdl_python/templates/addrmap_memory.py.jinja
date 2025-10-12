@@ -109,6 +109,8 @@ class {{node.python_class_name}}({{node.base_class(asyncoutput)}}{% if legacy_bl
 class {{node.python_class_name}}_array({{node.base_class(asyncoutput)}}{% if legacy_block_access %}Legacy{% endif %}Array):
     """
     Class to represent a memory array in the register model
+
+    {{get_table_block(node.instance) | indent}}
     """
     __slots__: list[str] = []
 

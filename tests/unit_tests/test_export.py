@@ -28,6 +28,7 @@ import re
 from itertools import chain, permutations, product
 from pathlib import Path
 from array import array as Array
+import inspect
 
 from contextlib import contextmanager
 
@@ -40,6 +41,7 @@ from peakrdl_python import compiler_with_udp_registers
 from peakrdl_python.__about__ import __version__ as peakrdl_version
 from peakrdl_python.__peakrdl__ import Exporter as PeakRDLPythonExported
 from peakrdl_python.lib.utility_functions import get_array_typecode
+from peakrdl_python.lib import Node, Field
 
 if sys.version_info[0:2] < (3, 11):
     # Prior to py3.11, tomllib is a 3rd party package
@@ -739,6 +741,128 @@ class TestCallbackAndLegacyTemplates(unittest.TestCase):
                                                     [0, 0, 0, 0]))
                 else:
                     dut.simple_memory_a.write(0, [0, 0, 0, 0])
+
+class TestNameDescInDocString(unittest.TestCase):
+    """
+    Test class for the inclusion of the name and desc system rdl parameters in the docstring.
+    without them there is greater opportunities for deduplication. In order for this test to
+    work it is necessary to also skip the name and description properties
+    """
+
+    test_case_path = test_cases
+    test_case_name = 'name_desc_option_deduplicate.rdl'
+    test_case_top_level = 'name_desc_option_deduplicate'
+
+    @contextmanager
+    def build_python_wrappers_and_make_instance(self, skip_name_desc_in_docstring):
+        """
+        Context manager to build the python wrappers for a value of show_hidden, then import them
+        and clean up afterwards
+        """
+
+        # compile the code for the test
+        rdlc = compiler_with_udp_registers()
+        rdlc.compile_file(os.path.join(self.test_case_path, self.test_case_name))
+        spec = rdlc.elaborate(top_def_name=self.test_case_top_level).top
+
+        exporter = PythonExporter()
+
+        with tempfile.TemporaryDirectory() as tmpdirname:
+            # the temporary package, within which the real package is placed is needed to ensure
+            # that there are two separate entries in the python import cache and this avoids the
+            # test failing for strange reasons
+            if skip_name_desc_in_docstring:
+                temp_package_name = 'name_desc_excluded'
+            else:
+                temp_package_name = 'name_desc_included'
+            fq_package_path = os.path.join(tmpdirname, temp_package_name)
+            os.makedirs(fq_package_path)
+            with open(os.path.join(fq_package_path, '__init__.py'), 'w', encoding='utf-8') as fid:
+                fid.write('pass\n')
+
+            exporter.export(node=spec,
+                            path=fq_package_path,
+                            asyncoutput=False,
+                            delete_existing_package_content=False,
+                            skip_library_copy=False,
+                            skip_test_case_generation=True,
+                            legacy_block_access=False,
+                            skip_systemrdl_name_and_desc_properties=True,
+                            skip_systemrdl_name_and_desc_in_docstring=skip_name_desc_in_docstring)
+
+            # add the temp directory to the python path so that it can be imported from
+            sys.path.append(tmpdirname)
+
+            reg_model_module = __import__(
+                temp_package_name + '.' + self.test_case_top_level + '.reg_model',
+                globals(), locals(), ['RegModel'], 0)
+            dut_cls = getattr(reg_model_module, 'RegModel')
+            peakrdl_python_package = __import__(
+                temp_package_name + '.' + self.test_case_top_level + '.lib',
+                globals(), locals(), ['CallbackSet'], 0)
+            callbackset_cls = getattr(peakrdl_python_package, 'NormalCallbackSet')
+            dummy_operations_module = __import__(temp_package_name + '.' +
+                                                 self.test_case_top_level +
+                                                 '.sim_lib.dummy_callbacks',
+                                    globals(), locals(), ['dummy_read', 'dummy_write'], 0)
+            dummy_read = getattr(dummy_operations_module, 'dummy_read')
+
+            # no read/write are attempted so this can yield out a version with no callbacks
+            # configured
+            yield dut_cls(callbacks=callbackset_cls(read_callback=dummy_read))
+
+            sys.path.remove(tmpdirname)
+
+    def test_included(self):
+        """
+        Test to make sure all the nodes have a name and description doc string as expected
+        """
+        def check_item(node: Node, force_alt: bool=False):
+            doc_string = inspect.getdoc(node)
+            if node.inst_name.endswith('[0]') or node.inst_name.endswith('[1]'):
+                reduced_inst_name = node.inst_name[:-3]
+            else:
+                reduced_inst_name = node.inst_name
+            if node.inst_name.startswith('alt_') or force_alt:
+                self.assertNotIn(f'name - {reduced_inst_name}', doc_string, f'name - {reduced_inst_name} found in {node.full_inst_name}')
+                self.assertNotIn(f'desc - {reduced_inst_name}', doc_string, f'desc - {reduced_inst_name} found in {node.full_inst_name}')
+
+                if 'field_a' not in node.inst_name:
+                    for child_node in node:
+                        check_item(child_node, True)
+
+            else:
+                self.assertIn(f'name - {reduced_inst_name}', doc_string, f'name - {reduced_inst_name} not found in {node.full_inst_name}')
+                self.assertIn(f'desc - {reduced_inst_name}', doc_string, f'desc - {reduced_inst_name} not found in {node.full_inst_name}')
+
+                if 'field_a' not in node.inst_name:
+                    for child_node in node:
+                        check_item(child_node)
+
+        with self.build_python_wrappers_and_make_instance(skip_name_desc_in_docstring=False) as dut:
+            for child_node in dut:
+                check_item(child_node)
+
+    def test_skipped(self):
+        """
+        Test to make sure all the nodes have a name and description excluded from the docsting
+        """
+        def check_item(node: Node):
+            doc_string = inspect.getdoc(node)
+            if node.inst_name.endswith('[0]') or node.inst_name.endswith('[1]'):
+                reduced_inst_name = node.inst_name[:-3]
+            else:
+                reduced_inst_name = node.inst_name
+            self.assertNotIn(f'name - {reduced_inst_name}', doc_string, f'name - {reduced_inst_name} found in {node.full_inst_name}')
+            self.assertNotIn(f'desc - {reduced_inst_name}', doc_string, f'desc - {reduced_inst_name} found in {node.full_inst_name}')
+
+            if 'field_a' not in node.inst_name:
+                for child_node in node:
+                    check_item(child_node)
+
+        with self.build_python_wrappers_and_make_instance(skip_name_desc_in_docstring=True) as dut:
+            for child_node in dut:
+                check_item(child_node)
 
 
 if __name__ == '__main__':

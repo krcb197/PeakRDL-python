@@ -60,7 +60,7 @@ def hide_based_on_property(node: Node, show_hidden: bool) -> bool:
     return node.get_property('python_hide', default=False) and not show_hidden
 
 
-def get_table_block(node: Node) -> str:
+def get_table_block(  node: Node, skip_systemrdl_name_and_desc_in_docstring:bool) -> str:
     """
     Converts the documentation for a systemRDL node into a nicely formatted table that can be
     inserted into the docstring of the class
@@ -71,6 +71,9 @@ def get_table_block(node: Node) -> str:
     Returns:
         A string that represents a sphinx table
     """
+    if skip_systemrdl_name_and_desc_in_docstring:
+        return ''
+
     row_break = '+--------------+' \
                 '-------------------------------------------------------------------------+'
     if ('name' in node.list_properties()) or ('desc' in node.list_properties()):
