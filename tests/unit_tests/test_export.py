@@ -41,7 +41,7 @@ from peakrdl_python import compiler_with_udp_registers
 from peakrdl_python.__about__ import __version__ as peakrdl_version
 from peakrdl_python.__peakrdl__ import Exporter as PeakRDLPythonExported
 from peakrdl_python.lib.utility_functions import get_array_typecode
-from peakrdl_python.lib import Node, FieldReadWrite, RegFile, AddressMap, Reg, RegArray, NodeArray
+from peakrdl_python.lib import Node, FieldReadWrite, NodeArray
 from peakrdl_python.lib import NormalCallbackSet
 from peakrdl_python.sim_lib.dummy_callbacks import dummy_read
 
@@ -787,8 +787,8 @@ class TestNameDescInDocString(unittest.TestCase):
                             path=fq_package_path,
                             asyncoutput=False,
                             delete_existing_package_content=False,
-                            skip_library_copy=True,
                             skip_test_case_generation=True,
+                            skip_library_copy=True,
                             legacy_block_access=False,
                             skip_systemrdl_name_and_desc_properties=True,
                             skip_systemrdl_name_and_desc_in_docstring=skip_name_desc_in_docstring)
@@ -818,16 +818,20 @@ class TestNameDescInDocString(unittest.TestCase):
             else:
                 reduced_inst_name = node.inst_name
             if node.inst_name.startswith('alt_') or force_alt:
-                self.assertNotIn(f'name - {reduced_inst_name}', doc_string, f'name - {reduced_inst_name} found in {node.full_inst_name}')
-                self.assertNotIn(f'desc - {reduced_inst_name}', doc_string, f'desc - {reduced_inst_name} found in {node.full_inst_name}')
+                self.assertNotIn(f'name - {reduced_inst_name}', doc_string,
+                                 f'name - {reduced_inst_name} found in {node.full_inst_name}')
+                self.assertNotIn(f'desc - {reduced_inst_name}', doc_string,
+                                 f'desc - {reduced_inst_name} found in {node.full_inst_name}')
 
                 if 'field_a' not in node.inst_name:
                     for child_node in node:
                         check_item(child_node, True)
 
             else:
-                self.assertIn(f'name - {reduced_inst_name}', doc_string, f'name - {reduced_inst_name} not found in {node.full_inst_name}')
-                self.assertIn(f'desc - {reduced_inst_name}', doc_string, f'desc - {reduced_inst_name} not found in {node.full_inst_name}')
+                self.assertIn(f'name - {reduced_inst_name}', doc_string,
+                              f'name - {reduced_inst_name} not found in {node.full_inst_name}')
+                self.assertIn(f'desc - {reduced_inst_name}', doc_string,
+                              f'desc - {reduced_inst_name} not found in {node.full_inst_name}')
 
                 if 'field_a' not in node.inst_name:
                     for child_node in node:
@@ -840,6 +844,9 @@ class TestNameDescInDocString(unittest.TestCase):
     if sys.version_info < (3, 14):
         # python 3.14 introduced assertIsSubclass, it was not present before then so we have to
         # use a manual version
+
+        # pylint: disable=missing-function-docstring,invalid-name
+
         def assertIsSubclass(self, cls, class_or_tuple, msg=None):
             if not issubclass(cls, class_or_tuple):
                 standard_msg = f"{cls.__name__} is not a subclass of {class_or_tuple}"
@@ -860,8 +867,10 @@ class TestNameDescInDocString(unittest.TestCase):
                 reduced_inst_name = node.inst_name[:-3]
             else:
                 reduced_inst_name = node.inst_name
-            self.assertNotIn(f'name - {reduced_inst_name}', doc_string, f'name - {reduced_inst_name} found in {node.full_inst_name}')
-            self.assertNotIn(f'desc - {reduced_inst_name}', doc_string, f'desc - {reduced_inst_name} found in {node.full_inst_name}')
+            self.assertNotIn(f'name - {reduced_inst_name}', doc_string,
+                             f'name - {reduced_inst_name} found in {node.full_inst_name}')
+            self.assertNotIn(f'desc - {reduced_inst_name}', doc_string,
+                             f'desc - {reduced_inst_name} found in {node.full_inst_name}')
 
             for inst_name_pattern, list_of_types in type_dict.items():
                 if inst_name_pattern in node.inst_name:
@@ -890,7 +899,7 @@ class TestNameDescInDocString(unittest.TestCase):
             # with the docstring suppressed, the _alt versions should map to the same classes
             self.assertEqual(len(type_dict['field_a']), 1)
             self.assertIs(type_dict['field_a'][0], FieldReadWrite)
-            for inst_name_pattern, types in filter(lambda kv: kv[0] != 'field_a', type_dict.items()):
+            for inst_name_pattern, types in filter(lambda kv: kv[0]!='field_a',type_dict.items()):
                 if inst_name_pattern.endswith('_a'):
                     # all the xxxx_a should be a single instance
                     self.assertEqual(len(types), 1)
