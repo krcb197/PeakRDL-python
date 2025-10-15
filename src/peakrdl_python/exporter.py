@@ -207,8 +207,14 @@ class PythonExporter:
                         count +=1
             return count
 
-        unique_component_walker = UniqueComponents(hide_node_callback=hide_node_func,
-                                                   udp_to_include=udp_to_include)
+        unique_component_walker = UniqueComponents(
+            hide_node_callback=hide_node_func,
+            udp_to_include=udp_to_include,
+            # if the name and desc are skipped in both the property and docstring, it can be
+            # skipped in the unique component generation process
+            include_name_and_desc=not all((skip_systemrdl_name_and_desc_properties,
+                                          skip_systemrdl_name_and_desc_in_docstring))
+        )
         RDLWalker(unroll=True).walk(top_block.parent, unique_component_walker,
                                     skip_top=False)
 

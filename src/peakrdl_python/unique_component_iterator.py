@@ -223,12 +223,15 @@ class UniqueComponents(RDLListener):
     non-hidden nodes
     """
 
-    def __init__(self, hide_node_callback: HideNodeCallback,
+    def __init__(self,
+                 hide_node_callback: HideNodeCallback,
+                 include_name_and_desc: bool,
                  udp_to_include: Optional[list[str]]) -> None:
         super().__init__()
 
         self.__hide_node_callback = hide_node_callback
         self.__udp_to_include = udp_to_include
+        self.__include_name_and_desc = include_name_and_desc
         self.nodes: dict[int, PeakRDLPythonUniqueComponents] = {}
         self.__name_hash_cache: dict[str, Optional[int]] = {}
         self.__logger = getLogger('peakrdl_python.UniqueComponents')
@@ -246,6 +249,10 @@ class UniqueComponents(RDLListener):
         List of user defined properties to include
         """
         return self.__udp_to_include
+
+    @property
+    def include_name_and_desc(self) -> bool:
+        return self.__include_name_and_desc
 
     def __test_and_add(self, potential_unique_node:PeakRDLPythonUniqueComponents) -> bool:
         """
@@ -378,7 +385,7 @@ class UniqueComponents(RDLListener):
 
         nodal_hash_result = node_hash(node=node, udp_to_include=self.udp_to_include,
                                       hide_node_callback=self.hide_node_callback,
-                                      include_name_and_desc=True)
+                                      include_name_and_desc=self.include_name_and_desc)
         self.__name_hash_cache[full_instance_name] = nodal_hash_result
         return nodal_hash_result
 

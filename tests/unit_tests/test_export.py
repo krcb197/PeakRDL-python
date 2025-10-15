@@ -41,7 +41,10 @@ from peakrdl_python import compiler_with_udp_registers
 from peakrdl_python.__about__ import __version__ as peakrdl_version
 from peakrdl_python.__peakrdl__ import Exporter as PeakRDLPythonExported
 from peakrdl_python.lib.utility_functions import get_array_typecode
-from peakrdl_python.lib import Node, Field
+from peakrdl_python.lib import Node, FieldReadWrite, RegFile, AddressMap, Reg, RegArray, NodeArray
+from peakrdl_python.lib import NormalCallbackSet
+from peakrdl_python.sim_lib.dummy_callbacks import dummy_read
+
 
 if sys.version_info[0:2] < (3, 11):
     # Prior to py3.11, tomllib is a 3rd party package
@@ -784,7 +787,7 @@ class TestNameDescInDocString(unittest.TestCase):
                             path=fq_package_path,
                             asyncoutput=False,
                             delete_existing_package_content=False,
-                            skip_library_copy=False,
+                            skip_library_copy=True,
                             skip_test_case_generation=True,
                             legacy_block_access=False,
                             skip_systemrdl_name_and_desc_properties=True,
@@ -797,19 +800,10 @@ class TestNameDescInDocString(unittest.TestCase):
                 temp_package_name + '.' + self.test_case_top_level + '.reg_model',
                 globals(), locals(), ['RegModel'], 0)
             dut_cls = getattr(reg_model_module, 'RegModel')
-            peakrdl_python_package = __import__(
-                temp_package_name + '.' + self.test_case_top_level + '.lib',
-                globals(), locals(), ['CallbackSet'], 0)
-            callbackset_cls = getattr(peakrdl_python_package, 'NormalCallbackSet')
-            dummy_operations_module = __import__(temp_package_name + '.' +
-                                                 self.test_case_top_level +
-                                                 '.sim_lib.dummy_callbacks',
-                                    globals(), locals(), ['dummy_read', 'dummy_write'], 0)
-            dummy_read = getattr(dummy_operations_module, 'dummy_read')
 
             # no read/write are attempted so this can yield out a version with no callbacks
             # configured
-            yield dut_cls(callbacks=callbackset_cls(read_callback=dummy_read))
+            yield dut_cls(callbacks=NormalCallbackSet(read_callback=dummy_read))
 
             sys.path.remove(tmpdirname)
 
@@ -843,11 +837,24 @@ class TestNameDescInDocString(unittest.TestCase):
             for child_node in dut:
                 check_item(child_node)
 
+    if sys.version_info < (3, 14):
+        # python 3.14 introduced assertIsSubclass, it was not present before then so we have to
+        # use a manual version
+        def assertIsSubclass(self, cls, class_or_tuple, msg=None):
+            if not issubclass(cls, class_or_tuple):
+                standard_msg = f"{cls.__name__} is not a subclass of {class_or_tuple}"
+                self.fail(self._formatMessage(msg, standard_msg))
+
+        def assertIsNotSubclass(self, cls, class_or_tuple, msg=None):
+            if issubclass(cls, class_or_tuple):
+                standard_msg = f"{cls.__name__} is a subclass of {class_or_tuple}"
+                self.fail(self._formatMessage(msg, standard_msg))
+
     def test_skipped(self):
         """
-        Test to make sure all the nodes have a name and description excluded from the docsting
+        Test to make sure all the nodes have a name and description excluded from the docstring
         """
-        def check_item(node: Node):
+        def check_item(node: Node, type_dict:dict[str, list[type[Node]]]):
             doc_string = inspect.getdoc(node)
             if node.inst_name.endswith('[0]') or node.inst_name.endswith('[1]'):
                 reduced_inst_name = node.inst_name[:-3]
@@ -856,13 +863,42 @@ class TestNameDescInDocString(unittest.TestCase):
             self.assertNotIn(f'name - {reduced_inst_name}', doc_string, f'name - {reduced_inst_name} found in {node.full_inst_name}')
             self.assertNotIn(f'desc - {reduced_inst_name}', doc_string, f'desc - {reduced_inst_name} found in {node.full_inst_name}')
 
+            for inst_name_pattern, list_of_types in type_dict.items():
+                if inst_name_pattern in node.inst_name:
+                    if type(node) not in list_of_types:
+                        list_of_types.append(type(node))
+
             if 'field_a' not in node.inst_name:
                 for child_node in node:
-                    check_item(child_node)
+                    check_item(child_node, type_dict)
 
         with self.build_python_wrappers_and_make_instance(skip_name_desc_in_docstring=True) as dut:
+            type_dict={
+                'field_a':[],
+                'reg_a':[],
+                'reg_b':[],
+                'regfile_a':[],
+                'regfile_b': [],
+                'addrmap_a': [],
+                'addrmap_b': [],
+                'mem_a': [],
+                'mem_b': [],
+            }
             for child_node in dut:
-                check_item(child_node)
+                check_item(child_node, type_dict)
+
+            # with the docstring suppressed, the _alt versions should map to the same classes
+            self.assertEqual(len(type_dict['field_a']), 1)
+            self.assertIs(type_dict['field_a'][0], FieldReadWrite)
+            for inst_name_pattern, types in filter(lambda kv: kv[0] != 'field_a', type_dict.items()):
+                if inst_name_pattern.endswith('_a'):
+                    # all the xxxx_a should be a single instance
+                    self.assertEqual(len(types), 1)
+                else:
+                    # all the xxxx_b should be an node_array and a node of the respective types
+                    self.assertIsSubclass(types[0], NodeArray)
+                    self.assertIsNotSubclass(types[1], NodeArray)
+
 
 
 if __name__ == '__main__':
