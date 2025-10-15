@@ -331,8 +331,6 @@ class PythonExporter:
                 skip_lib_copy=skip_lib_copy,
                 legacy_enum_type=legacy_enum_type,
                 skip_systemrdl_name_and_desc_properties=skip_systemrdl_name_and_desc_properties,
-                skip_systemrdl_name_and_desc_in_docstring=
-                   skip_systemrdl_name_and_desc_in_docstring,
                 unique_component_walker=unique_component_walker,
                 enum_field_class_per_generated_file=enum_field_class_per_generated_file)
 
@@ -626,7 +624,6 @@ class PythonExporter:
                                        skip_lib_copy: bool,
                                        legacy_enum_type: bool,
                                        skip_systemrdl_name_and_desc_properties: bool,
-                                       skip_systemrdl_name_and_desc_in_docstring: bool,
                                        unique_component_walker: UniqueComponents,
                                        enum_field_class_per_generated_file: int) -> None:
         """

@@ -252,6 +252,10 @@ class UniqueComponents(RDLListener):
 
     @property
     def include_name_and_desc(self) -> bool:
+        """
+        Whether to consider the systemRDL name and desc when determine the uniqueness of the
+        components
+        """
         return self.__include_name_and_desc
 
     def __test_and_add(self, potential_unique_node:PeakRDLPythonUniqueComponents) -> bool:
