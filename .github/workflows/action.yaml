@@ -296,9 +296,9 @@ jobs:
         python -m pip install mypy
 
         if [ "${{ matrix.lib_copy }}" = "true" ]; then
-          python generate_testcases.py --copy_libraries --output_path lib_included_testcase_output
+          python generate_testcases.py --copy_libraries --output lib_included_testcase_output
         else
-          python generate_testcases.py --output_path lib_excluded_testcase_output
+          python generate_testcases.py --output lib_excluded_testcase_output
 
     - name: Static checks
       run: |
