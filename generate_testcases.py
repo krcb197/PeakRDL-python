@@ -139,13 +139,12 @@ if __name__ == '__main__':
 
         options = {
             'asyncoutput': [True, False],
-            'legacy_block': [True, False],
-            'legacy_enum': [True, False],
+            'legacy': [True, False],
             'skip_systemrdl_name_and_desc_in_docstring': [True, False]
         }
 
-        for asyncoutput, legacy_block, legacy_enum, skip_name_and_desc_in_docstring in product(
-                options['asyncoutput'], options['legacy_block'], options['legacy_enum'],
+        for asyncoutput, legacy, skip_name_and_desc_in_docstring in product(
+                options['asyncoutput'], options['legacy'],
                 options['skip_systemrdl_name_and_desc_in_docstring']):
 
 
@@ -158,17 +157,15 @@ if __name__ == '__main__':
             folder_parts = 'raw'
             if asyncoutput:
                 folder_parts += '_async'
-            if legacy_block:
-                folder_parts += '_legacy_block'
-            if legacy_enum:
-                folder_parts += '_legacy_enum'
+            if legacy:
+                folder_parts += '_legacy'
             if skip_name_and_desc_in_docstring:
                 folder_parts += '_skip_name_and_desc_in_docstring'
 
             _ = generate(root, str(output_path / folder_parts),
                          asyncoutput=asyncoutput,
-                         legacy_block_access=legacy_block,
-                         legacy_enum_type=legacy_enum,
+                         legacy_block_access=legacy,
+                         legacy_enum_type=legacy,
                          skip_systemrdl_name_and_desc_in_docstring=skip_name_and_desc_in_docstring)
 
             module_fqfn = output_path / folder_parts / '__init__.py'
