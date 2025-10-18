@@ -292,26 +292,35 @@ jobs:
         # the generated code is type checked with mypy so this is needed
         python -m pip install mypy
 
-    - name: Generate testcases
-
+    - name: Generate testcases (lib_copy true)
+      if: matrix.lib_copy == true
       run: |
-        if [ "${{ matrix.lib-copy }}" = "true" ]; then
-          python generate_testcases.py --copy_libraries --output lib_included_testcase_output
-        else
-          python generate_testcases.py --output lib_excluded_testcase_output
+        python generate_testcases.py --copy_libraries --output lib_included_testcase_output
 
-    - name: Static checks
+    - name: Generate testcases (lib_copy false)
+      if: matrix.lib_copy == false
       run: |
-        # It should use the correct output directory based on the matrix:
-        if [ "${{ matrix.lib-copy }}" = "true" ]; then
-          python -m unittest discover -s lib_included_testcase_output
-        else
-          python -m unittest discover -s lib_excluded_testcase_output
-        fi # Added fi to complete the if/else block
+        python generate_testcases.py --output lib_excluded_testcase_output
 
-    - name: Run the generated tests
+    - name: Static checks (lib_copy true)
+      if: matrix.lib_copy == true
       run: |
-        python -m unittest discover -s testcase_output
+        mypy lib_included_testcase_output
+
+    - name: Static checks (lib_copy false)
+      if: matrix.lib_copy == false
+      run: |
+        mypy lib_excluded_testcase_output
+
+    - name: Run the generated tests (lib_copy true)
+      if: matrix.lib_copy == true
+      run: |
+        python -m unittest discover -s lib_included_testcase_output
+
+    - name: Run the generated tests (lib_copy false)
+      if: matrix.lib_copy == false
+      run: |
+        python -m unittest discover -s lib_excluded_testcase_output
 
   autoformating:
     needs:
