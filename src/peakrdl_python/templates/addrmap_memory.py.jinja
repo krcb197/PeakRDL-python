@@ -17,6 +17,14 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #}
 {% include "header.py.jinja" with context %}
 
+{% from 'reg_definitions.py.jinja' import register_class_attributes with context %}
+{% from 'addrmap_udp_property.py.jinja' import udp_property with context %}
+{% from 'addrmap_universal_property.py.jinja' import universal_properties with context %}
+{% from 'addrmap_system_rdl_name_mapping.py.jinja' import get_child_by_system_rdl_name with context %}
+{% from 'addrmap_system_rdl_name_mapping.py.jinja' import systemrdl_python_child_name_map with context %}
+{% from 'child_definitions.py.jinja' import reg_children_iterator with context %}
+{% from 'template_ultilities.py.jinja' import peakrdl_python_lib with context %}
+
 from typing import Iterator
 from typing import Optional
 from typing import Union
@@ -28,33 +36,26 @@ from typing import NoReturn
 import warnings
 {% if legacy_block_access %}from array import array as Array{% endif %}
 
-from {% if skip_lib_copy %}peakrdl_python.{% else %}...{% endif %}lib import Node, NodeArray, Base
-from {% if skip_lib_copy %}peakrdl_python.{% else %}...{% endif %}lib import UDPStruct
+from {{ peakrdl_python_lib() }} import Node, NodeArray, Base
+from {{ peakrdl_python_lib() }} import UDPStruct
 
 {% if asyncoutput -%}
-from {% if skip_lib_copy %}peakrdl_python.{% else %}...{% endif %}lib import AsyncMemory, AsyncMemoryArray
-from {% if skip_lib_copy %}peakrdl_python.{% else %}...{% endif %}lib import AsyncAddressMap
-from {% if skip_lib_copy %}peakrdl_python.{% else %}...{% endif %}lib import MemoryAsyncReadOnly{% if legacy_block_access %}Legacy{% endif %}, MemoryAsyncWriteOnly{% if legacy_block_access %}Legacy{% endif %}, MemoryAsyncReadWrite{% if legacy_block_access %}Legacy{% endif %}
-from {% if skip_lib_copy %}peakrdl_python.{% else %}...{% endif %}lib import MemoryAsyncReadOnly{% if legacy_block_access %}Legacy{% endif %}Array, MemoryAsyncWriteOnly{% if legacy_block_access %}Legacy{% endif %}Array, MemoryAsyncReadWrite{% if legacy_block_access %}Legacy{% endif %}Array
-from {% if skip_lib_copy %}peakrdl_python.{% else %}...{% endif %}lib import AsyncReg, AsyncRegArray
+from {{ peakrdl_python_lib() }} import AsyncMemory, AsyncMemoryArray
+from {{ peakrdl_python_lib() }} import AsyncAddressMap
+from {{ peakrdl_python_lib() }} import MemoryAsyncReadOnly{% if legacy_block_access %}Legacy{% endif %}, MemoryAsyncWriteOnly{% if legacy_block_access %}Legacy{% endif %}, MemoryAsyncReadWrite{% if legacy_block_access %}Legacy{% endif %}
+from {{ peakrdl_python_lib() }} import MemoryAsyncReadOnly{% if legacy_block_access %}Legacy{% endif %}Array, MemoryAsyncWriteOnly{% if legacy_block_access %}Legacy{% endif %}Array, MemoryAsyncReadWrite{% if legacy_block_access %}Legacy{% endif %}Array
+from {{ peakrdl_python_lib() }} import AsyncReg, AsyncRegArray
 {%- else -%}
-from {% if skip_lib_copy %}peakrdl_python.{% else %}...{% endif %}lib import Memory, MemoryArray
-from {% if skip_lib_copy %}peakrdl_python.{% else %}...{% endif %}lib import AddressMap
-from {% if skip_lib_copy %}peakrdl_python.{% else %}...{% endif %}lib import MemoryReadOnly{% if legacy_block_access %}Legacy{% endif %}, MemoryWriteOnly{% if legacy_block_access %}Legacy{% endif %}, MemoryReadWrite{% if legacy_block_access %}Legacy{% endif %}
-from {% if skip_lib_copy %}peakrdl_python.{% else %}...{% endif %}lib import MemoryReadOnly{% if legacy_block_access %}Legacy{% endif %}Array, MemoryWriteOnly{% if legacy_block_access %}Legacy{% endif %}Array, MemoryReadWrite{% if legacy_block_access %}Legacy{% endif %}Array
-from {% if skip_lib_copy %}peakrdl_python.{% else %}...{% endif %}lib import Reg, RegArray
+from {{ peakrdl_python_lib() }} import Memory, MemoryArray
+from {{ peakrdl_python_lib() }} import AddressMap
+from {{ peakrdl_python_lib() }} import MemoryReadOnly{% if legacy_block_access %}Legacy{% endif %}, MemoryWriteOnly{% if legacy_block_access %}Legacy{% endif %}, MemoryReadWrite{% if legacy_block_access %}Legacy{% endif %}
+from {{ peakrdl_python_lib() }} import MemoryReadOnly{% if legacy_block_access %}Legacy{% endif %}Array, MemoryWriteOnly{% if legacy_block_access %}Legacy{% endif %}Array, MemoryReadWrite{% if legacy_block_access %}Legacy{% endif %}Array
+from {{ peakrdl_python_lib() }} import Reg, RegArray
 {%- endif %}
 
 {% for register_cls in dependent_registers %}
 from .._registers import {{register_cls}}
 {%- endfor %}
-
-{% from 'reg_definitions.py.jinja' import register_class_attributes with context %}
-{% from 'addrmap_udp_property.py.jinja' import udp_property with context %}
-{% from 'addrmap_universal_property.py.jinja' import universal_properties with context %}
-{% from 'addrmap_system_rdl_name_mapping.py.jinja' import get_child_by_system_rdl_name with context %}
-{% from 'addrmap_system_rdl_name_mapping.py.jinja' import systemrdl_python_child_name_map with context %}
-{% from 'child_definitions.py.jinja' import reg_children_iterator with context %}
 
 {%- macro memory_class(node) %}
 class {{node.python_class_name}}({{node.base_class(asyncoutput)}}{% if legacy_block_access %}Legacy{% endif %}):

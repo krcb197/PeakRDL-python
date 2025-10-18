@@ -18,16 +18,18 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 {% include "header.py.jinja" with context %}
 
+{% from 'template_ultilities.py.jinja' import peakrdl_python_sim_lib with context %}
+
 from typing import Union
 
-from {% if skip_lib_copy %}peakrdl_python.{% else %}..{% endif %}sim_lib.register import Register, MemoryRegister
-from {% if skip_lib_copy %}peakrdl_python.{% else %}..{% endif %}sim_lib.memory import Memory
-from {% if skip_lib_copy %}peakrdl_python.{% else %}..{% endif %}sim_lib.simulator import MemoryEntry
-from {% if skip_lib_copy %}peakrdl_python.{% else %}..{% endif %}sim_lib.field import FieldDefinition
+from {{ peakrdl_python_sim_lib() }}.register import Register, MemoryRegister
+from {{ peakrdl_python_sim_lib() }}.memory import Memory
+from {{ peakrdl_python_sim_lib() }}.simulator import MemoryEntry
+from {{ peakrdl_python_sim_lib() }}.field import FieldDefinition
 {% if asyncoutput -%}
-from {% if skip_lib_copy %}peakrdl_python.{% else %}..{% endif %}sim_lib.simulator import AsyncSimulator{% if legacy_block_access %}Legacy{% endif %} as Simulator{% if legacy_block_access %}Legacy{% endif %}
+from {{ peakrdl_python_sim_lib() }}.simulator import AsyncSimulator{% if legacy_block_access %}Legacy{% endif %} as Simulator{% if legacy_block_access %}Legacy{% endif %}
 {% else %}
-from {% if skip_lib_copy %}peakrdl_python.{% else %}..{% endif %}sim_lib.simulator import Simulator{% if legacy_block_access %}Legacy{% endif %}
+from {{ peakrdl_python_sim_lib() }}.simulator import Simulator{% if legacy_block_access %}Legacy{% endif %}
 {%- endif %}
 
 {%- macro single_reg_entry(node) %}

@@ -18,6 +18,14 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 {% include "header.py.jinja" with context %}
 
+{% from 'reg_definitions.py.jinja' import register_class_attributes with context %}
+{% from 'addrmap_udp_property.py.jinja' import udp_property with context %}
+{% from 'addrmap_universal_property.py.jinja' import universal_properties with context %}
+{% from 'addrmap_system_rdl_name_mapping.py.jinja' import get_child_by_system_rdl_name with context %}
+{% from 'addrmap_system_rdl_name_mapping.py.jinja' import systemrdl_python_child_name_map with context %}
+{% from 'child_definitions.py.jinja' import node_children_iterator with context %}
+{% from 'template_ultilities.py.jinja' import peakrdl_python_lib with context %}
+
 from typing import Iterator
 from typing import Optional
 from typing import Union
@@ -30,49 +38,49 @@ import warnings
 {% if legacy_block_access %}from array import array as Array{% endif %}
 
 
-from {% if skip_lib_copy %}peakrdl_python.{% else %}..{% endif %}lib import Node, NodeArray, Base
-from {% if skip_lib_copy %}peakrdl_python.{% else %}..{% endif %}lib import UDPStruct
+from {{ peakrdl_python_lib() }} import Node, NodeArray, Base
+from {{ peakrdl_python_lib() }} import UDPStruct
 
-from {% if skip_lib_copy %}peakrdl_python.{% else %}..{% endif %}lib  import AddressMapArray, RegFileArray
+from {{ peakrdl_python_lib() }}  import AddressMapArray, RegFileArray
 {% if asyncoutput -%}
-from {% if skip_lib_copy %}peakrdl_python.{% else %}..{% endif %}lib import AsyncMemory, AsyncMemoryArray
-from {% if skip_lib_copy %}peakrdl_python.{% else %}..{% endif %}lib import AsyncAddressMap
-from {% if skip_lib_copy %}peakrdl_python.{% else %}..{% endif %}lib import AsyncRegFile
-from {% if skip_lib_copy %}peakrdl_python.{% else %}..{% endif %}lib  import AsyncAddressMapArray
-from {% if skip_lib_copy %}peakrdl_python.{% else %}..{% endif %}lib  import AsyncRegFileArray
-from {% if skip_lib_copy %}peakrdl_python.{% else %}..{% endif %}lib import MemoryAsyncReadOnly{% if legacy_block_access %}Legacy{% endif %}, MemoryAsyncWriteOnly{% if legacy_block_access %}Legacy{% endif %}, MemoryAsyncReadWrite{% if legacy_block_access %}Legacy{% endif %}
-from {% if skip_lib_copy %}peakrdl_python.{% else %}..{% endif %}lib import MemoryAsyncReadOnlyArray, MemoryAsyncWriteOnlyArray, MemoryAsyncReadWriteArray
-from {% if skip_lib_copy %}peakrdl_python.{% else %}..{% endif %}lib import AsyncReg, AsyncRegArray
-from {% if skip_lib_copy %}peakrdl_python.{% else %}..{% endif %}lib import RegAsyncReadOnly, RegAsyncWriteOnly, RegAsyncReadWrite
-from {% if skip_lib_copy %}peakrdl_python.{% else %}..{% endif %}lib import RegAsyncReadOnlyArray, RegAsyncWriteOnlyArray, RegAsyncReadWriteArray
-from {% if skip_lib_copy %}peakrdl_python.{% else %}..{% endif %}lib import FieldAsyncReadOnly, FieldAsyncWriteOnly, FieldAsyncReadWrite, Field
-{% if uses_enum %}from {% if skip_lib_copy %}peakrdl_python.{% else %}..{% endif %}lib import FieldEnumAsyncReadOnly, FieldEnumAsyncWriteOnly, FieldEnumAsyncReadWrite{% endif %}
-from {% if skip_lib_copy %}peakrdl_python.{% else %}..{% endif %}lib import ReadableAsyncRegister, WritableAsyncRegister
-from {% if skip_lib_copy %}peakrdl_python.{% else %}..{% endif %}lib import ReadableAsyncMemory{% if legacy_block_access %}Legacy{% endif %}, WritableAsyncMemory{% if legacy_block_access %}Legacy{% endif %}
-from {% if skip_lib_copy %}peakrdl_python.{% else %}..{% endif %}lib import ReadableAsyncRegisterArray, WriteableAsyncRegisterArray
+from {{ peakrdl_python_lib() }} import AsyncMemory, AsyncMemoryArray
+from {{ peakrdl_python_lib() }} import AsyncAddressMap
+from {{ peakrdl_python_lib() }} import AsyncRegFile
+from {{ peakrdl_python_lib() }}  import AsyncAddressMapArray
+from {{ peakrdl_python_lib() }}  import AsyncRegFileArray
+from {{ peakrdl_python_lib() }} import MemoryAsyncReadOnly{% if legacy_block_access %}Legacy{% endif %}, MemoryAsyncWriteOnly{% if legacy_block_access %}Legacy{% endif %}, MemoryAsyncReadWrite{% if legacy_block_access %}Legacy{% endif %}
+from {{ peakrdl_python_lib() }} import MemoryAsyncReadOnlyArray, MemoryAsyncWriteOnlyArray, MemoryAsyncReadWriteArray
+from {{ peakrdl_python_lib() }} import AsyncReg, AsyncRegArray
+from {{ peakrdl_python_lib() }} import RegAsyncReadOnly, RegAsyncWriteOnly, RegAsyncReadWrite
+from {{ peakrdl_python_lib() }} import RegAsyncReadOnlyArray, RegAsyncWriteOnlyArray, RegAsyncReadWriteArray
+from {{ peakrdl_python_lib() }} import FieldAsyncReadOnly, FieldAsyncWriteOnly, FieldAsyncReadWrite, Field
+{% if uses_enum %}from {{ peakrdl_python_lib() }} import FieldEnumAsyncReadOnly, FieldEnumAsyncWriteOnly, FieldEnumAsyncReadWrite{% endif %}
+from {{ peakrdl_python_lib() }} import ReadableAsyncRegister, WritableAsyncRegister
+from {{ peakrdl_python_lib() }} import ReadableAsyncMemory{% if legacy_block_access %}Legacy{% endif %}, WritableAsyncMemory{% if legacy_block_access %}Legacy{% endif %}
+from {{ peakrdl_python_lib() }} import ReadableAsyncRegisterArray, WriteableAsyncRegisterArray
 {%- else -%}
-from {% if skip_lib_copy %}peakrdl_python.{% else %}..{% endif %}lib import Memory, MemoryArray
-from {% if skip_lib_copy %}peakrdl_python.{% else %}..{% endif %}lib import AddressMap
-from {% if skip_lib_copy %}peakrdl_python.{% else %}..{% endif %}lib import RegFile
-from {% if skip_lib_copy %}peakrdl_python.{% else %}..{% endif %}lib  import AddressMapArray
-from {% if skip_lib_copy %}peakrdl_python.{% else %}..{% endif %}lib  import RegFileArray
-from {% if skip_lib_copy %}peakrdl_python.{% else %}..{% endif %}lib import MemoryReadOnly{% if legacy_block_access %}Legacy{% endif %}, MemoryWriteOnly{% if legacy_block_access %}Legacy{% endif %}, MemoryReadWrite{% if legacy_block_access %}Legacy{% endif %}
-from {% if skip_lib_copy %}peakrdl_python.{% else %}..{% endif %}lib import MemoryReadOnlyArray, MemoryWriteOnlyArray, MemoryReadWriteArray
-from {% if skip_lib_copy %}peakrdl_python.{% else %}..{% endif %}lib import Reg, RegArray
-from {% if skip_lib_copy %}peakrdl_python.{% else %}..{% endif %}lib import RegReadOnly, RegWriteOnly, RegReadWrite
-from {% if skip_lib_copy %}peakrdl_python.{% else %}..{% endif %}lib import RegReadOnlyArray, RegWriteOnlyArray, RegReadWriteArray
-from {% if skip_lib_copy %}peakrdl_python.{% else %}..{% endif %}lib import FieldReadOnly, FieldWriteOnly, FieldReadWrite, Field
-{% if uses_enum %}from {% if skip_lib_copy %}peakrdl_python.{% else %}..{% endif %}lib import FieldEnumReadOnly, FieldEnumWriteOnly, FieldEnumReadWrite{% endif %}
-from {% if skip_lib_copy %}peakrdl_python.{% else %}..{% endif %}lib import ReadableRegister, WritableRegister
-from {% if skip_lib_copy %}peakrdl_python.{% else %}..{% endif %}lib import ReadableMemory{% if legacy_block_access %}Legacy{% endif %}, WritableMemory{% if legacy_block_access %}Legacy{% endif %}
-from {% if skip_lib_copy %}peakrdl_python.{% else %}..{% endif %}lib import ReadableRegisterArray, WriteableRegisterArray
+from {{ peakrdl_python_lib() }} import Memory, MemoryArray
+from {{ peakrdl_python_lib() }} import AddressMap
+from {{ peakrdl_python_lib() }} import RegFile
+from {{ peakrdl_python_lib() }}  import AddressMapArray
+from {{ peakrdl_python_lib() }}  import RegFileArray
+from {{ peakrdl_python_lib() }} import MemoryReadOnly{% if legacy_block_access %}Legacy{% endif %}, MemoryWriteOnly{% if legacy_block_access %}Legacy{% endif %}, MemoryReadWrite{% if legacy_block_access %}Legacy{% endif %}
+from {{ peakrdl_python_lib() }} import MemoryReadOnlyArray, MemoryWriteOnlyArray, MemoryReadWriteArray
+from {{ peakrdl_python_lib() }} import Reg, RegArray
+from {{ peakrdl_python_lib() }} import RegReadOnly, RegWriteOnly, RegReadWrite
+from {{ peakrdl_python_lib() }} import RegReadOnlyArray, RegWriteOnlyArray, RegReadWriteArray
+from {{ peakrdl_python_lib() }} import FieldReadOnly, FieldWriteOnly, FieldReadWrite, Field
+{% if uses_enum %}from {{ peakrdl_python_lib() }} import FieldEnumReadOnly, FieldEnumWriteOnly, FieldEnumReadWrite{% endif %}
+from {{ peakrdl_python_lib() }} import ReadableRegister, WritableRegister
+from {{ peakrdl_python_lib() }} import ReadableMemory{% if legacy_block_access %}Legacy{% endif %}, WritableMemory{% if legacy_block_access %}Legacy{% endif %}
+from {{ peakrdl_python_lib() }} import ReadableRegisterArray, WriteableRegisterArray
 {%- endif %}
 
 
 {% if asyncoutput %}
-from {% if skip_lib_copy %}peakrdl_python.{% else %}..{% endif %}lib import AsyncCallbackSet, AsyncCallbackSetLegacy
+from {{ peakrdl_python_lib() }} import AsyncCallbackSet, AsyncCallbackSetLegacy
 {% else %}
-from {% if skip_lib_copy %}peakrdl_python.{% else %}..{% endif %}lib import NormalCallbackSet, NormalCallbackSetLegacy
+from {{ peakrdl_python_lib() }} import NormalCallbackSet, NormalCallbackSetLegacy
 {% endif %}
 
 {% for property_enum in unique_property_enums %}
@@ -87,12 +95,7 @@ from ._registers import {{node.python_class_name}}{% if node.instance.is_array %
 from ._memories import {{node.python_class_name}}{% if node.instance.is_array %}_array{% endif %}
 {% endfor %}
 
-{% from 'reg_definitions.py.jinja' import register_class_attributes with context %}
-{% from 'addrmap_udp_property.py.jinja' import udp_property with context %}
-{% from 'addrmap_universal_property.py.jinja' import universal_properties with context %}
-{% from 'addrmap_system_rdl_name_mapping.py.jinja' import get_child_by_system_rdl_name with context %}
-{% from 'addrmap_system_rdl_name_mapping.py.jinja' import systemrdl_python_child_name_map with context %}
-{% from 'child_definitions.py.jinja' import node_children_iterator with context %}
+
 
 {%- macro regfile_or_addr_instance(node) %}
     {%- if not hide_node_func(node) %}

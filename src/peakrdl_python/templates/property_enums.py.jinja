@@ -17,13 +17,16 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #}
 
 {% include "header.py.jinja" with context %}
+
+{% from 'template_ultilities.py.jinja' import peakrdl_python_lib with context %}
+
 {% if legacy_enum_type %}
 from enum import IntEnum
 {% endif %}
 from enum import unique
 
 {% if not legacy_enum_type %}
-from {% if skip_lib_copy %}peakrdl_python.{% else %}..{% endif %}lib import SystemRDLEnum, SystemRDLEnumEntry
+from {{ peakrdl_python_lib() }} import SystemRDLEnum, SystemRDLEnumEntry
 {% endif %}
 
 {% for property_enum in unique_property_enums %}

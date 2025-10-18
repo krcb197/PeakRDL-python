@@ -17,6 +17,9 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #}
 
 {% include "header_tb.py.jinja" with context %}
+
+{% from 'template_ultilities.py.jinja' import peakrdl_python_lib with context %}
+
 from typing import Union,Iterable
 from array import array as Array
 {% if asyncoutput %}
@@ -35,38 +38,38 @@ import math
 from enum import IntEnum
 {% endif %}
 
-from {% if skip_lib_copy %}peakrdl_python.{% else %}..{% endif %}lib import RegisterWriteVerifyError, UnsupportedWidthError
+from {{ peakrdl_python_lib() }} import RegisterWriteVerifyError, UnsupportedWidthError
 
 from ..reg_model import RegModel
 from ..reg_model.{{top_node.inst_name}}_property_enums import *
 
 {% if asyncoutput %}
-from {% if skip_lib_copy %}peakrdl_python.{% else %}..{% endif %}lib import FieldAsyncReadOnly, FieldAsyncWriteOnly, FieldAsyncReadWrite
-from {% if skip_lib_copy %}peakrdl_python.{% else %}..{% endif %}lib import WritableAsyncRegister, ReadableAsyncRegister
-from {% if skip_lib_copy %}peakrdl_python.{% else %}..{% endif %}lib import RegAsyncReadWrite, RegAsyncReadOnly, RegAsyncWriteOnly
-from {% if skip_lib_copy %}peakrdl_python.{% else %}..{% endif %}lib import RegAsyncReadWriteArray, RegAsyncReadOnlyArray, RegAsyncWriteOnlyArray
-from {% if skip_lib_copy %}peakrdl_python.{% else %}..{% endif %}lib import MemoryAsyncReadOnly{% if legacy_block_access %}Legacy{% endif %}, MemoryAsyncWriteOnly{% if legacy_block_access %}Legacy{% endif %}, MemoryAsyncReadWrite{% if legacy_block_access %}Legacy{% endif %}
-from {% if skip_lib_copy %}peakrdl_python.{% else %}..{% endif %}lib import MemoryAsyncReadOnly{% if legacy_block_access %}Legacy{% endif %}Array, MemoryAsyncWriteOnly{% if legacy_block_access %}Legacy{% endif %}Array, MemoryAsyncReadWrite{% if legacy_block_access %}Legacy{% endif %}Array
-from {% if skip_lib_copy %}peakrdl_python.{% else %}..{% endif %}lib import AsyncAddressMap, AsyncRegFile
-from {% if skip_lib_copy %}peakrdl_python.{% else %}..{% endif %}lib import AsyncAddressMapArray, AsyncRegFileArray
-from {% if skip_lib_copy %}peakrdl_python.{% else %}..{% endif %}lib import AsyncMemory
+from {{ peakrdl_python_lib() }} import FieldAsyncReadOnly, FieldAsyncWriteOnly, FieldAsyncReadWrite
+from {{ peakrdl_python_lib() }} import WritableAsyncRegister, ReadableAsyncRegister
+from {{ peakrdl_python_lib() }} import RegAsyncReadWrite, RegAsyncReadOnly, RegAsyncWriteOnly
+from {{ peakrdl_python_lib() }} import RegAsyncReadWriteArray, RegAsyncReadOnlyArray, RegAsyncWriteOnlyArray
+from {{ peakrdl_python_lib() }} import MemoryAsyncReadOnly{% if legacy_block_access %}Legacy{% endif %}, MemoryAsyncWriteOnly{% if legacy_block_access %}Legacy{% endif %}, MemoryAsyncReadWrite{% if legacy_block_access %}Legacy{% endif %}
+from {{ peakrdl_python_lib() }} import MemoryAsyncReadOnly{% if legacy_block_access %}Legacy{% endif %}Array, MemoryAsyncWriteOnly{% if legacy_block_access %}Legacy{% endif %}Array, MemoryAsyncReadWrite{% if legacy_block_access %}Legacy{% endif %}Array
+from {{ peakrdl_python_lib() }} import AsyncAddressMap, AsyncRegFile
+from {{ peakrdl_python_lib() }} import AsyncAddressMapArray, AsyncRegFileArray
+from {{ peakrdl_python_lib() }} import AsyncMemory
 {% else %}
-from {% if skip_lib_copy %}peakrdl_python.{% else %}..{% endif %}lib import FieldReadOnly, FieldWriteOnly, FieldReadWrite
-from {% if skip_lib_copy %}peakrdl_python.{% else %}..{% endif %}lib import WritableRegister, ReadableRegister
-from {% if skip_lib_copy %}peakrdl_python.{% else %}..{% endif %}lib import RegReadWrite, RegReadOnly, RegWriteOnly
-from {% if skip_lib_copy %}peakrdl_python.{% else %}..{% endif %}lib import RegReadWriteArray, RegReadOnlyArray, RegWriteOnlyArray
-from {% if skip_lib_copy %}peakrdl_python.{% else %}..{% endif %}lib import MemoryReadOnly{% if legacy_block_access %}Legacy{% endif %}, MemoryWriteOnly{% if legacy_block_access %}Legacy{% endif %}, MemoryReadWrite{% if legacy_block_access %}Legacy{% endif %}
-from {% if skip_lib_copy %}peakrdl_python.{% else %}..{% endif %}lib import MemoryReadOnly{% if legacy_block_access %}Legacy{% endif %}Array, MemoryWriteOnly{% if legacy_block_access %}Legacy{% endif %}Array, MemoryReadWrite{% if legacy_block_access %}Legacy{% endif %}Array
-from {% if skip_lib_copy %}peakrdl_python.{% else %}..{% endif %}lib import AddressMap, RegFile
-from {% if skip_lib_copy %}peakrdl_python.{% else %}..{% endif %}lib import AddressMapArray, RegFileArray
-from {% if skip_lib_copy %}peakrdl_python.{% else %}..{% endif %}lib import Memory
+from {{ peakrdl_python_lib() }} import FieldReadOnly, FieldWriteOnly, FieldReadWrite
+from {{ peakrdl_python_lib() }} import WritableRegister, ReadableRegister
+from {{ peakrdl_python_lib() }} import RegReadWrite, RegReadOnly, RegWriteOnly
+from {{ peakrdl_python_lib() }} import RegReadWriteArray, RegReadOnlyArray, RegWriteOnlyArray
+from {{ peakrdl_python_lib() }} import MemoryReadOnly{% if legacy_block_access %}Legacy{% endif %}, MemoryWriteOnly{% if legacy_block_access %}Legacy{% endif %}, MemoryReadWrite{% if legacy_block_access %}Legacy{% endif %}
+from {{ peakrdl_python_lib() }} import MemoryReadOnly{% if legacy_block_access %}Legacy{% endif %}Array, MemoryWriteOnly{% if legacy_block_access %}Legacy{% endif %}Array, MemoryReadWrite{% if legacy_block_access %}Legacy{% endif %}Array
+from {{ peakrdl_python_lib() }} import AddressMap, RegFile
+from {{ peakrdl_python_lib() }} import AddressMapArray, RegFileArray
+from {{ peakrdl_python_lib() }} import Memory
 {% endif %}
 
-from {% if skip_lib_copy %}peakrdl_python.{% else %}..{% endif %}lib import NodeArray
-from {% if skip_lib_copy %}peakrdl_python.{% else %}..{% endif %}lib import Field
-from {% if skip_lib_copy %}peakrdl_python.{% else %}..{% endif %}lib import Reg
+from {{ peakrdl_python_lib() }} import NodeArray
+from {{ peakrdl_python_lib() }} import Field
+from {{ peakrdl_python_lib() }} import Reg
 {% if not legacy_enum_type %}
-from {% if skip_lib_copy %}peakrdl_python.{% else %}..{% endif %}lib import SystemRDLEnum, SystemRDLEnumEntry
+from {{ peakrdl_python_lib() }} import SystemRDLEnum, SystemRDLEnumEntry
 {% endif %}
 
 from ._{{top_node.inst_name}}_test_base import {{top_node.inst_name}}_TestCase, {{top_node.inst_name}}_TestCase_BlockAccess, {{top_node.inst_name}}_TestCase_AltBlockAccess
