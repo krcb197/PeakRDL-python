@@ -101,7 +101,13 @@ class Exporter(ExporterSubcommandPlugin):
                                dest='skip_systemrdl_name_and_desc_properties',
                                help='peakrdl python includes the system RDL name and desc '
                                     'attributes as properties of the class that is built. Setting '
-                                    'this will skip this reducign the size of the python code '
+                                    'this will skip this reducing the size of the python code '
+                                    'generated')
+        arg_group.add_argument('--skip_systemrdl_name_and_desc_in_docstring', action='store_true',
+                               dest='skip_systemrdl_name_and_desc_in_docstring',
+                               help='peakrdl python includes the system RDL name and desc '
+                                    'attributes within the doc string of the built code. Setting '
+                                    'this will skip this reducing the size of the python code '
                                     'generated')
         arg_group.add_argument('--register_class_per_generated_file',
                                dest='register_class_per_generated_file',
@@ -171,6 +177,8 @@ class Exporter(ExporterSubcommandPlugin):
             legacy_enum_type=options.legacy_enum_type,
             skip_systemrdl_name_and_desc_properties=
                 options.skip_systemrdl_name_and_desc_properties,
+            skip_systemrdl_name_and_desc_in_docstring=
+                options.skip_systemrdl_name_and_desc_in_docstring,
             register_class_per_generated_file=options.register_class_per_generated_file,
             field_class_per_generated_file=options.field_class_per_generated_file,
             enum_field_class_per_generated_file=options.enum_field_class_per_generated_file,

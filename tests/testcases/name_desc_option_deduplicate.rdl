@@ -1,0 +1,121 @@
+/*
+This test was introduced as part of #206 to show that a items can be deduplicated when the doc and
+name string is not pulled into the generated code.
+*/
+field fieldtype {
+        fieldwidth=16;
+        };
+
+reg regtype {
+        default sw = rw;
+        default hw = r;
+        fieldtype field_a;
+    };
+
+addrmap addrmaptype {
+    regtype  reg_a;
+    regtype  reg_b[2];
+};
+
+regfile regfiletype {
+    regtype  reg_a;
+    regtype  reg_b[2];
+};
+
+mem memtype {
+    mementries = 6;
+    memwidth = 32;
+    regtype  reg_a;
+    regtype  reg_b[2];
+};
+
+addrmap name_desc_option_deduplicate {
+    regtype  reg_a;
+    regtype  reg_b[2];
+    regfiletype regfile_a;
+    regfiletype regfile_b[2];
+    addrmaptype addrmap_a;
+    addrmaptype addrmap_b[2];
+    external memtype mem_a;
+    external memtype mem_b[2];
+
+    reg_a->name = "name - reg_a";
+    reg_a->desc = "desc - reg_a";
+    reg_b->name = "name - reg_b";
+    reg_b->desc = "desc - reg_b";
+    reg_a.field_a->name = "name - field_a";
+    reg_a.field_a->desc = "desc - field_a";
+    reg_b.field_a->name = "name - field_a";
+    reg_b.field_a->desc = "desc - field_a";
+    regfile_a->name = "name - regfile_a";
+    regfile_a->desc = "desc - regfile_a";
+    regfile_b->name = "name - regfile_b";
+    regfile_b->desc = "desc - regfile_b";
+    regfile_a.reg_a->name = "name - reg_a";
+    regfile_a.reg_a->desc = "desc - reg_a";
+    regfile_b.reg_a->name = "name - reg_a";
+    regfile_b.reg_a->desc = "desc - reg_a";
+    regfile_a.reg_a.field_a->name = "name - field_a";
+    regfile_a.reg_a.field_a->desc = "desc - field_a";
+    regfile_a.reg_b.field_a->name = "name - field_a";
+    regfile_a.reg_b.field_a->desc = "desc - field_a";
+    regfile_a.reg_b->name = "name - reg_b";
+    regfile_a.reg_b->desc = "desc - reg_b";
+    regfile_b.reg_b->name = "name - reg_b";
+    regfile_b.reg_b->desc = "desc - reg_b";
+    regfile_b.reg_a.field_a->name = "name - field_a";
+    regfile_b.reg_a.field_a->desc = "desc - field_a";
+    regfile_b.reg_b.field_a->name = "name - field_a";
+    regfile_b.reg_b.field_a->desc = "desc - field_a";
+    addrmap_a->name = "name - addrmap_a";
+    addrmap_a->desc = "desc - addrmap_a";
+    addrmap_b->name = "name - addrmap_b";
+    addrmap_b->desc = "desc - addrmap_b";
+    addrmap_a.reg_a->name = "name - reg_a";
+    addrmap_a.reg_a->desc = "desc - reg_a";
+    addrmap_b.reg_a->name = "name - reg_a";
+    addrmap_b.reg_a->desc = "desc - reg_a";
+    addrmap_a.reg_a.field_a->name = "name - field_a";
+    addrmap_a.reg_a.field_a->desc = "desc - field_a";
+    addrmap_a.reg_b.field_a->name = "name - field_a";
+    addrmap_a.reg_b.field_a->desc = "desc - field_a";
+    addrmap_a.reg_b->name = "name - reg_b";
+    addrmap_a.reg_b->desc = "desc - reg_b";
+    addrmap_b.reg_b->name = "name - reg_b";
+    addrmap_b.reg_b->desc = "desc - reg_b";
+    addrmap_b.reg_a.field_a->name = "name - field_a";
+    addrmap_b.reg_a.field_a->desc = "desc - field_a";
+    addrmap_b.reg_b.field_a->name = "name - field_a";
+    addrmap_b.reg_b.field_a->desc = "desc - field_a";
+    mem_a->name = "name - mem_a";
+    mem_a->desc = "desc - mem_a";
+    mem_b->name = "name - mem_b";
+    mem_b->desc = "desc - mem_b";
+    mem_a.reg_a->name = "name - reg_a";
+    mem_a.reg_a->desc = "desc - reg_a";
+    mem_b.reg_a->name = "name - reg_a";
+    mem_b.reg_a->desc = "desc - reg_a";
+    mem_a.reg_a.field_a->name = "name - field_a";
+    mem_a.reg_a.field_a->desc = "desc - field_a";
+    mem_a.reg_b.field_a->name = "name - field_a";
+    mem_a.reg_b.field_a->desc = "desc - field_a";
+    mem_a.reg_b->name = "name - reg_b";
+    mem_a.reg_b->desc = "desc - reg_b";
+    mem_b.reg_b->name = "name - reg_b";
+    mem_b.reg_b->desc = "desc - reg_b";
+    mem_b.reg_a.field_a->name = "name - field_a";
+    mem_b.reg_a.field_a->desc = "desc - field_a";
+    mem_b.reg_b.field_a->name = "name - field_a";
+    mem_b.reg_b.field_a->desc = "desc - field_a";
+
+    regtype  alt_reg_a;
+    regtype  alt_reg_b[2];
+    regfiletype alt_regfile_a;
+    regfiletype alt_regfile_b[2];
+    addrmaptype alt_addrmap_a;
+    addrmaptype alt_addrmap_b[2];
+    external memtype alt_mem_a;
+    external memtype alt_mem_b[2];
+
+
+};

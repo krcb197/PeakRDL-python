@@ -2,7 +2,7 @@
 
 """
 peakrdl-python is a tool to generate Python Register Access Layer (RAL) from SystemRDL
-Copyright (C) 2021 - 2023
+Copyright (C) 2021 - 2025
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -101,7 +101,14 @@ CommandLineParser.add_argument('--skip_systemrdl_name_and_desc_properties',
                                dest='skip_systemrdl_name_and_desc_properties',
                                help='peakrdl python includes the system RDL name and desc '
                                     'attributes as properties of the class that is built. Setting '
-                                    'this will skip this reducign the size of the python code '
+                                    'this will skip this reducing the size of the python code '
+                                    'generated')
+CommandLineParser.add_argument('--skip_systemrdl_name_and_desc_in_docstring',
+                               action='store_true',
+                               dest='skip_systemrdl_name_and_desc_in_docstring',
+                               help='peakrdl python includes the system RDL name and desc '
+                                    'attributes within the doc string of the built code. Setting '
+                                    'this will skip this reducing the size of the python code '
                                     'generated')
 
 
@@ -201,7 +208,10 @@ if __name__ == '__main__':
         hidden_inst_name_regex=CommandLineArgs.hide_regex,
         legacy_enum_type=CommandLineArgs.legacy_enum_type,
         skip_systemrdl_name_and_desc_properties=
-        CommandLineArgs.skip_systemrdl_name_and_desc_properties)
+        CommandLineArgs.skip_systemrdl_name_and_desc_properties,
+        skip_systemrdl_name_and_desc_in_docstring=
+        CommandLineArgs.skip_systemrdl_name_and_desc_in_docstring
+    )
     print(f'generation time {time.time() - start_time}s')
 
     if not CommandLineArgs.export_only:

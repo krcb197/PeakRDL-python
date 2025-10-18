@@ -17,6 +17,12 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #}
 
 {% include "header_tb.py.jinja" with context %}
+
+{% from 'template_ultilities.py.jinja' import peakrdl_python_sim_lib with context %}
+{% from 'template_ultilities.py.jinja' import peakrdl_python_lib with context %}
+{# the following defining the number relative steps up to the lib and sim_lib packages from the current file #}
+{% set lib_depth = 1 %}
+
 from array import array as Array
 {% if asyncoutput %}
 import sys
@@ -34,33 +40,33 @@ from enum import IntEnum
 {% endif %}
 
 
-from {% if skip_lib_copy %}peakrdl_python.{% else %}..{% endif %}lib import RegisterWriteVerifyError
+from {{ peakrdl_python_lib(depth=lib_depth) }} import RegisterWriteVerifyError
 {% if asyncoutput %}
-from {% if skip_lib_copy %}peakrdl_python.{% else %}..{% endif %}lib import AsyncCallbackSet, AsyncCallbackSetLegacy
+from {{ peakrdl_python_lib(depth=lib_depth) }} import AsyncCallbackSet, AsyncCallbackSetLegacy
 {% else %}
-from {% if skip_lib_copy %}peakrdl_python.{% else %}..{% endif %}lib import NormalCallbackSet, NormalCallbackSetLegacy
+from {{ peakrdl_python_lib(depth=lib_depth) }} import NormalCallbackSet, NormalCallbackSetLegacy
 {% endif %}
 
 
 from ..reg_model import RegModel
 {% if asyncoutput %}
-from {% if skip_lib_copy %}peakrdl_python.{% else %}..{% endif %}sim_lib.dummy_callbacks import async_dummy_read as read_addr_space
-from {% if skip_lib_copy %}peakrdl_python.{% else %}..{% endif %}sim_lib.dummy_callbacks import async_dummy_write as write_addr_space
-from {% if skip_lib_copy %}peakrdl_python.{% else %}..{% endif %}sim_lib.dummy_callbacks import async_dummy_read_block{% if legacy_block_access %}_legacy{% endif %} as read_block_addr_space
-from {% if skip_lib_copy %}peakrdl_python.{% else %}..{% endif %}sim_lib.dummy_callbacks import async_dummy_write_block{% if legacy_block_access %}_legacy{% endif %} as write_block_addr_space
-from {% if skip_lib_copy %}peakrdl_python.{% else %}..{% endif %}sim_lib.dummy_callbacks import async_dummy_read_block{% if not legacy_block_access %}_legacy{% endif %} as read_block_addr_space_alt
-from {% if skip_lib_copy %}peakrdl_python.{% else %}..{% endif %}sim_lib.dummy_callbacks import async_dummy_write_block{% if not legacy_block_access %}_legacy{% endif %} as write_block_addr_space_alt
+from {{ peakrdl_python_sim_lib(depth=lib_depth) }}.dummy_callbacks import async_dummy_read as read_addr_space
+from {{ peakrdl_python_sim_lib(depth=lib_depth) }}.dummy_callbacks import async_dummy_write as write_addr_space
+from {{ peakrdl_python_sim_lib(depth=lib_depth) }}.dummy_callbacks import async_dummy_read_block{% if legacy_block_access %}_legacy{% endif %} as read_block_addr_space
+from {{ peakrdl_python_sim_lib(depth=lib_depth) }}.dummy_callbacks import async_dummy_write_block{% if legacy_block_access %}_legacy{% endif %} as write_block_addr_space
+from {{ peakrdl_python_sim_lib(depth=lib_depth) }}.dummy_callbacks import async_dummy_read_block{% if not legacy_block_access %}_legacy{% endif %} as read_block_addr_space_alt
+from {{ peakrdl_python_sim_lib(depth=lib_depth) }}.dummy_callbacks import async_dummy_write_block{% if not legacy_block_access %}_legacy{% endif %} as write_block_addr_space_alt
 {% else %}
-from {% if skip_lib_copy %}peakrdl_python.{% else %}..{% endif %}sim_lib.dummy_callbacks import dummy_read as read_addr_space
-from {% if skip_lib_copy %}peakrdl_python.{% else %}..{% endif %}sim_lib.dummy_callbacks import dummy_write as write_addr_space
-from {% if skip_lib_copy %}peakrdl_python.{% else %}..{% endif %}sim_lib.dummy_callbacks import dummy_read_block{% if legacy_block_access %}_legacy{% endif %} as read_block_addr_space
-from {% if skip_lib_copy %}peakrdl_python.{% else %}..{% endif %}sim_lib.dummy_callbacks import dummy_write_block{% if legacy_block_access %}_legacy{% endif %} as write_block_addr_space
-from {% if skip_lib_copy %}peakrdl_python.{% else %}..{% endif %}sim_lib.dummy_callbacks import dummy_read_block{% if not legacy_block_access %}_legacy{% endif %} as read_block_addr_space_alt
-from {% if skip_lib_copy %}peakrdl_python.{% else %}..{% endif %}sim_lib.dummy_callbacks import dummy_write_block{% if not legacy_block_access %}_legacy{% endif %} as write_block_addr_space_alt
+from {{ peakrdl_python_sim_lib(depth=lib_depth) }}.dummy_callbacks import dummy_read as read_addr_space
+from {{ peakrdl_python_sim_lib(depth=lib_depth) }}.dummy_callbacks import dummy_write as write_addr_space
+from {{ peakrdl_python_sim_lib(depth=lib_depth) }}.dummy_callbacks import dummy_read_block{% if legacy_block_access %}_legacy{% endif %} as read_block_addr_space
+from {{ peakrdl_python_sim_lib(depth=lib_depth) }}.dummy_callbacks import dummy_write_block{% if legacy_block_access %}_legacy{% endif %} as write_block_addr_space
+from {{ peakrdl_python_sim_lib(depth=lib_depth) }}.dummy_callbacks import dummy_read_block{% if not legacy_block_access %}_legacy{% endif %} as read_block_addr_space_alt
+from {{ peakrdl_python_sim_lib(depth=lib_depth) }}.dummy_callbacks import dummy_write_block{% if not legacy_block_access %}_legacy{% endif %} as write_block_addr_space_alt
 {% endif %}
 
 {% if not legacy_enum_type %}
-from {% if skip_lib_copy %}peakrdl_python.{% else %}..{% endif %}lib import SystemRDLEnum, SystemRDLEnumEntry
+from {{ peakrdl_python_lib(depth=lib_depth) }} import SystemRDLEnum, SystemRDLEnumEntry
 {% endif %}
 
 {% if asyncoutput %}async {% endif %}def read_callback(addr: int, width: int, accesswidth: int) -> int:
