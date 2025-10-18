@@ -151,7 +151,7 @@ if __name__ == '__main__':
 
             # test cases that use the extended widths an not be tested in the non-legacy modes
             if (testcase_name in ['extended_memories', 'extended_sizes_registers_array']) and \
-                    (legacy_block is True):
+                    (legacy is True):
                 continue
 
             folder_parts = 'raw'
