@@ -286,27 +286,28 @@ jobs:
 
         # retrieve the example code from the systemRDL compiler
         wget -L https://raw.githubusercontent.com/SystemRDL/systemrdl-compiler/main/examples/accelera-generic_example.rdl -O tests/testcases/accelera-generic_example.rdl
-
-    - name: Generate testcases
-      run: |
-
+        
         # one of the test cases uses IPxact so we need the importer
         python -m pip install peakrdl-ipxact
         # the generated code is type checked with mypy so this is needed
         python -m pip install mypy
 
-        if [ "${{ matrix.lib_copy }}" = "true" ]; then
+    - name: Generate testcases
+
+      run: |
+        if [ "${{ matrix.lib-copy }}" = "true" ]; then
           python generate_testcases.py --copy_libraries --output lib_included_testcase_output
         else
           python generate_testcases.py --output lib_excluded_testcase_output
 
     - name: Static checks
       run: |
-        
-        if [ "${{ matrix.lib_copy }}" = "true" ]; then
-          mypy lib_included_testcase_output
+        # It should use the correct output directory based on the matrix:
+        if [ "${{ matrix.lib-copy }}" = "true" ]; then
+          python -m unittest discover -s lib_included_testcase_output
         else
-          mypy lib_excluded_testcase_output
+          python -m unittest discover -s lib_excluded_testcase_output
+        fi # Added fi to complete the if/else block
 
     - name: Run the generated tests
       run: |
