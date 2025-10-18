@@ -137,6 +137,7 @@ jobs:
           python -m generate_and_test --RDL_source_file tests/testcases/accelera-generic_example.rdl --root_node some_register_map
           python -m generate_and_test --RDL_source_file tests/testcases/accelera-generic_example.rdl --root_node some_register_map --legacy_block_access
           python -m generate_and_test --RDL_source_file tests/testcases/accelera-generic_example.rdl --root_node some_register_map --legacy_enum_type
+          python -m generate_and_test --RDL_source_file tests/testcases/accelera-generic_example.rdl --root_node some_register_map --copy_libraries
 
           python -m generate_and_test --RDL_source_file tests/testcases/user_defined_properties.rdl --root_node user_defined_properties --udp bool_property_to_include
           python -m generate_and_test --RDL_source_file tests/testcases/user_defined_properties.rdl --root_node user_defined_properties --udp bool_property_to_include enum_property_to_include
@@ -261,14 +262,14 @@ jobs:
 
   integration_tests:
     needs:
-      - mypy
-      - lint
-      - unit_tests
+      - peakrdl_integration
+      - dev_runner
 
     runs-on: ubuntu-latest
     strategy:
       matrix:
         python-version: [3.9, "3.10", "3.11", "3.12", "3.13"]
+        lib_copy: [true, false]
 
     steps:
     - uses: actions/checkout@v4
@@ -294,13 +295,18 @@ jobs:
         # the generated code is type checked with mypy so this is needed
         python -m pip install mypy
 
-        python generate_testcases.py
+        if [ "${{ matrix.lib_copy }}" = "true" ]; then
+          python generate_testcases.py --copy_libraries --output_path lib_included_testcase_output
+        else
+          python generate_testcases.py --output_path lib_excluded_testcase_output
 
     - name: Static checks
       run: |
-
-        mypy testcase_output
-        # pylint testcase_output/autopep8 --disable=duplicate-code,line-too-long,too-many-statements,invalid-name,unused-import,too-many-instance-attributes,too-many-arguments,too-many-lines
+        
+        if [ "${{ matrix.lib_copy }}" = "true" ]; then
+          mypy lib_included_testcase_output
+        else
+          mypy lib_excluded_testcase_output
 
     - name: Run the generated tests
       run: |
@@ -309,8 +315,7 @@ jobs:
   autoformating:
     needs:
       - integration_tests
-      - peakrdl_integration
-      - dev_runner
+
 
     runs-on: ubuntu-latest
     strategy:

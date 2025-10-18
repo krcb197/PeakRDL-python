@@ -41,6 +41,13 @@ CommandLineParser.add_argument('--output', dest='output_path',
                                default='testcase_output')
 CommandLineParser.add_argument('--test_case', dest='test_case',
                                type=str)
+CommandLineParser.add_argument('--copy_libraries', action='store_true', dest='copy_libraries',
+                               help='by default peakrdl python copies all the libraries over'
+                                    'to the generated package along with the generated code. '
+                                    'However, that is potentiality problematic when developing'
+                                    'and debugging as multiple copies of the libraries can cause'
+                                    'confusion. Therefore by default this script does not copy '
+                                    'them over.')
 
 
 def compile_rdl(infile: str,
@@ -76,9 +83,9 @@ def compile_rdl(infile: str,
 
 def generate(root: Node, outdir: str,
              asyncoutput: bool = False,
-             skip_test_case_generation: bool = False,
              legacy_block_access: bool = True,
              legacy_enum_type: bool = True,
+             copy_library: bool = False,
              skip_systemrdl_name_and_desc_in_docstring: bool = False) -> List[str]:
     """
     Generate a PeakRDL output package from compiled systemRDL
@@ -86,8 +93,6 @@ def generate(root: Node, outdir: str,
     Args:
         root: node in the systemRDL from which the code should be generated
         outdir: directory to store the result in
-        autoformatoutputs: If set to True the code will be run through autopep8 to
-                clean it up. This can slow down large jobs or mask problems
         legacy_block_access: If set to True the code build a register model the legacy array block
                              access as opposed to the newer list based
         legacy_enum_type: If set to True the code with build with the old style IntEnum rather than
@@ -100,9 +105,9 @@ def generate(root: Node, outdir: str,
     print(f'Info: Generating python for {root.inst_name} in {outdir}')
     modules = PythonExporter().export(root, outdir, # type: ignore[no-untyped-call]
                                       asyncoutput=asyncoutput,
-                                      skip_test_case_generation=skip_test_case_generation,
                                       legacy_block_access=legacy_block_access,
                                       legacy_enum_type=legacy_enum_type,
+                                      skip_library_copy=not copy_library,
                                       skip_systemrdl_name_and_desc_in_docstring=
                                            skip_systemrdl_name_and_desc_in_docstring)
 
@@ -166,6 +171,7 @@ if __name__ == '__main__':
                          asyncoutput=asyncoutput,
                          legacy_block_access=legacy,
                          legacy_enum_type=legacy,
+                         copy_library=CommandLineArgs.copy_libraries,
                          skip_systemrdl_name_and_desc_in_docstring=skip_name_and_desc_in_docstring)
 
             module_fqfn = output_path / folder_parts / '__init__.py'
