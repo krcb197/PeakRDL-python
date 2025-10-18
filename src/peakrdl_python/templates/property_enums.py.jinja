@@ -19,6 +19,8 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 {% include "header.py.jinja" with context %}
 
 {% from 'template_ultilities.py.jinja' import peakrdl_python_lib with context %}
+{# the following defining the number relative steps up to the lib and sim_lib packages from the current file #}
+{% set lib_depth = 1 %}
 
 {% if legacy_enum_type %}
 from enum import IntEnum
@@ -26,7 +28,7 @@ from enum import IntEnum
 from enum import unique
 
 {% if not legacy_enum_type %}
-from {{ peakrdl_python_lib() }} import SystemRDLEnum, SystemRDLEnumEntry
+from {{ peakrdl_python_lib(depth=lib_depth) }} import SystemRDLEnum, SystemRDLEnumEntry
 {% endif %}
 
 {% for property_enum in unique_property_enums %}

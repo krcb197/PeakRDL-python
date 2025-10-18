@@ -19,6 +19,8 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 {% include "header_tb.py.jinja" with context %}
 
 {% from 'template_ultilities.py.jinja' import peakrdl_python_lib with context %}
+{# the following defining the number relative steps up to the lib and sim_lib packages from the current file #}
+{% set lib_depth = 1 %}
 
 {% if legacy_block_access %}from array import array as Array{% endif %}
 {% if asyncoutput %}
@@ -33,11 +35,11 @@ import unittest
 {% endif %}
 
 
-from {{ peakrdl_python_lib() }} import RegisterWriteVerifyError
+from {{ peakrdl_python_lib(depth=lib_depth) }} import RegisterWriteVerifyError
 {% if asyncoutput %}
-from {{ peakrdl_python_lib() }} import AsyncCallbackSet{% if legacy_block_access %}Legacy{% endif %}
+from {{ peakrdl_python_lib(depth=lib_depth) }} import AsyncCallbackSet{% if legacy_block_access %}Legacy{% endif %}
 {% else %}
-from {{ peakrdl_python_lib() }} import NormalCallbackSet{% if legacy_block_access %}Legacy{% endif %}
+from {{ peakrdl_python_lib(depth=lib_depth) }} import NormalCallbackSet{% if legacy_block_access %}Legacy{% endif %}
 {% endif %}
 
 from ._{{top_node.inst_name}}_test_base import {{top_node.inst_name}}_TestCase, {{top_node.inst_name}}_TestCase_BlockAccess

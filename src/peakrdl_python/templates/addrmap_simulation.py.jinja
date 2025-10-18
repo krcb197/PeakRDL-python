@@ -19,17 +19,19 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 {% include "header.py.jinja" with context %}
 
 {% from 'template_ultilities.py.jinja' import peakrdl_python_sim_lib with context %}
+{# the following defining the number relative steps up to the lib and sim_lib packages from the current file #}
+{% set lib_depth = 1 %}
 
 from typing import Union
 
-from {{ peakrdl_python_sim_lib() }}.register import Register, MemoryRegister
-from {{ peakrdl_python_sim_lib() }}.memory import Memory
-from {{ peakrdl_python_sim_lib() }}.simulator import MemoryEntry
-from {{ peakrdl_python_sim_lib() }}.field import FieldDefinition
+from {{ peakrdl_python_sim_lib(depth=lib_depth) }}.register import Register, MemoryRegister
+from {{ peakrdl_python_sim_lib(depth=lib_depth) }}.memory import Memory
+from {{ peakrdl_python_sim_lib(depth=lib_depth) }}.simulator import MemoryEntry
+from {{ peakrdl_python_sim_lib(depth=lib_depth) }}.field import FieldDefinition
 {% if asyncoutput -%}
-from {{ peakrdl_python_sim_lib() }}.simulator import AsyncSimulator{% if legacy_block_access %}Legacy{% endif %} as Simulator{% if legacy_block_access %}Legacy{% endif %}
+from {{ peakrdl_python_sim_lib(depth=lib_depth) }}.simulator import AsyncSimulator{% if legacy_block_access %}Legacy{% endif %} as Simulator{% if legacy_block_access %}Legacy{% endif %}
 {% else %}
-from {{ peakrdl_python_sim_lib() }}.simulator import Simulator{% if legacy_block_access %}Legacy{% endif %}
+from {{ peakrdl_python_sim_lib(depth=lib_depth) }}.simulator import Simulator{% if legacy_block_access %}Legacy{% endif %}
 {%- endif %}
 
 {%- macro single_reg_entry(node) %}

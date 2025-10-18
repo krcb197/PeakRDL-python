@@ -15,10 +15,10 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #}
-{%- macro peakrdl_python_lib() -%}
-{% if skip_lib_copy %}peakrdl_python.{% else %}..{% endif %}lib
+{%- macro peakrdl_python_lib(depth) -%}
+{% if skip_lib_copy %}peakrdl_python.{% else %}.{{ '.' * depth }}{% endif %}lib
 {%- endmacro -%}
 
-{%- macro peakrdl_python_sim_lib() -%}
-{% if skip_lib_copy %}peakrdl_python.{% else %}..{% endif %}sim_lib
+{%- macro peakrdl_python_sim_lib(depth) -%}
+{% if skip_lib_copy %}peakrdl_python.{% else %}.{{ '.' * depth }}{% endif %}sim_lib
 {%- endmacro -%}
