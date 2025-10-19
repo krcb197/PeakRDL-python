@@ -264,8 +264,12 @@ class TestExportUDP(unittest.TestCase):
                 for udp in full_property_list:
                     if udp in list(udp_to_include):
                         self.assertIn(udp, dut.reg_a.field_a.udp)
+                        self.assertIn(udp, dut.mem_with_properties.udp)
+                        self.assertIn(udp, dut.addrmap_a.udp)
                     else:
                         self.assertNotIn(udp, dut.reg_a.field_a.udp)
+                        self.assertNotIn(udp, dut.mem_with_properties.udp)
+                        self.assertNotIn(udp, dut.addrmap_a.udp)
 
                 self.assertNotIn('int_property_to_exclude', dut.reg_a.field_a.udp)
 

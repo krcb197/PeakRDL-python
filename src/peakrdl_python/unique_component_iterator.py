@@ -36,6 +36,7 @@ from systemrdl import RDLListener, WalkerAction
 
 from .systemrdl_node_hashes import node_hash
 from .systemrdl_node_utility_functions import HideNodeCallback
+from .systemrdl_node_utility_functions import ShowUDPCallback
 from .systemrdl_node_utility_functions import get_properties_to_include
 from .systemrdl_node_utility_functions import get_reg_regwidth, get_reg_accesswidth
 from .systemrdl_node_utility_functions import get_memory_accesswidth
@@ -74,8 +75,9 @@ class PeakRDLPythonUniqueComponents:
         Provide a list of the User Defined Properties to include in the Register Model for a given
         Node
         """
-        return get_properties_to_include(node=self.instance,
-                                         udp_to_include=self.parent_walker.udp_to_include)
+        return get_properties_to_include(
+            node=self.instance,
+            udp_to_include_callback=self.parent_walker.udp_include_func)
 
     def __determine_python_class_name(self) -> tuple[str, bool]:
         """
@@ -226,11 +228,11 @@ class UniqueComponents(RDLListener):
     def __init__(self,
                  hide_node_callback: HideNodeCallback,
                  include_name_and_desc: bool,
-                 udp_to_include: Optional[list[str]]) -> None:
+                 udp_include_func: ShowUDPCallback) -> None:
         super().__init__()
 
         self.__hide_node_callback = hide_node_callback
-        self.__udp_to_include = udp_to_include
+        self.__udp_include_func = udp_include_func
         self.__include_name_and_desc = include_name_and_desc
         self.nodes: dict[int, PeakRDLPythonUniqueComponents] = {}
         self.__name_hash_cache: dict[str, Optional[int]] = {}
@@ -244,11 +246,11 @@ class UniqueComponents(RDLListener):
         return self.__hide_node_callback
 
     @property
-    def udp_to_include(self) -> Optional[list[str]]:
+    def udp_include_func(self) -> ShowUDPCallback:
         """
-        List of user defined properties to include
+        Callback to determine if a UDP shown
         """
-        return self.__udp_to_include
+        return self.__udp_include_func
 
     @property
     def include_name_and_desc(self) -> bool:
@@ -387,7 +389,7 @@ class UniqueComponents(RDLListener):
         if full_instance_name in self.__name_hash_cache:
             return self.__name_hash_cache[full_instance_name]
 
-        nodal_hash_result = node_hash(node=node, udp_to_include=self.udp_to_include,
+        nodal_hash_result = node_hash(node=node, udp_include_func=self.udp_include_func,
                                       hide_node_callback=self.hide_node_callback,
                                       include_name_and_desc=self.include_name_and_desc)
         self.__name_hash_cache[full_instance_name] = nodal_hash_result
