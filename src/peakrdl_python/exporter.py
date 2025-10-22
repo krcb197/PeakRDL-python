@@ -916,14 +916,12 @@ class PythonExporter:
 
                 result = hidden_inst_name_regex_re.match('.'.join(node.get_path_segments()))
                 return result is not None
-
-            return hide_node_func
-
-        def hide_node_func(node: Node) -> bool:
-            """
-            Returns True if the node should be hidden based on either the python property
-            """
-            return hide_based_on_property(node=node, show_hidden=show_hidden)
+        else:
+            def hide_node_func(node: Node) -> bool:
+                """
+                Returns True if the node should be hidden based on either the python property
+                """
+                return hide_based_on_property(node=node, show_hidden=show_hidden)
 
         return hide_node_func
 
@@ -936,6 +934,7 @@ class PythonExporter:
                legacy_block_access: bool = True,
                show_hidden: bool = False,
                user_defined_properties_to_include: Optional[list[str]] = None,
+               # pylint:disable-next=unused-argument
                user_defined_properties_to_include_regex: Optional[str] = None,
                hidden_inst_name_regex: Optional[str] = None,
                legacy_enum_type: bool = True,
@@ -1051,10 +1050,10 @@ class PythonExporter:
 
         self._validate_udp_to_include(udp_to_include=user_defined_properties_to_include)
         if user_defined_properties_to_include is None:
-            def udp_include_func(udp_name: str):
+            def udp_include_func(udp_name: str) -> bool: #pylint:disable=unused-argument
                 return False
         else:
-            def udp_include_func(udp_name: str):
+            def udp_include_func(udp_name: str) -> bool:
                 return udp_name in user_defined_properties_to_include
 
         hide_node_func = self.__build_hide_node_func(hidden_inst_name_regex=hidden_inst_name_regex,
