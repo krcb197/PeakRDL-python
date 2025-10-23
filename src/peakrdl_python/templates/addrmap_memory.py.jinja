@@ -55,6 +55,10 @@ from {{ peakrdl_python_lib(depth=lib_depth) }} import MemoryReadOnly{% if legacy
 from {{ peakrdl_python_lib(depth=lib_depth) }} import Reg, RegArray
 {%- endif %}
 
+{% for property_enum in unique_property_enums %}
+from ..{{top_node.inst_name}}_property_enums import {{property_enum.type_name}}_property_enumcls
+{% endfor %}
+
 {% for register_cls in dependent_registers %}
 from .._registers import {{register_cls}}
 {%- endfor %}

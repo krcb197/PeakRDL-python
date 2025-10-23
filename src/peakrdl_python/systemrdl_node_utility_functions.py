@@ -45,6 +45,15 @@ class HideNodeCallback(Protocol):
     def __call__(self, node: Node) -> bool:
         pass
 
+class ShowUDPCallback(Protocol):
+    """
+    Callback function that determines whether a UDP on a node shown, this is intended
+    to be used with the RegEX check or list of names
+    """
+    # pylint: disable=too-few-public-methods
+    def __call__(self, udp_name: str) -> bool:
+        pass
+
 
 def hide_based_on_property(node: Node, show_hidden: bool) -> bool:
     """
@@ -433,22 +442,20 @@ def get_enum_values(enum: UserEnumMeta) -> list[int]:
     return [e.value for e in enum]
 
 
-def get_properties_to_include(node: Node, udp_to_include: Optional[list[str]]) -> list[str]:
+def get_properties_to_include(node: Node, udp_to_include_callback: ShowUDPCallback) -> list[str]:
     """
     Provide a list of the User Defined Properties to include in the Register Model for a given
-    Node
+    Node, based on a call back
 
     Args:
         node: the system rdl node to examine the properties of
-        udp_to_include: list of property names to include in the system rdl
+        udp_to_include_callback: a function that determines whether to include a UDP ot not
 
     Returns:
         list of properties
     """
-    if udp_to_include is None:
-        return []
     nodal_properties = node.list_properties(include_udp=True, include_native=False)
-    return list(filter(lambda x: x in udp_to_include, nodal_properties))
+    return list(filter(udp_to_include_callback, nodal_properties))
 
 def is_encoded_field(node: FieldNode) -> bool:
     """

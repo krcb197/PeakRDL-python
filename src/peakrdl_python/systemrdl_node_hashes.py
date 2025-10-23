@@ -33,6 +33,7 @@ from systemrdl.rdltypes import AccessType
 
 from .systemrdl_node_utility_functions import get_properties_to_include
 from .systemrdl_node_utility_functions import HideNodeCallback
+from .systemrdl_node_utility_functions import ShowUDPCallback
 from .systemrdl_node_utility_functions import get_field_default_value
 from .systemrdl_node_utility_functions import get_reg_regwidth
 from .systemrdl_node_utility_functions import get_reg_accesswidth
@@ -47,7 +48,7 @@ def enum_hash(enum: UserEnumMeta) -> int:
 
 
 def __node_hash_components(node: Node,
-                           udp_to_include: Optional[list[str]],
+                           udp_include_func: ShowUDPCallback,
                            include_name_and_desc: bool = True) -> list[Any]:
 
     value_to_hash = []
@@ -74,14 +75,14 @@ def __node_hash_components(node: Node,
         if desc is not None:
             value_to_hash.append(desc)
 
-    for udp in get_properties_to_include(node, udp_to_include):
+    for udp in get_properties_to_include(node, udp_include_func):
         value_to_hash.append(node.get_property(udp))
 
     return value_to_hash
 
 
 def __field_hash(node: FieldNode,
-                 udp_to_include: Optional[list[str]],
+                 udp_include_func: ShowUDPCallback,
                  include_name_and_desc: bool = True) -> list[Any]:
     """
     Determine the hash for a node instance, which can be used to determine if it needs a unique
@@ -94,7 +95,7 @@ def __field_hash(node: FieldNode,
         raise TypeError(f'{node} is not a FieldNode, got {type(node)}')
 
     value_to_hash = __node_hash_components(node=node,
-                                           udp_to_include=udp_to_include,
+                                           udp_include_func=udp_include_func,
                                            include_name_and_desc=include_name_and_desc)
 
     value_to_hash.append(node.get_property('sw'))
@@ -111,7 +112,7 @@ def __field_hash(node: FieldNode,
 
 
 def __reg_hash(node: RegNode,
-               udp_to_include: Optional[list[str]],
+               udp_include_func: ShowUDPCallback,
                hide_node_callback: HideNodeCallback,
                include_name_and_desc: bool = True) -> list[Any]:
     """
@@ -121,7 +122,7 @@ def __reg_hash(node: RegNode,
         raise TypeError(f'{node} is not a RegNode, got {type(node)}')
 
     value_to_hash = __node_hash_components(node=node,
-                                           udp_to_include=udp_to_include,
+                                           udp_include_func=udp_include_func,
                                            include_name_and_desc=include_name_and_desc)
 
     value_to_hash.append(node.has_sw_readable)
@@ -134,7 +135,7 @@ def __reg_hash(node: RegNode,
 
     for field in node.fields():
         if not hide_node_callback(field):
-            value_to_hash += __field_hash(node=field, udp_to_include=udp_to_include,
+            value_to_hash += __field_hash(node=field, udp_include_func=udp_include_func,
                                           include_name_and_desc=include_name_and_desc)
             value_to_hash.append(field.lsb)
             value_to_hash.append(field.msb)
@@ -148,7 +149,7 @@ def __reg_hash(node: RegNode,
     return value_to_hash
 
 def __reg_instance_hash(node: RegNode,
-                        udp_to_include: Optional[list[str]],
+                        udp_include_func: ShowUDPCallback,
                         hide_node_callback: HideNodeCallback,
                         include_name_and_desc: bool = True) -> list[Any]:
     """
@@ -158,7 +159,7 @@ def __reg_instance_hash(node: RegNode,
     if not isinstance(node, RegNode):
         raise TypeError(f'{node} is not a RegNode, got {type(node)}')
 
-    value_to_hash = __reg_hash(node=node, udp_to_include=udp_to_include,
+    value_to_hash = __reg_hash(node=node, udp_include_func=udp_include_func,
                                hide_node_callback=hide_node_callback,
                                include_name_and_desc=include_name_and_desc)
     value_to_hash.append(node.inst_name)
@@ -176,7 +177,7 @@ def __reg_instance_hash(node: RegNode,
 
 
 def __regfile_instance_hash(node: RegfileNode,
-                            udp_to_include: Optional[list[str]],
+                            udp_include_func: ShowUDPCallback,
                             hide_node_callback: HideNodeCallback,
                             include_name_and_desc: bool = True) -> list[Any]:
     """
@@ -186,7 +187,7 @@ def __regfile_instance_hash(node: RegfileNode,
     if not isinstance(node, RegfileNode):
         raise TypeError(f'{node} is not a RegfileNode, got {type(node)}')
 
-    value_to_hash = __regfile_hash(node=node, udp_to_include=udp_to_include,
+    value_to_hash = __regfile_hash(node=node, udp_include_func=udp_include_func,
                                    hide_node_callback=hide_node_callback,
                                    include_name_and_desc=include_name_and_desc)
     value_to_hash.append(node.inst_name)
@@ -204,7 +205,7 @@ def __regfile_instance_hash(node: RegfileNode,
 
 
 def __addrmap_instance_hash(node: AddrmapNode,
-                            udp_to_include: Optional[list[str]],
+                            udp_include_func: ShowUDPCallback,
                             hide_node_callback: HideNodeCallback,
                             include_name_and_desc: bool = True) -> list[Any]:
     """
@@ -214,7 +215,7 @@ def __addrmap_instance_hash(node: AddrmapNode,
     if not isinstance(node, AddrmapNode):
         raise TypeError(f'{node} is not a AddrmapNode, got {type(node)}')
 
-    value_to_hash = __addrmap_hash(node=node, udp_to_include=udp_to_include,
+    value_to_hash = __addrmap_hash(node=node, udp_include_func=udp_include_func,
                                    hide_node_callback=hide_node_callback,
                                    include_name_and_desc=include_name_and_desc)
     value_to_hash.append(node.inst_name)
@@ -232,14 +233,14 @@ def __addrmap_instance_hash(node: AddrmapNode,
 
 
 def __addrmap_hash(node: AddrmapNode,
-                   udp_to_include: Optional[list[str]],
+                   udp_include_func: ShowUDPCallback,
                    hide_node_callback: HideNodeCallback,
                    include_name_and_desc: bool = True) -> list[Any]:
     if not isinstance(node, AddrmapNode):
         raise TypeError(f'{node} is not a AddrmapNode, got {type(node)}')
 
     value_to_hash = __node_hash_components(node=node,
-                                           udp_to_include=udp_to_include,
+                                           udp_include_func=udp_include_func,
                                            include_name_and_desc=include_name_and_desc)
 
     value_to_hash.append(node.is_array)
@@ -248,22 +249,22 @@ def __addrmap_hash(node: AddrmapNode,
         if not hide_node_callback(child):
             if isinstance(child, RegNode):
                 value_to_hash += __reg_instance_hash(
-                    node=child, udp_to_include=udp_to_include,
+                    node=child, udp_include_func=udp_include_func,
                     hide_node_callback=hide_node_callback,
                     include_name_and_desc=include_name_and_desc)
             elif isinstance(child, RegfileNode):
                 value_to_hash += __regfile_instance_hash(
-                    node=child, udp_to_include=udp_to_include,
+                    node=child, udp_include_func=udp_include_func,
                     hide_node_callback=hide_node_callback,
                     include_name_and_desc=include_name_and_desc)
             elif isinstance(child, MemNode):
                 value_to_hash += __mem_instance_hash(
-                    node=child, udp_to_include=udp_to_include,
+                    node=child, udp_include_func=udp_include_func,
                     hide_node_callback=hide_node_callback,
                     include_name_and_desc=include_name_and_desc)
             elif isinstance(child, AddrmapNode):
                 value_to_hash += __addrmap_instance_hash(
-                    node=child, udp_to_include=udp_to_include,
+                    node=child, udp_include_func=udp_include_func,
                     hide_node_callback=hide_node_callback,
                     include_name_and_desc=include_name_and_desc)
             elif isinstance(child, SignalNode):
@@ -275,14 +276,14 @@ def __addrmap_hash(node: AddrmapNode,
 
 
 def __regfile_hash(node: RegfileNode,
-                   udp_to_include: Optional[list[str]],
+                   udp_include_func: ShowUDPCallback,
                    hide_node_callback: HideNodeCallback,
                    include_name_and_desc: bool = True) -> list[Any]:
     if not isinstance(node, RegfileNode):
         raise TypeError(f'{node} is not a RegfileNode, got {type(node)}')
 
     value_to_hash = __node_hash_components(node=node,
-                                           udp_to_include=udp_to_include,
+                                           udp_include_func=udp_include_func,
                                            include_name_and_desc=include_name_and_desc)
 
     value_to_hash.append(node.is_array)
@@ -291,12 +292,12 @@ def __regfile_hash(node: RegfileNode,
         if not hide_node_callback(child):
             if isinstance(child, RegNode):
                 value_to_hash += __reg_instance_hash(
-                    node=child, udp_to_include=udp_to_include,
+                    node=child, udp_include_func=udp_include_func,
                     hide_node_callback=hide_node_callback,
                     include_name_and_desc=include_name_and_desc)
             elif isinstance(child, RegfileNode):
                 value_to_hash += __regfile_instance_hash(
-                    node=child, udp_to_include=udp_to_include,
+                    node=child, udp_include_func=udp_include_func,
                     hide_node_callback=hide_node_callback,
                     include_name_and_desc=include_name_and_desc)
             elif isinstance(child, SignalNode):
@@ -308,14 +309,14 @@ def __regfile_hash(node: RegfileNode,
 
 
 def __mem_hash(node: MemNode,
-               udp_to_include: Optional[list[str]],
+               udp_include_func: ShowUDPCallback,
                hide_node_callback: HideNodeCallback,
                include_name_and_desc: bool = True) -> list[Any]:
     if not isinstance(node, MemNode):
         raise TypeError(f'{node} is not a MemNode, got {type(node)}')
 
     value_to_hash = __node_hash_components(node=node,
-                                           udp_to_include=udp_to_include,
+                                           udp_include_func=udp_include_func,
                                            include_name_and_desc=include_name_and_desc)
 
     value_to_hash.append(node.is_sw_readable)
@@ -331,7 +332,7 @@ def __mem_hash(node: MemNode,
         if not hide_node_callback(child):
             if isinstance(child, RegNode):
                 value_to_hash += __reg_instance_hash(
-                    node=child, udp_to_include=udp_to_include,
+                    node=child, udp_include_func=udp_include_func,
                     hide_node_callback=hide_node_callback,
                     include_name_and_desc=include_name_and_desc)
             elif isinstance(child, SignalNode):
@@ -343,7 +344,7 @@ def __mem_hash(node: MemNode,
 
 
 def __mem_instance_hash(node: MemNode,
-                        udp_to_include: Optional[list[str]],
+                        udp_include_func: ShowUDPCallback,
                         hide_node_callback: HideNodeCallback,
                         include_name_and_desc: bool = True) -> list[Any]:
     """
@@ -353,7 +354,7 @@ def __mem_instance_hash(node: MemNode,
     if not isinstance(node, MemNode):
         raise TypeError(f'{node} is not a MemNode, got {type(node)}')
 
-    value_to_hash = __mem_hash(node=node, udp_to_include=udp_to_include,
+    value_to_hash = __mem_hash(node=node, udp_include_func=udp_include_func,
                                hide_node_callback=hide_node_callback,
                                include_name_and_desc=include_name_and_desc)
     value_to_hash.append(node.inst_name)
@@ -371,7 +372,7 @@ def __mem_instance_hash(node: MemNode,
 
 
 def node_hash(node: Node,
-              udp_to_include: Optional[list[str]],
+              udp_include_func: ShowUDPCallback,
               hide_node_callback: HideNodeCallback,
               include_name_and_desc: bool = True) -> Optional[int]:
     """
@@ -380,7 +381,7 @@ def node_hash(node: Node,
 
     Args:
         node:
-        udp_to_include: List of User Defined Properties to consider in the hash calculation
+        udp_include_func: a Callback function that determines whether to include a UDP ot not
         hide_node_callback: Call back to determine if a node (and its descendants) are included in
                             the hash calculation or not
         include_name_and_desc: Set to True to include the system RDL name and description in the
@@ -391,7 +392,7 @@ def node_hash(node: Node,
 
     """
     if isinstance(node, FieldNode):
-        hash_content = __field_hash(node=node, udp_to_include=udp_to_include,
+        hash_content = __field_hash(node=node, udp_include_func=udp_include_func,
                                     include_name_and_desc=include_name_and_desc)
         # This is a special case, if there is a two entry for type and access type, then there is
         # no need to make a special class, it is permitted to use the base classes from the
@@ -404,19 +405,19 @@ def node_hash(node: Node,
             raise TypeError(f'Unexpected content in the hash_content, {type(hash_content[0])}')
 
     elif isinstance(node, RegNode):
-        hash_content = __reg_hash(node=node, udp_to_include=udp_to_include,
+        hash_content = __reg_hash(node=node, udp_include_func=udp_include_func,
                                   hide_node_callback=hide_node_callback,
                                   include_name_and_desc=include_name_and_desc)
     elif isinstance(node, AddrmapNode):
-        hash_content = __addrmap_hash(node=node, udp_to_include=udp_to_include,
+        hash_content = __addrmap_hash(node=node, udp_include_func=udp_include_func,
                                       hide_node_callback=hide_node_callback,
                                       include_name_and_desc=include_name_and_desc)
     elif isinstance(node, RegfileNode):
-        hash_content = __regfile_hash(node=node, udp_to_include=udp_to_include,
+        hash_content = __regfile_hash(node=node, udp_include_func=udp_include_func,
                                       hide_node_callback=hide_node_callback,
                                       include_name_and_desc=include_name_and_desc)
     elif isinstance(node, MemNode):
-        hash_content = __mem_hash(node=node, udp_to_include=udp_to_include,
+        hash_content = __mem_hash(node=node, udp_include_func=udp_include_func,
                                   hide_node_callback=hide_node_callback,
                                   include_name_and_desc=include_name_and_desc)
     else:

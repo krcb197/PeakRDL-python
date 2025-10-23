@@ -144,6 +144,8 @@ jobs:
           python -m generate_and_test --RDL_source_file tests/testcases/user_defined_properties.rdl --root_node user_defined_properties --udp bool_property_to_include enum_property_to_include int_property_to_include
           python -m generate_and_test --RDL_source_file tests/testcases/user_defined_properties.rdl --root_node user_defined_properties --udp bool_property_to_include enum_property_to_include int_property_to_include str_property_to_include
           python -m generate_and_test --RDL_source_file tests/testcases/user_defined_properties.rdl --root_node user_defined_properties --udp bool_property_to_include enum_property_to_include int_property_to_include str_property_to_include struct_property_to_include double_layer_struct_property_to_include
+          
+          python -m generate_and_test --RDL_source_file tests/testcases/user_defined_properties.rdl --root_node user_defined_properties --udp_regex "bool_property_to_include|enum_property_to_include|int_property_to_include|str_property_to_include|struct_property_to_include|double_layer_struct_property_to_include"
 
           python -m generate_and_test --RDL_source_file tests/testcases/reserved_elements.rdl --root_node reserved_elements --hide_regex "(?:[\w_\[\]]+\.)+RSVD"
           
@@ -181,7 +183,8 @@ jobs:
           peakrdl python tests/testcases/hidden_property.rdl -o peakrdl_out/raw/show_hidden/ --show_hidden
           peakrdl python tests/testcases/simple.xml tests/testcases/multifile.rdl -o peakrdl_out/raw
           peakrdl python tests/testcases/extended_memories.rdl -o peakrdl_out/raw/
-          peakrdl python tests/testcases/user_defined_properties.rdl -o peakrdl_out/raw/ --udp bool_property_to_include
+          peakrdl python tests/testcases/user_defined_properties.rdl -o peakrdl_out/raw/list/ --udp bool_property_to_include enum_property_to_include struct_property_to_include str_property_to_include
+          peakrdl python tests/testcases/user_defined_properties.rdl -o peakrdl_out/raw/regex/ --udp_regex "bool_property_to_include|enum_property_to_include|struct_property_to_include|str_property_to_include"
           peakrdl python tests/testcases/reserved_elements.rdl -o peakrdl_out/raw/ --hide_regex "(?:[\w_\[\]]+\.)+RSVD"
           peakrdl python tests/testcases/parametrised_top.rdl -o peakrdl_out/raw/ -P MY_PARAM=3
           python -m unittest discover -s peakrdl_out/raw
@@ -259,6 +262,14 @@ jobs:
           python -m with_hal
 
           cd ../..
+          
+          cd example/user_defined_properties/
+          peakrdl python user_defined_properties.rdl -o . --udp_regex "^(?!python_hide$)(?!python_name$).+"
+          python -m demo_user_defined_properties
+          
+          cd ../..
+          
+          
 
   integration_tests:
     needs:

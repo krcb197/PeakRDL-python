@@ -245,28 +245,24 @@ class {{fq_block_name}}_single_access({{top_node.inst_name}}_TestCase): # type: 
         """
         {% for node in owned_elements.nodes -%}
         with self.subTest(msg='register: {{'.'.join(node.get_path_segments())}}'):
-            {% if not udp_to_include %}
+            {% set property_list = get_properties_to_include(node,udp_include_func) %}
+            {% if not property_list %}
             self.assertDictEqual(self.dut.{{'.'.join(get_python_path_segments(node))}}.udp,{})
             {% else %}
-                {% set property_list = get_properties_to_include(node,udp_to_include) %}
-                {% if not property_list %}
-            self.assertDictEqual(self.dut.{{'.'.join(get_python_path_segments(node))}}.udp,{})
-                {% else %}
-                    {% for property_name in property_list %}
-                    {% set property_value = node.get_property(property_name) %}
-                        {% if isinstance(property_value, systemrdlUserStruct) %}
+                {% for property_name in property_list %}
+                {% set property_value = node.get_property(property_name) %}
+                    {% if isinstance(property_value, systemrdlUserStruct) %}
             self.assertDictEqual(self.dut.{{'.'.join(get_python_path_segments(node))}}.udp['{{property_name}}'], {    # type: ignore[arg-type]
-                {% for sub_name, sub_value in property_value.members.items() %} {{udp_property_dict_entry(sub_name, sub_value)}} {% endfor %}
+            {% for sub_name, sub_value in property_value.members.items() %} {{udp_property_dict_entry(sub_name, sub_value)}} {% endfor %}
                 } )
-                        {% elif isinstance(property_value, systemrdlUserEnum) %}
+                    {% elif isinstance(property_value, systemrdlUserEnum) %}
             self.assertEqual(self.dut.{{'.'.join(get_python_path_segments(node))}}.udp['{{property_name}}'], {{ type(property_value).type_name }}_property_enumcls.{{ property_value.name.upper() }} )
-                         {% elif isinstance(property_value, str) %}
+                     {% elif isinstance(property_value, str) %}
             self.assertEqual(self.dut.{{'.'.join(get_python_path_segments(node))}}.udp['{{property_name}}'], "{{ property_value }}" )
-                        {% else %}
+                    {% else %}
             self.assertEqual(self.dut.{{'.'.join(get_python_path_segments(node))}}.udp['{{property_name}}'], {{ property_value }} )
-                        {% endif %}
-                    {% endfor %}
-                {% endif %}
+                    {% endif %}
+                {% endfor %}
             {% endif %}
         {% endfor %}
 

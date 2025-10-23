@@ -418,6 +418,11 @@ Exposing User Defined Properties
 SystemRDL allows properties to be added to any component (Field, Memory, Register, Register File,
 Address Map), so called *User Defined Properties (UDP)*.
 
+There are two methods to expose user defined properties:
+
+- A list of strings to include in the package
+- A Regular Expression which will include any UDP which matches the regular expression
+
 Consider the following systemRDL example with a user defined property: ``component_usage``
 
 .. literalinclude :: ../example/user_defined_properties/user_defined_properties.rdl
@@ -429,11 +434,27 @@ User Defined Properties are not automatically included they must be specified, a
 
    peakrdl python user_defined_properties.rdl -o . --udp component_usage
 
+Alternatively the User Defined Properties can be included with a regular expression.
+In the following case all UDPs are included, except the ones used by PeakRDL python
+
+.. code-block:: bash
+
+   peakrdl python user_defined_properties.rdl -o . --udp_regex "^(?!python_hide$)(?!python_name$).+"
+
+.. warning::
+
+   Attempting to use both the list and regular expression approach is not supported and will
+   generate an error
+
 The user defined properties are stored in a ``udp`` property of all component in the generated
 register access and can be accessed as follows:
 
 .. literalinclude :: ../example/user_defined_properties/demo_user_defined_properties.py
    :language: python
+
+.. versionadded:: 2.0.0
+
+    Regular Expression matching for User Defined Properties was added in version 2.0.0
 
 Python Safe Names
 =================
