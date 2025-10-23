@@ -81,9 +81,12 @@ CommandLineParser.add_argument('--legacy_block_access', action='store_true',
                                dest='legacy_block_access',
                                help='peakrdl python has two methods to hold blocks of data, the '
                                     'legacy mode based on Array or the new mode using lists')
-CommandLineParser.add_argument('--udp', dest='udp', nargs='*',
+udp_group = CommandLineParser.add_mutually_exclusive_group(required=False)
+udp_group.add_argument('--udp', dest='udp', nargs='*',
                                type=str, help='any user defined properties to include in the '
                                               'reg_model')
+udp_group.add_argument('--udp_regex', dest='udp_regex', type=str,
+                       help='a regex to define which UPD ares show in the reg model')
 CommandLineParser.add_argument('--hide_regex', dest='hide_regex', type=str,
                                help='A regex that will cause any matching fully qualified node to '
                                     'be hidden')

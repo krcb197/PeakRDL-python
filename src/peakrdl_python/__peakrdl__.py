@@ -85,8 +85,11 @@ class Exporter(ExporterSubcommandPlugin):
                                help='show addrmap, regfile, memory, register and fields that '
                                     'have been given the python_hide user defined property and '
                                     'would be removed from the build python by default')
-        arg_group.add_argument('--udp', dest='udp', nargs='*', type=str,
+        udp_group = arg_group.add_mutually_exclusive_group(required=False)
+        udp_group.add_argument('--udp', dest='udp', nargs='*', type=str,
                                help='any user defined properties to include in the reg_model')
+        udp_group.add_argument('--udp_regex', dest='udp_regex', type=str,
+                               help='a regex to define which UPD ares show in the reg model')
         arg_group.add_argument('--hide_regex', dest='hide_regex', type=str,
                                help='A regex that will cause any matching fully qualified node to '
                                     'be hidden')
@@ -172,6 +175,7 @@ class Exporter(ExporterSubcommandPlugin):
             legacy_block_access=options.legacy_block_access,
             show_hidden=options.show_hidden,
             user_defined_properties_to_include=options.udp,
+            user_defined_properties_to_include_regex=options.udp_regex,
             hidden_inst_name_regex=options.hide_regex,
             skip_library_copy=options.skip_library_copy,
             legacy_enum_type=options.legacy_enum_type,

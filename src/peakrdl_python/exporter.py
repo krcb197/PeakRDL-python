@@ -27,6 +27,7 @@ from collections.abc import Iterable
 from functools import partial
 import sys
 from itertools import filterfalse, chain
+import warnings
 
 import jinja2 as jj
 from systemrdl import RDLWalker
@@ -883,23 +884,6 @@ class PythonExporter:
                                          target_name='test_sim_' + fq_block_name + '.py',
                                          template_context=context)
 
-    def _validate_udp_to_include(self, udp_to_include: Optional[list[str]]) -> None:
-        if udp_to_include is not None:
-            # the list of user defined properties may not include the names used by peakrdl python
-            # for control behaviours
-            if not isinstance(udp_to_include, list):
-                raise TypeError(f'The user_defined_properties_to_include must be a list, got '
-                                f'{type(udp_to_include)}')
-            for entry in udp_to_include:
-                if not isinstance(entry, str):
-                    raise TypeError('The entries in the user_defined_properties_to_include must '
-                                    f'be a str, got {type(entry)}')
-            reserved_names = ['python_hide', 'python_name']
-            for reserved_name in reserved_names:
-                if reserved_name in udp_to_include:
-                    raise RuntimeError('It is not permitted to expose a property name used to'
-                                       ' build the peakrdl-python wrappers: ' + reserved_name)
-
     def __build_hide_node_func(self,
                                hidden_inst_name_regex: Optional[str],
                                show_hidden: bool) -> HideNodeCallback:
@@ -925,6 +909,46 @@ class PythonExporter:
 
         return hide_node_func
 
+    def __validate_udp_to_include_str_list(self, udp_to_include: list[str]) -> None:
+
+        if not isinstance(udp_to_include, list):
+            raise TypeError(f'The user_defined_properties_to_include must be a list, got '
+                            f'{type(udp_to_include)}')
+        for entry in udp_to_include:
+            if not isinstance(entry, str):
+                raise TypeError('The entries in the user_defined_properties_to_include must '
+                                f'be a str, got {type(entry)}')
+
+    def __build_udp_include_func(
+            self,
+            user_defined_properties_to_include: Optional[list[str]] = None,
+            user_defined_properties_to_include_regex: Optional[str] = None) -> ShowUDPCallback:
+        if (user_defined_properties_to_include is None) and \
+                (user_defined_properties_to_include_regex is None):
+            # if both are None then the behaviour is all UDP are excluded
+            def udp_include_func(udp_name: str) -> bool:  # pylint:disable=unused-argument
+                return False
+        elif (user_defined_properties_to_include is not None) and \
+                (user_defined_properties_to_include_regex is None):
+            self.__validate_udp_to_include_str_list(
+                udp_to_include=user_defined_properties_to_include)
+            def udp_include_func(udp_name: str) -> bool:
+                return udp_name in user_defined_properties_to_include
+        elif (user_defined_properties_to_include is None) and \
+                (user_defined_properties_to_include_regex is not None):
+            show_udp_re = re.compile(user_defined_properties_to_include_regex)
+
+            def udp_include_func(udp_name: str) -> bool:
+
+                result = show_udp_re.match(udp_name)
+                return result is not None
+        else:
+            raise RuntimeError('One of user_defined_properties_to_include or '
+                               'user_defined_properties_to_include_regex should '
+                               'be set but not both')
+
+        return udp_include_func
+
     # pylint: disable-next=too-many-arguments,too-many-locals
     def export(self, node: Union[RootNode, AddrmapNode], path: str, *,
                asyncoutput: bool = False,
@@ -934,7 +958,6 @@ class PythonExporter:
                legacy_block_access: bool = True,
                show_hidden: bool = False,
                user_defined_properties_to_include: Optional[list[str]] = None,
-               # pylint:disable-next=unused-argument
                user_defined_properties_to_include_regex: Optional[str] = None,
                hidden_inst_name_regex: Optional[str] = None,
                legacy_enum_type: bool = True,
@@ -1047,19 +1070,23 @@ class PythonExporter:
                                    include_libraries=not skip_library_copy)
         package.create_empty_package(cleanup=delete_existing_package_content)
 
+        udp_include_func = self.__build_udp_include_func(
+            user_defined_properties_to_include=user_defined_properties_to_include,
+            user_defined_properties_to_include_regex=user_defined_properties_to_include_regex)
 
-        self._validate_udp_to_include(udp_to_include=user_defined_properties_to_include)
-        if user_defined_properties_to_include is None:
-            def udp_include_func(udp_name: str) -> bool: #pylint:disable=unused-argument
-                return False
-        else:
-            def udp_include_func(udp_name: str) -> bool:
-                return udp_name in user_defined_properties_to_include
+        # the UDP `python_hide` and `python_name` are used by peakRDL python and it would be
+        # unusual to want to expose them in the generated code
+        for reserved_udp in ['python_hide', 'python_name']:
+            if udp_include_func(reserved_udp):
+                warnings.warn(message=f'{reserved_udp} is in the UDP filter, this is'
+                                       'normally an internal peakRDL python UDP',
+                              category=UserWarning)
 
         hide_node_func = self.__build_hide_node_func(hidden_inst_name_regex=hidden_inst_name_regex,
                                                      show_hidden=show_hidden)
 
-        # if the top level node is hidden the wrapper will be meaningless, rather then try to
+
+        # if the top level node is hidden the wrapper will be meaningless, rather than try to
         # handle a special case this is treated as an error
         if hide_node_func(top_block):
             raise RuntimeError('PeakRDL Python can not export if the node is hidden')
