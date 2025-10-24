@@ -86,7 +86,7 @@ from {{ peakrdl_python_lib(depth=lib_depth) }} import AsyncCallbackSet, AsyncCal
 from {{ peakrdl_python_lib(depth=lib_depth) }} import NormalCallbackSet, NormalCallbackSetLegacy
 {% endif %}
 
-{{ peakrld_version_check(depth=lib_depth) }}
+{{ peakrld_version_check() }}
 
 {% for property_enum in unique_property_enums %}
 from .{{top_node.inst_name}}_property_enums import {{property_enum.type_name}}_property_enumcls

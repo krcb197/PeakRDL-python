@@ -23,8 +23,9 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 {% if skip_lib_copy %}peakrdl_python.{% else %}.{{ '.' * depth }}{% endif %}sim_lib
 {%- endmacro -%}
 
-{%- macro peakrld_version_check(depth) %}
-from {% if skip_lib_copy %}peakrdl_python.{% else %}.{{ '.' * depth }}{% endif %}__about__ import __version__
+{%- macro peakrld_version_check() %}
+{% if skip_lib_copy %}
+from peakrdl_python.__about__ import __version__
 if __version__ != '{{version}}':
     raise RuntimeError('Library built with peakrdl-python version {{version}} however '
                         f'version {__version__} is installed')
