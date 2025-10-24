@@ -27,6 +27,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 {% from 'template_ultilities.py.jinja' import peakrdl_python_lib with context %}
 {# the following defining the number relative steps up to the lib and sim_lib packages from the current file #}
 {% set lib_depth = 1 %}
+{% from 'template_ultilities.py.jinja' import peakrld_version_check with context %}
 
 from typing import Iterator
 from typing import Optional
@@ -84,6 +85,8 @@ from {{ peakrdl_python_lib(depth=lib_depth) }} import AsyncCallbackSet, AsyncCal
 {% else %}
 from {{ peakrdl_python_lib(depth=lib_depth) }} import NormalCallbackSet, NormalCallbackSetLegacy
 {% endif %}
+
+{{ peakrld_version_check() }}
 
 {% for property_enum in unique_property_enums %}
 from .{{top_node.inst_name}}_property_enums import {{property_enum.type_name}}_property_enumcls
