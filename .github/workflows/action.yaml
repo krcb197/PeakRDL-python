@@ -29,7 +29,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.12"
+          python-version: "3.13"
 
       - name: Install dependencies
         run: |
@@ -54,7 +54,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.12"
+          python-version: "3.13"
 
       - name: Install dependencies
         run: |
@@ -72,7 +72,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: [ 3.9, "3.10", "3.11", "3.12", "3.13" ]
+        python-version: [ 3.9, "3.10", "3.11", "3.12", "3.13", "3.14" ]
 
     steps:
       - uses: actions/checkout@v4
@@ -102,7 +102,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: [ 3.9, "3.10", "3.11", "3.12", "3.13" ]
+        python-version: [ 3.9, "3.10", "3.11", "3.12", "3.13", "3.14" ]
 
     steps:
       - uses: actions/checkout@v4
@@ -160,7 +160,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: [ 3.9, "3.10", "3.11", "3.12", "3.13" ]
+        python-version: [ 3.9, "3.10", "3.11", "3.12", "3.13", "3.14" ]
 
     steps:
       - uses: actions/checkout@v4
@@ -279,7 +279,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: [3.9, "3.10", "3.11", "3.12", "3.13"]
+        python-version: [3.9, "3.10", "3.11", "3.12", "3.13", "3.14"]
         lib_copy: [true, false]
 
     steps:
@@ -341,7 +341,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: [3.9, "3.10", "3.11", "3.12", "3.13"]
+        python-version: [3.9, "3.10", "3.11", "3.12", "3.13", "3.14"]
 
     steps:
     - uses: actions/checkout@v4
@@ -392,7 +392,7 @@ jobs:
       - uses: actions/setup-python@v5
         name: Install Python
         with:
-          python-version: "3.12"
+          python-version: "3.13"
 
       - name: Install dependencies
         run: |
