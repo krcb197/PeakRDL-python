@@ -29,5 +29,5 @@ from peakrdl_python.__about__ import __version__
 if __version__ != '{{version}}':
     raise RuntimeError('Library built with peakrdl-python version {{version}} however '
                         f'version {__version__} is installed')
-
+{% endif %}
 {%- endmacro -%}
