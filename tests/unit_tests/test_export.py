@@ -867,7 +867,7 @@ class TestNameDescInDocString(unittest.TestCase):
                 standard_msg = f"{cls.__name__} is not a subclass of {class_or_tuple}"
                 self.fail(self._formatMessage(msg, standard_msg))
 
-        def assertIsNotSubclass(self, cls, class_or_tuple, msg=None):
+        def assertNotIsSubclass(self, cls, class_or_tuple, msg=None):
             if issubclass(cls, class_or_tuple):
                 standard_msg = f"{cls.__name__} is a subclass of {class_or_tuple}"
                 self.fail(self._formatMessage(msg, standard_msg))
@@ -921,7 +921,7 @@ class TestNameDescInDocString(unittest.TestCase):
                 else:
                     # all the xxxx_b should be an node_array and a node of the respective types
                     self.assertIsSubclass(types[0], NodeArray)
-                    self.assertIsNotSubclass(types[1], NodeArray)
+                    self.assertNotIsSubclass(types[1], NodeArray)
 
 
 
