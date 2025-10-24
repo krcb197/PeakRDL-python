@@ -268,3 +268,33 @@ if __name__ == '__main__':
         if CommandLineArgs.coverage_report:
             cov.stop()
             cov.html_report(directory=str(CommandLineArgs.coverage_report_path / CommandLineArgs.root_node))
+
+
+        import asyncio
+        async def do_many_write():
+            params = [{f'data%d':True} for n in range(32)]
+            tasks = [
+                asyncio.create_task(dut.large_field_count_reg[0].data0.write(True)),
+                asyncio.create_task(dut.large_field_count_reg[0].data1.write(True)),
+                asyncio.create_task(dut.large_field_count_reg[0].data2.write(True)),
+                asyncio.create_task(dut.large_field_count_reg[0].data3.write(True)),
+                asyncio.create_task(dut.large_field_count_reg[0].data4.write(True)),
+                asyncio.create_task(dut.large_field_count_reg[0].data5.write(True)),
+                asyncio.create_task(dut.large_field_count_reg[0].data6.write(True)),
+                asyncio.create_task(dut.large_field_count_reg[0].data7.write(True)),
+                asyncio.create_task(dut.large_field_count_reg[0].data8.write(True)),
+                asyncio.create_task(dut.large_field_count_reg[0].data9.write(True)),
+                asyncio.create_task(dut.large_field_count_reg[0].data10.write(True)),
+                asyncio.create_task(dut.large_field_count_reg[0].data11.write(True)),
+                asyncio.create_task(dut.large_field_count_reg[0].data12.write(True)),
+                asyncio.create_task(dut.large_field_count_reg[0].data13.write(True)),
+                asyncio.create_task(dut.large_field_count_reg[0].data14.write(True)),
+                asyncio.create_task(dut.large_field_count_reg[0].data15.write(True)),
+                asyncio.create_task(dut.large_field_count_reg[0].data16.write(True)),
+                asyncio.create_task(dut.large_field_count_reg[0].data17.write(True)),
+                asyncio.create_task(dut.large_field_count_reg[0].data18.write(True)),
+                asyncio.create_task(dut.large_field_count_reg[0].data19.write(True)),
+                asyncio.create_task(dut.large_field_count_reg[0].data20.write(True))
+            ]
+            await asyncio.gather(*tasks)
+        asyncio.run(do_many_write())
