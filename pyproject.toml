@@ -63,7 +63,7 @@ dev = [
     "mypy",
     "pylint",
     "coverage",
-    "peakrdl-ipxact"
+    "peakrdl"
 ]
 peakrdl = [
     "peakrdl"
