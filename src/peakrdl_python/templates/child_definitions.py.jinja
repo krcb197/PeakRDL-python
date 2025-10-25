@@ -1,0 +1,43 @@
+{#
+peakrdl-python is a tool to generate Python Register Access Layer (RAL) from SystemRDL
+Copyright (C) 2021 - 2025
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <https://www.gnu.org/licenses/>.
+#}
+
+{%- macro children_iterator_content(node) %}
+        {% if node.zero_children %}
+        # Empty generator in case there are no children of this type
+        if False: yield
+        {% else %}
+        {% for child_node in node.children(unroll=False) -%}
+        yield self.{{safe_node_name(child_node)}}
+        {% endfor %}
+        {% endif %}
+{%- endmacro %}
+
+{%- macro node_children_iterator(node) %}
+    def __iter__(self) -> Iterator[Union[Node, NodeArray]]:
+        {{ children_iterator_content(node) }}
+{%- endmacro %}
+
+{%- macro field_children_iterator(node) %}
+    def __iter__(self) -> Iterator[Union[Field{% if asyncoutput %}Async{% endif %}ReadOnly,Field{% if asyncoutput %}Async{% endif %}WriteOnly,Field{% if asyncoutput %}Async{% endif %}ReadWrite]]:
+        {{ children_iterator_content(node) }}
+{%- endmacro %}
+
+{%- macro reg_children_iterator(node) %}
+    def __iter__(self) -> Iterator[Union[{% if asyncoutput %}Async{% endif %}Reg,{% if asyncoutput %}Async{% endif %}RegArray]]:
+        {{ children_iterator_content(node) }}
+{%- endmacro %}

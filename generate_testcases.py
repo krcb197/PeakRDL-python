@@ -2,7 +2,7 @@
 
 """
 peakrdl-python is a tool to generate Python Register Access Layer (RAL) from SystemRDL
-Copyright (C) 2021 - 2023
+Copyright (C) 2021 - 2025
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -26,6 +26,7 @@ from glob import glob
 from typing import Optional, List
 import argparse
 import pathlib
+from itertools import product
 
 from systemrdl import RDLCompiler # type: ignore
 from systemrdl.node import Node, AddrmapNode # type: ignore
@@ -40,6 +41,13 @@ CommandLineParser.add_argument('--output', dest='output_path',
                                default='testcase_output')
 CommandLineParser.add_argument('--test_case', dest='test_case',
                                type=str)
+CommandLineParser.add_argument('--copy_libraries', action='store_true', dest='copy_libraries',
+                               help='by default peakrdl python copies all the libraries over'
+                                    'to the generated package along with the generated code. '
+                                    'However, that is potentiality problematic when developing'
+                                    'and debugging as multiple copies of the libraries can cause'
+                                    'confusion. Therefore by default this script does not copy '
+                                    'them over.')
 
 
 def compile_rdl(infile: str,
@@ -75,17 +83,16 @@ def compile_rdl(infile: str,
 
 def generate(root: Node, outdir: str,
              asyncoutput: bool = False,
-             skip_test_case_generation: bool = False,
              legacy_block_access: bool = True,
-             legacy_enum_type: bool = True) -> List[str]:
+             legacy_enum_type: bool = True,
+             copy_library: bool = False,
+             skip_systemrdl_name_and_desc_in_docstring: bool = False) -> List[str]:
     """
     Generate a PeakRDL output package from compiled systemRDL
 
     Args:
         root: node in the systemRDL from which the code should be generated
         outdir: directory to store the result in
-        autoformatoutputs: If set to True the code will be run through autopep8 to
-                clean it up. This can slow down large jobs or mask problems
         legacy_block_access: If set to True the code build a register model the legacy array block
                              access as opposed to the newer list based
         legacy_enum_type: If set to True the code with build with the old style IntEnum rather than
@@ -98,9 +105,11 @@ def generate(root: Node, outdir: str,
     print(f'Info: Generating python for {root.inst_name} in {outdir}')
     modules = PythonExporter().export(root, outdir, # type: ignore[no-untyped-call]
                                       asyncoutput=asyncoutput,
-                                      skip_test_case_generation=skip_test_case_generation,
                                       legacy_block_access=legacy_block_access,
-                                      legacy_enum_type=legacy_enum_type)
+                                      legacy_enum_type=legacy_enum_type,
+                                      skip_library_copy=not copy_library,
+                                      skip_systemrdl_name_and_desc_in_docstring=
+                                           skip_systemrdl_name_and_desc_in_docstring)
 
     return modules
 
@@ -133,28 +142,39 @@ if __name__ == '__main__':
         else:
             root = compile_rdl(rdl_file)
 
-        for build_options, folder_name in \
-                [({'asyncoutput': True, 'legacy_block':False, 'legacy_enum': False}, 'raw_async'),
-                 ({'asyncoutput': False, 'legacy_block':False, 'legacy_enum': False}, 'raw'),
-                 ({'asyncoutput': True, 'legacy_block': True, 'legacy_enum': False}, 'raw_async_legacy_block'),
-                 ({'asyncoutput': False, 'legacy_block': True, 'legacy_enum': False}, 'raw_legacy_block'),
-                 ({'asyncoutput': True, 'legacy_block': False, 'legacy_enum': True}, 'raw_async_legacy_enum'),
-                 ({'asyncoutput': False, 'legacy_block': False, 'legacy_enum': True}, 'raw_legacy_enum'),
-                 ({'asyncoutput': True, 'legacy_block': True, 'legacy_enum': True}, 'raw_async_legacy_block_legacy_enum'),
-                 ({'asyncoutput': False, 'legacy_block': True, 'legacy_enum': True}, 'raw_legacy_block_legacy_enum')
-                 ]:
+        options = {
+            'asyncoutput': [True, False],
+            'legacy': [True, False],
+            'skip_systemrdl_name_and_desc_in_docstring': [True, False]
+        }
+
+        for asyncoutput, legacy, skip_name_and_desc_in_docstring in product(
+                options['asyncoutput'], options['legacy'],
+                options['skip_systemrdl_name_and_desc_in_docstring']):
+
+
 
             # test cases that use the extended widths an not be tested in the non-legacy modes
             if (testcase_name in ['extended_memories', 'extended_sizes_registers_array']) and \
-                    (build_options['legacy_block'] is True):
+                    (legacy is True):
                 continue
 
-            _ = generate(root, str(output_path / folder_name),
-                         asyncoutput=build_options['asyncoutput'],
-                         legacy_block_access=build_options['legacy_block'],
-                         legacy_enum_type=build_options['legacy_enum'])
+            folder_parts = 'raw'
+            if asyncoutput:
+                folder_parts += '_async'
+            if legacy:
+                folder_parts += '_legacy'
+            if skip_name_and_desc_in_docstring:
+                folder_parts += '_skip_name_and_desc_in_docstring'
 
-            module_fqfn = output_path / folder_name / '__init__.py'
+            _ = generate(root, str(output_path / folder_parts),
+                         asyncoutput=asyncoutput,
+                         legacy_block_access=legacy,
+                         legacy_enum_type=legacy,
+                         copy_library=CommandLineArgs.copy_libraries,
+                         skip_systemrdl_name_and_desc_in_docstring=skip_name_and_desc_in_docstring)
+
+            module_fqfn = output_path / folder_parts / '__init__.py'
             with open(module_fqfn, 'w', encoding='utf-8') as fid:
                 fid.write('pass\n')
 

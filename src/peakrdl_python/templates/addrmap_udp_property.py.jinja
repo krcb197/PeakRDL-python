@@ -1,5 +1,6 @@
+{#
 peakrdl-python is a tool to generate Python Register Access Layer (RAL) from SystemRDL
-Copyright (C) 2021 - 2023
+Copyright (C) 2021 - 2025
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -33,13 +34,13 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 {%- macro udp_property(node) %}
 
-    {% set property_list = get_properties_to_include(node,udp_to_include) %}
+    {% set property_list = node.properties_to_include %}
     {% if property_list %}
     @property
     def udp(self) -> UDPStruct:
         return {
             {% for property_name in property_list %}
-            {{udp_property_dict_entry(property_name, node.get_property(property_name))}}
+            {{udp_property_dict_entry(property_name, node.instance.get_property(property_name))}}
             {% endfor %}
                }
 

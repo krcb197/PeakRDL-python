@@ -2,7 +2,7 @@
 
 """
 peakrdl-python is a tool to generate Python Register Access Layer (RAL) from SystemRDL
-Copyright (C) 2021 - 2023
+Copyright (C) 2021 - 2025
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -81,9 +81,12 @@ CommandLineParser.add_argument('--legacy_block_access', action='store_true',
                                dest='legacy_block_access',
                                help='peakrdl python has two methods to hold blocks of data, the '
                                     'legacy mode based on Array or the new mode using lists')
-CommandLineParser.add_argument('--udp', dest='udp', nargs='*',
+udp_group = CommandLineParser.add_mutually_exclusive_group(required=False)
+udp_group.add_argument('--udp', dest='udp', nargs='*',
                                type=str, help='any user defined properties to include in the '
                                               'reg_model')
+udp_group.add_argument('--udp_regex', dest='udp_regex', type=str,
+                       help='a regex to define which UPD ares show in the reg model')
 CommandLineParser.add_argument('--hide_regex', dest='hide_regex', type=str,
                                help='A regex that will cause any matching fully qualified node to '
                                     'be hidden')
@@ -101,7 +104,14 @@ CommandLineParser.add_argument('--skip_systemrdl_name_and_desc_properties',
                                dest='skip_systemrdl_name_and_desc_properties',
                                help='peakrdl python includes the system RDL name and desc '
                                     'attributes as properties of the class that is built. Setting '
-                                    'this will skip this reducign the size of the python code '
+                                    'this will skip this reducing the size of the python code '
+                                    'generated')
+CommandLineParser.add_argument('--skip_systemrdl_name_and_desc_in_docstring',
+                               action='store_true',
+                               dest='skip_systemrdl_name_and_desc_in_docstring',
+                               help='peakrdl python includes the system RDL name and desc '
+                                    'attributes within the doc string of the built code. Setting '
+                                    'this will skip this reducing the size of the python code '
                                     'generated')
 
 
@@ -143,12 +153,13 @@ def build_logging_cong(logfilepath:str):
             },
             __name__:  {
                 'handlers': ['console', 'file'],
-                'propagate': True
             },
             'reg_model':  {
                 'handlers': ['console', 'file'],
-                'propagate': True
-            }
+            },
+            'peakrdl_python': {
+                'handlers': ['console', 'file'],
+            },
         }
     }
 
@@ -157,8 +168,11 @@ if __name__ == '__main__':
 
     CommandLineArgs = CommandLineParser.parse_args()
 
-    logfile_path = build_logging_cong(CommandLineArgs.output_path / f'{__file__}.log')
-    logging.config.dictConfig(logfile_path)
+    print('Setup main Logger')
+    log_file_config = build_logging_cong(str(CommandLineArgs.output_path / f'{__file__}.log'))
+    logging.config.dictConfig(log_file_config)
+    script_logger = logging.getLogger(__name__)
+    script_logger.info('Generating and testing')
 
     rdlc = compiler_with_udp_registers()
 
@@ -170,9 +184,6 @@ if __name__ == '__main__':
                 ipxat.import_file(ipxact_file)
         else:
             raise(RuntimeError('not a list'))
-
-    reg_model_class_name = CommandLineArgs.root_node +'_cls'
-    sim_class_name = CommandLineArgs.root_node + '_simulator_cls'
 
     rdlc.compile_file(CommandLineArgs.root_RDL_file)
     spec = rdlc.elaborate(top_def_name=CommandLineArgs.root_node).top
@@ -200,7 +211,10 @@ if __name__ == '__main__':
         hidden_inst_name_regex=CommandLineArgs.hide_regex,
         legacy_enum_type=CommandLineArgs.legacy_enum_type,
         skip_systemrdl_name_and_desc_properties=
-        CommandLineArgs.skip_systemrdl_name_and_desc_properties)
+        CommandLineArgs.skip_systemrdl_name_and_desc_properties,
+        skip_systemrdl_name_and_desc_in_docstring=
+        CommandLineArgs.skip_systemrdl_name_and_desc_in_docstring
+    )
     print(f'generation time {time.time() - start_time}s')
 
     if not CommandLineArgs.export_only:
@@ -212,14 +226,14 @@ if __name__ == '__main__':
             cov.start()
 
         reg_model_module = __import__( 'generate_and_test_output.' +
-            CommandLineArgs.root_node + '.reg_model.' + CommandLineArgs.root_node,
-            globals(), locals(), [reg_model_class_name], 0)
+            CommandLineArgs.root_node + '.reg_model',
+            globals(), locals(), ['RegModel'], 0)
         sim_module = __import__( 'generate_and_test_output.' +
-            CommandLineArgs.root_node + '.sim.' + CommandLineArgs.root_node,
-            globals(), locals(), [sim_class_name], 0)
+            CommandLineArgs.root_node + '.sim',
+            globals(), locals(), ['Simulator'], 0)
 
 
-        dut_cls = getattr(reg_model_module, reg_model_class_name)
+        dut_cls = getattr(reg_model_module, 'RegModel')
 
         if CommandLineArgs.copy_libraries:
             peakrdl_python_package = __import__('generate_and_test_output.' + CommandLineArgs.root_node + '.lib',
@@ -239,7 +253,7 @@ if __name__ == '__main__':
             else:
                 callbackset_cls = getattr(peakrdl_python_package, 'NormalCallbackSet')
 
-        sim_cls = getattr(sim_module, sim_class_name)
+        sim_cls = getattr(sim_module, 'Simulator')
         sim = sim_cls(address=0)
         dut = dut_cls(callbacks=callbackset_cls(read_callback=sim.read,
                                                 write_callback=sim.write))
@@ -254,5 +268,3 @@ if __name__ == '__main__':
         if CommandLineArgs.coverage_report:
             cov.stop()
             cov.html_report(directory=str(CommandLineArgs.coverage_report_path / CommandLineArgs.root_node))
-
-

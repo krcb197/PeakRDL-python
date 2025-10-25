@@ -1,4 +1,20 @@
 """
+peakrdl-python is a tool to generate Python Register Access Layer (RAL) from SystemRDL
+Copyright (C) 2021 - 2025
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
 Test for basic register reading
 """
 import unittest
@@ -62,25 +78,7 @@ class RegTestBase(CallBackTestWrapper, ABC):
                 self.__dut = reg_type(logger_handle='dut',
                                       inst_name='dut',
                                       parent=self,
-                                      width=32,
-                                      accesswidth=32,
                                       address=address)
-
-            def get_memories(self, unroll: bool = False) -> \
-                    Iterator[Union[Memory, tuple[Memory, ...]]]:
-                raise NotImplementedError('Not implemented in the testing')
-
-            def get_sections(self, unroll: bool = False) -> \
-                    Iterator[Union[Union[AddressMap, RegFile],
-                                   tuple[Union[AddressMap, RegFile], ...]]]:
-                raise NotImplementedError('Not implemented in the testing')
-
-            def get_registers(self, unroll: bool = False) -> \
-                    Iterator[Union[Reg, RegArray]]:
-                """
-                generator that produces all the readable_registers of this node
-                """
-                raise NotImplementedError('Not implemented in the testing')
 
             @property
             def systemrdl_python_child_name_map(self) -> dict[str, str]:
@@ -99,6 +97,9 @@ class RegTestBase(CallBackTestWrapper, ABC):
             @property
             def size(self) -> int:
                 return self.dut.size
+
+            def __iter__(self) -> Iterator[Union[Node, NodeArray]]:
+                yield self.dut
 
         super().setUp()
         self.dut_wrapper = DUTWrapper(callbacks=self.callbacks, address=self.address,

@@ -1,6 +1,6 @@
 """
 peakrdl-python is a tool to generate Python Register Access Layer (RAL) from SystemRDL
-Copyright (C) 2021 - 2023
+Copyright (C) 2021 - 2025
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -51,7 +51,7 @@ class AddressMaps(RDLListener):
 class OwnedbyAddressMap(RDLListener):
     """
     class intended to be used as part of the walker/listener protocol to find all the items owned
-    by an address map but not the descendents of any address map
+    by an address map but not the descendants of any address map
     """
     def __init__(self, hide_node_callback: HideNodeCallback) -> None:
         super().__init__()

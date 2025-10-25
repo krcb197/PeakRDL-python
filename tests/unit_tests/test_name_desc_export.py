@@ -1,4 +1,20 @@
 """
+peakrdl-python is a tool to generate Python Register Access Layer (RAL) from SystemRDL
+Copyright (C) 2021 - 2025
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
 Test the export with name and desc, this unit test is needed so that the string as recieved from
 the SystemRDL can be cross-checked back to exported code, this can not be done with the
 integration tests
@@ -38,7 +54,6 @@ class TestAlternativeTemplates(unittest.TestCase):
         and clean up afterwards
         """
         test_case_file = test_case +'.rdl'
-        test_case_reg_model_cls = test_case + '_cls'
 
         # compile the code for the test
         rdlc = compiler_with_udp_registers()
@@ -67,10 +82,10 @@ class TestAlternativeTemplates(unittest.TestCase):
             sys.path.append(tmpdirname)
 
             reg_model_module = __import__(
-                test_case + '.reg_model.' + test_case,
-                globals(), locals(), [test_case_reg_model_cls],
+                test_case + '.reg_model',
+                globals(), locals(), ['RegModel'],
                 0)
-            dut_cls = getattr(reg_model_module, test_case_reg_model_cls)
+            dut_cls = getattr(reg_model_module, 'RegModel')
             peakrdl_python_package = __import__(test_case + '.lib',
                                                 globals(), locals(), ['CallbackSet'], 0)
             callbackset_cls = getattr(peakrdl_python_package, 'NormalCallbackSet')

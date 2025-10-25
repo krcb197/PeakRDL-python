@@ -1,4 +1,20 @@
 """
+peakrdl-python is a tool to generate Python Register Access Layer (RAL) from SystemRDL
+Copyright (C) 2021 - 2025
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
 Components to use in unit tests
 """
 import unittest
@@ -28,14 +44,10 @@ class ReadOnlyRegisterToTest(RegReadOnly):
     # pylint: disable=duplicate-code,too-many-arguments
     def __init__(self, *,
                  address: int,
-                 accesswidth:int,
-                 width:int,
                  logger_handle: str,
                  inst_name: str,
                  parent: AddressMap):
         super().__init__(address=address,
-                         accesswidth=accesswidth,
-                         width=width,
                          logger_handle=logger_handle,
                          inst_name=inst_name,
                          parent=parent)
@@ -57,14 +69,21 @@ class ReadOnlyRegisterToTest(RegReadOnly):
             field_type=int)
 
     @property
+    def width(self) -> int:
+        return 32
+
+    @property
+    def accesswidth(self) -> int:
+        return 32
+
+    @property
     def readable_fields(self) -> Iterator[FieldReadOnly]:
         """
         generator that produces has all the readable fields within the register
         """
         yield self.field
 
-    @property
-    def fields(self) -> Iterator[FieldReadOnly]:
+    def __iter__(self) -> Iterator[FieldReadOnly]:
         """
         generator that produces has all the readable fields within the register
         """
@@ -107,14 +126,10 @@ class WriteOnlyRegisterToTest(RegWriteOnly):
 
     def __init__(self, *,
                  address: int,
-                 accesswidth: int,
-                 width: int,
                  logger_handle: str,
                  inst_name: str,
                  parent: AddressMap):
         super().__init__(address=address,
-                         accesswidth=accesswidth,
-                         width=width,
                          logger_handle=logger_handle,
                          inst_name=inst_name,
                          parent=parent)
@@ -136,14 +151,21 @@ class WriteOnlyRegisterToTest(RegWriteOnly):
             field_type=int)
 
     @property
+    def width(self) -> int:
+        return 32
+
+    @property
+    def accesswidth(self) -> int:
+        return 32
+
+    @property
     def writable_fields(self) -> Iterator[FieldWriteOnly]:
         """
         generator that produces has all the readable fields within the register
         """
         yield self.field
 
-    @property
-    def fields(self) -> Iterator[FieldWriteOnly]:
+    def __iter__(self) -> Iterator[FieldWriteOnly]:
         """
         generator that produces has all the readable fields within the register
         """
@@ -189,14 +211,10 @@ class ReadWriteRegisterToTest(RegReadWrite):
 
     def __init__(self, *,
                  address: int,
-                 accesswidth: int,
-                 width: int,
                  logger_handle: str,
                  inst_name: str,
                  parent: AddressMap):
         super().__init__(address=address,
-                         accesswidth=accesswidth,
-                         width=width,
                          logger_handle=logger_handle,
                          inst_name=inst_name,
                          parent=parent)
@@ -218,14 +236,21 @@ class ReadWriteRegisterToTest(RegReadWrite):
             field_type=int)
 
     @property
+    def width(self) -> int:
+        return 32
+
+    @property
+    def accesswidth(self) -> int:
+        return 32
+
+    @property
     def readable_fields(self) -> Iterator[FieldReadOnly]:
         """
         generator that produces has all the readable fields within the register
         """
         yield self.field
 
-    @property
-    def fields(self) -> Iterator[FieldReadOnly]:
+    def __iter__(self) -> Iterator[FieldReadOnly]:
         """
         generator that produces has all the readable fields within the register
         """
@@ -270,6 +295,14 @@ class ReadOnlyRegisterArrayToTest(RegReadOnlyArray):
     __slots__: list[str] = []
 
     @property
+    def width(self) -> int:
+        return 32
+
+    @property
+    def accesswidth(self) -> int:
+        return 32
+
+    @property
     def _element_datatype(self) -> type[Node]:
         return ReadOnlyRegisterToTest
 
@@ -279,6 +312,14 @@ class WriteOnlyRegisterArrayToTest(RegWriteOnlyArray):
     Class to represent a register array in the register model
     """
     __slots__: list[str] = []
+
+    @property
+    def width(self) -> int:
+        return 32
+
+    @property
+    def accesswidth(self) -> int:
+        return 32
 
     @property
     def _element_datatype(self) -> type[Node]:
@@ -292,8 +333,65 @@ class ReadWriteRegisterArrayToTest(RegReadWriteArray):
     __slots__: list[str] = []
 
     @property
+    def width(self) -> int:
+        return 32
+
+    @property
+    def accesswidth(self) -> int:
+        return 32
+
+    @property
     def _element_datatype(self) -> type[Node]:
         return ReadWriteRegisterToTest
+
+class ReadOnlyMemoryToTest(MemoryReadOnly):
+    """
+    Class to represent a register in the register model
+    """
+    __slots__: list[str] = []
+    DEFINED_ENTRIES = 6
+
+    # pylint: disable=duplicate-code,too-many-arguments
+    def __init__(self, *,
+                 address: int,
+                 logger_handle: str,
+                 inst_name: str,
+                 parent: AddressMap):
+        super().__init__(address=address,
+                         entries=self.DEFINED_ENTRIES,
+                         accesswidth=32,
+                         width=32,
+                         logger_handle=logger_handle,
+                         inst_name=inst_name,
+                         parent=parent)
+
+    @property
+    def systemrdl_python_child_name_map(self) -> dict[str, str]:
+        """
+        In some cases systemRDL names need to be converted make them python safe, this dictionary
+        is used to map the original systemRDL names to the names of the python attributes of this
+        class
+
+        Returns: dictionary whose key is the systemRDL names and value it the property name
+        """
+        return {
+
+        }
+
+    def __iter__(self) -> Iterator[Union[Reg, RegArray]]:
+        # Empty generator in case there are no children of this type
+        yield None
+
+class ReadOnlyMemoryArrayToTest(MemoryReadOnlyArray):
+    """
+    Class to represent a register array in the register model
+    """
+    __slots__: list[str] = []
+    DEFINED_ELEMENT_ENTRIES = ReadOnlyMemoryToTest.DEFINED_ENTRIES
+
+    @property
+    def _element_datatype(self) -> type[Node]:
+        return ReadOnlyMemoryToTest
 
 
 class CallBackTestWrapper(unittest.TestCase, ABC):

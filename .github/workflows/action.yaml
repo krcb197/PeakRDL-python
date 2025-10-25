@@ -10,6 +10,7 @@ on:
   pull_request:
     branches:
     - main
+    - 'release/**'
   schedule:
     - cron: '00 6 1 * *'
   release:
@@ -136,12 +137,15 @@ jobs:
           python -m generate_and_test --RDL_source_file tests/testcases/accelera-generic_example.rdl --root_node some_register_map
           python -m generate_and_test --RDL_source_file tests/testcases/accelera-generic_example.rdl --root_node some_register_map --legacy_block_access
           python -m generate_and_test --RDL_source_file tests/testcases/accelera-generic_example.rdl --root_node some_register_map --legacy_enum_type
+          python -m generate_and_test --RDL_source_file tests/testcases/accelera-generic_example.rdl --root_node some_register_map --copy_libraries
 
           python -m generate_and_test --RDL_source_file tests/testcases/user_defined_properties.rdl --root_node user_defined_properties --udp bool_property_to_include
           python -m generate_and_test --RDL_source_file tests/testcases/user_defined_properties.rdl --root_node user_defined_properties --udp bool_property_to_include enum_property_to_include
           python -m generate_and_test --RDL_source_file tests/testcases/user_defined_properties.rdl --root_node user_defined_properties --udp bool_property_to_include enum_property_to_include int_property_to_include
           python -m generate_and_test --RDL_source_file tests/testcases/user_defined_properties.rdl --root_node user_defined_properties --udp bool_property_to_include enum_property_to_include int_property_to_include str_property_to_include
           python -m generate_and_test --RDL_source_file tests/testcases/user_defined_properties.rdl --root_node user_defined_properties --udp bool_property_to_include enum_property_to_include int_property_to_include str_property_to_include struct_property_to_include double_layer_struct_property_to_include
+          
+          python -m generate_and_test --RDL_source_file tests/testcases/user_defined_properties.rdl --root_node user_defined_properties --udp_regex "bool_property_to_include|enum_property_to_include|int_property_to_include|str_property_to_include|struct_property_to_include|double_layer_struct_property_to_include"
 
           python -m generate_and_test --RDL_source_file tests/testcases/reserved_elements.rdl --root_node reserved_elements --hide_regex "(?:[\w_\[\]]+\.)+RSVD"
           
@@ -179,7 +183,8 @@ jobs:
           peakrdl python tests/testcases/hidden_property.rdl -o peakrdl_out/raw/show_hidden/ --show_hidden
           peakrdl python tests/testcases/simple.xml tests/testcases/multifile.rdl -o peakrdl_out/raw
           peakrdl python tests/testcases/extended_memories.rdl -o peakrdl_out/raw/
-          peakrdl python tests/testcases/user_defined_properties.rdl -o peakrdl_out/raw/ --udp bool_property_to_include
+          peakrdl python tests/testcases/user_defined_properties.rdl -o peakrdl_out/raw/list/ --udp bool_property_to_include enum_property_to_include struct_property_to_include str_property_to_include
+          peakrdl python tests/testcases/user_defined_properties.rdl -o peakrdl_out/raw/regex/ --udp_regex "bool_property_to_include|enum_property_to_include|struct_property_to_include|str_property_to_include"
           peakrdl python tests/testcases/reserved_elements.rdl -o peakrdl_out/raw/ --hide_regex "(?:[\w_\[\]]+\.)+RSVD"
           peakrdl python tests/testcases/parametrised_top.rdl -o peakrdl_out/raw/ -P MY_PARAM=3
           python -m unittest discover -s peakrdl_out/raw
@@ -257,17 +262,25 @@ jobs:
           python -m with_hal
 
           cd ../..
+          
+          cd example/user_defined_properties/
+          peakrdl python user_defined_properties.rdl -o . --udp_regex "^(?!python_hide$)(?!python_name$).+"
+          python -m demo_user_defined_properties
+          
+          cd ../..
+          
+          
 
   integration_tests:
     needs:
-      - mypy
-      - lint
-      - unit_tests
+      - peakrdl_integration
+      - dev_runner
 
     runs-on: ubuntu-latest
     strategy:
       matrix:
         python-version: [3.9, "3.10", "3.11", "3.12", "3.13", "3.14"]
+        lib_copy: [true, false]
 
     steps:
     - uses: actions/checkout@v4
@@ -284,32 +297,46 @@ jobs:
 
         # retrieve the example code from the systemRDL compiler
         wget -L https://raw.githubusercontent.com/SystemRDL/systemrdl-compiler/main/examples/accelera-generic_example.rdl -O tests/testcases/accelera-generic_example.rdl
-
-    - name: Generate testcases
-      run: |
-
+        
         # one of the test cases uses IPxact so we need the importer
         python -m pip install peakrdl-ipxact
         # the generated code is type checked with mypy so this is needed
         python -m pip install mypy
 
-        python generate_testcases.py
-
-    - name: Static checks
+    - name: Generate testcases (lib_copy true)
+      if: matrix.lib_copy == true
       run: |
+        python generate_testcases.py --copy_libraries --output lib_included_testcase_output
 
-        mypy testcase_output
-        # pylint testcase_output/autopep8 --disable=duplicate-code,line-too-long,too-many-statements,invalid-name,unused-import,too-many-instance-attributes,too-many-arguments,too-many-lines
-
-    - name: Run the generated tests
+    - name: Generate testcases (lib_copy false)
+      if: matrix.lib_copy == false
       run: |
-        python -m unittest discover -s testcase_output
+        python generate_testcases.py --output lib_excluded_testcase_output
+
+    - name: Static checks (lib_copy true)
+      if: matrix.lib_copy == true
+      run: |
+        mypy lib_included_testcase_output
+
+    - name: Static checks (lib_copy false)
+      if: matrix.lib_copy == false
+      run: |
+        mypy lib_excluded_testcase_output
+
+    - name: Run the generated tests (lib_copy true)
+      if: matrix.lib_copy == true
+      run: |
+        python -m unittest discover -s lib_included_testcase_output
+
+    - name: Run the generated tests (lib_copy false)
+      if: matrix.lib_copy == false
+      run: |
+        python -m unittest discover -s lib_excluded_testcase_output
 
   autoformating:
     needs:
       - integration_tests
-      - peakrdl_integration
-      - dev_runner
+
 
     runs-on: ubuntu-latest
     strategy:

@@ -1,6 +1,6 @@
 {#
 peakrdl-python is a tool to generate Python Register Access Layer (RAL) from SystemRDL
-Copyright (C) 2021 - 2023
+Copyright (C) 2021 - 2025
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -15,29 +15,63 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #}
+{% include "header.py.jinja" with context %}
 
 {% from 'reg_definitions.py.jinja' import register_class_attributes with context %}
-{% from 'reg_definitions.py.jinja' import child_register_getter with context %}
 {% from 'addrmap_udp_property.py.jinja' import udp_property with context %}
 {% from 'addrmap_universal_property.py.jinja' import universal_properties with context %}
 {% from 'addrmap_system_rdl_name_mapping.py.jinja' import get_child_by_system_rdl_name with context %}
 {% from 'addrmap_system_rdl_name_mapping.py.jinja' import systemrdl_python_child_name_map with context %}
+{% from 'child_definitions.py.jinja' import reg_children_iterator with context %}
+{% from 'template_ultilities.py.jinja' import peakrdl_python_lib with context %}
+{# the following defining the number relative steps up to the lib and sim_lib packages from the current file #}
+{% set lib_depth = 2 %}
+
+from typing import Iterator
+from typing import Optional
+from typing import Union
+from typing import Type
+from typing import overload
+from typing import Literal
+from typing import Any
+from typing import NoReturn
+import warnings
+{% if legacy_block_access %}from array import array as Array{% endif %}
+
+from {{ peakrdl_python_lib(depth=lib_depth) }} import Node, NodeArray, Base
+from {{ peakrdl_python_lib(depth=lib_depth) }} import UDPStruct
+
+{% if asyncoutput -%}
+from {{ peakrdl_python_lib(depth=lib_depth) }} import AsyncMemory, AsyncMemoryArray
+from {{ peakrdl_python_lib(depth=lib_depth) }} import AsyncAddressMap
+from {{ peakrdl_python_lib(depth=lib_depth) }} import MemoryAsyncReadOnly{% if legacy_block_access %}Legacy{% endif %}, MemoryAsyncWriteOnly{% if legacy_block_access %}Legacy{% endif %}, MemoryAsyncReadWrite{% if legacy_block_access %}Legacy{% endif %}
+from {{ peakrdl_python_lib(depth=lib_depth) }} import MemoryAsyncReadOnly{% if legacy_block_access %}Legacy{% endif %}Array, MemoryAsyncWriteOnly{% if legacy_block_access %}Legacy{% endif %}Array, MemoryAsyncReadWrite{% if legacy_block_access %}Legacy{% endif %}Array
+from {{ peakrdl_python_lib(depth=lib_depth) }} import AsyncReg, AsyncRegArray
+{%- else -%}
+from {{ peakrdl_python_lib(depth=lib_depth) }} import Memory, MemoryArray
+from {{ peakrdl_python_lib(depth=lib_depth) }} import AddressMap
+from {{ peakrdl_python_lib(depth=lib_depth) }} import MemoryReadOnly{% if legacy_block_access %}Legacy{% endif %}, MemoryWriteOnly{% if legacy_block_access %}Legacy{% endif %}, MemoryReadWrite{% if legacy_block_access %}Legacy{% endif %}
+from {{ peakrdl_python_lib(depth=lib_depth) }} import MemoryReadOnly{% if legacy_block_access %}Legacy{% endif %}Array, MemoryWriteOnly{% if legacy_block_access %}Legacy{% endif %}Array, MemoryReadWrite{% if legacy_block_access %}Legacy{% endif %}Array
+from {{ peakrdl_python_lib(depth=lib_depth) }} import Reg, RegArray
+{%- endif %}
+
+{% for property_enum in unique_property_enums %}
+from ..{{top_node.inst_name}}_property_enums import {{property_enum.type_name}}_property_enumcls
+{% endfor %}
+
+{% for register_cls in dependent_registers %}
+from .._registers import {{register_cls}}
+{%- endfor %}
 
 {%- macro memory_class(node) %}
-    {%- if node.is_sw_readable and node.is_sw_writable %}
-class {{get_fully_qualified_type_name(node)}}_cls(Memory{% if asyncoutput %}Async{% endif %}ReadWrite{% if legacy_block_access %}Legacy{% endif %}):
-    {%- elif node.is_sw_readable and not node.is_sw_writable %}
-class {{get_fully_qualified_type_name(node)}}_cls(Memory{% if asyncoutput %}Async{% endif %}ReadOnly{% if legacy_block_access %}Legacy{% endif %}):
-    {%- elif not node.is_sw_readable and node.is_sw_writable %}
-class {{get_fully_qualified_type_name(node)}}_cls(Memory{% if asyncoutput %}Async{% endif %}WriteOnly{% if legacy_block_access %}Legacy{% endif %}):
-    {%- endif %}
+class {{node.python_class_name}}({{node.base_class(asyncoutput)}}{% if legacy_block_access %}Legacy{% endif %}):
     """
     Class to represent a memory in the register model
 
-    {{get_table_block(node) | indent}}
+    {{get_table_block(node.instance) | indent}}
     """
 
-    __slots__ : list[str] = [{%- for child_node in node.children(unroll=False) -%}{%- if isinstance(child_node, systemrdlRegNode) -%}'__{{child_node.inst_name}}'{% if not loop.last %}, {% endif %}{% endif %}{%- endfor %}]
+    __slots__ : list[str] = [{%- for child_node in node.registers(unroll=False) -%}'__{{child_node.inst_name}}'{% if not loop.last %}, {% endif %}{%- endfor %}]
 
     def __init__(self,
                  address: int,
@@ -46,73 +80,66 @@ class {{get_fully_qualified_type_name(node)}}_cls(Memory{% if asyncoutput %}Asyn
                  parent:{% if asyncoutput %}Async{% endif %}AddressMap):
 
         super().__init__(address=address,
-                         entries={{node.get_property('mementries')}},
-                         {% if 'accesswidth' in node.list_properties() -%}accesswidth={{node.get_property('accesswidth')}}{%- else -%}accesswidth={{node.get_property('memwidth')}}{%- endif -%},
-                         width={{node.get_property('memwidth')}},
+                         entries={{node.instance.get_property('mementries')}},
+                         accesswidth={{node.accesswidth}},
+                         width={{node.instance.get_property('memwidth')}},
                          logger_handle=logger_handle,
                          inst_name=inst_name,
                          parent=parent)
 
-        {% for child_node in node.children(unroll=False) -%}
-                {%- if not hide_node_func(child_node) %}
+        {% for child_node in node.registers(unroll=False) -%}
             {{ register_class_attributes(child_node) | indent }}
-                {% endif %}
         {% endfor %}
 
-        {%- for child_node in node.children(unroll=False) -%}
-            {%-  if not hide_node_func(child_node) %}
-                {%- if isinstance(child_node, systemrdlRegNode) %}
+        {%- for child_node in node.registers(unroll=False) %}
     @property
-    def {{safe_node_name(child_node)}}(self) -> {% if child_node.is_array -%}{{get_fully_qualified_type_name(child_node)}}_array_cls{% else %}{{get_fully_qualified_type_name(child_node)}}_cls{%- endif -%}:
+    def {{safe_node_name(child_node)}}(self) -> {% if child_node.is_array -%}{{get_fully_qualified_type_name(child_node)}}_array{% else %}{{get_fully_qualified_type_name(child_node)}}{%- endif -%}:
         """
         Property to access {{child_node.inst_name}} register {% if child_node.is_array -%}array{% endif %}
 
         {{get_table_block(child_node) | indent(8)}}
         """
         return self.__{{child_node.inst_name}}
-                {% else %}
-            {{ raise_template_error('unexpected type') }}
-                {%- endif %}
-            {%- endif %}
         {% endfor %}
 
-    {{ child_register_getter(node) }}
+    {{ reg_children_iterator(node) }}
 
-    {{ systemrdl_python_child_name_map(node) }}
+    {{ systemrdl_python_child_name_map(node.instance) }}
 
-    {{ get_child_by_system_rdl_name(node) }}
+    {{ get_child_by_system_rdl_name(node.instance) }}
 
     {{ udp_property(node) }}
 
-    {{ universal_properties(node) }}
+    {{ universal_properties(node.instance) }}
 
-    {%- if node.is_array %}
-        {%- if node.is_sw_readable and node.is_sw_writable %}
-class {{get_fully_qualified_type_name(node)}}_array_cls(Memory{% if asyncoutput %}Async{% endif %}ReadWriteArray):
-        {%- elif node.is_sw_readable and not node.is_sw_writable %}
-class {{get_fully_qualified_type_name(node)}}_array_cls(Memory{% if asyncoutput %}Async{% endif %}ReadOnlyArray):
-        {%- elif not node.is_sw_readable and node.is_sw_writable %}
-class {{get_fully_qualified_type_name(node)}}_array_cls(Memory{% if asyncoutput %}Async{% endif %}WriteOnlyArray):
-        {%- endif %}
+    {%- if node.instance.is_array %}
+class {{node.python_class_name}}_array({{node.base_class(asyncoutput)}}{% if legacy_block_access %}Legacy{% endif %}Array):
     """
     Class to represent a memory array in the register model
+
+    {{get_table_block(node.instance) | indent}}
     """
     __slots__: list[str] = []
 
-    def __init__(self, logger_handle: str, inst_name: str,
-                 parent: {% if asyncoutput %}Async{% endif %}AddressMap,
-                 address: int,
-                 stride: int,
-                 dimensions: tuple[int, ...]):
-
-        super().__init__(logger_handle=logger_handle, inst_name=inst_name,
-                         parent=parent, address=address,
-                         stride=stride, dimensions=dimensions)
-
     @property
-    def _element_datatype(self) -> Type[Node]:
-        return {{get_fully_qualified_type_name(node)}}_cls
+    def _element_datatype(self) -> Type[{{node.base_class(asyncoutput)}}{% if legacy_block_access %}Legacy{% endif %}]:
+        return {{node.python_class_name}}
+
+    {{ universal_properties(node.instance) }}
     {%- endif %}
 
 {%- endmacro %}
 
+# memory definitions
+{%- for unique_node in unique_memories -%}
+{# the get_dependent_component already strips out hidden items so there is no need to check here
+   for hidden items #}
+    {% if isinstance(unique_node.instance, systemrdlMemNode) %}
+    {{ memory_class(unique_node)  }}
+    {% else %}
+    {{ raise_template_error('Encountered unhandled type') }}
+    {% endif %}
+{% endfor %}
+
+if __name__ == '__main__':
+    pass

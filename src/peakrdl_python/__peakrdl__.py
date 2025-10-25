@@ -1,6 +1,6 @@
 """
 peakrdl-python is a tool to generate Python Register Access Layer (RAL) from SystemRDL
-Copyright (C) 2021 - 2023
+Copyright (C) 2021 - 2025
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -28,6 +28,10 @@ from peakrdl.config import schema  # type: ignore[import]
 #pylint: enable=no-name-in-module,import-error
 
 from .exporter import PythonExporter
+from .exporter import DEFAULT_REGISTER_CLASS_PER_GENERATED_FILE
+from .exporter import DEFAULT_FIELD_CLASS_PER_GENERATED_FILE
+from .exporter import DEFAULT_ENUM_FIELD_CLASS_PER_GENERATED_FILE
+from .exporter import DEFAULT_MEMORY_CLASS_PER_GENERATED_FILE
 from .compiler_udp import PythonHideUDP, PythonInstNameUDP
 
 if TYPE_CHECKING:
@@ -81,8 +85,11 @@ class Exporter(ExporterSubcommandPlugin):
                                help='show addrmap, regfile, memory, register and fields that '
                                     'have been given the python_hide user defined property and '
                                     'would be removed from the build python by default')
-        arg_group.add_argument('--udp', dest='udp', nargs='*', type=str,
+        udp_group = arg_group.add_mutually_exclusive_group(required=False)
+        udp_group.add_argument('--udp', dest='udp', nargs='*', type=str,
                                help='any user defined properties to include in the reg_model')
+        udp_group.add_argument('--udp_regex', dest='udp_regex', type=str,
+                               help='a regex to define which UPD ares show in the reg model')
         arg_group.add_argument('--hide_regex', dest='hide_regex', type=str,
                                help='A regex that will cause any matching fully qualified node to '
                                     'be hidden')
@@ -97,8 +104,46 @@ class Exporter(ExporterSubcommandPlugin):
                                dest='skip_systemrdl_name_and_desc_properties',
                                help='peakrdl python includes the system RDL name and desc '
                                     'attributes as properties of the class that is built. Setting '
-                                    'this will skip this reducign the size of the python code '
+                                    'this will skip this reducing the size of the python code '
                                     'generated')
+        arg_group.add_argument('--skip_systemrdl_name_and_desc_in_docstring', action='store_true',
+                               dest='skip_systemrdl_name_and_desc_in_docstring',
+                               help='peakrdl python includes the system RDL name and desc '
+                                    'attributes within the doc string of the built code. Setting '
+                                    'this will skip this reducing the size of the python code '
+                                    'generated')
+        arg_group.add_argument('--register_class_per_generated_file',
+                               dest='register_class_per_generated_file',
+                               type=int,
+                               default=DEFAULT_REGISTER_CLASS_PER_GENERATED_FILE,
+                               help='Number of register class definitions to put in each python '
+                                    'module of the generated code. Make sure this is set to '
+                                    'ensure the file does not get too big otherwise the '
+                                    'generation and loading is slow')
+        arg_group.add_argument('--field_class_per_generated_file',
+                               dest='field_class_per_generated_file',
+                               type=int,
+                               default=DEFAULT_FIELD_CLASS_PER_GENERATED_FILE,
+                               help='Number of field class definitions to put in each python '
+                                    'module of the generated code. Make sure this is set to '
+                                    'ensure the file does not get too big otherwise the '
+                                    'generation and loading is slow')
+        arg_group.add_argument('--enum_field_class_per_generated_file',
+                               dest='enum_field_class_per_generated_file',
+                               type=int,
+                               default=DEFAULT_ENUM_FIELD_CLASS_PER_GENERATED_FILE,
+                               help='Number of enumerated field class definitions to put in each '
+                                    'python module of the generated code. Make sure this is set '
+                                    'to ensure the file does not get too big otherwise the '
+                                    'generation and loading is slow')
+        arg_group.add_argument('--memory_class_per_generated_file',
+                               dest='memory_class_per_generated_file',
+                               type=int,
+                               default=DEFAULT_MEMORY_CLASS_PER_GENERATED_FILE,
+                               help='Number of memory class definitions to put in each '
+                                    'python module of the generated code. Make sure this is set '
+                                    'to ensure the file does not get too big otherwise the '
+                                    'generation and loading is slow')
 
     def do_export(self, top_node: 'AddrmapNode', options: 'argparse.Namespace') -> None:
         """
@@ -130,8 +175,16 @@ class Exporter(ExporterSubcommandPlugin):
             legacy_block_access=options.legacy_block_access,
             show_hidden=options.show_hidden,
             user_defined_properties_to_include=options.udp,
+            user_defined_properties_to_include_regex=options.udp_regex,
             hidden_inst_name_regex=options.hide_regex,
             skip_library_copy=options.skip_library_copy,
             legacy_enum_type=options.legacy_enum_type,
-            skip_systemrdl_name_and_desc_properties=options.skip_systemrdl_name_and_desc_properties
+            skip_systemrdl_name_and_desc_properties=
+                options.skip_systemrdl_name_and_desc_properties,
+            skip_systemrdl_name_and_desc_in_docstring=
+                options.skip_systemrdl_name_and_desc_in_docstring,
+            register_class_per_generated_file=options.register_class_per_generated_file,
+            field_class_per_generated_file=options.field_class_per_generated_file,
+            enum_field_class_per_generated_file=options.enum_field_class_per_generated_file,
+            memory_class_per_generated_file=options.memory_class_per_generated_file
         )

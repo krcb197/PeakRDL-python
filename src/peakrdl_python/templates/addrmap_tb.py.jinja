@@ -1,6 +1,6 @@
 {#
 peakrdl-python is a tool to generate Python Register Access Layer (RAL) from SystemRDL
-Copyright (C) 2021 - 2023
+Copyright (C) 2021 - 2025
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -17,6 +17,11 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #}
 
 {% include "header_tb.py.jinja" with context %}
+
+{% from 'template_ultilities.py.jinja' import peakrdl_python_lib with context %}
+{# the following defining the number relative steps up to the lib and sim_lib packages from the current file #}
+{% set lib_depth = 1 %}
+
 from typing import Union,Iterable
 from array import array as Array
 {% if asyncoutput %}
@@ -35,41 +40,38 @@ import math
 from enum import IntEnum
 {% endif %}
 
-from {% if skip_lib_copy %}peakrdl_python.{% else %}..{% endif %}lib import RegisterWriteVerifyError, UnsupportedWidthError
+from {{ peakrdl_python_lib(depth=lib_depth) }} import RegisterWriteVerifyError, UnsupportedWidthError
 
-from ..reg_model.{{top_node.inst_name}} import {{top_node.inst_name}}_cls
-{% for property_enum in dependent_property_enum %}
-from ..reg_model.{{top_node.inst_name}} import {{property_enum.type_name}}_property_enumcls
-{% endfor %}
-
+from ..reg_model import RegModel
+from ..reg_model.{{top_node.inst_name}}_property_enums import *
 
 {% if asyncoutput %}
-from {% if skip_lib_copy %}peakrdl_python.{% else %}..{% endif %}lib import FieldAsyncReadOnly, FieldAsyncWriteOnly, FieldAsyncReadWrite
-from {% if skip_lib_copy %}peakrdl_python.{% else %}..{% endif %}lib import WritableAsyncRegister, ReadableAsyncRegister
-from {% if skip_lib_copy %}peakrdl_python.{% else %}..{% endif %}lib import RegAsyncReadWrite, RegAsyncReadOnly, RegAsyncWriteOnly
-from {% if skip_lib_copy %}peakrdl_python.{% else %}..{% endif %}lib import RegAsyncReadWriteArray, RegAsyncReadOnlyArray, RegAsyncWriteOnlyArray
-from {% if skip_lib_copy %}peakrdl_python.{% else %}..{% endif %}lib import MemoryAsyncReadOnly{% if legacy_block_access %}Legacy{% endif %}, MemoryAsyncWriteOnly{% if legacy_block_access %}Legacy{% endif %}, MemoryAsyncReadWrite{% if legacy_block_access %}Legacy{% endif %}
-from {% if skip_lib_copy %}peakrdl_python.{% else %}..{% endif %}lib import MemoryAsyncReadOnlyArray, MemoryAsyncWriteOnlyArray, MemoryAsyncReadWriteArray
-from {% if skip_lib_copy %}peakrdl_python.{% else %}..{% endif %}lib import AsyncAddressMap, AsyncRegFile
-from {% if skip_lib_copy %}peakrdl_python.{% else %}..{% endif %}lib import AsyncAddressMapArray, AsyncRegFileArray
-from {% if skip_lib_copy %}peakrdl_python.{% else %}..{% endif %}lib import AsyncMemory
+from {{ peakrdl_python_lib(depth=lib_depth) }} import FieldAsyncReadOnly, FieldAsyncWriteOnly, FieldAsyncReadWrite
+from {{ peakrdl_python_lib(depth=lib_depth) }} import WritableAsyncRegister, ReadableAsyncRegister
+from {{ peakrdl_python_lib(depth=lib_depth) }} import RegAsyncReadWrite, RegAsyncReadOnly, RegAsyncWriteOnly
+from {{ peakrdl_python_lib(depth=lib_depth) }} import RegAsyncReadWriteArray, RegAsyncReadOnlyArray, RegAsyncWriteOnlyArray
+from {{ peakrdl_python_lib(depth=lib_depth) }} import MemoryAsyncReadOnly{% if legacy_block_access %}Legacy{% endif %}, MemoryAsyncWriteOnly{% if legacy_block_access %}Legacy{% endif %}, MemoryAsyncReadWrite{% if legacy_block_access %}Legacy{% endif %}
+from {{ peakrdl_python_lib(depth=lib_depth) }} import MemoryAsyncReadOnly{% if legacy_block_access %}Legacy{% endif %}Array, MemoryAsyncWriteOnly{% if legacy_block_access %}Legacy{% endif %}Array, MemoryAsyncReadWrite{% if legacy_block_access %}Legacy{% endif %}Array
+from {{ peakrdl_python_lib(depth=lib_depth) }} import AsyncAddressMap, AsyncRegFile
+from {{ peakrdl_python_lib(depth=lib_depth) }} import AsyncAddressMapArray, AsyncRegFileArray
+from {{ peakrdl_python_lib(depth=lib_depth) }} import AsyncMemory
 {% else %}
-from {% if skip_lib_copy %}peakrdl_python.{% else %}..{% endif %}lib import FieldReadOnly, FieldWriteOnly, FieldReadWrite
-from {% if skip_lib_copy %}peakrdl_python.{% else %}..{% endif %}lib import WritableRegister, ReadableRegister
-from {% if skip_lib_copy %}peakrdl_python.{% else %}..{% endif %}lib import RegReadWrite, RegReadOnly, RegWriteOnly
-from {% if skip_lib_copy %}peakrdl_python.{% else %}..{% endif %}lib import RegReadWriteArray, RegReadOnlyArray, RegWriteOnlyArray
-from {% if skip_lib_copy %}peakrdl_python.{% else %}..{% endif %}lib import MemoryReadOnly{% if legacy_block_access %}Legacy{% endif %}, MemoryWriteOnly{% if legacy_block_access %}Legacy{% endif %}, MemoryReadWrite{% if legacy_block_access %}Legacy{% endif %}
-from {% if skip_lib_copy %}peakrdl_python.{% else %}..{% endif %}lib import MemoryReadOnlyArray, MemoryWriteOnlyArray, MemoryReadWriteArray
-from {% if skip_lib_copy %}peakrdl_python.{% else %}..{% endif %}lib import AddressMap, RegFile
-from {% if skip_lib_copy %}peakrdl_python.{% else %}..{% endif %}lib import AddressMapArray, RegFileArray
-from {% if skip_lib_copy %}peakrdl_python.{% else %}..{% endif %}lib import Memory
+from {{ peakrdl_python_lib(depth=lib_depth) }} import FieldReadOnly, FieldWriteOnly, FieldReadWrite
+from {{ peakrdl_python_lib(depth=lib_depth) }} import WritableRegister, ReadableRegister
+from {{ peakrdl_python_lib(depth=lib_depth) }} import RegReadWrite, RegReadOnly, RegWriteOnly
+from {{ peakrdl_python_lib(depth=lib_depth) }} import RegReadWriteArray, RegReadOnlyArray, RegWriteOnlyArray
+from {{ peakrdl_python_lib(depth=lib_depth) }} import MemoryReadOnly{% if legacy_block_access %}Legacy{% endif %}, MemoryWriteOnly{% if legacy_block_access %}Legacy{% endif %}, MemoryReadWrite{% if legacy_block_access %}Legacy{% endif %}
+from {{ peakrdl_python_lib(depth=lib_depth) }} import MemoryReadOnly{% if legacy_block_access %}Legacy{% endif %}Array, MemoryWriteOnly{% if legacy_block_access %}Legacy{% endif %}Array, MemoryReadWrite{% if legacy_block_access %}Legacy{% endif %}Array
+from {{ peakrdl_python_lib(depth=lib_depth) }} import AddressMap, RegFile
+from {{ peakrdl_python_lib(depth=lib_depth) }} import AddressMapArray, RegFileArray
+from {{ peakrdl_python_lib(depth=lib_depth) }} import Memory
 {% endif %}
 
-
-from {% if skip_lib_copy %}peakrdl_python.{% else %}..{% endif %}lib import Field
-from {% if skip_lib_copy %}peakrdl_python.{% else %}..{% endif %}lib import Reg
+from {{ peakrdl_python_lib(depth=lib_depth) }} import NodeArray
+from {{ peakrdl_python_lib(depth=lib_depth) }} import Field
+from {{ peakrdl_python_lib(depth=lib_depth) }} import Reg
 {% if not legacy_enum_type %}
-from {% if skip_lib_copy %}peakrdl_python.{% else %}..{% endif %}lib import SystemRDLEnum, SystemRDLEnumEntry
+from {{ peakrdl_python_lib(depth=lib_depth) }} import SystemRDLEnum, SystemRDLEnumEntry
 {% endif %}
 
 from ._{{top_node.inst_name}}_test_base import {{top_node.inst_name}}_TestCase, {{top_node.inst_name}}_TestCase_BlockAccess, {{top_node.inst_name}}_TestCase_AltBlockAccess
@@ -243,28 +245,24 @@ class {{fq_block_name}}_single_access({{top_node.inst_name}}_TestCase): # type: 
         """
         {% for node in owned_elements.nodes -%}
         with self.subTest(msg='register: {{'.'.join(node.get_path_segments())}}'):
-            {% if not udp_to_include %}
+            {% set property_list = get_properties_to_include(node,udp_include_func) %}
+            {% if not property_list %}
             self.assertDictEqual(self.dut.{{'.'.join(get_python_path_segments(node))}}.udp,{})
             {% else %}
-                {% set property_list = get_properties_to_include(node,udp_to_include) %}
-                {% if not property_list %}
-            self.assertDictEqual(self.dut.{{'.'.join(get_python_path_segments(node))}}.udp,{})
-                {% else %}
-                    {% for property_name in property_list %}
-                    {% set property_value = node.get_property(property_name) %}
-                        {% if isinstance(property_value, systemrdlUserStruct) %}
+                {% for property_name in property_list %}
+                {% set property_value = node.get_property(property_name) %}
+                    {% if isinstance(property_value, systemrdlUserStruct) %}
             self.assertDictEqual(self.dut.{{'.'.join(get_python_path_segments(node))}}.udp['{{property_name}}'], {    # type: ignore[arg-type]
-                {% for sub_name, sub_value in property_value.members.items() %} {{udp_property_dict_entry(sub_name, sub_value)}} {% endfor %}
+            {% for sub_name, sub_value in property_value.members.items() %} {{udp_property_dict_entry(sub_name, sub_value)}} {% endfor %}
                 } )
-                        {% elif isinstance(property_value, systemrdlUserEnum) %}
+                    {% elif isinstance(property_value, systemrdlUserEnum) %}
             self.assertEqual(self.dut.{{'.'.join(get_python_path_segments(node))}}.udp['{{property_name}}'], {{ type(property_value).type_name }}_property_enumcls.{{ property_value.name.upper() }} )
-                         {% elif isinstance(property_value, str) %}
+                     {% elif isinstance(property_value, str) %}
             self.assertEqual(self.dut.{{'.'.join(get_python_path_segments(node))}}.udp['{{property_name}}'], "{{ property_value }}" )
-                        {% else %}
+                    {% else %}
             self.assertEqual(self.dut.{{'.'.join(get_python_path_segments(node))}}.udp['{{property_name}}'], {{ property_value }} )
-                        {% endif %}
-                    {% endfor %}
-                {% endif %}
+                    {% endif %}
+                {% endfor %}
             {% endif %}
         {% endfor %}
 
@@ -535,26 +533,25 @@ class {{fq_block_name}}_single_access({{top_node.inst_name}}_TestCase): # type: 
 
                 {% if node.is_sw_readable %}
                 # read back test
-                {%- for value_of_enum_needed in node.get_property('encode') -%}
-                # set the simulated read_back value to {{value_of_enum_needed.name.upper()}}
-                random_reg_value = random.randrange(0, {{get_reg_max_value_hex_string(node.parent)}} + 1)
-                read_callback_mock.reset_mock()
-                {% if node.msb == node.high -%}
-                read_callback_mock.return_value = (random_reg_value & {{get_field_inv_bitmask_hex_string(node)}}) | \
-                                                  ({{get_field_bitmask_hex_string(node)}} & ({{value_of_enum_needed.value}} << {{node.low}} ))
-                {% else -%}
-                read_callback_mock.return_value = (random_reg_value & {{get_field_inv_bitmask_hex_string(node)}}) | \
-                                                  ({{get_field_bitmask_hex_string(node)}} & (self._reverse_bits(value={{value_of_enum_needed.value}}, number_bits={{node.width}}) << {{node.low}} ))
-                {% endif -%}
+                for enum_name, enum_value in ({% for enum_entry in node.get_property('encode') %}('{{enum_entry.name.upper()}}',{{enum_entry.value}}),{% endfor %}):
+                    random_reg_value = random.randrange(0, {{get_reg_max_value_hex_string(node.parent)}} + 1)
+                    read_callback_mock.reset_mock()
+                    {% if node.msb == node.high -%}
+                    read_callback_mock.return_value = (random_reg_value & {{get_field_inv_bitmask_hex_string(node)}}) | \
+                                                      ({{get_field_bitmask_hex_string(node)}} & (enum_value << {{node.low}} ))
+                    {% else -%}
+                    read_callback_mock.return_value = (random_reg_value & {{get_field_inv_bitmask_hex_string(node)}}) | \
+                                                      ({{get_field_bitmask_hex_string(node)}} & (self._reverse_bits(value=enum_value, number_bits={{node.width}}) << {{node.low}} ))
+                    {% endif -%}
 
-                self.assertEqual({% if asyncoutput %}await {%endif %}self.dut.{{'.'.join(get_python_path_segments(node))}}.read(), # type: ignore[union-attr]
-                                 self.dut.{{'.'.join(get_python_path_segments(node))}}.enum_cls.{{value_of_enum_needed.name.upper()}} # type: ignore[attr-defined]
-                                 )
-                read_callback_mock.assert_called_once_with(
-                                    addr={{node.parent.absolute_address}},
-                                    width={{node.parent.size * 8}},
-                                    accesswidth=self.dut.{{'.'.join(get_python_path_segments(node))}}.parent_register.accesswidth) # type: ignore[union-attr]
-                {% endfor %}
+                    self.assertEqual({% if asyncoutput %}await {%endif %}self.dut.{{'.'.join(get_python_path_segments(node))}}.read(), # type: ignore[union-attr]
+                                     self.dut.{{'.'.join(get_python_path_segments(node))}}.enum_cls[enum_name] # type: ignore[attr-defined]
+                                     )
+                    read_callback_mock.assert_called_once_with(
+                                        addr={{node.parent.absolute_address}},
+                                        width={{node.parent.size * 8}},
+                                        accesswidth=self.dut.{{'.'.join(get_python_path_segments(node))}}.parent_register.accesswidth) # type: ignore[union-attr]
+
 
                 {# only run this if there are field values that are not part of the enum #}
                 {% if node.get_property('encode').__len__() < (2**node.width) %}
@@ -567,17 +564,21 @@ class {{fq_block_name}}_single_access({{top_node.inst_name}}_TestCase): # type: 
                     {# for enumerated fields of with larger sizes look for up to 100 illegal values #}
                 for field_value in { random.randint(0, {{get_field_max_value_hex_string(node)}}+1) for _ in range(100)  } - { {%- for value_of_enum_needed in node.get_property('encode') -%}{{value_of_enum_needed.value}}{% if not loop.last %}, {% endif %}{%- endfor %} }:
                     {% endif %}
+                    read_callback_mock.reset_mock()
+                    random_reg_value = random.randrange(0, {{get_reg_max_value_hex_string(node.parent)}} + 1)
+                    {% if node.msb == node.high -%}
+                    read_callback_mock.return_value = (random_reg_value & {{get_field_inv_bitmask_hex_string(node)}}) | \
+                                     ({{get_field_bitmask_hex_string(node)}} & (field_value << {{node.low}}))
+                    {% else -%}
+                    read_callback_mock.return_value = (random_reg_value & {{get_field_inv_bitmask_hex_string(node)}}) | \
+                                     ({{get_field_bitmask_hex_string(node)}} & (self._reverse_bits(value=field_value, number_bits={{node.width}}) << {{node.low}}))
+                    {% endif -%}
                     with self.assertRaises(ValueError):
-                        read_callback_mock.reset_mock()
-                        random_reg_value = random.randrange(0, {{get_reg_max_value_hex_string(node.parent)}} + 1)
-                        {% if node.msb == node.high -%}
-                        read_callback_mock.return_value = (random_reg_value & {{get_field_inv_bitmask_hex_string(node)}}) | \
-                                         ({{get_field_bitmask_hex_string(node)}} & (field_value << {{node.low}}))
-                        {% else -%}
-                        read_callback_mock.return_value = (random_reg_value & {{get_field_inv_bitmask_hex_string(node)}}) | \
-                                         ({{get_field_bitmask_hex_string(node)}} & (self._reverse_bits(value=field_value, number_bits={{node.width}}) << {{node.low}}))
-                        {% endif -%}
                         _ = {% if asyncoutput %}await {%endif %}self.dut.{{'.'.join(get_python_path_segments(node))}}.read() # type: ignore[union-attr]
+                    read_callback_mock.assert_called_once_with(
+                                        addr={{node.parent.absolute_address}},
+                                        width={{node.parent.size * 8}},
+                                        accesswidth=self.dut.{{'.'.join(get_python_path_segments(node))}}.parent_register.accesswidth) # type: ignore[union-attr]
                 {% endif %}
                 write_callback_mock.assert_not_called()
                 {% endif %}
@@ -849,7 +850,7 @@ class {{fq_block_name}}_single_access({{top_node.inst_name}}_TestCase): # type: 
         {% if node.has_sw_writable and node.has_sw_readable %}
         with self.subTest(msg='register: {{'.'.join(node.get_path_segments())}}'):
             {% if asyncoutput %}await {% endif %}write_field_combinations(reg=self.dut.{{'.'.join(get_python_path_segments(node))}},
-                               writable_fields = [ {% for field in get_reg_writable_fields(node, hide_node_func) -%}
+                               writable_fields = [ {% for field in get_reg_writable_fields(node) -%}
                                                    '{{ safe_node_name(field) }}' {%- if not loop.last -%},{%- endif %}
                                                    {% endfor -%} ])
         {%- endif %}
@@ -909,13 +910,13 @@ class {{fq_block_name}}_single_access({{top_node.inst_name}}_TestCase): # type: 
             # {{'.'.join(node.get_path_segments())}}
             {% if node.has_sw_readable -%}
             {% if asyncoutput %}await {% endif %}write_field_combinations(reg=self.dut.{{'.'.join(get_python_path_segments(node))}},
-                                       writable_fields = [ {% for field in get_reg_writable_fields(node, hide_node_func) -%}
+                                       writable_fields = [ {% for field in get_reg_writable_fields(node) -%}
                                                            '{{ safe_node_name(field) }}' {%- if not loop.last -%},{%- endif %}
                                                            {% endfor -%} ])
             {% else -%}
             kwargs = {}
             expected_value = 0
-            {% for field in get_reg_writable_fields(node, hide_node_func) %}
+            {% for field in get_reg_writable_fields(node) %}
             {%- if 'encode' in field.list_properties() %}
             rand_enum_value = random_enum_reg_value(self.dut.{{'.'.join(get_python_path_segments(field))}}.enum_cls)
             rand_field_value = rand_enum_value.value
@@ -1163,7 +1164,7 @@ class {{fq_block_name}}_single_access({{top_node.inst_name}}_TestCase): # type: 
                               {% endfor %} ]
         memories = []
         for memory in self.dut.get_memories(unroll=False):  # type: ignore[union-attr]
-            self.assertIsInstance(memory, (Memory{% if asyncoutput %}Async{% endif %}ReadOnly{% if legacy_block_access %}Legacy{% endif %}, Memory{% if asyncoutput %}Async{% endif %}WriteOnly{% if legacy_block_access %}Legacy{% endif %}, Memory{% if asyncoutput %}Async{% endif %}ReadWrite{% if legacy_block_access %}Legacy{% endif %}, Memory{% if asyncoutput %}Async{% endif %}ReadOnlyArray, Memory{% if asyncoutput %}Async{% endif %}WriteOnlyArray, Memory{% if asyncoutput %}Async{% endif %}ReadWriteArray))
+            self.assertIsInstance(memory, (Memory{% if asyncoutput %}Async{% endif %}ReadOnly{% if legacy_block_access %}Legacy{% endif %}, Memory{% if asyncoutput %}Async{% endif %}WriteOnly{% if legacy_block_access %}Legacy{% endif %}, Memory{% if asyncoutput %}Async{% endif %}ReadWrite{% if legacy_block_access %}Legacy{% endif %}, Memory{% if asyncoutput %}Async{% endif %}ReadOnly{% if legacy_block_access %}Legacy{% endif %}Array, Memory{% if asyncoutput %}Async{% endif %}WriteOnly{% if legacy_block_access %}Legacy{% endif %}Array, Memory{% if asyncoutput %}Async{% endif %}ReadWrite{% if legacy_block_access %}Legacy{% endif %}Array))
             memories.append(memory)
         self.assertCountEqual(expected_memories, memories)
 
@@ -1264,7 +1265,7 @@ class {{fq_block_name}}_single_access({{top_node.inst_name}}_TestCase): # type: 
                               {% endfor %} ]
         memories = []
         for memory in self.dut.{{'.'.join(get_python_path_segments(node))}}.get_memories(unroll=False):  # type: ignore[union-attr]
-            self.assertIsInstance(memory, (Memory{% if asyncoutput %}Async{% endif %}ReadOnly{% if legacy_block_access %}Legacy{% endif %}, Memory{% if asyncoutput %}Async{% endif %}WriteOnly{% if legacy_block_access %}Legacy{% endif %}, Memory{% if asyncoutput %}Async{% endif %}ReadWrite{% if legacy_block_access %}Legacy{% endif %}, Memory{% if asyncoutput %}Async{% endif %}ReadOnlyArray, Memory{% if asyncoutput %}Async{% endif %}WriteOnlyArray, Memory{% if asyncoutput %}Async{% endif %}ReadWriteArray))
+            self.assertIsInstance(memory, (Memory{% if asyncoutput %}Async{% endif %}ReadOnly{% if legacy_block_access %}Legacy{% endif %}, Memory{% if asyncoutput %}Async{% endif %}WriteOnly{% if legacy_block_access %}Legacy{% endif %}, Memory{% if asyncoutput %}Async{% endif %}ReadWrite{% if legacy_block_access %}Legacy{% endif %}, Memory{% if asyncoutput %}Async{% endif %}ReadOnly{% if legacy_block_access %}Legacy{% endif %}Array, Memory{% if asyncoutput %}Async{% endif %}WriteOnly{% if legacy_block_access %}Legacy{% endif %}Array, Memory{% if asyncoutput %}Async{% endif %}ReadWrite{% if legacy_block_access %}Legacy{% endif %}Array))
             memories.append(memory)
         self.assertCountEqual(expected_memories, memories)
     {% endmacro %}
@@ -1402,6 +1403,21 @@ class {{fq_block_name}}_single_access({{top_node.inst_name}}_TestCase): # type: 
                 _ = self.dut.{{'.'.join(get_python_path_segments(node))}} # type: ignore[attr-defined]
         {% endfor %}
     {% endif %}
+
+    def test_array_slicing(self) -> None:
+        """
+        Check slicing into array
+        """
+        full_slice:NodeArray
+        {% for node in rolled_owned_array %}
+        with self.subTest(msg='hidden_node: {{'.'.join(node.get_path_segments())}}'):
+            {% if node.parent ==  top_node %}
+            full_slice = self.dut.get_child_by_system_rdl_name('{{node.inst_name}}')
+            {% else %}
+            full_slice = self.dut.{{'.'.join(get_python_path_segments(node.parent))}}.get_child_by_system_rdl_name('{{node.inst_name}}')
+            {% endif %}
+            self.assertCountEqual(iter(full_slice{{full_slice_accessor(node)}}), iter(full_slice))
+        {% endfor %}
 
 
 

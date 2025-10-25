@@ -1,0 +1,46 @@
+field myField {
+  desc = "My example 4bit field";
+  fieldwidth = 4;
+  reset = 1;
+};
+
+enum twoBitFieldType {
+		value1 = 0 { name = "Value 1"; };
+		value2 = 1;
+		value3 = 3 { name = "Value 3"; desc="Does something"; };
+	};
+
+field myEncodedField {
+  desc = "FieldName";
+  fieldwidth=2;
+  encode = twoBitFieldType;
+};
+
+reg myReg {
+    myField field_a;
+    myField field_b = 2;
+    myField field_c;
+    field_c->reset = 3;
+    myField field_d = 4;
+    myField field_e = 5;
+    myEncodedField field_f = {twoBitFieldType::value3};
+    field { fieldwidth=2; } field_g = 1;
+};
+
+addrmap deduplicated_field {
+
+    enum alt_twoBitFieldType {
+		value1 = 0 { name = "Value 0"; };
+		value2 = 1;
+		value3 = 3 { name = "Value Three"; desc="Does something different"; };
+	};
+
+    myReg reg_a;
+    myReg reg_b;
+    reg_b.field_c->reset = 6;
+    reg_b.field_d->desc = "A new name"; // this should trigger a new class definition for the field
+    myReg reg_c;
+    reg_c.field_f->encode = alt_twoBitFieldType;
+    myReg reg_d;
+    reg_d.field_d->reset = 5;
+};

@@ -1,4 +1,20 @@
 """
+peakrdl-python is a tool to generate Python Register Access Layer (RAL) from SystemRDL
+Copyright (C) 2021 - 2025
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
 Test for basic field functionality
 """
 import unittest
@@ -14,9 +30,10 @@ from peakrdl_python.lib import FieldReadOnly, FieldWriteOnly, FieldReadWrite
 from peakrdl_python.lib import FieldEnumReadOnly, FieldEnumWriteOnly, FieldEnumReadWrite
 from peakrdl_python.lib import RegReadOnly, RegWriteOnly, RegReadWrite, Reg
 from peakrdl_python.lib import FieldSizeProps
-from peakrdl_python.lib.utility_functions import swap_msb_lsb_ordering
-from peakrdl_python.lib import AddressMap, CallbackSet, RegFile, Memory, RegArray, FieldMiscProps
+from peakrdl_python.lib.utility_functions import swap_msb_lsb_ordering, calculate_bitmask
+from peakrdl_python.lib import AddressMap, CallbackSet, FieldMiscProps
 from peakrdl_python.lib import SystemRDLEnum, SystemRDLEnumEntry
+from peakrdl_python.lib import Node, NodeArray
 
 from .simple_components import CallBackTestWrapper
 
@@ -49,6 +66,42 @@ class TestMsbAndLsbSwapping(unittest.TestCase):
                 self.assertEqual(swap_msb_lsb_ordering(width=field_length, value=1 << pos),
                                  1 << field_length - 1 - pos)
 
+class TestBitmaskGeneration(unittest.TestCase):
+    """
+    Test utility function for making a bit mask
+    """
+    @staticmethod
+    def reference_bitmask_algorithm(high, low):
+        """
+        reference bit mask implementation (previously in the code)
+        """
+        return sum(2 ** x for x in range(low, high + 1))
+
+    def test_single_pos(self):
+        """
+        Test single bit position
+        """
+        for bit in range(0,64):
+            self.assertEqual(calculate_bitmask(low=bit, high=bit),
+                             self.reference_bitmask_algorithm(low=bit, high=bit))
+
+    def test_multi_bit_fields(self):
+        """
+        Test multi-bit fields
+        """
+        for low, high in ((low, high) for low in range(64) for high in range(low + 1, 64 - low)):
+            self.assertEqual(calculate_bitmask(low=low, high=high),
+                             self.reference_bitmask_algorithm(low=low, high=high))
+
+    def test_huge_register(self):
+        """
+        Test a couple of case with very large register definitions
+        """
+        self.assertEqual(calculate_bitmask(low=128, high=511),
+                         self.reference_bitmask_algorithm(low=128, high=511))
+
+
+
 
 class TestField(CallBackTestWrapper):
     """
@@ -74,14 +127,10 @@ class TestField(CallBackTestWrapper):
             # pylint: disable-next=too-many-arguments
             def __init__(self, *,
                          address: int,
-                         accesswidth: int,
-                         width: int,
                          logger_handle: str,
                          inst_name: str,
                          parent: AddressMap):
                 super().__init__(address=address,
-                                 accesswidth=accesswidth,
-                                 width=width,
                                  logger_handle=logger_handle,
                                  inst_name=inst_name,
                                  parent=parent)
@@ -97,14 +146,27 @@ class TestField(CallBackTestWrapper):
                     field_type=field_payload)
 
             @property
+            def width(self) -> int:
+                """
+                Register Width
+                """
+                return 32
+
+            @property
+            def accesswidth(self) -> int:
+                """
+                Register Access Width
+                """
+                return 32
+
+            @property
             def readable_fields(self) -> Iterator[FieldReadOnly]:
                 """
                 generator that produces has all the readable fields within the register
                 """
                 yield self.field
 
-            @property
-            def fields(self) -> Iterator[FieldReadOnly]:
+            def __iter__(self) -> Iterator[FieldReadOnly]:
                 """
                 generator that produces has all the readable fields within the register
                 """
@@ -152,25 +214,8 @@ class TestField(CallBackTestWrapper):
                     logger_handle=logger_handle + '.dut_reg_wrapper',
                     inst_name='dut_reg_wrapper',
                     parent=self,
-                    width=32,
-                    accesswidth=32,
                     address=address)
 
-            def get_memories(self, unroll: bool = False) -> \
-                    Iterator[Union[Memory, tuple[Memory, ...]]]:
-                raise NotImplementedError('Not implemented in the testing')
-
-            def get_sections(self, unroll: bool = False) -> \
-                    Iterator[Union[Union[AddressMap, RegFile],
-                    tuple[Union[AddressMap, RegFile], ...]]]:
-                raise NotImplementedError('Not implemented in the testing')
-
-            def get_registers(self, unroll: bool = False) -> \
-                    Iterator[Union[Reg, RegArray]]:
-                """
-                generator that produces all the readable_registers of this node
-                """
-                raise NotImplementedError('Not implemented in the testing')
 
             @property
             def systemrdl_python_child_name_map(self) -> dict[str, str]:
@@ -188,6 +233,9 @@ class TestField(CallBackTestWrapper):
             @property
             def size(self) -> int:
                 return self.dut_reg_wrapper.size
+
+            def __iter__(self) ->  Iterator[Union[Node, NodeArray]]:
+                yield self.dut_reg_wrapper
 
 
 

@@ -1,4 +1,20 @@
 """
+peakrdl-python is a tool to generate Python Register Access Layer (RAL) from SystemRDL
+Copyright (C) 2021 - 2025
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
 Test that it is possible to build an addrmap inside the compiled structure and compare it to
 a result of the top level
 """
@@ -37,9 +53,7 @@ class TestTopAndInner(unittest.TestCase):
         """
         test_case = 'addr_map'
         test_case_file = test_case +'.rdl'
-        test_case_reg_model_cls = test_case + '_cls'
         inner_addr_map = 'child_c'
-        inner_case_reg_model_cls = inner_addr_map + '_cls'
 
         # compile the code for the test
         rdlc = compiler_with_udp_registers()
@@ -71,24 +85,24 @@ class TestTopAndInner(unittest.TestCase):
             # add the temp directory to the python path so that it can be imported from
             sys.path.append(tmpdirname)
 
-            def generate_instance(regmodel_name: str, regmodel_cls: str) -> AddressMap:
+            def generate_instance(regmodel_name: str) -> AddressMap:
                 """
                 Import the register model python code and make an instance of the address map
                 """
 
                 reg_model_module = __import__(
-                    regmodel_name + '.reg_model.' + regmodel_name,
-                    globals(), locals(), [regmodel_cls],
+                    regmodel_name + '.reg_model',
+                    globals(), locals(), ['RegModel'],
                     0)
-                dut_cls = getattr(reg_model_module, regmodel_cls)
+                dut_cls = getattr(reg_model_module, 'RegModel')
 
                 return dut_cls(callbacks=NormalCallbackSet(
                     read_block_callback=dummy_read_block,
                     write_block_callback=dummy_write_block))
 
 
-            yield (generate_instance(test_case, test_case_reg_model_cls),
-                   generate_instance(inner_addr_map, inner_case_reg_model_cls))
+            yield (generate_instance(test_case),
+                   generate_instance(inner_addr_map))
 
             sys.path.remove(tmpdirname)
 

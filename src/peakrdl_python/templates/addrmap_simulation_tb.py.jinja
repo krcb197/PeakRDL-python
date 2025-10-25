@@ -1,6 +1,6 @@
 {#
 peakrdl-python is a tool to generate Python Register Access Layer (RAL) from SystemRDL
-Copyright (C) 2021 - 2023
+Copyright (C) 2021 - 2025
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -18,6 +18,11 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 {% include "header_tb.py.jinja" with context %}
 
+{% from 'template_ultilities.py.jinja' import peakrdl_python_sim_lib with context %}
+{% from 'template_ultilities.py.jinja' import peakrdl_python_lib with context %}
+{# the following defining the number relative steps up to the lib and sim_lib packages from the current file #}
+{% set lib_depth = 1 %}
+
 {% if legacy_block_access %}from array import array as Array{% endif %}
 from typing import Union, cast
 {% if asyncoutput %}
@@ -34,15 +39,15 @@ import random
 from enum import IntEnum
 {% endif %}
 
-from {% if skip_lib_copy %}peakrdl_python.{% else %}..{% endif %}sim_lib.register import Register,MemoryRegister
-from {% if skip_lib_copy %}peakrdl_python.{% else %}..{% endif %}sim_lib.field import Field
+from {{ peakrdl_python_sim_lib(depth=lib_depth) }}.register import Register,MemoryRegister
+from {{ peakrdl_python_sim_lib(depth=lib_depth) }}.field import Field
 
 from ._{{top_node.inst_name}}_sim_test_base import {{top_node.inst_name}}_SimTestCase, {{top_node.inst_name}}_SimTestCase_BlockAccess
 from ._{{top_node.inst_name}}_sim_test_base import __name__ as base_name
 from ._{{top_node.inst_name}}_test_base import random_enum_reg_value
 
 {% if not legacy_enum_type %}
-from {% if skip_lib_copy %}peakrdl_python.{% else %}..{% endif %}lib import SystemRDLEnum
+from {{ peakrdl_python_lib(depth=lib_depth) }} import SystemRDLEnum
 {% endif %}
 
 class {{fq_block_name}}_single_access({{top_node.inst_name}}_SimTestCase): # type: ignore[valid-type,misc]

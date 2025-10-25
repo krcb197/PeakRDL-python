@@ -1,5 +1,27 @@
+{#
+peakrdl-python is a tool to generate Python Register Access Layer (RAL) from SystemRDL
+Copyright (C) 2021 - 2025
 
-from {% if skip_lib_copy %}peakrdl_python.{% else %}.{% endif %}lib import {% if asyncoutput %}Async{% else %}Normal{% endif %}CallbackSet{% if legacy_block_access %}Legacy{% endif %}
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <https://www.gnu.org/licenses/>.
+#}
+{% include "header.py.jinja" with context %}
+
+{% from 'template_ultilities.py.jinja' import peakrdl_python_lib with context %}
+{# the following defining the number relative steps up to the lib and sim_lib packages from the current file #}
+{% set lib_depth = 0 %}
+
+from {{ peakrdl_python_lib(depth=lib_depth) }} import {% if asyncoutput %}Async{% else %}Normal{% endif %}CallbackSet{% if legacy_block_access %}Legacy{% endif %}
 
 from .reg_model.{{top_node.inst_name}} import {{top_node.inst_name}}_cls
 from .sim.{{top_node.inst_name}} import {{top_node.inst_name}}_simulator_cls

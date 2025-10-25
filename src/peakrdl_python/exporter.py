@@ -1,6 +1,6 @@
 """
 peakrdl-python is a tool to generate Python Register Access Layer (RAL) from SystemRDL
-Copyright (C) 2021 - 2023
+Copyright (C) 2021 - 2025
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -17,12 +17,17 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 Main Classes for the peakrdl-python
 """
+# pylint:disable=too-many-lines
 import os
 import re
-from pathlib import Path
-from shutil import copy
-from typing import NoReturn, Any, Optional, Union
+
+from typing import NoReturn, Any, Optional, Union, TextIO
+from collections.abc import Callable
 from collections.abc import Iterable
+from functools import partial
+import sys
+from itertools import filterfalse, chain
+import warnings
 
 import jinja2 as jj
 from systemrdl import RDLWalker
@@ -30,18 +35,23 @@ from systemrdl import RDLWalker
 from systemrdl.node import RootNode, Node, RegNode, AddrmapNode, RegfileNode
 from systemrdl.node import FieldNode, MemNode, AddressableNode
 from systemrdl.node import SignalNode
-from systemrdl.rdltypes import OnReadType, OnWriteType, PropertyReference
 from systemrdl.rdltypes.user_enum import UserEnum, UserEnumMeta
 from systemrdl.rdltypes.user_struct import UserStruct
 
-from .systemrdl_node_utility_functions import get_reg_readable_fields, get_reg_writable_fields, \
-    get_table_block, get_dependent_component, \
+from .systemrdl_node_utility_functions import get_reg_writable_fields, \
+    get_table_block, \
     get_field_bitmask_hex_string, get_field_inv_bitmask_hex_string, \
-    get_field_max_value_hex_string, get_reg_max_value_hex_string, get_fully_qualified_type_name, \
+    get_field_max_value_hex_string, get_reg_max_value_hex_string, \
     uses_enum, uses_memory, \
     get_memory_max_entry_value_hex_string, get_memory_width_bytes, \
-    get_field_default_value, get_enum_values, get_properties_to_include, get_reg_fields, \
-    HideNodeCallback, hide_based_on_property
+    get_field_default_value, get_enum_values, get_properties_to_include, \
+    HideNodeCallback, hide_based_on_property, \
+    is_encoded_field, full_slice_accessor, ShowUDPCallback
+from .unique_component_iterator import UniqueComponents
+from .unique_component_iterator import PeakRDLPythonUniqueRegisterComponents
+from .unique_component_iterator import PeakRDLPythonUniqueMemoryComponents
+from .class_names import fully_qualified_enum_type, get_field_get_base_class_name
+from .systemrdl_node_hashes import enum_hash
 
 from .lib import get_array_typecode
 
@@ -49,180 +59,41 @@ from .safe_name_utility import get_python_path_segments, safe_node_name
 
 from ._node_walkers import AddressMaps, OwnedbyAddressMap
 
+from ._deploy_package import GeneratedPackage, PythonPackage
+
 from .__about__ import __version__
 
 file_path = os.path.dirname(__file__)
 
+# same bit of code exists in base so flags as duplicate
+# pylint: disable=duplicate-code
+if sys.version_info >= (3, 10):
+    # type guarding was introduced in python 3.10
+    from typing import TypeGuard
+else:
+    from typing_extensions import TypeGuard
+# pylint: enable=duplicate-code
+
+# same bit of code exists in base so flags as duplicate
+# pylint: disable=duplicate-code
+if sys.version_info >= (3, 13):
+    # the batched iterator was introduced in the python standard library at version 3.13
+    # 3.12 did have a version without strict but to make this more consistent stick with this
+    # full implementation even though this module does not use the strict option
+    from itertools import batched
+else:
+    from more_itertools import batched
+# pylint: enable=duplicate-code
+
+DEFAULT_ENUM_FIELD_CLASS_PER_GENERATED_FILE = 50
+DEFAULT_FIELD_CLASS_PER_GENERATED_FILE = 25
+DEFAULT_REGISTER_CLASS_PER_GENERATED_FILE = 25
+DEFAULT_MEMORY_CLASS_PER_GENERATED_FILE = 50
 
 class PythonExportTemplateError(Exception):
     """
     Exception for hading errors in the templating
     """
-
-
-class _PythonPackage:
-    """
-    Class to represent a python package
-    """
-
-    def __init__(self, path: Path):
-        self._path = path
-
-    @property
-    def path(self) -> Path:
-        """
-        path of the package
-        """
-        return self._path
-
-    def child_package(self, name: str) -> '_PythonPackage':
-        """
-        provide a child package within the current package
-
-        Args:
-            name: name of child package
-
-        Returns:
-            None
-
-        """
-        return _PythonPackage(path=self.path / name)
-
-    def child_module_path(self, name: str) -> Path:
-        """
-        return a child module within the package
-
-        Args:
-            name: name of module
-
-        Returns:
-            None
-
-        """
-        return Path(self.path) / name
-
-    @property
-    def _init_path(self) -> Path:
-        return self.child_module_path('__init__.py')
-
-    def _make_empty_init_file(self) -> None:
-        with self._init_path.open('w', encoding='utf-8') as fid:
-            fid.write('pass\n')
-
-    def create_empty_package(self, cleanup: bool) -> None:
-        """
-        make the package folder (if it does not already exist), populate the __init__.py and
-        optionally remove any existing python files
-
-        Args:
-            cleanup (bool) : delete any existing python files in the package
-
-        Returns:
-            None
-        """
-        if self.path.exists():
-            if cleanup:
-                for file in self.path.glob('*.py'):
-                    os.remove(file.resolve())
-        else:
-            self.path.mkdir(parents=True, exist_ok=False)
-        self._make_empty_init_file()
-
-
-class _CopiedPythonPackage(_PythonPackage):
-    """
-    Class to represent a python package, which is copied from another
-    """
-
-    def __init__(self, path: Path, ref_package: _PythonPackage):
-        super().__init__(path=path)
-        self._ref_package = ref_package
-
-    def create_empty_package(self, cleanup: bool) -> None:
-        """
-        make the package folder (if it does not already exist), populate the __init__.py and
-        optionally remove any existing python files
-
-        Args:
-            cleanup (bool) : delete any existing python files in the package
-
-        Returns:
-            None
-        """
-        super().create_empty_package(cleanup=cleanup)
-
-        # copy all the python source code that is part of the library which comes as part of the
-        # peakrdl-python to the lib direction of the generated package
-        files_in_package = self._ref_package.path.glob('*.py')
-
-        for file_in_package in files_in_package:
-            copy(src=file_in_package, dst=self.path)
-
-
-class _Package(_PythonPackage):
-    """
-    Class to define the package being generated
-
-    Args:
-        include_tests (bool): include the tests package
-    """
-    template_lib_package = _PythonPackage(Path(__file__).parent / 'lib')
-    template_sim_lib_package = _PythonPackage(Path(__file__).parent / 'sim_lib')
-
-    def __init__(self, path: str, package_name: str, include_tests: bool, include_libraries: bool):
-        super().__init__(Path(path) / package_name)
-
-        self._include_tests = include_tests
-        self._include_libraries = include_libraries
-
-        if include_libraries:
-            self.lib = self.child_ref_package('lib', self.template_lib_package)
-        self.reg_model = self.child_package('reg_model')
-
-        if include_tests:
-            self.tests = self.child_package('tests')
-
-        if include_libraries:
-            self.sim_lib = self.child_ref_package('sim_lib', self.template_sim_lib_package)
-        self.sim = self.child_package('sim')
-
-    def child_ref_package(self, name: str, ref_package: _PythonPackage) -> '_CopiedPythonPackage':
-        """
-        provide a child package within the current package
-
-        Args:
-            name: name of child package
-
-        Returns:
-            None
-
-        """
-        return _CopiedPythonPackage(path=self.path / name, ref_package=ref_package)
-
-    def create_empty_package(self, cleanup: bool, ) -> None:
-        """
-        create the directories and __init__.py files associated with the exported package
-
-        Args:
-            package_path: directory for the package output
-            cleanup (bool): delete existing python files
-
-        Returns:
-            None
-
-        """
-
-        # make the folder for this package and populate the empty __init__.py
-        super().create_empty_package(cleanup=cleanup)
-        # make all the child packages folders and their __init__.py
-        self.reg_model.create_empty_package(cleanup=cleanup)
-        if self._include_tests:
-            self.tests.create_empty_package(cleanup=cleanup)
-        if self._include_libraries:
-            self.lib.create_empty_package(cleanup=cleanup)
-            self.sim_lib.create_empty_package(cleanup=cleanup)
-        self.sim.create_empty_package(cleanup=cleanup)
-
 
 class PythonExporter:
     """
@@ -275,33 +146,59 @@ class PythonExporter:
         #   components, this is the original_def (which can be None in some cases)
         self.namespace_db = {}
 
-        # Dictionary used for determining the unique type names to use
-        self.node_type_name = {}
-
     def __stream_jinja_template(self,
                                 template_name: str,
-                                target_package: _PythonPackage,
+                                target_package: PythonPackage,
                                 target_name: str,
                                 template_context: dict[str, Any]) -> None:
 
+        template_context.update(self.user_template_context)
+        template_context['version'] = __version__
+
         template = self.jj_env.get_template(template_name)
-        module_path = target_package.child_module_path(target_name)
+        module_path = target_package.child_path(target_name)
 
         with module_path.open('w', encoding='utf-8') as fp:
             stream = template.stream(template_context)
             stream.dump(fp)
 
-    # pylint: disable-next=too-many-arguments
+    def __insert_header(self, file_stream: TextIO, top_block: AddrmapNode) -> None:
+        """
+        Insert the header template block into a file stream, this is intended to be used for the
+        __init__.py files which are built incrementally with the batches of files
+
+        Args:
+            file_stream: File Stream to be added to
+            top_block: top address map
+
+        Returns: None
+
+        """
+
+        template_context = {'top_node': top_block,
+                            'version': __version__, }
+        template_context.update(self.user_template_context)
+        template = self.jj_env.get_template('header.py.jinja')
+        stream = template.stream(template_context)
+        stream.dump(file_stream)
+        file_stream.write('\n')
+
+    # pylint: disable-next=too-many-arguments,too-many-locals
     def __export_reg_model(self, *,
                            top_block: AddrmapNode,
-                           package: _Package,
+                           package: GeneratedPackage,
                            skip_lib_copy: bool,
                            asyncoutput: bool,
                            legacy_block_access: bool,
-                           udp_to_include: Optional[list[str]],
+                           udp_include_func: ShowUDPCallback,
                            hide_node_func: HideNodeCallback,
                            legacy_enum_type: bool,
-                           skip_systemrdl_name_and_desc_properties: bool) -> None:
+                           skip_systemrdl_name_and_desc_properties: bool,
+                           skip_systemrdl_name_and_desc_in_docstring: bool,
+                           register_class_per_generated_file: int,
+                           field_class_per_generated_file: int,
+                           enum_field_class_per_generated_file: int,
+                           memory_class_per_generated_file: int) -> None:
 
         def visible_nonsignal_node(node: Node) -> int:
             count = 0
@@ -311,6 +208,20 @@ class PythonExporter:
                         count +=1
             return count
 
+        unique_component_walker = UniqueComponents(
+            hide_node_callback=hide_node_func,
+            udp_include_func=udp_include_func,
+            # if the name and desc are skipped in both the property and docstring, it can be
+            # skipped in the unique component generation process
+            include_name_and_desc=not all((skip_systemrdl_name_and_desc_properties,
+                                          skip_systemrdl_name_and_desc_in_docstring))
+        )
+        RDLWalker(unroll=True).walk(top_block.parent, unique_component_walker,
+                                    skip_top=False)
+
+        top_file_components = filterfalse(
+            lambda component: isinstance(component.instance, (FieldNode, RegNode, MemNode)),
+            reversed(unique_component_walker.nodes.values()))
 
         context = {
             'print': print,
@@ -326,65 +237,443 @@ class PythonExporter:
             'systemrdlUserEnum': UserEnum,
             'systemrdlUserStruct': UserStruct,
             'asyncoutput': asyncoutput,
-            'OnWriteType': OnWriteType,
-            'OnReadType': OnReadType,
-            'PropertyReference': PropertyReference,
             'isinstance': isinstance,
             'str': str,
             'uses_enum': uses_enum(top_block),
-            'uses_memory': uses_memory(top_block),
-            'get_fully_qualified_type_name': self._lookup_type_name,
-            'get_dependent_component': get_dependent_component,
-            'get_dependent_enum': self._get_dependent_enum,
+            'get_fully_qualified_type_name': partial(
+                unique_component_walker.python_class_name,
+                async_library_classes=asyncoutput),
+            'unique_components': top_file_components,
+            'dependent_registers': unique_component_walker.register_nodes(),
+            'dependent_memories': unique_component_walker.memory_nodes(),
+            'unique_enums': self._get_dependent_enum(unique_component_walker),
             'get_enum_values': get_enum_values,
-            'get_fully_qualified_enum_type': self._fully_qualified_enum_type,
-            'get_field_bitmask_hex_string': get_field_bitmask_hex_string,
-            'get_field_inv_bitmask_hex_string': get_field_inv_bitmask_hex_string,
-            'get_field_max_value_hex_string': get_field_max_value_hex_string,
-            'get_reg_max_value_hex_string': get_reg_max_value_hex_string,
-            'get_table_block': get_table_block,
-            'get_reg_writable_fields': get_reg_writable_fields,
-            'get_reg_readable_fields': get_reg_readable_fields,
-            'get_reg_fields': get_reg_fields,
-            'get_memory_max_entry_value_hex_string': get_memory_max_entry_value_hex_string,
-            'get_memory_width_bytes': get_memory_width_bytes,
-            'get_field_default_value': get_field_default_value,
+            'get_table_block': partial(get_table_block,
+                                       skip_systemrdl_name_and_desc_in_docstring=
+                                          skip_systemrdl_name_and_desc_in_docstring),
             'raise_template_error': self._raise_template_error,
-            'get_python_path_segments': get_python_path_segments,
             'safe_node_name': safe_node_name,
             'skip_lib_copy': skip_lib_copy,
-            'version': __version__,
             'legacy_block_access': legacy_block_access,
-            'udp_to_include': udp_to_include,
             'get_properties_to_include': get_properties_to_include,
-            'dependent_property_enum':
-                self._get_dependent_property_enum(node=top_block,
-                                                  udp_to_include=udp_to_include),
+            'unique_property_enums':
+                self._get_dependent_property_enum(unique_component_walker),
             'hide_node_func': hide_node_func,
             'visible_nonsignal_node' : visible_nonsignal_node,
             'legacy_enum_type': legacy_enum_type,
-            'skip_systemrdl_name_and_desc_properties': skip_systemrdl_name_and_desc_properties
+            'skip_systemrdl_name_and_desc_properties': skip_systemrdl_name_and_desc_properties,
         }
         if legacy_block_access is True:
             context['get_array_typecode'] = get_array_typecode
 
-        context.update(self.user_template_context)
-
+        module_name = top_block.inst_name
         self.__stream_jinja_template(template_name="addrmap.py.jinja",
                                      target_package=package.reg_model,
-                                     target_name=top_block.inst_name + '.py',
+                                     target_name=module_name + '.py',
                                      template_context=context)
+
+        with package.reg_model.init_file_stream() as init_fid:
+            # put the header on the reg_model package __init__.py
+            self.__insert_header(file_stream=init_fid,
+                                 top_block=top_block)
+            init_fid.write(f'from .{module_name} import {top_block.inst_name}_cls as RegModel\n')
+
+
+        if uses_memory(top_block):
+            self.__export_reg_model_memories(
+                top_block=top_block,
+                package=package,
+                skip_lib_copy=skip_lib_copy,
+                asyncoutput=asyncoutput,
+                legacy_block_access=legacy_block_access,
+                hide_node_func=hide_node_func,
+                legacy_enum_type=legacy_enum_type,
+                skip_systemrdl_name_and_desc_properties=skip_systemrdl_name_and_desc_properties,
+                skip_systemrdl_name_and_desc_in_docstring=
+                   skip_systemrdl_name_and_desc_in_docstring,
+                unique_component_walker=unique_component_walker,
+                visible_nonsignal_node=visible_nonsignal_node,
+                memory_class_per_generated_file=memory_class_per_generated_file,
+            )
+
+        self.__export_reg_model_registers(
+            top_block=top_block,
+            package=package,
+            skip_lib_copy=skip_lib_copy,
+            asyncoutput=asyncoutput,
+            legacy_block_access=legacy_block_access,
+            hide_node_func=hide_node_func,
+            legacy_enum_type=legacy_enum_type,
+            skip_systemrdl_name_and_desc_properties=skip_systemrdl_name_and_desc_properties,
+            skip_systemrdl_name_and_desc_in_docstring=skip_systemrdl_name_and_desc_in_docstring,
+            unique_component_walker=unique_component_walker,
+            visible_nonsignal_node=visible_nonsignal_node,
+            register_class_per_generated_file=register_class_per_generated_file,
+        )
+
+        self.__export_reg_model_fields(
+            top_block=top_block,
+            package=package,
+            skip_lib_copy=skip_lib_copy,
+            asyncoutput=asyncoutput,
+            legacy_enum_type=legacy_enum_type,
+            skip_systemrdl_name_and_desc_properties=skip_systemrdl_name_and_desc_properties,
+            skip_systemrdl_name_and_desc_in_docstring=skip_systemrdl_name_and_desc_in_docstring,
+            unique_component_walker=unique_component_walker,
+            field_class_per_generated_file=field_class_per_generated_file)
+
+
+        # field enumerations
+        if uses_enum(top_block):
+            self.__export_reg_model_field_enums(
+                top_block=top_block,
+                package=package,
+                skip_lib_copy=skip_lib_copy,
+                legacy_enum_type=legacy_enum_type,
+                skip_systemrdl_name_and_desc_properties=skip_systemrdl_name_and_desc_properties,
+                unique_component_walker=unique_component_walker,
+                enum_field_class_per_generated_file=enum_field_class_per_generated_file)
+
+        # property enumerations
+        context = {
+            'top_node': top_block,
+            'unique_property_enums':
+                self._get_dependent_property_enum(unique_component_walker),
+            'skip_lib_copy': skip_lib_copy,
+            'legacy_enum_type': legacy_enum_type,
+        }
+
+        self.__stream_jinja_template(template_name="property_enums.py.jinja",
+                                     target_package=package.reg_model,
+                                     target_name=top_block.inst_name + '_property_enums.py',
+                                     template_context=context)
+
+    # pylint: disable-next=too-many-arguments,too-many-locals
+    def __export_reg_model_registers(self, *,
+                                     top_block: AddrmapNode,
+                                     package: GeneratedPackage,
+                                     skip_lib_copy: bool,
+                                     asyncoutput: bool,
+                                     legacy_block_access: bool,
+                                     hide_node_func: HideNodeCallback,
+                                     legacy_enum_type: bool,
+                                     skip_systemrdl_name_and_desc_properties: bool,
+                                     skip_systemrdl_name_and_desc_in_docstring: bool,
+                                     unique_component_walker: UniqueComponents,
+                                     visible_nonsignal_node: Callable[[Node], int],
+                                     register_class_per_generated_file: int) -> None:
+        """
+        Sub function of the __export_reg_model which exports the register class definitions into
+        a batch of files within the registers sub-package of the main reg_model package
+        """
+
+        def init_line_entry(module_name: str,
+                            register: PeakRDLPythonUniqueRegisterComponents) -> str:
+            base_entry = f'from .{module_name} import {register.python_class_name}'
+            array_entry = base_entry + '_array'
+
+            if register.instance.is_array:
+                return f'{base_entry}\n{array_entry}\n'
+
+            return f'{base_entry}\n'
+
+        # registers which are broken up to multiple files to prevent anything getting too big
+        with package.reg_model.registers.init_file_stream() as init_fid:
+            # put the header on the field package __init__.py
+            self.__insert_header(file_stream=init_fid,
+                                 top_block=top_block)
+
+            for index, unique_register_subset in enumerate(
+                    batched(
+                        unique_component_walker.register_nodes(),
+                        n=register_class_per_generated_file)
+            ):
+
+                # make list of all the field and field enum class names that need to be pulled into
+                # the module associated with this batch of registers
+                dependent_field_cls = []
+                dependent_field_enum_cls = []
+                for register in unique_register_subset:
+                    for field in register.fields():
+                        field_cls = unique_component_walker.python_class_name(
+                            async_library_classes=asyncoutput,
+                            node=field)
+                        field_cls_base = get_field_get_base_class_name(
+                            node=field,
+                            async_library_classes=asyncoutput)
+                        if field_cls_base != field_cls and field_cls not in dependent_field_cls:
+                            dependent_field_cls.append(field_cls)
+                        if is_encoded_field(field):
+                            encoding_enum = field.get_property('encode')
+                            if encoding_enum is None:
+                                raise RuntimeError('This should never happen')
+                            field_enum_cls = fully_qualified_enum_type(
+                                encoding_enum) + '_enumcls'
+                            if field_enum_cls not in dependent_field_enum_cls:
+                                dependent_field_enum_cls.append(field_enum_cls)
+
+                context = {
+                    'top_node': top_block,
+                    'systemrdlRegNode': RegNode,
+                    'systemrdlFieldNode': FieldNode,
+                    'systemrdlSignalNode': SignalNode,
+                    'systemrdlUserStruct': UserStruct,
+                    'systemrdlUserEnum': UserEnum,
+                    'isinstance': isinstance,
+                    'type': type,
+                    'str': str,
+                    'asyncoutput': asyncoutput,
+                    'unique_registers': unique_register_subset,
+                    'unique_property_enums':
+                        self._get_dependent_property_enum(unique_component_walker),
+                    'get_table_block': partial(get_table_block,
+                                               skip_systemrdl_name_and_desc_in_docstring=
+                                               skip_systemrdl_name_and_desc_in_docstring),
+                    'get_fully_qualified_type_name': partial(
+                        unique_component_walker.python_class_name,
+                        async_library_classes=asyncoutput),
+                    'get_fully_qualified_enum_type': fully_qualified_enum_type,
+                    'get_field_default_value': get_field_default_value,
+                    'is_encoded_field': is_encoded_field,
+                    'skip_lib_copy': skip_lib_copy,
+                    'uses_enum': uses_enum(top_block),
+                    'legacy_enum_type': legacy_enum_type,
+                    'legacy_block_access': legacy_block_access,
+                    'skip_systemrdl_name_and_desc_properties':
+                        skip_systemrdl_name_and_desc_properties,
+                    'raise_template_error': self._raise_template_error,
+                    'safe_node_name': safe_node_name,
+                    'dependent_enums': dependent_field_enum_cls,
+                    'dependent_fields': dependent_field_cls,
+                    'hide_node_func': hide_node_func,
+                    'visible_nonsignal_node': visible_nonsignal_node,
+                }
+
+                module_name = top_block.inst_name + f'_registers{index}'
+                self.__stream_jinja_template(template_name="addrmap_register.py.jinja",
+                                             target_package=package.reg_model.registers,
+                                             target_name=module_name + '.py',
+                                             template_context=context)
+
+                init_fid.writelines((init_line_entry(module_name, register)
+                                     for register in unique_register_subset))
+
+    # pylint: disable-next=too-many-arguments,too-many-locals
+    def __export_reg_model_memories(self, *,
+                                     top_block: AddrmapNode,
+                                     package: GeneratedPackage,
+                                     skip_lib_copy: bool,
+                                     asyncoutput: bool,
+                                     legacy_block_access: bool,
+                                     hide_node_func: HideNodeCallback,
+                                     legacy_enum_type: bool,
+                                     skip_systemrdl_name_and_desc_properties: bool,
+                                    skip_systemrdl_name_and_desc_in_docstring: bool,
+                                     unique_component_walker: UniqueComponents,
+                                     visible_nonsignal_node: Callable[[Node], int],
+                                     memory_class_per_generated_file: int) -> None:
+        """
+        Sub function of the __export_reg_model which exports the memory class definitions into
+        a batch of files within the memories sub-package of the main reg_model package
+        """
+        def init_line_entry(module_name:str,
+                            memory:PeakRDLPythonUniqueMemoryComponents) -> str:
+            base_entry = f'from .{module_name} import {memory.python_class_name}'
+            array_entry = base_entry + '_array'
+
+            if memory.instance.is_array:
+                return f'{base_entry}\n{array_entry}\n'
+
+            return f'{base_entry}\n'
+
+        # registers which are broken up to multiple files to prevent anything getting too big
+        with package.reg_model.memories.init_file_stream() as init_fid:
+            # put the header on the field package __init__.py
+            self.__insert_header(file_stream=init_fid,
+                                 top_block=top_block)
+
+            for index, unique_memory_subset in enumerate(
+                    batched(
+                        unique_component_walker.memory_nodes(),
+                        n=memory_class_per_generated_file)
+            ):
+
+                # make list of all the register class names that need to be pulled into
+                # the module associated with this batch of memories
+                dependent_reg_cls = []
+                for memory in unique_memory_subset:
+                    for register in memory.registers(unroll=False):
+                        register_cls = unique_component_walker.python_class_name(
+                            async_library_classes=asyncoutput,
+                            node=register)
+                        if register.is_array:
+                            register_cls += '_array'
+                        if register_cls not in dependent_reg_cls:
+                            dependent_reg_cls.append(register_cls)
+
+                context = {
+                    'top_node': top_block,
+                    'systemrdlMemNode': MemNode,
+                    'systemrdlFieldNode': FieldNode,
+                    'systemrdlSignalNode': SignalNode,
+                    'systemrdlUserStruct': UserStruct,
+                    'systemrdlUserEnum': UserEnum,
+                    'isinstance': isinstance,
+                    'type': type,
+                    'str': str,
+                    'asyncoutput': asyncoutput,
+                    'unique_memories': unique_memory_subset,
+                    'unique_property_enums':
+                        self._get_dependent_property_enum(unique_component_walker),
+                    'get_table_block': partial(get_table_block,
+                                               skip_systemrdl_name_and_desc_in_docstring=
+                                               skip_systemrdl_name_and_desc_in_docstring),
+                    'get_fully_qualified_type_name': partial(
+                        unique_component_walker.python_class_name,
+                        async_library_classes=asyncoutput),
+                    'get_fully_qualified_enum_type': fully_qualified_enum_type,
+                    'get_field_default_value': get_field_default_value,
+                    'is_encoded_field': is_encoded_field,
+                    'skip_lib_copy': skip_lib_copy,
+                    'uses_enum': uses_enum(top_block),
+                    'legacy_enum_type': legacy_enum_type,
+                    'legacy_block_access': legacy_block_access,
+                    'skip_systemrdl_name_and_desc_properties':
+                        skip_systemrdl_name_and_desc_properties,
+                    'raise_template_error': self._raise_template_error,
+                    'safe_node_name': safe_node_name,
+                    'hide_node_func': hide_node_func,
+                    'visible_nonsignal_node': visible_nonsignal_node,
+                    'dependent_registers': dependent_reg_cls,
+                }
+
+                module_name = top_block.inst_name + f'_memories{index}'
+                self.__stream_jinja_template(template_name="addrmap_memory.py.jinja",
+                                             target_package=package.reg_model.memories,
+                                             target_name=module_name + '.py',
+                                             template_context=context)
+
+                init_fid.writelines( (init_line_entry(module_name,memory)
+                                      for memory in unique_memory_subset))
+
+    # pylint: disable-next=too-many-arguments
+    def __export_reg_model_fields(self, *,
+                                  top_block: AddrmapNode,
+                                  package: GeneratedPackage,
+                                  skip_lib_copy: bool,
+                                  asyncoutput: bool,
+                                  legacy_enum_type: bool,
+                                  skip_systemrdl_name_and_desc_properties: bool,
+                                  skip_systemrdl_name_and_desc_in_docstring: bool,
+                                  unique_component_walker: UniqueComponents,
+                                  field_class_per_generated_file: int
+                                  ) -> None:
+        """
+        Sub function of the __export_reg_model which exports the field class definitions into
+        a batch of files within the registers.fields sub-package of the main reg_model package
+        """
+        with package.reg_model.registers.fields.init_file_stream() as init_fid:
+            # put the header on the field package __init__.py
+            self.__insert_header(file_stream=init_fid,
+                                 top_block=top_block)
+
+            for index, unique_fields_subset in enumerate(
+                    batched(
+                        filter(
+                            lambda component: isinstance(component.instance, FieldNode),
+                            unique_component_walker.nodes.values()),
+                        n=field_class_per_generated_file)
+            ):
+
+                context = {
+                    'top_node': top_block,
+                    'systemrdlFieldNode': FieldNode,
+                    'systemrdlUserStruct': UserStruct,
+                    'systemrdlUserEnum': UserEnum,
+                    'isinstance': isinstance,
+                    'type': type,
+                    'str': str,
+                    'asyncoutput': asyncoutput,
+                    'unique_fields': unique_fields_subset,
+                    'unique_property_enums':
+                        self._get_dependent_property_enum(unique_component_walker),
+                    'get_table_block': partial(get_table_block,
+                                               skip_systemrdl_name_and_desc_in_docstring=
+                                               skip_systemrdl_name_and_desc_in_docstring),
+                    'skip_lib_copy': skip_lib_copy,
+                    'uses_enum': uses_enum(top_block),
+                    'legacy_enum_type': legacy_enum_type,
+                    'skip_systemrdl_name_and_desc_properties':
+                        skip_systemrdl_name_and_desc_properties,
+                    'raise_template_error': self._raise_template_error,
+                }
+
+                module_name = top_block.inst_name + f'_fields{index}'
+                self.__stream_jinja_template(template_name="addrmap_field.py.jinja",
+                                             target_package=package.reg_model.registers.fields,
+                                             target_name=module_name + '.py',
+                                             template_context=context)
+
+                init_fid.writelines((f'from .{module_name} import {field.python_class_name}\n'
+                                     for field in unique_fields_subset))
+
+    # pylint: disable-next=too-many-arguments
+    def __export_reg_model_field_enums(self, *,
+                                       top_block: AddrmapNode,
+                                       package: GeneratedPackage,
+                                       skip_lib_copy: bool,
+                                       legacy_enum_type: bool,
+                                       skip_systemrdl_name_and_desc_properties: bool,
+                                       unique_component_walker: UniqueComponents,
+                                       enum_field_class_per_generated_file: int) -> None:
+        """
+        Sub function of the __export_reg_model which exports the field enumeration class
+        definitions into a batch of files within the registers.field_enums sub-packaage of the main
+        reg_model package
+        """
+        def init_line_entry(module_name:str, field_enum:UserEnumMeta) -> str:
+            return f'from .{module_name} import {fully_qualified_enum_type(field_enum)}_enumcls\n'
+
+        with package.reg_model.registers.field_enum.init_file_stream() as init_fid:
+            # put the header on the field package __init__.py
+            self.__insert_header(file_stream=init_fid,
+                                 top_block=top_block)
+
+            for index, unique_enums_subset in enumerate(
+                    batched(
+                        self._get_dependent_enum(unique_component_walker),
+                        n=enum_field_class_per_generated_file)
+            ):
+                context = {
+                    'top_node': top_block,
+                    'unique_enums': unique_enums_subset,
+                    'get_fully_qualified_enum_type': fully_qualified_enum_type,
+                    'skip_lib_copy': skip_lib_copy,
+                    'legacy_enum_type': legacy_enum_type,
+                    'skip_systemrdl_name_and_desc_properties':
+                        skip_systemrdl_name_and_desc_properties
+                }
+
+                field_enum_module_name = top_block.inst_name + f'_fields_enums{index}'
+                self.__stream_jinja_template(template_name="field_enums.py.jinja",
+                                             target_package=package.reg_model.registers.field_enum,
+                                             target_name=field_enum_module_name + '.py',
+                                             template_context=context)
+
+                init_fid.writelines(
+                    (init_line_entry(module_name=field_enum_module_name, field_enum=field_enum)
+                     for field_enum in unique_enums_subset))
 
     def __export_simulator(self, *,
                            top_block: AddrmapNode,
-                           package: _Package,
+                           package: GeneratedPackage,
                            skip_lib_copy: bool,
                            asyncoutput: bool,
                            legacy_block_access: bool) -> None:
 
         # as a result of issue 202, where two registers existed at that same address,
         # rather than iterating through the registers within the Jinja template
-        # we iterate through them in in advance so that cases of two registers at that same
+        # we iterate through them in advance so that cases of two registers at that same
         # address can be identified
         reg_dict:dict[int, Union[list[RegNode],RegNode]] = {}
         for node in filter(lambda x : isinstance(x, RegNode),  top_block.descendants(unroll=True)):
@@ -412,21 +701,26 @@ class PythonExporter:
             'isinstance': isinstance,
             'asyncoutput': asyncoutput,
             'skip_lib_copy': skip_lib_copy,
-            'version': __version__,
             'legacy_block_access': legacy_block_access,
             'list': list
         }
 
-        context.update(self.user_template_context)
-
-        self.__stream_jinja_template(template_name="sim_addrmap.py.jinja",
+        module_name = top_block.inst_name
+        self.__stream_jinja_template(template_name="addrmap_simulation.py.jinja",
                                      target_package=package.sim,
-                                     target_name=top_block.inst_name + '.py',
+                                     target_name=module_name + '.py',
                                      template_context=context)
+
+        with package.sim.init_file_stream() as init_fid:
+            # put the header on the simulator package __init__.py
+            self.__insert_header(file_stream=init_fid,
+                                 top_block=top_block)
+            init_fid.write(
+                f'from .{module_name} import {top_block.inst_name}_simulator_cls as Simulator\n')
 
     def __export_example(self, *,
                          top_block: AddrmapNode,
-                         package: _Package,
+                         package: GeneratedPackage,
                          skip_lib_copy: bool,
                          asyncoutput: bool,
                          legacy_block_access: bool) -> None:
@@ -438,11 +732,8 @@ class PythonExporter:
             'isinstance': isinstance,
             'asyncoutput': asyncoutput,
             'skip_lib_copy': skip_lib_copy,
-            'version': __version__,
             'legacy_block_access': legacy_block_access,
         }
-
-        context.update(self.user_template_context)
 
         self.__stream_jinja_template(template_name="example.py.jinja",
                                      target_package=package,
@@ -452,32 +743,19 @@ class PythonExporter:
     # pylint: disable-next=too-many-arguments
     def __export_base_tests(self, *,
                             top_block: AddrmapNode,
-                            package: _Package,
+                            package: GeneratedPackage,
                             skip_lib_copy: bool,
                             asyncoutput: bool,
                             legacy_block_access: bool,
                             legacy_enum_type: bool) -> None:
-        """
-
-        Args:
-            top_block:
-            package:
-            asyncoutput:
-
-        Returns:
-
-        """
 
         context = {
             'top_node': top_block,
             'asyncoutput': asyncoutput,
             'skip_lib_copy': skip_lib_copy,
-            'version': __version__,
             'legacy_block_access': legacy_block_access,
             'legacy_enum_type': legacy_enum_type
         }
-
-        context.update(self.user_template_context)
 
         self.__stream_jinja_template(template_name="baseclass_tb.py.jinja",
                                      target_package=package.tests,
@@ -492,11 +770,11 @@ class PythonExporter:
     # pylint: disable-next=too-many-arguments
     def __export_tests(self, *,
                        top_block: AddrmapNode,
-                       package: _Package,
+                       package: GeneratedPackage,
                        skip_lib_copy: bool,
                        asyncoutput: bool,
                        legacy_block_access: bool,
-                       udp_to_include: Optional[list[str]],
+                       udp_include_func: ShowUDPCallback,
                        hide_node_func: HideNodeCallback,
                        legacy_enum_type: bool,
                        skip_systemrdl_name_and_desc_properties: bool,
@@ -519,16 +797,36 @@ class PythonExporter:
             # the arrays rolled up but parents within the address map e.g. a regfile unrolled
             # I have not found a way to do this with the Walker as the unroll seems to be a
             # global setting, the following code works but it is not elegant
-            rolled_owned_reg: list[RegNode] = list(block.registers(unroll=False))
-            for regfile in owned_elements.reg_files:
-                rolled_owned_reg += list(regfile.registers(unroll=False))
-            for memory in owned_elements.memories:
-                rolled_owned_reg += list(memory.registers(unroll=False))
+            def add_child_rolled_children(node: AddressableNode) -> list[AddressableNode]:
+                def is_addressible_node(node: Node) -> TypeGuard[AddressableNode]:
+                    if hide_node_func(node):
+                        return False
+                    return isinstance(node, AddressableNode)
+                rolled_owned_child = list(filter(is_addressible_node,
+                                                 list(node.children(unroll=False) )))
+                # only need to walk into RegFiles and Memory as this may contain a further
+                # array. A Register can not contain and array. An AddrMap children
+                # are considered in the next block in the sequence
+                def is_mem_or_regfile(node: Node) -> TypeGuard[Union[MemNode, RegfileNode]]:
+                    if hide_node_func(node):
+                        return False
+                    return isinstance(node, (MemNode, RegfileNode))
 
-            def is_reg_array(item: RegNode) -> bool:
+                rolled_owned_child +=\
+                    list(chain.from_iterable(
+                        add_child_rolled_children(child_node) #pylint:disable=cell-var-from-loop
+                        for child_node in filter(is_mem_or_regfile, node.children(unroll=True))))
+                return rolled_owned_child
+
+            rolled_owned_child = add_child_rolled_children(block)
+            def is_node_array(item: AddressableNode) -> bool:
                 return item.is_array and not hide_node_func(item)
+            rolled_owned_array = \
+                list(filter(is_node_array, rolled_owned_child))
 
-            rolled_owned_reg_array = list(filter(is_reg_array, rolled_owned_reg))
+            def is_reg_node(node: Node) -> TypeGuard[RegNode]:
+                return isinstance(node, RegNode)
+            rolled_owned_reg_array = list(filter(is_reg_node, rolled_owned_array))
 
             fq_block_name = '_'.join(block.get_path_segments(array_suffix='_{index:d}_'))
 
@@ -538,6 +836,7 @@ class PythonExporter:
                 'fq_block_name': fq_block_name,
                 'owned_elements': owned_elements,
                 'rolled_owned_reg_array': rolled_owned_reg_array,
+                'rolled_owned_array': rolled_owned_array,
                 'systemrdlFieldNode': FieldNode,
                 'systemrdlSignalNode': SignalNode,
                 'systemrdlRegNode': RegNode,
@@ -549,6 +848,7 @@ class PythonExporter:
                 'isinstance': isinstance,
                 'type': type,
                 'str': str,
+                'full_slice_accessor': full_slice_accessor,
                 'get_python_path_segments': get_python_path_segments,
                 'safe_node_name': safe_node_name,
                 'uses_memory': (len(owned_elements.memories) > 0),
@@ -557,22 +857,18 @@ class PythonExporter:
                 'get_field_max_value_hex_string': get_field_max_value_hex_string,
                 'get_field_default_value': get_field_default_value,
                 'get_reg_max_value_hex_string': get_reg_max_value_hex_string,
-                'get_reg_writable_fields': get_reg_writable_fields,
-                'get_reg_readable_fields': get_reg_readable_fields,
+                'get_reg_writable_fields': partial(get_reg_writable_fields,
+                                                   hide_node_callback=hide_node_func),
                 'get_memory_max_entry_value_hex_string': get_memory_max_entry_value_hex_string,
                 'get_enum_values': get_enum_values,
                 'get_memory_width_bytes': get_memory_width_bytes,
                 'asyncoutput': asyncoutput,
                 'uses_enum': uses_enum(block),
                 'skip_lib_copy': skip_lib_copy,
-                'version': __version__,
                 'get_array_typecode': get_array_typecode,
                 'legacy_block_access': legacy_block_access,
-                'udp_to_include': udp_to_include,
+                'udp_include_func': udp_include_func,
                 'get_properties_to_include': get_properties_to_include,
-                'dependent_property_enum':
-                    self._get_dependent_property_enum(node=top_block,
-                                                      udp_to_include=udp_to_include),
                 'hide_node_func': hide_node_func,
                 'legacy_enum_type': legacy_enum_type,
                 'skip_systemrdl_name_and_desc_properties': skip_systemrdl_name_and_desc_properties
@@ -588,101 +884,9 @@ class PythonExporter:
                                          target_name='test_sim_' + fq_block_name + '.py',
                                          template_context=context)
 
-    def _validate_udp_to_include(self, udp_to_include: Optional[list[str]]) -> None:
-        if udp_to_include is not None:
-            # the list of user defined properties may not include the names used by peakrdl python
-            # for control behaviours
-            if not isinstance(udp_to_include, list):
-                raise TypeError(f'The user_defined_properties_to_include must be a list, got '
-                                f'{type(udp_to_include)}')
-            for entry in udp_to_include:
-                if not isinstance(entry, str):
-                    raise TypeError('The entries in the user_defined_properties_to_include must '
-                                    f'be a str, got {type(entry)}')
-            reserved_names = ['python_hide', 'python_name']
-            for reserved_name in reserved_names:
-                if reserved_name in udp_to_include:
-                    raise RuntimeError('It is not permitted to expose a property name used to'
-                                       ' build the peakrdl-python wrappers: ' + reserved_name)
-
-    # pylint: disable-next=too-many-arguments,too-many-locals
-    def export(self, node: Union[RootNode, AddrmapNode], path: str, *,
-               asyncoutput: bool = False,
-               skip_test_case_generation: bool = False,
-               delete_existing_package_content: bool = True,
-               skip_library_copy: bool = False,
-               legacy_block_access: bool = True,
-               show_hidden: bool = False,
-               user_defined_properties_to_include: Optional[list[str]] = None,
-               hidden_inst_name_regex: Optional[str] = None,
-               legacy_enum_type: bool = True,
-               skip_systemrdl_name_and_desc_properties: bool = False) -> str:
-        """
-        Generated Python Code and Testbench
-
-        Args:
-            node: Top-level node to export. Can be the top-level `RootNode` or any
-                  internal `AddrmapNode`.
-            path: Output package path.
-            asyncoutput: If set this builds a register model with async callbacks
-            skip_test_case_generation: skip generation the generation of the test cases
-            delete_existing_package_content: delete any python files in the package
-                                             location, normally left over from previous
-                                             operations
-            skip_library_copy: skip copy the libraries to the generated package, this is
-                               useful to turn off when developing peakrdl python to avoid
-                               editing the wrong copy of the library. It also avoids the
-                               GPL code being part of the package for distribution,
-                               However, this means the end-user is responsible for
-                               installing the libraries.
-            legacy_block_access: version 0.8 changed the block access methods from using
-                                 arrays to to lists. This allows memory widths of other
-                                 than 8, 16, 32, 64 to be supported which are legal in
-                                 systemRDL. The legacy mode with Arrays is still in
-                                 the tool and will be turned on by default for a few
-                                 releases.
-            show_hidden: By default any item (Address Map, Regfile, Register, Memory or
-                         Field) with the systemRDL User Defined Property (UDP)
-                         ``python_hide`` set to true will not be included in the generated
-                         python code. This behaviour can be overridden by setting this
-                         property to true.
-            user_defined_properties_to_include : A list of strings of the names of user-defined
-                                                 properties to include. Set to None for nothing
-                                                 to appear.
-            hidden_inst_name_regex: A regular expression which will hide any fully
-                                    qualified instance name that matches, set to None to
-                                    for this to have no effect
-            legacy_enum_type: version 1.2 introduced a new Enum type that allows system
-                              rdl ``name`` and ``desc`` properties on field encoding
-                              to be included. The legacy mode uses python IntEnum.
-            skip_systemrdl_name_and_desc_properties (bool) : version 1.2 introduced new properties
-                                                             that include the systemRDL name and
-                                                             desc as properties of the built
-                                                             python. Setting this option to
-                                                             ``True`` will exclude them.
-
-        Returns:
-            modules that have been exported:
-        """
-
-        # If it is the root node, skip to top addrmap
-        if isinstance(node, RootNode):
-            top_block = node.top
-        else:
-            if not isinstance(node, AddrmapNode):
-                raise TypeError(f'node must be an AddrmapNode got {type(node)}')
-            top_block = node
-
-        if not isinstance(path, str):
-            raise TypeError(f'path should be a str but got {type(path)}')
-        package = _Package(path=path,
-                           package_name=node.inst_name,
-                           include_tests=not skip_test_case_generation,
-                           include_libraries=not skip_library_copy)
-        package.create_empty_package(cleanup=delete_existing_package_content)
-
-        self._validate_udp_to_include(udp_to_include=user_defined_properties_to_include)
-
+    def __build_hide_node_func(self,
+                               hidden_inst_name_regex: Optional[str],
+                               show_hidden: bool) -> HideNodeCallback:
         if hidden_inst_name_regex is not None:
             hidden_inst_name_regex_re = re.compile(hidden_inst_name_regex)
 
@@ -703,21 +907,204 @@ class PythonExporter:
                 """
                 return hide_based_on_property(node=node, show_hidden=show_hidden)
 
-        # if the top level node is hidden the wrapper will be meaningless, rather then try to
+        return hide_node_func
+
+    def __validate_udp_to_include_str_list(self, udp_to_include: list[str]) -> None:
+
+        if not isinstance(udp_to_include, list):
+            raise TypeError(f'The user_defined_properties_to_include must be a list, got '
+                            f'{type(udp_to_include)}')
+        for entry in udp_to_include:
+            if not isinstance(entry, str):
+                raise TypeError('The entries in the user_defined_properties_to_include must '
+                                f'be a str, got {type(entry)}')
+
+    def __build_udp_include_func(
+            self,
+            user_defined_properties_to_include: Optional[list[str]] = None,
+            user_defined_properties_to_include_regex: Optional[str] = None) -> ShowUDPCallback:
+        if (user_defined_properties_to_include is None) and \
+                (user_defined_properties_to_include_regex is None):
+            # if both are None then the behaviour is all UDP are excluded
+            def udp_include_func(udp_name: str) -> bool:  # pylint:disable=unused-argument
+                return False
+        elif (user_defined_properties_to_include is not None) and \
+                (user_defined_properties_to_include_regex is None):
+            self.__validate_udp_to_include_str_list(
+                udp_to_include=user_defined_properties_to_include)
+            def udp_include_func(udp_name: str) -> bool:
+                return udp_name in user_defined_properties_to_include
+        elif (user_defined_properties_to_include is None) and \
+                (user_defined_properties_to_include_regex is not None):
+            show_udp_re = re.compile(user_defined_properties_to_include_regex)
+
+            def udp_include_func(udp_name: str) -> bool:
+
+                result = show_udp_re.match(udp_name)
+                return result is not None
+        else:
+            raise RuntimeError('One of user_defined_properties_to_include or '
+                               'user_defined_properties_to_include_regex should '
+                               'be set but not both')
+
+        return udp_include_func
+
+    # pylint: disable-next=too-many-arguments,too-many-locals
+    def export(self, node: Union[RootNode, AddrmapNode], path: str, *,
+               asyncoutput: bool = False,
+               skip_test_case_generation: bool = False,
+               delete_existing_package_content: bool = True,
+               skip_library_copy: bool = False,
+               legacy_block_access: bool = True,
+               show_hidden: bool = False,
+               user_defined_properties_to_include: Optional[list[str]] = None,
+               user_defined_properties_to_include_regex: Optional[str] = None,
+               hidden_inst_name_regex: Optional[str] = None,
+               legacy_enum_type: bool = True,
+               skip_systemrdl_name_and_desc_properties: bool = False,
+               skip_systemrdl_name_and_desc_in_docstring: bool = False,
+               register_class_per_generated_file: int =
+                   DEFAULT_REGISTER_CLASS_PER_GENERATED_FILE,
+               field_class_per_generated_file: int =
+                   DEFAULT_FIELD_CLASS_PER_GENERATED_FILE,
+               enum_field_class_per_generated_file: int =
+                   DEFAULT_ENUM_FIELD_CLASS_PER_GENERATED_FILE,
+               memory_class_per_generated_file: int =
+                   DEFAULT_MEMORY_CLASS_PER_GENERATED_FILE,
+               ) -> str:
+        """
+        Generated Python Code and Testbench
+
+        Args:
+            node: Top-level node to export. Can be the top-level `RootNode` or any
+                  internal `AddrmapNode`.
+            path: Output package path.
+            asyncoutput: If set this builds a register model with async callbacks
+            skip_test_case_generation: skip generation the generation of the test cases
+            delete_existing_package_content: delete any python files in the package
+                                             location, normally left over from previous
+                                             operations
+            skip_library_copy: skip copy the libraries to the generated package, this is
+                               useful to turn off when developing peakrdl python to avoid
+                               editing the wrong copy of the library. It also avoids the
+                               GPL code being part of the package for distribution,
+                               However, this means the end-user is responsible for
+                               installing the libraries.
+            legacy_block_access: version 0.8 changed the block access methods from using
+                                 arrays to lists. This allows memory widths of other
+                                 than 8, 16, 32, 64 to be supported which are legal in
+                                 systemRDL. The legacy mode with Arrays is still in
+                                 the tool and will be turned on by default for a few
+                                 releases.
+            show_hidden: By default any item (Address Map, Regfile, Register, Memory or
+                         Field) with the systemRDL User Defined Property (UDP)
+                         ``python_hide`` set to true will not be included in the generated
+                         python code. This behaviour can be overridden by setting this
+                         property to true.
+            user_defined_properties_to_include : A list of strings of the names of user-defined
+                                                 properties to include. Set to None for nothing
+                                                 to appear.
+            user_defined_properties_to_include_regex : A regex expression that defines whether
+                                                       user-defined properties will be included if
+                                                       they match. Set to None for it not to be
+                                                       used.
+            hidden_inst_name_regex: A regular expression which will hide any fully
+                                    qualified instance name that matches, set to None to
+                                    for this to have no effect
+            legacy_enum_type: version 1.2 introduced a new Enum type that allows system
+                              rdl ``name`` and ``desc`` properties on field encoding
+                              to be included. The legacy mode uses python IntEnum.
+            skip_systemrdl_name_and_desc_properties (bool) : version 1.2 introduced new properties
+                                                             that include the systemRDL name and
+                                                             desc as properties of the built
+                                                             python. Setting this option to
+                                                             ``True`` will exclude them.
+            skip_systemrdl_name_and_desc_in_docstring (bool) : version 2.0 introduced the option
+                                                               skip the systemRDL name and desc as
+                                                               properties of the built python.
+                                                               Including them help developers use
+                                                               the package and allows
+                                                               autogenerated document generation
+                                                               for the python module. However it
+                                                               also increases file sizes. Setting
+                                                               this option to ``True`` will exclude
+                                                               them.
+            register_class_per_generated_file : Number of register class definitions to put in
+                                                each python module of the generated code.
+                                                Make sure this is set to ensure the file does not
+                                                get too big otherwise the generation and loading
+                                                is slow.
+            field_class_per_generated_file  : Number of register class definitions to put in
+                                              each python module of the generated code.
+                                              Make sure this is set to ensure the file does not
+                                              get too big otherwise the generation and loading
+                                              is slow.
+            enum_field_class_per_generated_file : Number of register class definitions to put in
+                                                  each python module of the generated code.
+                                                  Make sure this is set to ensure the file does not
+                                                  get too big otherwise the generation and loading
+                                                  is slow.
+            memory_class_per_generated_file : Number of memory class definitions to put in
+                                              each python module of the generated code.
+                                              Make sure this is set to ensure the file does not
+                                              get too big otherwise the generation and loading
+                                              is slow.
+
+        Returns:
+            modules that have been exported:
+        """
+
+        # If it is the root node, skip to top addrmap
+        if isinstance(node, RootNode):
+            top_block = node.top
+        else:
+            if not isinstance(node, AddrmapNode):
+                raise TypeError(f'node must be an AddrmapNode got {type(node)}')
+            top_block = node
+
+        if not isinstance(path, str):
+            raise TypeError(f'path should be a str but got {type(path)}')
+        package = GeneratedPackage(path=path,
+                                   package_name=node.inst_name,
+                                   include_tests=not skip_test_case_generation,
+                                   include_libraries=not skip_library_copy)
+        package.create_empty_package(cleanup=delete_existing_package_content)
+
+        udp_include_func = self.__build_udp_include_func(
+            user_defined_properties_to_include=user_defined_properties_to_include,
+            user_defined_properties_to_include_regex=user_defined_properties_to_include_regex)
+
+        # the UDP `python_hide` and `python_name` are used by peakRDL python and it would be
+        # unusual to want to expose them in the generated code
+        for reserved_udp in ['python_hide', 'python_name']:
+            if udp_include_func(reserved_udp):
+                warnings.warn(message=f'{reserved_udp} is in the UDP filter, this is'
+                                       'normally an internal peakRDL python UDP',
+                              category=UserWarning)
+
+        hide_node_func = self.__build_hide_node_func(hidden_inst_name_regex=hidden_inst_name_regex,
+                                                     show_hidden=show_hidden)
+
+
+        # if the top level node is hidden the wrapper will be meaningless, rather than try to
         # handle a special case this is treated as an error
         if hide_node_func(top_block):
             raise RuntimeError('PeakRDL Python can not export if the node is hidden')
-
-        self._build_node_type_table(top_block, hide_node_func)
 
         self.__export_reg_model(
             top_block=top_block, package=package, asyncoutput=asyncoutput,
             skip_lib_copy=skip_library_copy,
             legacy_block_access=legacy_block_access,
-            udp_to_include=user_defined_properties_to_include,
+            udp_include_func=udp_include_func,
             hide_node_func=hide_node_func,
             legacy_enum_type=legacy_enum_type,
-            skip_systemrdl_name_and_desc_properties=skip_systemrdl_name_and_desc_properties)
+            skip_systemrdl_name_and_desc_properties=skip_systemrdl_name_and_desc_properties,
+            skip_systemrdl_name_and_desc_in_docstring=skip_systemrdl_name_and_desc_in_docstring,
+            register_class_per_generated_file=register_class_per_generated_file,
+            field_class_per_generated_file=field_class_per_generated_file,
+            enum_field_class_per_generated_file=enum_field_class_per_generated_file,
+            memory_class_per_generated_file=memory_class_per_generated_file,
+        )
 
         self.__export_simulator(top_block=top_block, package=package, asyncoutput=asyncoutput,
                                 skip_lib_copy=skip_library_copy,
@@ -738,71 +1125,12 @@ class PythonExporter:
                 top_block=top_block, package=package, asyncoutput=asyncoutput,
                 skip_lib_copy=skip_library_copy,
                 legacy_block_access=legacy_block_access,
-                udp_to_include=user_defined_properties_to_include,
+                udp_include_func=udp_include_func,
                 hide_node_func=hide_node_func,
                 legacy_enum_type=legacy_enum_type,
                 skip_systemrdl_name_and_desc_properties=skip_systemrdl_name_and_desc_properties)
 
         return top_block.inst_name
-
-    def _lookup_type_name(self, node: Node) -> str:
-        """
-        Retrieve the unique type name from the current lookup list
-
-        Args:
-            node: node to lookup
-
-        Returns:
-            type name
-
-        """
-
-        return self.node_type_name[node.inst]
-
-    def _build_node_type_table(self, node: AddressableNode,
-                               hide_node_func: HideNodeCallback) -> None:
-        """
-        Populate the type name lookup dictionary
-
-        Args:
-            node: top node to work down from
-            hide_node_func: callback which returns True if the node should be hidden
-
-        Returns:
-            None
-
-        """
-
-        self.node_type_name = {}
-
-        if node.parent is None:
-            raise RuntimeError('node.parent can not be None')
-        if not isinstance(node.parent, (AddressableNode, RootNode)):
-            raise TypeError(f'parent should be an addressable node got {type(node.parent)}')
-
-        for child_node in get_dependent_component(node.parent, hide_node_func):
-
-            child_inst = child_node.inst
-            if child_inst in self.node_type_name:
-                # this should not happen as the get_dependent_component function is supposed to
-                # de-duplicate the values
-                raise RuntimeError("node is already in the lookup dictionary")
-
-            if child_node == node:
-                # in the case of the top node the type name should match the instance name
-                cand_type_name = child_node.inst_name
-            else:
-                cand_type_name = get_fully_qualified_type_name(child_node)
-            if cand_type_name in self.node_type_name.values():
-                if child_node == node:
-                    raise RuntimeError(
-                        f'Top Node name {cand_type_name} already used by instance ' \
-                        + str(list(self.node_type_name.keys())
-                              [list(self.node_type_name.values()).index(cand_type_name)])
-                    )
-                self.node_type_name[child_inst] = cand_type_name + '_0x' + hex(hash(child_inst))
-            else:
-                self.node_type_name[child_inst] = cand_type_name
 
     def _raise_template_error(self, message: str) -> NoReturn:
         """
@@ -816,100 +1144,56 @@ class PythonExporter:
         """
         raise PythonExportTemplateError(message)
 
-    def __true_root(self, root_node: Union[AddrmapNode,RootNode]) -> RootNode:
-        if not isinstance(root_node, RootNode):
-            if isinstance(root_node, AddrmapNode):
-                while not isinstance(root_node, RootNode):
-                    root_node = root_node.parent
-
-        return root_node
-
-    def _fully_qualified_enum_type(self,
-                                   field_enum: UserEnumMeta,
-                                   root_node: Union[AddrmapNode,RootNode],
-                                   owning_field: FieldNode,
-                                   hide_node_func: HideNodeCallback) -> str:
-        """
-        Returns the fully qualified class type name, for an enum
-        """
-        # in the case where the node of the peakrdl python wrappers is not the real
-        # root node of the elaborated systemRDL, need to find the true Root Node. This is
-        # important as the concatenated name can to be outside the node being built
-        root_node = self.__true_root(root_node=root_node)
-
-        if not hasattr(field_enum, '_parent_scope'):
-            # this happens if the enum has been declared in an IPXACT file
-            # which is imported
-            return self._lookup_type_name(owning_field) + '_' + field_enum.__name__
-
-        parent_scope = getattr(field_enum, '_parent_scope')
-
-        if parent_scope is None:
-            # this happens if the enum has been declared in an IPXACT file
-            # which is imported
-            return self._lookup_type_name(owning_field) + '_' + field_enum.__name__
-
-        if root_node.inst.original_def == parent_scope:
-            return field_enum.__name__
-
-        dependent_components = get_dependent_component(root_node, hide_node_func)
-
-        for component in dependent_components:
-            if component.inst.original_def == parent_scope:
-                return get_fully_qualified_type_name(component) + '_' + field_enum.__name__
-
-        raise RuntimeError('Failed to find parent node to reference')
-
-    def _get_dependent_enum(
-            self, node: Union[AddrmapNode, RootNode], hide_node_func: HideNodeCallback) -> \
-            Iterable[tuple[UserEnumMeta, FieldNode]]:
+    @staticmethod
+    def _get_dependent_enum(unique_components: UniqueComponents) -> Iterable[UserEnumMeta]:
         """
         iterable of enums which is used by a descendant of the input node,
         this list is de-duplicated
         """
+        def is_encoded_field_filter(node: Node) -> TypeGuard[FieldNode]:
+            if isinstance(node, FieldNode):
+                return is_encoded_field(node)
+            return False
+
+        unique_field_components = \
+            filter(is_encoded_field_filter,
+                   [component.instance for component in unique_components.nodes.values()])
+
         enum_needed = []
-        for child_node in node.descendants():
-            if isinstance(child_node, FieldNode):
-                field_enum = child_node.get_property('encode')
-                if field_enum is not None:
-                    fully_qualified_enum_name = self._fully_qualified_enum_type(field_enum,
-                                                                                node,
-                                                                                child_node,
-                                                                                hide_node_func)
+        for encoded_field in unique_field_components:
+            field_enum = encoded_field.get_property('encode')
+            if field_enum is None:
+                raise RuntimeError('All field found here should be encoded (due to prefilter)')
 
-                    if fully_qualified_enum_name not in enum_needed:
-                        enum_needed.append(fully_qualified_enum_name)
-                        yield field_enum, child_node
+            field_enum_hash = enum_hash(field_enum)
 
-    def _get_dependent_property_enum(self, node: Node,
-                                     udp_to_include: Optional[list[str]]) -> \
+            if field_enum_hash not in enum_needed:
+                enum_needed.append(field_enum_hash)
+                yield field_enum
+
+    @staticmethod
+    def _get_dependent_property_enum( unique_components: UniqueComponents) -> \
             list[UserEnumMeta]:
         """
         iterable of enums which is used by a descendant of the input node,
         this list is de-duplicated
         """
-        if udp_to_include is None:
-            return []
-
         enum_needed: list[UserEnumMeta] = []
 
-        def update_enum_list(node_to_process: Node) -> None:
+        def walk_property_struct_node(value: Any) -> None:
+            if isinstance(value, UserEnum) and type(value) not in enum_needed:
+                enum_type = type(value)
+                if not isinstance(enum_type, UserEnumMeta):
+                    raise TypeError(f'enum type should be UserEnumMeta, got {type(enum_type)}')
+                enum_needed.append(enum_type)
 
-            def walk_property_struct_node(value: Any) -> None:
-                if isinstance(value, UserEnum) and type(value) not in enum_needed:
-                    enum_type = type(value)
-                    if not isinstance(enum_type, UserEnumMeta):
-                        raise TypeError(f'enum type should be UserEnumMeta, got {type(enum_type)}')
-                    enum_needed.append(enum_type)
+            if isinstance(value, UserStruct):
+                for sub_value in value.members.values():
+                    walk_property_struct_node(sub_value)
 
-                if isinstance(value, UserStruct):
-                    for sub_value in value.members.values():
-                        walk_property_struct_node(sub_value)
-
-            node_properties = get_properties_to_include(node=node_to_process,
-                                                        udp_to_include=udp_to_include)
-            for node_property_name in node_properties:
-                node_property = node_to_process.get_property(node_property_name)
+        for node in unique_components.nodes.values():
+            for node_property_name in node.properties_to_include:
+                node_property = node.instance.get_property(node_property_name)
                 if isinstance(node_property, UserEnum) and type(node_property) not in enum_needed:
                     enum_type = type(node_property)
                     if not isinstance(enum_type, UserEnumMeta):
@@ -919,12 +1203,5 @@ class PythonExporter:
                 if isinstance(node_property, UserStruct):
                     for sub_value in node_property.members.values():
                         walk_property_struct_node(sub_value)
-
-        update_enum_list(node_to_process=node)
-
-        for child_node in node.descendants():
-            if not isinstance(child_node, Node):
-                raise TypeError(f'child_node must be an Node got {type(child_node)}')
-            update_enum_list(node_to_process=child_node)
 
         return enum_needed

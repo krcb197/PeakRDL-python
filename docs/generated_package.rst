@@ -24,6 +24,22 @@ In the folder structure above:
 - ``lib`` - This is a package of base classes used by the register access layer (The copy of this can be skipped, see :ref:`skipping-lib-copy`)
 - ``sim_lib`` - This is a package of base classes used by the register access layer simulator (The copy of this can be skipped, see :ref:`skipping-lib-copy`)
 
+.. versionchanged:: 2.0.0
+
+    The ``reg_model`` was changed in version 2.0.0 to split it out into multiple modules rather
+    than building the whole register model in a single python module. This helps avoid
+    excessively large files which helps speed up the generation and loading time.
+
+Top Level Classes
+-----------------
+
+.. versionchanged:: 2.0.0
+
+    A new class aliases were added to the ``reg_model`` and ``sim`` packages to allow the register
+    model and simulator to be imported more easily. See the example below using ``RegModel`` and
+    ``Simulator``.
+
+
 Running the Unit Tests
 ======================
 
@@ -402,6 +418,11 @@ Exposing User Defined Properties
 SystemRDL allows properties to be added to any component (Field, Memory, Register, Register File,
 Address Map), so called *User Defined Properties (UDP)*.
 
+There are two methods to expose user defined properties:
+
+- A list of strings to include in the package
+- A Regular Expression which will include any UDP which matches the regular expression
+
 Consider the following systemRDL example with a user defined property: ``component_usage``
 
 .. literalinclude :: ../example/user_defined_properties/user_defined_properties.rdl
@@ -413,11 +434,27 @@ User Defined Properties are not automatically included they must be specified, a
 
    peakrdl python user_defined_properties.rdl -o . --udp component_usage
 
+Alternatively the User Defined Properties can be included with a regular expression.
+In the following case all UDPs are included, except the ones used by PeakRDL python
+
+.. code-block:: bash
+
+   peakrdl python user_defined_properties.rdl -o . --udp_regex "^(?!python_hide$)(?!python_name$).+"
+
+.. warning::
+
+   Attempting to use both the list and regular expression approach is not supported and will
+   generate an error
+
 The user defined properties are stored in a ``udp`` property of all component in the generated
 register access and can be accessed as follows:
 
 .. literalinclude :: ../example/user_defined_properties/demo_user_defined_properties.py
    :language: python
+
+.. versionadded:: 2.0.0
+
+    Regular Expression matching for User Defined Properties was added in version 2.0.0
 
 Python Safe Names
 =================

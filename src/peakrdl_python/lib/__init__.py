@@ -1,6 +1,6 @@
 """
 peakrdl-python is a tool to generate Python Register Access Layer (RAL) from SystemRDL
-Copyright (C) 2021 - 2023
+Copyright (C) 2021 - 2025
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -27,15 +27,15 @@ from .callbacks import NormalCallbackSet, NormalCallbackSetLegacy
 from .callbacks import AsyncCallbackSet, AsyncCallbackSetLegacy
 from .callbacks import CallbackSet
 
-from .base import AddressMap
-from .base import RegFile
-from .base import AddressMapArray
-from .base import RegFileArray
+from .sections import AddressMap
+from .sections import RegFile
+from .sections import AddressMapArray
+from .sections import RegFileArray
 
-from .base import AsyncAddressMap
-from .base import AsyncRegFile
-from .base import AsyncAddressMapArray
-from .base import AsyncRegFileArray
+from .sections import AsyncAddressMap
+from .sections import AsyncRegFile
+from .sections import AsyncAddressMapArray
+from .sections import AsyncRegFileArray
 
 from .register_and_field import Reg
 from .register_and_field import RegArray
@@ -92,12 +92,18 @@ from .memory import MemoryReadWrite, MemoryReadWriteLegacy
 from .memory import MemoryReadOnlyArray
 from .memory import MemoryWriteOnlyArray
 from .memory import MemoryReadWriteArray
+from .memory import MemoryReadOnlyLegacyArray
+from .memory import MemoryWriteOnlyLegacyArray
+from .memory import MemoryReadWriteLegacyArray
 from .async_memory import MemoryAsyncReadOnly, MemoryAsyncReadOnlyLegacy
 from .async_memory import MemoryAsyncWriteOnly, MemoryAsyncWriteOnlyLegacy
 from .async_memory import MemoryAsyncReadWrite, MemoryAsyncReadWriteLegacy
 from .async_memory import MemoryAsyncReadOnlyArray
 from .async_memory import MemoryAsyncWriteOnlyArray
 from .async_memory import MemoryAsyncReadWriteArray
+from .async_memory import MemoryAsyncReadOnlyLegacyArray
+from .async_memory import MemoryAsyncWriteOnlyLegacyArray
+from .async_memory import MemoryAsyncReadWriteLegacyArray
 from .memory import ReadableMemory, ReadableMemoryLegacy
 from .memory import WritableMemory, WritableMemoryLegacy
 from .memory import Memory
@@ -110,5 +116,6 @@ from .async_memory import AsyncMemoryArray
 from .utility_functions import get_array_typecode
 from .utility_functions import UnsupportedWidthError
 from .base import Node
+from .base import NodeArray
 from .base import Base
 from .base import UDPStruct
