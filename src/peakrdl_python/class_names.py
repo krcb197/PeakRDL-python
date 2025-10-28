@@ -23,7 +23,7 @@ from systemrdl.node import RegNode
 from systemrdl.node import MemNode
 from systemrdl.rdltypes.user_enum import UserEnumMeta
 from .systemrdl_node_utility_functions import is_encoded_field
-from .systemrdl_node_hashes import enum_hash
+from .systemrdl_node_hashes import enum_hash, NodeHashingMethod
 
 def get_field_get_base_class_name(node: FieldNode, async_library_classes: bool) -> str:
     """
@@ -106,11 +106,12 @@ def get_base_class_name(node: Node, async_library_classes: bool) -> str:
 
     raise TypeError(f'Unhandled node type: {type(node)}')
 
-def fully_qualified_enum_type(field_enum: UserEnumMeta) -> str:
+def fully_qualified_enum_type(field_enum: UserEnumMeta,
+                              method: NodeHashingMethod = NodeHashingMethod.SHA256) -> str:
     """
     Returns the fully qualified class type name, for an enum
     """
-    enum_hash_value = enum_hash(field_enum)
+    enum_hash_value = enum_hash(field_enum, method=method)
     full_scope_path = field_enum.get_scope_path('_')
     if enum_hash_value < 0:
         return full_scope_path + '_' + field_enum.type_name + '_neg_' + hex(-enum_hash_value)
