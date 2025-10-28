@@ -27,6 +27,7 @@ from contextlib import asynccontextmanager
 from array import array as Array
 import sys
 from warnings import warn
+import asyncio
 
 from .utility_functions import get_array_typecode
 from .sections import AsyncAddressMap, AsyncRegFile
@@ -324,7 +325,7 @@ class RegAsyncReadWrite(RegAsyncReadOnly, RegAsyncWriteOnly, ABC):
 
     """
     __slots__: list[str] = ['__in_read_write_context_manager', '__in_read_context_manager',
-                            '__register_state']
+                            '__register_state', '__read_write_context_lock']
 
     # pylint: disable=too-many-arguments, duplicate-code
     def __init__(self, *,
@@ -342,6 +343,7 @@ class RegAsyncReadWrite(RegAsyncReadOnly, RegAsyncWriteOnly, ABC):
         self.__in_read_write_context_manager: bool = False
         self.__in_read_context_manager: bool = False
         self.__register_state: Optional[int] = None
+        self.__read_write_context_lock = asyncio.Lock()
 
     # pylint: enable=too-many-arguments, duplicate-code
 
@@ -357,6 +359,8 @@ class RegAsyncReadWrite(RegAsyncReadOnly, RegAsyncWriteOnly, ABC):
             skip_write (bool): skip the write back at the end
 
         """
+        await self.__read_write_context_lock.acquire()
+
         # pylint: disable=duplicate-code
         if self.__in_read_context_manager:
             raise RuntimeError('using the `single_read_modify_write` context manager within the '
@@ -369,6 +373,7 @@ class RegAsyncReadWrite(RegAsyncReadOnly, RegAsyncWriteOnly, ABC):
         # pylint: enable=duplicate-code
 
         self.__register_state = await self.read()
+        self._logger.info(f'Context Manager intialised with:0x{self.__register_state:X}')
 
         # pylint: disable=duplicate-code
         self.__in_read_write_context_manager = True
@@ -384,6 +389,7 @@ class RegAsyncReadWrite(RegAsyncReadOnly, RegAsyncWriteOnly, ABC):
 
         # clear the register states at the end of the context manager
         self.__register_state = None
+        self.__read_write_context_lock.release()
 
     @asynccontextmanager
     async def single_read(self) -> \
@@ -1125,9 +1131,10 @@ class FieldAsyncWriteOnly(_FieldWriteOnlyFramework[FieldType], ABC):
         else:
             # do a read, modify write
             if isinstance(self.parent_register, RegAsyncReadWrite):
-                reg_value = await self.parent_register.read()
-                masked_reg_value = reg_value & self.inverse_bitmask
-                new_reg_value = masked_reg_value | encoded_value
+                async with self.parent_register.single_read_modify_write() as reg:
+                    reg_value = await reg.read()
+                    masked_reg_value = reg_value & self.inverse_bitmask
+                    new_reg_value = masked_reg_value | encoded_value
             elif isinstance(self.parent_register, RegAsyncWriteOnly):
                 new_reg_value = encoded_value
             else:

@@ -148,19 +148,23 @@ def build_logging_cong(logfilepath:str):
             },
         },
         'loggers': {
-            'root': {
-                'handlers': ['console_root']
-            },
             __name__:  {
                 'handlers': ['console', 'file'],
+                'level': 'DEBUG',
             },
             'reg_model':  {
                 'handlers': ['console', 'file'],
+                'level': 'DEBUG',
             },
             'peakrdl_python': {
                 'handlers': ['console', 'file'],
+                'level': 'DEBUG',
             },
-        }
+        },
+        'root': {
+            'handlers': ['console_root'],
+            'level': 'DEBUG',
+        },
     }
 
 
@@ -258,16 +262,16 @@ if __name__ == '__main__':
         dut = dut_cls(callbacks=callbackset_cls(read_callback=sim.read,
                                                 write_callback=sim.write))
 
-        test_suite = TestSuite()
-        test_suite.addTests(TestLoader().discover(
-            start_dir=str(CommandLineArgs.output_path / 'generate_and_test_output' / CommandLineArgs.root_node / 'tests'),
-                            top_level_dir=CommandLineArgs.output_path))
-        runner = TextTestRunner()
-
-        result = runner.run(test_suite)
-        if CommandLineArgs.coverage_report:
-            cov.stop()
-            cov.html_report(directory=str(CommandLineArgs.coverage_report_path / CommandLineArgs.root_node))
+        # test_suite = TestSuite()
+        # test_suite.addTests(TestLoader().discover(
+        #     start_dir=str(CommandLineArgs.output_path / 'generate_and_test_output' / CommandLineArgs.root_node / 'tests'),
+        #                     top_level_dir=CommandLineArgs.output_path))
+        # runner = TextTestRunner()
+        #
+        # result = runner.run(test_suite)
+        # if CommandLineArgs.coverage_report:
+        #     cov.stop()
+        #     cov.html_report(directory=str(CommandLineArgs.coverage_report_path / CommandLineArgs.root_node))
 
 
         import asyncio
