@@ -20,7 +20,7 @@ A set of utility functions that determine the class hash, for a systemRDL node.
 This can be used to determine if it needs a unique class definition in the generated python or
 not
 """
-from typing import Optional, Any
+from typing import Any, Union, Optional
 from enum import Enum, auto
 import hashlib
 import json
@@ -32,7 +32,7 @@ from systemrdl.node import RegfileNode
 from systemrdl.node import AddrmapNode
 from systemrdl.node import MemNode
 from systemrdl.node import SignalNode
-from systemrdl.rdltypes.user_enum import UserEnumMeta
+from systemrdl.rdltypes.user_enum import UserEnumMeta, UserEnum
 from systemrdl.rdltypes import AccessType
 
 from .systemrdl_node_utility_functions import get_properties_to_include
@@ -93,11 +93,23 @@ def enum_hash(enum: UserEnumMeta,
     if method is NodeHashingMethod.PYTHONHASH:
         return hash(enum)
 
+    def enum_entry_content(entry: UserEnum) -> dict[str, Union[str, int]]:
+        return_dict = {
+            'value': entry.value,
+            'name': entry.name,
+        }
+        if entry.rdl_desc is not None:
+            return_dict['rdl_desc'] = entry.rdl_desc
+        if entry.rdl_name is not None:
+            return_dict['rdl_name'] = entry.rdl_name
+
+        return return_dict
+
+
     if method is NodeHashingMethod.SHA256:
         # Deterministically hash the enum by its name and members
         data = {
-            "enum_name": str(enum),
-            "members": list(enum.__members__),
+            "members": [enum_entry_content(item) for item in enum]
         }
         json_str = json.dumps(data, sort_keys=True, separators=(',', ':'))
         sha = hashlib.sha256(json_str.encode('utf-8')).hexdigest()
