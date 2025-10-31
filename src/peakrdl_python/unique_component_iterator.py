@@ -33,8 +33,9 @@ from systemrdl.node import AddrmapNode
 from systemrdl.node import RegfileNode
 from systemrdl.node import SignalNode
 from systemrdl import RDLListener, WalkerAction
+from systemrdl.rdltypes.user_enum import UserEnumMeta
 
-from .systemrdl_node_hashes import node_hash
+from .systemrdl_node_hashes import node_hash, enum_hash, NodeHashingMethod
 from .systemrdl_node_utility_functions import HideNodeCallback
 from .systemrdl_node_utility_functions import ShowUDPCallback
 from .systemrdl_node_utility_functions import get_properties_to_include
@@ -219,6 +220,57 @@ class PeakRDLPythonUniqueMemoryComponents(PeakRDLPythonUniqueComponents):
                 raise TypeError(f'child must be a RegNode got {type(child)}')
             yield child
 
+@dataclass(frozen=True)
+class PeakRDLPythonUniqueFieldComponents(PeakRDLPythonUniqueComponents):
+    """
+    Dataclass to hold a register node that needs to be made into a python class
+    """
+    instance: FieldNode
+
+    def __post_init__(self) -> None:
+        super().__post_init__()
+        if not isinstance(self.instance, FieldNode):
+            raise TypeError(f'instance must be a FieldNode got {type(self.instance)}')
+
+@dataclass(frozen=True)
+class PeakRDLPythonUniqueFieldEnum:
+    """
+    Dataclass to hold a field encoding definition that needs to be made into a python class
+    """
+    instance: UserEnumMeta
+    instance_hash: int
+    parent_walker: 'UniqueComponents'
+    python_class_name: str = field(init=False)
+
+    def __post_init__(self) -> None:
+        if not isinstance(self.instance, UserEnumMeta):
+            raise TypeError(f'instance must be a UserEnumMeta got {type(self.instance)}')
+        class_name = self.__fully_qualified_enum_type()
+        object.__setattr__(self, 'python_class_name', class_name)
+
+    def __fully_qualified_enum_type(self) -> str:
+        """
+        Returns the fully qualified class type name, for an enum
+        """
+        enum_hash_value = self.parent_walker.enum_hash(self.instance)
+        full_scope_path = self.instance.get_scope_path('_')
+        if enum_hash_value < 0:
+            return full_scope_path + '_' + self.instance.type_name + '_neg_' + hex(-enum_hash_value)
+        return full_scope_path + '_' + self.instance.type_name + hex(enum_hash_value)
+
+@dataclass(frozen=True)
+class PeakRDLPythonUniqueEnumFieldComponents(PeakRDLPythonUniqueFieldComponents):
+    """
+    Dataclass to hold a register node that needs to be made into a python class
+    """
+    instance: FieldNode
+    encoding: PeakRDLPythonUniqueFieldEnum
+
+    def __post_init__(self) -> None:
+        super().__post_init__()
+        if not isinstance(self.instance, FieldNode):
+            raise TypeError(f'instance must be a FieldNode got {type(self.instance)}')
+
 class UniqueComponents(RDLListener):
     """
     class intended to be used as part of the walker/listener protocol to find all the items
@@ -228,13 +280,16 @@ class UniqueComponents(RDLListener):
     def __init__(self,
                  hide_node_callback: HideNodeCallback,
                  include_name_and_desc: bool,
-                 udp_include_func: ShowUDPCallback) -> None:
+                 udp_include_func: ShowUDPCallback,
+                 hashing_method: NodeHashingMethod = NodeHashingMethod.SHA256) -> None:
         super().__init__()
 
         self.__hide_node_callback = hide_node_callback
         self.__udp_include_func = udp_include_func
         self.__include_name_and_desc = include_name_and_desc
+        self.__hashing_method = hashing_method
         self.nodes: dict[int, PeakRDLPythonUniqueComponents] = {}
+        self.field_enum: dict[int, PeakRDLPythonUniqueFieldEnum] = {}
         self.__name_hash_cache: dict[str, Optional[int]] = {}
         self.__logger = getLogger('peakrdl_python.UniqueComponents')
 
@@ -259,6 +314,13 @@ class UniqueComponents(RDLListener):
         components
         """
         return self.__include_name_and_desc
+
+    @property
+    def hashing_method(self) -> NodeHashingMethod:
+        """
+        Hashing method to use
+        """
+        return self.__hashing_method
 
     def __test_and_add(self, potential_unique_node:PeakRDLPythonUniqueComponents) -> bool:
         """
@@ -302,6 +364,31 @@ class UniqueComponents(RDLListener):
             return PeakRDLPythonUniqueMemoryComponents(instance=node,
                                                        instance_hash=nodal_hash_result,
                                                        parent_walker=self)
+
+        if isinstance(node, FieldNode):
+            # depending on whether the field is encoded or not the component generated changes
+            # and may need to have a field encoding entry added to the table
+            encoding = node.get_property('encode', default=None)
+            if encoding is None:
+                return PeakRDLPythonUniqueFieldComponents(instance=node,
+                                                              instance_hash=nodal_hash_result,
+                                                              parent_walker=self)
+
+            encoding_hash = enum_hash(enum=encoding,
+                                      method=self.hashing_method,
+                                      include_name_and_desc=self.include_name_and_desc)
+
+            if encoding_hash not in self.field_enum:
+                self.field_enum[encoding_hash] = PeakRDLPythonUniqueFieldEnum(
+                    instance=encoding,
+                    instance_hash=encoding_hash,
+                    parent_walker=self)
+
+            return PeakRDLPythonUniqueEnumFieldComponents(instance=node,
+                                                          instance_hash=nodal_hash_result,
+                                                          encoding=self.field_enum[encoding_hash],
+                                                          parent_walker=self)
+
         return PeakRDLPythonUniqueComponents(instance=node,
                                              instance_hash=nodal_hash_result,
                                              parent_walker=self)
@@ -342,6 +429,7 @@ class UniqueComponents(RDLListener):
 
         potential_unique_node = self.__build_peak_rdl_unique_component(node)
 
+        # The Filed Hash can be None if a base class from the library can be used directly
         if potential_unique_node is None:
             return WalkerAction.SkipDescendants
 
@@ -391,7 +479,8 @@ class UniqueComponents(RDLListener):
 
         nodal_hash_result = node_hash(node=node, udp_include_func=self.udp_include_func,
                                       hide_node_callback=self.hide_node_callback,
-                                      include_name_and_desc=self.include_name_and_desc)
+                                      include_name_and_desc=self.include_name_and_desc,
+                                      method=self.hashing_method)
         self.__name_hash_cache[full_instance_name] = nodal_hash_result
         return nodal_hash_result
 
@@ -410,3 +499,11 @@ class UniqueComponents(RDLListener):
         yield from filter(
             lambda component: isinstance(component, PeakRDLPythonUniqueMemoryComponents),
             self.nodes.values())
+
+    def enum_hash(self, enum: UserEnumMeta) -> int:
+        """
+        Calculate the hash for a system RDL field encoding
+        """
+        return enum_hash(enum=enum,
+                         include_name_and_desc=self.include_name_and_desc,
+                         method=self.hashing_method)

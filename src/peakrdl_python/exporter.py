@@ -23,7 +23,7 @@ import re
 
 from typing import NoReturn, Any, Optional, Union, TextIO
 from collections.abc import Callable
-from collections.abc import Iterable
+
 from functools import partial
 import sys
 from itertools import filterfalse, chain
@@ -50,8 +50,8 @@ from .systemrdl_node_utility_functions import get_reg_writable_fields, \
 from .unique_component_iterator import UniqueComponents
 from .unique_component_iterator import PeakRDLPythonUniqueRegisterComponents
 from .unique_component_iterator import PeakRDLPythonUniqueMemoryComponents
-from .class_names import fully_qualified_enum_type, get_field_get_base_class_name
-from .systemrdl_node_hashes import enum_hash
+from .unique_component_iterator import PeakRDLPythonUniqueFieldEnum
+from .class_names import get_field_get_base_class_name
 
 from .lib import get_array_typecode
 
@@ -246,7 +246,7 @@ class PythonExporter:
             'unique_components': top_file_components,
             'dependent_registers': unique_component_walker.register_nodes(),
             'dependent_memories': unique_component_walker.memory_nodes(),
-            'unique_enums': self._get_dependent_enum(unique_component_walker),
+            'unique_enums': unique_component_walker.field_enum.values(),
             'get_enum_values': get_enum_values,
             'get_table_block': partial(get_table_block,
                                        skip_systemrdl_name_and_desc_in_docstring=
@@ -407,8 +407,8 @@ class PythonExporter:
                             encoding_enum = field.get_property('encode')
                             if encoding_enum is None:
                                 raise RuntimeError('This should never happen')
-                            field_enum_cls = fully_qualified_enum_type(
-                                encoding_enum) + '_enumcls'
+                            encoding_enum_hash = unique_component_walker.enum_hash(encoding_enum)
+                            field_enum_cls = unique_component_walker.field_enum[encoding_enum_hash]
                             if field_enum_cls not in dependent_field_enum_cls:
                                 dependent_field_enum_cls.append(field_enum_cls)
 
@@ -432,7 +432,6 @@ class PythonExporter:
                     'get_fully_qualified_type_name': partial(
                         unique_component_walker.python_class_name,
                         async_library_classes=asyncoutput),
-                    'get_fully_qualified_enum_type': fully_qualified_enum_type,
                     'get_field_default_value': get_field_default_value,
                     'is_encoded_field': is_encoded_field,
                     'skip_lib_copy': skip_lib_copy,
@@ -531,7 +530,6 @@ class PythonExporter:
                     'get_fully_qualified_type_name': partial(
                         unique_component_walker.python_class_name,
                         async_library_classes=asyncoutput),
-                    'get_fully_qualified_enum_type': fully_qualified_enum_type,
                     'get_field_default_value': get_field_default_value,
                     'is_encoded_field': is_encoded_field,
                     'skip_lib_copy': skip_lib_copy,
@@ -631,8 +629,8 @@ class PythonExporter:
         definitions into a batch of files within the registers.field_enums sub-packaage of the main
         reg_model package
         """
-        def init_line_entry(module_name:str, field_enum:UserEnumMeta) -> str:
-            return f'from .{module_name} import {fully_qualified_enum_type(field_enum)}_enumcls\n'
+        def init_line_entry(module_name:str, field_enum:PeakRDLPythonUniqueFieldEnum) -> str:
+            return f'from .{module_name} import {field_enum.python_class_name}_enumcls\n'
 
         with package.reg_model.registers.field_enum.init_file_stream() as init_fid:
             # put the header on the field package __init__.py
@@ -641,13 +639,12 @@ class PythonExporter:
 
             for index, unique_enums_subset in enumerate(
                     batched(
-                        self._get_dependent_enum(unique_component_walker),
+                        unique_component_walker.field_enum.values(),
                         n=enum_field_class_per_generated_file)
             ):
                 context = {
                     'top_node': top_block,
                     'unique_enums': unique_enums_subset,
-                    'get_fully_qualified_enum_type': fully_qualified_enum_type,
                     'skip_lib_copy': skip_lib_copy,
                     'legacy_enum_type': legacy_enum_type,
                     'skip_systemrdl_name_and_desc_properties':
@@ -1143,33 +1140,6 @@ class PythonExporter:
 
         """
         raise PythonExportTemplateError(message)
-
-    @staticmethod
-    def _get_dependent_enum(unique_components: UniqueComponents) -> Iterable[UserEnumMeta]:
-        """
-        iterable of enums which is used by a descendant of the input node,
-        this list is de-duplicated
-        """
-        def is_encoded_field_filter(node: Node) -> TypeGuard[FieldNode]:
-            if isinstance(node, FieldNode):
-                return is_encoded_field(node)
-            return False
-
-        unique_field_components = \
-            filter(is_encoded_field_filter,
-                   [component.instance for component in unique_components.nodes.values()])
-
-        enum_needed = []
-        for encoded_field in unique_field_components:
-            field_enum = encoded_field.get_property('encode')
-            if field_enum is None:
-                raise RuntimeError('All field found here should be encoded (due to prefilter)')
-
-            field_enum_hash = enum_hash(field_enum)
-
-            if field_enum_hash not in enum_needed:
-                enum_needed.append(field_enum_hash)
-                yield field_enum
 
     @staticmethod
     def _get_dependent_property_enum( unique_components: UniqueComponents) -> \

@@ -86,7 +86,9 @@ def _hash_content_sha256(content: list[Any]) -> int:
     return int(sha[:16], 16)
 
 def enum_hash(enum: UserEnumMeta,
-              method: NodeHashingMethod  = NodeHashingMethod.SHA256) -> int:
+              include_name_and_desc: bool,
+              method: NodeHashingMethod,
+              ) -> int:
     """
     Calculate the hash of a system RDL enum type
     """
@@ -98,10 +100,11 @@ def enum_hash(enum: UserEnumMeta,
             'value': entry.value,
             'name': entry.name,
         }
-        if entry.rdl_desc is not None:
-            return_dict['rdl_desc'] = entry.rdl_desc
-        if entry.rdl_name is not None:
-            return_dict['rdl_name'] = entry.rdl_name
+        if include_name_and_desc:
+            if entry.rdl_desc is not None:
+                return_dict['rdl_desc'] = entry.rdl_desc
+            if entry.rdl_name is not None:
+                return_dict['rdl_name'] = entry.rdl_name
 
         return return_dict
 
@@ -177,7 +180,8 @@ def __field_hash(node: FieldNode,
         field_enum = node.get_property('encode')
         if field_enum is None:
             raise RuntimeError('The field_enum should not None it is an encoded field')
-        value_to_hash.append(enum_hash(field_enum, method=method))
+        value_to_hash.append(enum_hash(field_enum, method=method,
+                                       include_name_and_desc=include_name_and_desc))
 
     return value_to_hash
 
@@ -465,8 +469,8 @@ def __mem_instance_hash(node: MemNode,
 def node_hash(node: Node,
               udp_include_func: ShowUDPCallback,
               hide_node_callback: HideNodeCallback,
-              include_name_and_desc: bool = True,
-              method: NodeHashingMethod = NodeHashingMethod.SHA256
+              include_name_and_desc: bool,
+              method: NodeHashingMethod
               ) -> Optional[int]:
     """
     Calculate the PeakRDL python has for node. This is used it determine whether a unique
@@ -479,6 +483,7 @@ def node_hash(node: Node,
                             the hash calculation or not
         include_name_and_desc: Set to True to include the system RDL name and description in the
                                hash or not
+        method: Method to calculate hashes
 
     Returns: A integer hash value, or None in the special case where the base class can be used
              directly from the library
