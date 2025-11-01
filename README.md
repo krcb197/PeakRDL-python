@@ -98,9 +98,20 @@ _Legacy Enumeration Types_ in the documentation
 
 ## Upgrading from pre 2.0.0
 
-Version 2.0 introduced a significant change to the process for building the register model python
+Version 2.0.0 introduced a significant change to the process for building the register model python
 code. This change was intended to reduce the size of the generated code by only generating 
 python classes for systemRDL components that required unique classes. The previous versions were 
 more conservative and tended to generate a lot of duplicate classes.
+
+Version 2.1.0 has improved this to ensure field encoding enumerations were correctly deduplicated. 
+
+The implementation requires a hash to be generated of each node in order to determine whether it is
+unique or not. This hash was incorperated within the class names which resulted in the code 
+changing each time it was regenerated, version 2.1.0 introduces a option to either:
+* The builtin python `hash` function, this is fast but is a salted hash so changes hashes export to 
+  export
+* Use the `SHA256` hash from the python `hashlib` standard library, this may slow down the export 
+  of large register models but will be consistent, therefore is useful if the resultant code is being
+  checked into a version control system (such as GIT) and the differences are being reviewed
 
 

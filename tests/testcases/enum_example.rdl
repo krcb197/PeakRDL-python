@@ -27,8 +27,15 @@ addrmap enum_example {
 			value2 = 1;
 			value3 = 5;
 		};
+
+		enum alt_threeBitFieldType {
+			value1 = 0;
+			value2 = 1;
+			value3 = 5;
+		};
 		
         field { encode = threeBitFieldType; fieldwidth=3; } field_b = {threeBitFieldType::value3};
+        field { encode = alt_threeBitFieldType; fieldwidth=3; } field_d = {alt_threeBitFieldType::value3};
 		field { encode = twoBitFieldType; name="Another field using TwoBitType"; } field_c[15:14];
     };
 	

@@ -32,6 +32,7 @@ from systemrdl import RDLCompiler # type: ignore
 from systemrdl.node import Node, AddrmapNode # type: ignore
 from peakrdl_ipxact import IPXACTImporter # type: ignore
 from src.peakrdl_python import PythonExporter # type: ignore
+from src.peakrdl_python import NodeHashingMethod # type: ignore
 
 test_case_path = os.path.join('tests', 'testcases')
 
@@ -86,7 +87,8 @@ def generate(root: Node, outdir: str,
              legacy_block_access: bool = True,
              legacy_enum_type: bool = True,
              copy_library: bool = False,
-             skip_systemrdl_name_and_desc_in_docstring: bool = False) -> List[str]:
+             skip_systemrdl_name_and_desc_in_docstring: bool = False,
+             hashing_mode: NodeHashingMethod = NodeHashingMethod.PYTHONHASH) -> List[str]:
     """
     Generate a PeakRDL output package from compiled systemRDL
 
@@ -109,7 +111,8 @@ def generate(root: Node, outdir: str,
                                       legacy_enum_type=legacy_enum_type,
                                       skip_library_copy=not copy_library,
                                       skip_systemrdl_name_and_desc_in_docstring=
-                                           skip_systemrdl_name_and_desc_in_docstring)
+                                           skip_systemrdl_name_and_desc_in_docstring,
+                                      hashing_method=hashing_mode)
 
     return modules
 
@@ -145,14 +148,14 @@ if __name__ == '__main__':
         options = {
             'asyncoutput': [True, False],
             'legacy': [True, False],
-            'skip_systemrdl_name_and_desc_in_docstring': [True, False]
+            'skip_systemrdl_name_and_desc_in_docstring': [True, False],
+            'hashing': list(NodeHashingMethod),
         }
 
-        for asyncoutput, legacy, skip_name_and_desc_in_docstring in product(
+        for asyncoutput, legacy, skip_name_and_desc_in_docstring, hashing_mode in product(
                 options['asyncoutput'], options['legacy'],
-                options['skip_systemrdl_name_and_desc_in_docstring']):
-
-
+                options['skip_systemrdl_name_and_desc_in_docstring'],
+                options['hashing'] ):
 
             # test cases that use the extended widths an not be tested in the non-legacy modes
             if (testcase_name in ['extended_memories', 'extended_sizes_registers_array']) and \
@@ -160,6 +163,7 @@ if __name__ == '__main__':
                 continue
 
             folder_parts = 'raw'
+            folder_parts += f'_{hashing_mode.name}'
             if asyncoutput:
                 folder_parts += '_async'
             if legacy:
@@ -172,7 +176,8 @@ if __name__ == '__main__':
                          legacy_block_access=legacy,
                          legacy_enum_type=legacy,
                          copy_library=CommandLineArgs.copy_libraries,
-                         skip_systemrdl_name_and_desc_in_docstring=skip_name_and_desc_in_docstring)
+                         skip_systemrdl_name_and_desc_in_docstring=skip_name_and_desc_in_docstring,
+                         hashing_mode=hashing_mode)
 
             module_fqfn = output_path / folder_parts / '__init__.py'
             with open(module_fqfn, 'w', encoding='utf-8') as fid:
