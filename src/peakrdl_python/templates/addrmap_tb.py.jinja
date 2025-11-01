@@ -227,12 +227,12 @@ class {{fq_block_name}}_single_access({{top_node.inst_name}}_TestCase): # type: 
                         {% if encoding_entry.rdl_name is none %}
             self.assertIsNone(self.dut.{{'.'.join(get_python_path_segments(node))}}.enum_cls.{{encoding_entry.name | upper}}.rdl_name)
                         {% else %}
-            self.assertEqual(self.dut.{{'.'.join(get_python_path_segments(node))}}.enum_cls.{{encoding_entry.name | upper}}.rdl_name, "{{encoding_entry.rdl_name}}")
+            self.assertEqual(self.dut.{{'.'.join(get_python_path_segments(node))}}.enum_cls.{{encoding_entry.name | upper}}.rdl_name, {{encoding_entry.rdl_name | tojson}})
                         {% endif %}
                         {% if encoding_entry.rdl_desc is none %}
             self.assertIsNone(self.dut.{{'.'.join(get_python_path_segments(node))}}.enum_cls.{{encoding_entry.name | upper}}.rdl_desc)
                         {% else %}
-            self.assertEqual(self.dut.{{'.'.join(get_python_path_segments(node))}}.enum_cls.{{encoding_entry.name | upper}}.rdl_desc, "{{encoding_entry.rdl_desc}}")
+            self.assertEqual(self.dut.{{'.'.join(get_python_path_segments(node))}}.enum_cls.{{encoding_entry.name | upper}}.rdl_desc, {{encoding_entry.rdl_desc | tojson}})
                         {% endif %}
                     {% endif %}
                 {% endfor %}
