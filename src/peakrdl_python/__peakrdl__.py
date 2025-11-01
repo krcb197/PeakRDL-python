@@ -197,5 +197,5 @@ class Exporter(ExporterSubcommandPlugin):
             field_class_per_generated_file=options.field_class_per_generated_file,
             enum_field_class_per_generated_file=options.enum_field_class_per_generated_file,
             memory_class_per_generated_file=options.memory_class_per_generated_file,
-            hashing_method=NodeHashingMethod[options.hashing_method]
+            hashing_method=NodeHashingMethod[options.hashing_mode]
         )
