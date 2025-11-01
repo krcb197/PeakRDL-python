@@ -219,8 +219,10 @@ jobs:
           python -m unittest discover -s peakrdl_out/addr_map/
           
           peakrdl python tests/testcases/basic.rdl -o peakrdl_out/hash_variants/builtin/ --hashing_mode PYTHONHASH
+          python -m unittest discover -s peakrdl_out/hash_variants/builtin/
           peakrdl python tests/testcases/basic.rdl -o peakrdl_out/hash_variants/sha256/ --hashing_mode SHA256
-          python -m unittest discover -s peakrdl_out/hash_variants/
+          python -m unittest discover -s peakrdl_out/hash_variants/sha256/
+          
 
       - name: Check Examples
         run: |
