@@ -138,6 +138,8 @@ jobs:
           python -m generate_and_test --RDL_source_file tests/testcases/accelera-generic_example.rdl --root_node some_register_map --legacy_block_access
           python -m generate_and_test --RDL_source_file tests/testcases/accelera-generic_example.rdl --root_node some_register_map --legacy_enum_type
           python -m generate_and_test --RDL_source_file tests/testcases/accelera-generic_example.rdl --root_node some_register_map --copy_libraries
+          python -m generate_and_test --RDL_source_file tests/testcases/accelera-generic_example.rdl --root_node some_register_map --hashing_mode PYTHONHASH
+          python -m generate_and_test --RDL_source_file tests/testcases/accelera-generic_example.rdl --root_node some_register_map --hashing_mode SHA256
 
           python -m generate_and_test --RDL_source_file tests/testcases/user_defined_properties.rdl --root_node user_defined_properties --udp bool_property_to_include
           python -m generate_and_test --RDL_source_file tests/testcases/user_defined_properties.rdl --root_node user_defined_properties --udp bool_property_to_include enum_property_to_include
@@ -209,11 +211,14 @@ jobs:
           python tests/alternative_templates_toml/header_check.py --generated_package_location peakrdl_out/simple_user_template/ --top_name basic
           peakrdl python tests/testcases/basic.rdl -o peakrdl_out/dynamic_user_template/ --peakrdl-cfg tests/alternative_templates_dynamic_toml/peakrdl.toml
           python tests/alternative_templates_dynamic_toml/header_check.py --generated_package_location peakrdl_out/dynamic_user_template/ --top_name basic
-          
-          
+
           peakrdl python tests/testcases/addr_map.rdl -o peakrdl_out/addr_map/
           peakrdl python tests/testcases/addr_map.rdl -o peakrdl_out/addr_map/ -t "child_addr_map_type_c"
           python -m unittest discover -s peakrdl_out/addr_map/
+          
+          peakrdl python tests/testcases/basic.rdl -o peakrdl_out/hash_variants/builtin/ --hashing_mode PYTHONHASH
+          peakrdl python tests/testcases/basic.rdl -o peakrdl_out/hash_variants/sha256/ --hashing_mode SHA256
+          python -m unittest discover -s peakrdl_out/hash_variants/
 
       - name: Check Examples
         run: |

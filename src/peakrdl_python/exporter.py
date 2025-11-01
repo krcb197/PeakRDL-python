@@ -52,6 +52,7 @@ from .unique_component_iterator import PeakRDLPythonUniqueRegisterComponents
 from .unique_component_iterator import PeakRDLPythonUniqueMemoryComponents
 from .unique_component_iterator import PeakRDLPythonUniqueFieldEnum
 from .class_names import get_field_get_base_class_name
+from .systemrdl_node_hashes import NodeHashingMethod
 
 from .lib import get_array_typecode
 
@@ -198,7 +199,8 @@ class PythonExporter:
                            register_class_per_generated_file: int,
                            field_class_per_generated_file: int,
                            enum_field_class_per_generated_file: int,
-                           memory_class_per_generated_file: int) -> None:
+                           memory_class_per_generated_file: int,
+                           hashing_method: NodeHashingMethod) -> None:
 
         def visible_nonsignal_node(node: Node) -> int:
             count = 0
@@ -214,7 +216,8 @@ class PythonExporter:
             # if the name and desc are skipped in both the property and docstring, it can be
             # skipped in the unique component generation process
             include_name_and_desc=not all((skip_systemrdl_name_and_desc_properties,
-                                          skip_systemrdl_name_and_desc_in_docstring))
+                                          skip_systemrdl_name_and_desc_in_docstring)),
+            hashing_method=hashing_method
         )
         RDLWalker(unroll=True).walk(top_block.parent, unique_component_walker,
                                     skip_top=False)
@@ -962,6 +965,7 @@ class PythonExporter:
                    DEFAULT_ENUM_FIELD_CLASS_PER_GENERATED_FILE,
                memory_class_per_generated_file: int =
                    DEFAULT_MEMORY_CLASS_PER_GENERATED_FILE,
+               hashing_method: NodeHashingMethod = NodeHashingMethod.PYTHONHASH
                ) -> str:
         """
         Generated Python Code and Testbench
@@ -1040,6 +1044,9 @@ class PythonExporter:
                                               Make sure this is set to ensure the file does not
                                               get too big otherwise the generation and loading
                                               is slow.
+            hashing_method : The algorithm used to generate the hash of nodes during the building
+                             process. The is intended for advanced users, please look at the
+                             documentation to understand this impact of this.
 
         Returns:
             modules that have been exported:
@@ -1095,6 +1102,7 @@ class PythonExporter:
             field_class_per_generated_file=field_class_per_generated_file,
             enum_field_class_per_generated_file=enum_field_class_per_generated_file,
             memory_class_per_generated_file=memory_class_per_generated_file,
+            hashing_method=hashing_method
         )
 
         self.__export_simulator(top_block=top_block, package=package, asyncoutput=asyncoutput,

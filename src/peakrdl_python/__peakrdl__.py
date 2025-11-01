@@ -33,6 +33,7 @@ from .exporter import DEFAULT_FIELD_CLASS_PER_GENERATED_FILE
 from .exporter import DEFAULT_ENUM_FIELD_CLASS_PER_GENERATED_FILE
 from .exporter import DEFAULT_MEMORY_CLASS_PER_GENERATED_FILE
 from .compiler_udp import PythonHideUDP, PythonInstNameUDP
+from .systemrdl_node_hashes import NodeHashingMethod
 
 if TYPE_CHECKING:
     import argparse
@@ -144,6 +145,15 @@ class Exporter(ExporterSubcommandPlugin):
                                     'python module of the generated code. Make sure this is set '
                                     'to ensure the file does not get too big otherwise the '
                                     'generation and loading is slow')
+        arg_group.add_argument('--hashing_mode',
+                               dest='hashing_mode',
+                               type=str,
+                               choices=[item.name for item in NodeHashingMethod],
+                               default='PYTHONHASH',
+                               help='The method used to generate the hash of the node, in order to '
+                                    'deduplicate the register model. Set this to `SHA256` if '
+                                    'the python names need to stay consistent one export to the '
+                                    'next. However, this mode is slower')
 
     def do_export(self, top_node: 'AddrmapNode', options: 'argparse.Namespace') -> None:
         """
@@ -186,5 +196,6 @@ class Exporter(ExporterSubcommandPlugin):
             register_class_per_generated_file=options.register_class_per_generated_file,
             field_class_per_generated_file=options.field_class_per_generated_file,
             enum_field_class_per_generated_file=options.enum_field_class_per_generated_file,
-            memory_class_per_generated_file=options.memory_class_per_generated_file
+            memory_class_per_generated_file=options.memory_class_per_generated_file,
+            hashing_method=NodeHashingMethod[options.hashing_method]
         )

@@ -305,7 +305,7 @@ class UniqueComponents(RDLListener):
                  hide_node_callback: HideNodeCallback,
                  include_name_and_desc: bool,
                  udp_include_func: ShowUDPCallback,
-                 hashing_method: NodeHashingMethod = NodeHashingMethod.SHA256) -> None:
+                 hashing_method: NodeHashingMethod) -> None:
         super().__init__()
 
         self.__hide_node_callback = hide_node_callback
