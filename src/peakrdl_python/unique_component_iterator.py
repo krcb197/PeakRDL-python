@@ -184,15 +184,15 @@ class PeakRDLPythonUniqueRegisterComponents(PeakRDLPythonUniqueComponents):
         """
         return get_reg_accesswidth(self.instance)
 
-    def lookup_field_data_python_class(self, field: FieldNode) -> str:
+    def lookup_field_data_python_class(self, field_node: FieldNode) -> str:
         """
         Helper function to lookup the class name of a field node
         """
 
-        if not isinstance(field, FieldNode):
-            raise TypeError(f'Only fields should use this method, got {type(field)}')
+        if not isinstance(field_node, FieldNode):
+            raise TypeError(f'Only fields should use this method, got {type(field_node)}')
 
-        field_hash = self.parent_walker.calculate_or_lookup_hash(node=field)
+        field_hash = self.parent_walker.calculate_or_lookup_hash(node=field_node)
         if field_hash is None:
             return 'int'
 
@@ -299,6 +299,7 @@ class UniqueComponents(RDLListener):
     class intended to be used as part of the walker/listener protocol to find all the items
     non-hidden nodes
     """
+    # pylint:disable=too-many-instance-attributes
 
     def __init__(self,
                  hide_node_callback: HideNodeCallback,
@@ -495,6 +496,10 @@ class UniqueComponents(RDLListener):
         return python_class_name
 
     def calculate_or_lookup_hash(self, node: Node) -> Optional[int]:
+        """
+        Calculates the hash for a node with an option to retrieve it from the cache to avoid it
+        being redone if possible
+        """
 
         full_instance_name = '.'.join(node.get_path_segments())
         if full_instance_name in self.__name_hash_cache:
