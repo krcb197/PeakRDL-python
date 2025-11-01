@@ -359,7 +359,7 @@ jobs:
       run: |
         mypy testcase_output
 
-    - name: Run the generated tests (lib_copy true)
+    - name: Run the generated tests
       run: |
         python -m unittest discover -s testcase_output
 
