@@ -454,18 +454,18 @@ class PythonExporter:
 
     # pylint: disable-next=too-many-arguments,too-many-locals
     def __export_reg_model_memories(self, *,
-                                     top_block: AddrmapNode,
-                                     package: GeneratedPackage,
-                                     skip_lib_copy: bool,
-                                     asyncoutput: bool,
-                                     legacy_block_access: bool,
-                                     hide_node_func: HideNodeCallback,
-                                     legacy_enum_type: bool,
-                                     skip_systemrdl_name_and_desc_properties: bool,
+                                    top_block: AddrmapNode,
+                                    package: GeneratedPackage,
+                                    skip_lib_copy: bool,
+                                    asyncoutput: bool,
+                                    legacy_block_access: bool,
+                                    hide_node_func: HideNodeCallback,
+                                    legacy_enum_type: bool,
+                                    skip_systemrdl_name_and_desc_properties: bool,
                                     skip_systemrdl_name_and_desc_in_docstring: bool,
-                                     unique_component_walker: UniqueComponents,
-                                     visible_nonsignal_node: Callable[[Node], int],
-                                     memory_class_per_generated_file: int) -> None:
+                                    unique_component_walker: UniqueComponents,
+                                    visible_nonsignal_node: Callable[[Node], int],
+                                    memory_class_per_generated_file: int) -> None:
         """
         Sub function of the __export_reg_model which exports the memory class definitions into
         a batch of files within the memories sub-package of the main reg_model package
