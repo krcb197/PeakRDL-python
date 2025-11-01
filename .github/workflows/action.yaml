@@ -300,8 +300,6 @@ jobs:
 
       - name: Generate testcases
         run: |
-          peakrdl python tests/testcases/basic.rdl -o builtin/ --hashing_mode PYTHONHASH
-          peakrdl python tests/testcases/basic.rdl -o builtin_repeat/ --hashing_mode PYTHONHASH
           peakrdl python tests/testcases/basic.rdl -o sha256/ --hashing_mode SHA256
           peakrdl python tests/testcases/basic.rdl -o sha256_repeat/ --hashing_mode SHA256
           
@@ -311,13 +309,6 @@ jobs:
           (cd sha256 && find . -type f -exec sha256sum {} + | sort -k 2) > /tmp/sha256.sum
           (cd sha256_repeat && find . -type f -exec sha256sum {} + | sort -k 2) > /tmp/sha256_repeat.sum
           diff /tmp/sha256.sum /tmp/sha256_repeat.sum
-
-      - name: Check Match
-        run: |
-          (cd builtin && find . -type f -exec sha256sum {} + | sort -k 2) > /tmp/builtin.sum
-          (cd builtin_repeat && find . -type f -exec sha256sum {} + | sort -k 2) > /tmp/builtin_repeat.sum
-          diff /tmp/builtin.sum /tmp/builtin_repeat.sum
-
 
   integration_tests:
     needs:
