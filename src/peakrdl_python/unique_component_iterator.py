@@ -184,6 +184,25 @@ class PeakRDLPythonUniqueRegisterComponents(PeakRDLPythonUniqueComponents):
         """
         return get_reg_accesswidth(self.instance)
 
+    def lookup_field_data_python_class(self, field: FieldNode) -> str:
+        """
+        Helper function to lookup the class name of a field node
+        """
+
+        if not isinstance(field, FieldNode):
+            raise TypeError(f'Only fields should use this method, got {type(field)}')
+
+        field_hash = self.parent_walker.calculate_or_lookup_hash(node=field)
+        if field_hash is None:
+            return 'int'
+
+        field_component = self.parent_walker.nodes[field_hash]
+
+        if not isinstance(field_component, (PeakRDLPythonUniqueFieldComponents,
+                                            PeakRDLPythonUniqueEnumFieldComponents)):
+            raise TypeError(f'Unexpected Component Type:{type(field_component)}')
+
+        return field_component.data_type_python_class_name
 
     def fields(self) -> Iterator[FieldNode]:
         """
@@ -226,11 +245,13 @@ class PeakRDLPythonUniqueFieldComponents(PeakRDLPythonUniqueComponents):
     Dataclass to hold a register node that needs to be made into a python class
     """
     instance: FieldNode
+    data_type_python_class_name : str = field(init=False)
 
     def __post_init__(self) -> None:
         super().__post_init__()
         if not isinstance(self.instance, FieldNode):
             raise TypeError(f'instance must be a FieldNode got {type(self.instance)}')
+        object.__setattr__(self, 'data_type_python_class_name', 'int')
 
 @dataclass(frozen=True)
 class PeakRDLPythonUniqueFieldEnum:
@@ -256,7 +277,7 @@ class PeakRDLPythonUniqueFieldEnum:
         full_scope_path = self.instance.get_scope_path('_')
         if enum_hash_value < 0:
             return full_scope_path + '_' + self.instance.type_name + '_neg_' + hex(-enum_hash_value)
-        return full_scope_path + '_' + self.instance.type_name + hex(enum_hash_value)
+        return full_scope_path + '_' + self.instance.type_name + hex(enum_hash_value) + '_enumcls'
 
 @dataclass(frozen=True)
 class PeakRDLPythonUniqueEnumFieldComponents(PeakRDLPythonUniqueFieldComponents):
@@ -270,6 +291,8 @@ class PeakRDLPythonUniqueEnumFieldComponents(PeakRDLPythonUniqueFieldComponents)
         super().__post_init__()
         if not isinstance(self.instance, FieldNode):
             raise TypeError(f'instance must be a FieldNode got {type(self.instance)}')
+        data_type_class = self.encoding.python_class_name
+        object.__setattr__(self, 'data_type_python_class_name', data_type_class)
 
 class UniqueComponents(RDLListener):
     """
@@ -351,7 +374,7 @@ class UniqueComponents(RDLListener):
     def __build_peak_rdl_unique_component(self, node: Node) -> \
             Optional[PeakRDLPythonUniqueComponents]:
 
-        nodal_hash_result = self.__calculate_or_lookup_hash(node)
+        nodal_hash_result = self.calculate_or_lookup_hash(node)
 
         if nodal_hash_result is None:
             return None
@@ -455,7 +478,7 @@ class UniqueComponents(RDLListener):
         Returns: classname as a string
 
         """
-        nodal_hash_result = self.__calculate_or_lookup_hash(node)
+        nodal_hash_result = self.calculate_or_lookup_hash(node)
 
         if nodal_hash_result is None:
             # This is special case where the field has no attributes that need a field definition
@@ -471,7 +494,7 @@ class UniqueComponents(RDLListener):
         python_class_name = self.nodes[nodal_hash_result].python_class_name
         return python_class_name
 
-    def __calculate_or_lookup_hash(self, node: Node) -> Optional[int]:
+    def calculate_or_lookup_hash(self, node: Node) -> Optional[int]:
 
         full_instance_name = '.'.join(node.get_path_segments())
         if full_instance_name in self.__name_hash_cache:

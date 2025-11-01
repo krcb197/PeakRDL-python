@@ -50,7 +50,7 @@ class NodeHashingMethod(Enum):
     PYTHONHASH = auto()   # Hash nodes based on the built-in python ``hash`` function
     SHA256 = auto()   # Hash nodes based on the ```hashlib.sha256`` algorithm
 
-def _make_hashable(obj: Any):
+def _make_hashable(obj: Any) -> Any:
     """
     Recursively convert objects to a JSON-serializable and deterministic structure for hashing.
     """
@@ -75,7 +75,7 @@ def _make_hashable(obj: Any):
     # Fallback: use the string representation
     return str(obj)
 
-def _hash_content_sha256(content: list[Any]) -> int:
+def _hash_content_sha256(content: tuple[Any]) -> int:
     """
     Deterministically hash a list of content using SHA256 and return an integer.
     """
@@ -92,28 +92,46 @@ def enum_hash(enum: UserEnumMeta,
     """
     Calculate the hash of a system RDL enum type
     """
-    if method is NodeHashingMethod.PYTHONHASH:
-        return hash(enum)
+
 
     def enum_entry_content(entry: UserEnum) -> dict[str, Union[str, int]]:
-        return_dict = {
-            'value': entry.value,
-            'name': entry.name,
+
+        value = entry.value
+        if not isinstance(value, int):
+            raise TypeError(f'value type should be int but got: {type(value)}')
+
+        name = entry.name
+        if not isinstance(name, str):
+            raise TypeError(f'value type should be str but got: {type(name)}')
+
+        return_dict: dict[str, Union[str, int]] = {
+            'value': value,
+            'name': name,
         }
         if include_name_and_desc:
-            if entry.rdl_desc is not None:
-                return_dict['rdl_desc'] = entry.rdl_desc
-            if entry.rdl_name is not None:
-                return_dict['rdl_name'] = entry.rdl_name
+            rdl_desc = entry.rdl_desc
+            if rdl_desc is not None:
+                if not isinstance(rdl_desc, str):
+                    raise TypeError(f'rdl_desc type should be str but got: {type(rdl_desc)}')
+                return_dict['rdl_desc'] = rdl_desc
+            rdl_name = entry.rdl_name
+            if rdl_name is not None:
+                if not isinstance(rdl_name, str):
+                    raise TypeError(f'rdl_name type should be str but got: {type(rdl_name)}')
+                return_dict['rdl_name'] = rdl_name
 
         return return_dict
 
+    data = {
+        "members": [enum_entry_content(item) for item in enum]
+    }
+
+    if method is NodeHashingMethod.PYTHONHASH:
+        return hash(data)
 
     if method is NodeHashingMethod.SHA256:
         # Deterministically hash the enum by its name and members
-        data = {
-            "members": [enum_entry_content(item) for item in enum]
-        }
+
         json_str = json.dumps(data, sort_keys=True, separators=(',', ':'))
         sha = hashlib.sha256(json_str.encode('utf-8')).hexdigest()
         return int(sha[:16], 16)

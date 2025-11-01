@@ -116,7 +116,7 @@ class {{node.python_class_name}}({{node.base_class(asyncoutput)}}):
                 is_volatile={{child_node.is_hw_writable}}),
             logger_handle=logger_handle+'.{{child_node.inst_name}}',
             inst_name='{{child_node.inst_name}}',
-            field_type={% if is_encoded_field(child_node) %}{{ get_fully_qualified_enum_type(child_node.get_property('encode')) + '_enumcls' }}{% else %}int{% endif %})
+            field_type={{node.lookup_field_data_python_class(child_node)}})
         {%- endfor %}
 
     @property
@@ -127,11 +127,9 @@ class {{node.python_class_name}}({{node.base_class(asyncoutput)}}):
     def accesswidth(self) -> int:
         return {{node.accesswidth}}
 
-
-
     {% if node.write_only %}
     {# if the register has no readable components, all the fields must be writen as one #}
-    {% if asyncoutput %}async {% endif %}def write_fields(self, {%- for child_node in node.instance.fields() -%} {{safe_node_name(child_node)}} : {%- if is_encoded_field(child_node) %}{{get_fully_qualified_enum_type(child_node.get_property('encode'))}}_enumcls{% else %}int{% endif %}{%- if not loop.last -%},{%- endif -%}{%- endfor -%}) -> None: # type: ignore[override]
+    {% if asyncoutput %}async {% endif %}def write_fields(self, {%- for child_node in node.instance.fields() -%} {{safe_node_name(child_node)}} : {{node.lookup_field_data_python_class(child_node)}}{%- if not loop.last -%},{%- endif -%}{%- endfor -%}) -> None: # type: ignore[override]
         """
         Do a write to the register, updating all fields
         """

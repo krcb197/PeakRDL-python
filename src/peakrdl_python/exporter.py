@@ -322,7 +322,6 @@ class PythonExporter:
             unique_component_walker=unique_component_walker,
             field_class_per_generated_file=field_class_per_generated_file)
 
-
         # field enumerations
         if uses_enum(top_block):
             self.__export_reg_model_field_enums(
@@ -403,14 +402,12 @@ class PythonExporter:
                             async_library_classes=asyncoutput)
                         if field_cls_base != field_cls and field_cls not in dependent_field_cls:
                             dependent_field_cls.append(field_cls)
-                        if is_encoded_field(field):
-                            encoding_enum = field.get_property('encode')
-                            if encoding_enum is None:
-                                raise RuntimeError('This should never happen')
-                            encoding_enum_hash = unique_component_walker.enum_hash(encoding_enum)
-                            field_enum_cls = unique_component_walker.field_enum[encoding_enum_hash]
-                            if field_enum_cls not in dependent_field_enum_cls:
-                                dependent_field_enum_cls.append(field_enum_cls)
+
+                        field_enum_cls = register.lookup_field_data_python_class(field)
+                        if field_enum_cls == 'int':
+                            continue
+                        if field_enum_cls not in dependent_field_enum_cls:
+                            dependent_field_enum_cls.append(field_enum_cls)
 
                 context = {
                     'top_node': top_block,
@@ -630,7 +627,7 @@ class PythonExporter:
         reg_model package
         """
         def init_line_entry(module_name:str, field_enum:PeakRDLPythonUniqueFieldEnum) -> str:
-            return f'from .{module_name} import {field_enum.python_class_name}_enumcls\n'
+            return f'from .{module_name} import {field_enum.python_class_name}\n'
 
         with package.reg_model.registers.field_enum.init_file_stream() as init_fid:
             # put the header on the field package __init__.py
