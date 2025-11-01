@@ -274,7 +274,7 @@ jobs:
           
           cd ../..
           
-    identical_code:
+  identical_code:
     needs:
       - mypy
       - lint
