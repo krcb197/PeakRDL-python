@@ -274,12 +274,54 @@ jobs:
           
           cd ../..
           
+    identical_code:
+    needs:
+      - mypy
+      - lint
+      - unit_tests
+
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: [ 3.9, "3.10", "3.11", "3.12", "3.13", "3.14" ]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install .[peakrdl]
           
+          # retrieve the example code from the systemRDL compiler
+          wget -L https://raw.githubusercontent.com/SystemRDL/systemrdl-compiler/main/examples/accelera-generic_example.rdl -O tests/testcases/accelera-generic_example.rdl
+
+      - name: Generate testcases
+        run: |
+          peakrdl python tests/testcases/basic.rdl -o builtin/ --hashing_mode PYTHONHASH
+          peakrdl python tests/testcases/basic.rdl -o builtin_repeat/ --hashing_mode PYTHONHASH
+          peakrdl python tests/testcases/basic.rdl -o sha256/ --hashing_mode SHA256
+          peakrdl python tests/testcases/basic.rdl -o sha256_repeat/ --hashing_mode SHA256
+          
+
+      - name: Check Match
+        run: |
+          (cd sha256 && find . -type f -exec sha256sum {} + | sort -k 2) > /tmp/sha256.sum
+          (cd sha256_repeat && find . -type f -exec sha256sum {} + | sort -k 2) > /tmp/sha256_repeat.sum
+          diff /tmp/sha256.sum /tmp/sha256_repeat.sum
+
+      - name: Check Match
+        run: |
+          (cd builtin && find . -type f -exec sha256sum {} + | sort -k 2) > /tmp/builtin.sum
+          (cd builtin_repeat && find . -type f -exec sha256sum {} + | sort -k 2) > /tmp/builtin_repeat.sum
+          diff /tmp/builtin.sum /tmp/builtin_repeat.sum
+
 
   integration_tests:
     needs:
       - peakrdl_integration
       - dev_runner
+      - identical_code
 
     runs-on: ubuntu-latest
     strategy:
