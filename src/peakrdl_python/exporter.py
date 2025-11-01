@@ -247,7 +247,6 @@ class PythonExporter:
             'dependent_registers': unique_component_walker.register_nodes(),
             'dependent_memories': unique_component_walker.memory_nodes(),
             'unique_enums': unique_component_walker.field_enum.values(),
-            'get_enum_values': get_enum_values,
             'get_table_block': partial(get_table_block,
                                        skip_systemrdl_name_and_desc_in_docstring=
                                           skip_systemrdl_name_and_desc_in_docstring),
@@ -430,7 +429,6 @@ class PythonExporter:
                         unique_component_walker.python_class_name,
                         async_library_classes=asyncoutput),
                     'get_field_default_value': get_field_default_value,
-                    'is_encoded_field': is_encoded_field,
                     'skip_lib_copy': skip_lib_copy,
                     'uses_enum': uses_enum(top_block),
                     'legacy_enum_type': legacy_enum_type,
@@ -528,7 +526,6 @@ class PythonExporter:
                         unique_component_walker.python_class_name,
                         async_library_classes=asyncoutput),
                     'get_field_default_value': get_field_default_value,
-                    'is_encoded_field': is_encoded_field,
                     'skip_lib_copy': skip_lib_copy,
                     'uses_enum': uses_enum(top_block),
                     'legacy_enum_type': legacy_enum_type,
