@@ -46,7 +46,7 @@ from .systemrdl_node_utility_functions import get_reg_writable_fields, \
     get_memory_max_entry_value_hex_string, get_memory_width_bytes, \
     get_field_default_value, get_enum_values, get_properties_to_include, \
     HideNodeCallback, hide_based_on_property, \
-    is_encoded_field, full_slice_accessor, ShowUDPCallback
+    full_slice_accessor, ShowUDPCallback
 from .unique_component_iterator import UniqueComponents
 from .unique_component_iterator import PeakRDLPythonUniqueRegisterComponents
 from .unique_component_iterator import PeakRDLPythonUniqueMemoryComponents
