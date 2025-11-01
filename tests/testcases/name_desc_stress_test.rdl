@@ -1,0 +1,23 @@
+/*
+This test was introduced as part of #231 to check stressful cases for the system rdl name and
+description
+*/
+addrmap name_desc_stress_test {
+    name = "This addrmap name has a single quote in it ' ";
+    reg {
+        name = "This reg name has a single quote in it ' ";
+        enum my_enum {
+            ZERO = 1'b0 {
+                name = "This enum name has a single quote in it ' ";
+                desc = "This enum desc has a single quote in it ' ";
+            };
+            ONE = 1'b1 {
+                name = "This enum name has a double quote in it \" ";
+            };
+        };
+        field {
+            name = "This field name has a single quote in it ' ";
+            encode = my_enum;
+        } field_a;
+    } reg_a;
+};
