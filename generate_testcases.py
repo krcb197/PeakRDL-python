@@ -49,6 +49,15 @@ CommandLineParser.add_argument('--copy_libraries', action='store_true', dest='co
                                     'and debugging as multiple copies of the libraries can cause'
                                     'confusion. Therefore by default this script does not copy '
                                     'them over.')
+CommandLineParser.add_argument('--hashing_mode',
+                               dest='hashing_mode',
+                               type=str,
+                               choices=[item.name for item in NodeHashingMethod],
+                               default='PYTHONHASH',
+                               help='The method used to generate the hash of the node, in order to '
+                                    'deduplicate the register model. Set this to `SHA256` if '
+                                    'the python names need to stay consistent one export to the '
+                                    'next. However, this mode is slower')
 
 
 def compile_rdl(infile: str,
@@ -105,14 +114,15 @@ def generate(root: Node, outdir: str,
 
     """
     print(f'Info: Generating python for {root.inst_name} in {outdir}')
-    modules = PythonExporter().export(root, outdir, # type: ignore[no-untyped-call]
-                                      asyncoutput=asyncoutput,
-                                      legacy_block_access=legacy_block_access,
-                                      legacy_enum_type=legacy_enum_type,
-                                      skip_library_copy=not copy_library,
-                                      skip_systemrdl_name_and_desc_in_docstring=
-                                           skip_systemrdl_name_and_desc_in_docstring,
-                                      hashing_method=hashing_mode)
+    modules = PythonExporter().export(
+        root, outdir,  # type: ignore[no-untyped-call]
+        asyncoutput=asyncoutput,
+        legacy_block_access=legacy_block_access,
+        legacy_enum_type=legacy_enum_type,
+        skip_library_copy=not copy_library,
+        skip_systemrdl_name_and_desc_in_docstring=
+        skip_systemrdl_name_and_desc_in_docstring,
+        hashing_method=hashing_mode)
 
     return modules
 
@@ -148,14 +158,12 @@ if __name__ == '__main__':
         options = {
             'asyncoutput': [True, False],
             'legacy': [True, False],
-            'skip_systemrdl_name_and_desc_in_docstring': [True, False],
-            'hashing': list(NodeHashingMethod),
+            'skip_systemrdl_name_and_desc_in_docstring': [True, False]
         }
 
-        for asyncoutput, legacy, skip_name_and_desc_in_docstring, hashing_mode in product(
+        for asyncoutput, legacy, skip_name_and_desc_in_docstring in product(
                 options['asyncoutput'], options['legacy'],
-                options['skip_systemrdl_name_and_desc_in_docstring'],
-                options['hashing'] ):
+                options['skip_systemrdl_name_and_desc_in_docstring'] ):
 
             # test cases that use the extended widths an not be tested in the non-legacy modes
             if (testcase_name in ['extended_memories', 'extended_sizes_registers_array']) and \
@@ -163,7 +171,6 @@ if __name__ == '__main__':
                 continue
 
             folder_parts = 'raw'
-            folder_parts += f'_{hashing_mode.name}'
             if asyncoutput:
                 folder_parts += '_async'
             if legacy:
@@ -177,7 +184,7 @@ if __name__ == '__main__':
                          legacy_enum_type=legacy,
                          copy_library=CommandLineArgs.copy_libraries,
                          skip_systemrdl_name_and_desc_in_docstring=skip_name_and_desc_in_docstring,
-                         hashing_mode=hashing_mode)
+                         hashing_mode=NodeHashingMethod[CommandLineArgs.hashing_mode])
 
             module_fqfn = output_path / folder_parts / '__init__.py'
             with open(module_fqfn, 'w', encoding='utf-8') as fid:

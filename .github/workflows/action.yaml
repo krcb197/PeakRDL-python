@@ -74,7 +74,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: [ 3.9, "3.10", "3.11", "3.12", "3.13", "3.14" ]
+        python-version: [ 3.9, "3.10", "3.11", "3.12", "3.13" ]
 
     steps:
       - uses: actions/checkout@v4
@@ -323,6 +323,7 @@ jobs:
       matrix:
         python-version: [3.9, "3.10", "3.11", "3.12", "3.13", "3.14"]
         lib_copy: [true, false]
+        hashing_mode: ["PYTHONHASH", "SHA256"]
 
     steps:
     - uses: actions/checkout@v4
@@ -348,12 +349,12 @@ jobs:
     - name: Generate testcases (lib_copy true)
       if: matrix.lib_copy == true
       run: |
-        python generate_testcases.py --copy_libraries --output testcase_output
+        python generate_testcases.py --copy_libraries --output testcase_output --hashing_mode ${{ matrix.hashing_mode }}
 
     - name: Generate testcases (lib_copy false)
       if: matrix.lib_copy == false
       run: |
-        python generate_testcases.py --output testcase_output
+        python generate_testcases.py --output testcase_output --hashing_mode ${{ matrix.hashing_mode }}
 
     - name: Static checks
       run: |
