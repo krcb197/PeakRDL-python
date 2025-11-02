@@ -789,14 +789,14 @@ class PythonExporter:
 
             # The code that generates the tests for the register array context managers needs
             # the arrays rolled up but parents within the address map e.g. a regfile unrolled
-            # I have not found a way to do this with the Walker as the unroll seems to be a
+            # I have not found a way to do this with the Walker as the unroll option seems to be a
             # global setting, the following code works but it is not elegant
             def add_child_rolled_children(node: AddressableNode) -> list[AddressableNode]:
-                def is_addressible_node(node: Node) -> TypeGuard[AddressableNode]:
+                def is_addressable_node(node: Node) -> TypeGuard[AddressableNode]:
                     if hide_node_func(node):
                         return False
                     return isinstance(node, AddressableNode)
-                rolled_owned_child = list(filter(is_addressible_node,
+                rolled_owned_child = list(filter(is_addressable_node,
                                                  list(node.children(unroll=False) )))
                 # only need to walk into RegFiles and Memory as this may contain a further
                 # array. A Register can not contain and array. An AddrMap children
