@@ -987,7 +987,7 @@ class PythonExporter:
             skip_library_copy: skip copy the libraries to the generated package, this is
                                useful to turn off when developing peakrdl python to avoid
                                editing the wrong copy of the library. It also avoids the
-                               GPL code being part of the package for distribution,
+                               potential licensing implications of package distribution,
                                However, this means the end-user is responsible for
                                installing the libraries.
             legacy_block_access: version 0.8 changed the block access methods from using
