@@ -117,7 +117,7 @@ def _hash_content_sha256(content: tuple[Any],
     json_str = json.dumps(hashable_content, sort_keys=True, separators=(',', ':'))
     sha = hashlib.sha256(json_str.encode('utf-8'), usedforsecurity=False).hexdigest()
     # Use int value of the first 16 bytes of SHA256 for a hash-like value
-    return int(sha[:16], 16)
+    return int(sha, 16)
 
 def enum_hash(enum: UserEnumMeta,
               include_name_and_desc: bool,
@@ -135,7 +135,7 @@ def enum_hash(enum: UserEnumMeta,
     if method is NodeHashingMethod.SHA256:
         # Deterministically hash the enum by its name and members
         sha = hashlib.sha256(json_str.encode('utf-8'), usedforsecurity=False).hexdigest()
-        return int(sha[:16], 16)
+        return int(sha, 16)
 
     raise ValueError(f'Unsupported method: {method}')
 
