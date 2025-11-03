@@ -39,6 +39,30 @@ Top Level Classes
     model and simulator to be imported more easily. See the example below using ``RegModel`` and
     ``Simulator``.
 
+Class Names
+-----------
+
+.. versionchanged:: 2.0.0
+
+    In order to reduce duplication within the generated model a hashing algortihm is applied to the
+    nodes in the design to determine which nodes are unique. This hash is appended to the name
+    of all the python classes in the register model
+
+.. versionadded:: 2.1.0
+
+    There are two possible algorithms for the hashing, this is selectable by the user:
+
+    * The builtin python ``hash`` function, this is fast but is a salted hash so changes hashes export to
+      export
+    * Use the ``SHA256`` hash from the python ``hashlib`` standard library, this may slow down the export
+      of large register models but will be consistent, therefore is useful if the resultant code is being
+      checked into a version control system (such as GIT) and the differences are being reviewed
+
+    .. tip::
+
+        Use the default builtin ``hash`` option unless you need to use the alternative
+
+
 
 Running the Unit Tests
 ======================

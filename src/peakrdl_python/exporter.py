@@ -23,7 +23,7 @@ import re
 
 from typing import NoReturn, Any, Optional, Union, TextIO
 from collections.abc import Callable
-from collections.abc import Iterable
+
 from functools import partial
 import sys
 from itertools import filterfalse, chain
@@ -46,12 +46,13 @@ from .systemrdl_node_utility_functions import get_reg_writable_fields, \
     get_memory_max_entry_value_hex_string, get_memory_width_bytes, \
     get_field_default_value, get_enum_values, get_properties_to_include, \
     HideNodeCallback, hide_based_on_property, \
-    is_encoded_field, full_slice_accessor, ShowUDPCallback
+    full_slice_accessor, ShowUDPCallback
 from .unique_component_iterator import UniqueComponents
 from .unique_component_iterator import PeakRDLPythonUniqueRegisterComponents
 from .unique_component_iterator import PeakRDLPythonUniqueMemoryComponents
-from .class_names import fully_qualified_enum_type, get_field_get_base_class_name
-from .systemrdl_node_hashes import enum_hash
+from .unique_component_iterator import PeakRDLPythonUniqueFieldEnum
+from .class_names import get_field_get_base_class_name
+from .systemrdl_node_hashes import NodeHashingMethod
 
 from .lib import get_array_typecode
 
@@ -198,7 +199,8 @@ class PythonExporter:
                            register_class_per_generated_file: int,
                            field_class_per_generated_file: int,
                            enum_field_class_per_generated_file: int,
-                           memory_class_per_generated_file: int) -> None:
+                           memory_class_per_generated_file: int,
+                           hashing_method: NodeHashingMethod) -> None:
 
         def visible_nonsignal_node(node: Node) -> int:
             count = 0
@@ -214,7 +216,8 @@ class PythonExporter:
             # if the name and desc are skipped in both the property and docstring, it can be
             # skipped in the unique component generation process
             include_name_and_desc=not all((skip_systemrdl_name_and_desc_properties,
-                                          skip_systemrdl_name_and_desc_in_docstring))
+                                          skip_systemrdl_name_and_desc_in_docstring)),
+            hashing_method=hashing_method
         )
         RDLWalker(unroll=True).walk(top_block.parent, unique_component_walker,
                                     skip_top=False)
@@ -246,8 +249,7 @@ class PythonExporter:
             'unique_components': top_file_components,
             'dependent_registers': unique_component_walker.register_nodes(),
             'dependent_memories': unique_component_walker.memory_nodes(),
-            'unique_enums': self._get_dependent_enum(unique_component_walker),
-            'get_enum_values': get_enum_values,
+            'unique_enums': unique_component_walker.field_enum.values(),
             'get_table_block': partial(get_table_block,
                                        skip_systemrdl_name_and_desc_in_docstring=
                                           skip_systemrdl_name_and_desc_in_docstring),
@@ -321,7 +323,6 @@ class PythonExporter:
             skip_systemrdl_name_and_desc_in_docstring=skip_systemrdl_name_and_desc_in_docstring,
             unique_component_walker=unique_component_walker,
             field_class_per_generated_file=field_class_per_generated_file)
-
 
         # field enumerations
         if uses_enum(top_block):
@@ -403,14 +404,12 @@ class PythonExporter:
                             async_library_classes=asyncoutput)
                         if field_cls_base != field_cls and field_cls not in dependent_field_cls:
                             dependent_field_cls.append(field_cls)
-                        if is_encoded_field(field):
-                            encoding_enum = field.get_property('encode')
-                            if encoding_enum is None:
-                                raise RuntimeError('This should never happen')
-                            field_enum_cls = fully_qualified_enum_type(
-                                encoding_enum) + '_enumcls'
-                            if field_enum_cls not in dependent_field_enum_cls:
-                                dependent_field_enum_cls.append(field_enum_cls)
+
+                        field_enum_cls = register.lookup_field_data_python_class(field)
+                        if field_enum_cls == 'int':
+                            continue
+                        if field_enum_cls not in dependent_field_enum_cls:
+                            dependent_field_enum_cls.append(field_enum_cls)
 
                 context = {
                     'top_node': top_block,
@@ -432,9 +431,7 @@ class PythonExporter:
                     'get_fully_qualified_type_name': partial(
                         unique_component_walker.python_class_name,
                         async_library_classes=asyncoutput),
-                    'get_fully_qualified_enum_type': fully_qualified_enum_type,
                     'get_field_default_value': get_field_default_value,
-                    'is_encoded_field': is_encoded_field,
                     'skip_lib_copy': skip_lib_copy,
                     'uses_enum': uses_enum(top_block),
                     'legacy_enum_type': legacy_enum_type,
@@ -460,18 +457,18 @@ class PythonExporter:
 
     # pylint: disable-next=too-many-arguments,too-many-locals
     def __export_reg_model_memories(self, *,
-                                     top_block: AddrmapNode,
-                                     package: GeneratedPackage,
-                                     skip_lib_copy: bool,
-                                     asyncoutput: bool,
-                                     legacy_block_access: bool,
-                                     hide_node_func: HideNodeCallback,
-                                     legacy_enum_type: bool,
-                                     skip_systemrdl_name_and_desc_properties: bool,
+                                    top_block: AddrmapNode,
+                                    package: GeneratedPackage,
+                                    skip_lib_copy: bool,
+                                    asyncoutput: bool,
+                                    legacy_block_access: bool,
+                                    hide_node_func: HideNodeCallback,
+                                    legacy_enum_type: bool,
+                                    skip_systemrdl_name_and_desc_properties: bool,
                                     skip_systemrdl_name_and_desc_in_docstring: bool,
-                                     unique_component_walker: UniqueComponents,
-                                     visible_nonsignal_node: Callable[[Node], int],
-                                     memory_class_per_generated_file: int) -> None:
+                                    unique_component_walker: UniqueComponents,
+                                    visible_nonsignal_node: Callable[[Node], int],
+                                    memory_class_per_generated_file: int) -> None:
         """
         Sub function of the __export_reg_model which exports the memory class definitions into
         a batch of files within the memories sub-package of the main reg_model package
@@ -531,9 +528,7 @@ class PythonExporter:
                     'get_fully_qualified_type_name': partial(
                         unique_component_walker.python_class_name,
                         async_library_classes=asyncoutput),
-                    'get_fully_qualified_enum_type': fully_qualified_enum_type,
                     'get_field_default_value': get_field_default_value,
-                    'is_encoded_field': is_encoded_field,
                     'skip_lib_copy': skip_lib_copy,
                     'uses_enum': uses_enum(top_block),
                     'legacy_enum_type': legacy_enum_type,
@@ -631,8 +626,8 @@ class PythonExporter:
         definitions into a batch of files within the registers.field_enums sub-packaage of the main
         reg_model package
         """
-        def init_line_entry(module_name:str, field_enum:UserEnumMeta) -> str:
-            return f'from .{module_name} import {fully_qualified_enum_type(field_enum)}_enumcls\n'
+        def init_line_entry(module_name:str, field_enum:PeakRDLPythonUniqueFieldEnum) -> str:
+            return f'from .{module_name} import {field_enum.python_class_name}\n'
 
         with package.reg_model.registers.field_enum.init_file_stream() as init_fid:
             # put the header on the field package __init__.py
@@ -641,13 +636,12 @@ class PythonExporter:
 
             for index, unique_enums_subset in enumerate(
                     batched(
-                        self._get_dependent_enum(unique_component_walker),
+                        unique_component_walker.field_enum.values(),
                         n=enum_field_class_per_generated_file)
             ):
                 context = {
                     'top_node': top_block,
                     'unique_enums': unique_enums_subset,
-                    'get_fully_qualified_enum_type': fully_qualified_enum_type,
                     'skip_lib_copy': skip_lib_copy,
                     'legacy_enum_type': legacy_enum_type,
                     'skip_systemrdl_name_and_desc_properties':
@@ -795,14 +789,14 @@ class PythonExporter:
 
             # The code that generates the tests for the register array context managers needs
             # the arrays rolled up but parents within the address map e.g. a regfile unrolled
-            # I have not found a way to do this with the Walker as the unroll seems to be a
+            # I have not found a way to do this with the Walker as the unroll option seems to be a
             # global setting, the following code works but it is not elegant
             def add_child_rolled_children(node: AddressableNode) -> list[AddressableNode]:
-                def is_addressible_node(node: Node) -> TypeGuard[AddressableNode]:
+                def is_addressable_node(node: Node) -> TypeGuard[AddressableNode]:
                     if hide_node_func(node):
                         return False
                     return isinstance(node, AddressableNode)
-                rolled_owned_child = list(filter(is_addressible_node,
+                rolled_owned_child = list(filter(is_addressable_node,
                                                  list(node.children(unroll=False) )))
                 # only need to walk into RegFiles and Memory as this may contain a further
                 # array. A Register can not contain and array. An AddrMap children
@@ -971,6 +965,7 @@ class PythonExporter:
                    DEFAULT_ENUM_FIELD_CLASS_PER_GENERATED_FILE,
                memory_class_per_generated_file: int =
                    DEFAULT_MEMORY_CLASS_PER_GENERATED_FILE,
+               hashing_method: NodeHashingMethod = NodeHashingMethod.PYTHONHASH
                ) -> str:
         """
         Generated Python Code and Testbench
@@ -1049,6 +1044,9 @@ class PythonExporter:
                                               Make sure this is set to ensure the file does not
                                               get too big otherwise the generation and loading
                                               is slow.
+            hashing_method : The algorithm used to generate the hash of nodes during the building
+                             process. The is intended for advanced users, please look at the
+                             documentation to understand this impact of this.
 
         Returns:
             modules that have been exported:
@@ -1104,6 +1102,7 @@ class PythonExporter:
             field_class_per_generated_file=field_class_per_generated_file,
             enum_field_class_per_generated_file=enum_field_class_per_generated_file,
             memory_class_per_generated_file=memory_class_per_generated_file,
+            hashing_method=hashing_method
         )
 
         self.__export_simulator(top_block=top_block, package=package, asyncoutput=asyncoutput,
@@ -1143,33 +1142,6 @@ class PythonExporter:
 
         """
         raise PythonExportTemplateError(message)
-
-    @staticmethod
-    def _get_dependent_enum(unique_components: UniqueComponents) -> Iterable[UserEnumMeta]:
-        """
-        iterable of enums which is used by a descendant of the input node,
-        this list is de-duplicated
-        """
-        def is_encoded_field_filter(node: Node) -> TypeGuard[FieldNode]:
-            if isinstance(node, FieldNode):
-                return is_encoded_field(node)
-            return False
-
-        unique_field_components = \
-            filter(is_encoded_field_filter,
-                   [component.instance for component in unique_components.nodes.values()])
-
-        enum_needed = []
-        for encoded_field in unique_field_components:
-            field_enum = encoded_field.get_property('encode')
-            if field_enum is None:
-                raise RuntimeError('All field found here should be encoded (due to prefilter)')
-
-            field_enum_hash = enum_hash(field_enum)
-
-            if field_enum_hash not in enum_needed:
-                enum_needed.append(field_enum_hash)
-                yield field_enum
 
     @staticmethod
     def _get_dependent_property_enum( unique_components: UniqueComponents) -> \
