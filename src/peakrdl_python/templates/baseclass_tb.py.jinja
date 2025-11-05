@@ -25,14 +25,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 from array import array as Array
 {% if asyncoutput %}
-import sys
 import asyncio
-if sys.version_info < (3, 8):
-    import asynctest  # type: ignore[import]
-else:
-    import unittest
-{% else %}
-import unittest
 {% endif %}
 import random
 {% if legacy_enum_type %}
@@ -91,10 +84,7 @@ def random_enum_reg_value(enum_class: type[{% if legacy_enum_type %}IntEnum{% el
     return random.choice(list(enum_class))
 
 {% if asyncoutput %}
-if sys.version_info < (3, 8):
-    TestCaseBase = asynctest.TestCase
-else:
-    TestCaseBase = unittest.IsolatedAsyncioTestCase
+TestCaseBase = unittest.IsolatedAsyncioTestCase
 {% else %}
 TestCaseBase = unittest.TestCase
 {% endif %}

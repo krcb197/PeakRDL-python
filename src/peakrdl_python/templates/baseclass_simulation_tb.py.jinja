@@ -24,12 +24,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 {% if legacy_block_access %}from array import array as Array{% endif %}
 {% if asyncoutput %}
-import sys
 import asyncio
-if sys.version_info < (3, 8):
-    import asynctest  # type: ignore[import]
-else:
-    import unittest
 {% else %}
 import unittest
 {% endif %}
