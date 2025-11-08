@@ -25,9 +25,8 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 {% if legacy_block_access %}from array import array as Array{% endif %}
 {% if asyncoutput %}
 import asyncio
-{% else %}
-import unittest
 {% endif %}
+import unittest
 
 
 from {{ peakrdl_python_lib(depth=lib_depth) }} import RegisterWriteVerifyError
@@ -42,14 +41,20 @@ from ._{{top_node.inst_name}}_test_base import {{top_node.inst_name}}_TestCase, 
 from ..reg_model import RegModel
 from ..sim import Simulator
 
-class {{top_node.inst_name}}_SimTestCase({{top_node.inst_name}}_TestCase): # type: ignore[valid-type,misc]
+{% if asyncoutput %}
+TestCaseBase = unittest.IsolatedAsyncioTestCase
+{% else %}
+TestCaseBase = unittest.TestCase
+{% endif %}
+
+class {{top_node.inst_name}}_SimTestCase(TestCaseBase): # type: ignore[valid-type,misc]
 
     def setUp(self) -> None:
         self.sim = Simulator(address=0)
         self.dut = RegModel(callbacks={% if asyncoutput %}AsyncCallbackSet{% else %}NormalCallbackSet{% endif %}{% if legacy_block_access %}Legacy{% endif %}(read_callback=self.sim.read,
                                                           write_callback=self.sim.write))
 
-class {{top_node.inst_name}}_SimTestCase_BlockAccess({{top_node.inst_name}}_TestCase_BlockAccess): # type: ignore[valid-type,misc]
+class {{top_node.inst_name}}_SimTestCase_BlockAccess(TestCaseBase): # type: ignore[valid-type,misc]
 
     def setUp(self) -> None:
         self.sim = Simulator(address=0)
