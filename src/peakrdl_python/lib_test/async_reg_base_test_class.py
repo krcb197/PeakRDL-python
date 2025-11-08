@@ -84,9 +84,13 @@ class AsyncLibTestBase(unittest.IsolatedAsyncioTestCase, ABC):
         # parent register are checked as part of `test_register_properties`
 
         if is_sw_readable:
+            if not isinstance(fut, (FieldAsyncReadOnly, FieldAsyncReadWrite)):
+                raise TypeError('Test can not proceed as the fut is not a readable field')
             await self.__single_field_read_test(fut=fut)
 
         if is_sw_writable:
+            if not isinstance(fut, (FieldAsyncWriteOnly, FieldAsyncReadWrite)):
+                raise TypeError('Test can not proceed as the fut is not a writable field')
             await self.__single_field_write_test(fut=fut)
 
     async def __single_field_read_test(
@@ -95,9 +99,6 @@ class AsyncLibTestBase(unittest.IsolatedAsyncioTestCase, ABC):
 
         with patch.object(self,'write_callback') as write_callback_mock, \
             patch.object(self,'read_callback', return_value=0) as read_callback_mock:
-
-            if not isinstance(fut, (FieldAsyncReadOnly, FieldAsyncReadWrite)):
-                raise TypeError('Test can not proceed as the fut is not a readable field')
 
             # read back - zero, this is achieved by setting the register to inverse bitmask
             read_callback_mock.return_value = fut.inverse_bitmask
@@ -145,8 +146,7 @@ class AsyncLibTestBase(unittest.IsolatedAsyncioTestCase, ABC):
             # pylint:disable-next=protected-access
             readable_reg = fut.parent_register._is_readable
 
-            if not isinstance(fut, (FieldAsyncWriteOnly, FieldAsyncReadWrite)):
-                raise TypeError('Test can not proceed as the fut is not a writable field')
+
 
             random_reg_value = random.randrange(0, fut.parent_register.max_value + 1)
             random_field_value = random.randrange(0, fut.max_value + 1)
@@ -173,6 +173,7 @@ class AsyncLibTestBase(unittest.IsolatedAsyncioTestCase, ABC):
                     accesswidth=fut.parent_register.accesswidth,
                     data=expected_reg_write_data(fut=fut,
                                                  reg_base_value=reg_base_value,
+                                                 readable_reg=readable_reg,
                                                  field_value=field_value))
 
 

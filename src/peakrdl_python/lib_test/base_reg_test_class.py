@@ -59,8 +59,6 @@ class LibTestBase(unittest.TestCase, ABC):
 
         with patch.object(self, 'write_callback') as write_callback_mock, \
                 patch.object(self, 'read_callback', return_value=0) as read_callback_mock:
-            if not isinstance(fut, (FieldReadOnly, FieldReadWrite)):
-                raise TypeError('Test can not proceed as the fut is not a readable field')
 
             # read back - zero, this is achieved by setting the register to inverse bitmask
             read_callback_mock.return_value = fut.inverse_bitmask
@@ -134,6 +132,7 @@ class LibTestBase(unittest.TestCase, ABC):
                     accesswidth=fut.parent_register.accesswidth,
                     data=expected_reg_write_data(fut=fut,
                                                  reg_base_value=reg_base_value,
+                                                 readable_reg=readable_reg,
                                                  field_value=field_value))
 
             # check invalid write values bounce
@@ -157,7 +156,11 @@ class LibTestBase(unittest.TestCase, ABC):
         # parent register are checked as part of `test_register_properties`
 
         if is_sw_readable:
+            if not isinstance(fut, (FieldReadOnly, FieldReadWrite)):
+                raise TypeError('Test can not proceed as the fut is not a readable field')
             self.__single_field_read_test(fut=fut)
 
         if is_sw_writable:
+            if not isinstance(fut, (FieldWriteOnly, FieldReadWrite)):
+                raise TypeError('Test can not proceed as the fut is not a writable field')
             self.__single_field_write_test(fut=fut)

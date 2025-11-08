@@ -38,7 +38,8 @@ def reverse_bits(value: int, number_bits: int) -> int:
 
 def expected_reg_write_data(fut: Field,
                             reg_base_value: int,
-                            field_value: int) -> int:
+                            field_value: int,
+                            readable_reg: bool) -> int:
     """
     Test utility function to generate the expected value to be write to a register, given a field
     update in the register
@@ -47,13 +48,11 @@ def expected_reg_write_data(fut: Field,
         fut: Field being updated
         reg_base_value: register value before the write
         field_value: new field value
+        readable_reg: is register readable
 
     Returns:
 
     """
-    # pylint:disable-next=protected-access
-    readable_reg = fut.parent_register._is_readable
-
     if readable_reg:
         expected_data = reg_base_value & fut.inverse_bitmask
         if fut.msb == fut.high:
