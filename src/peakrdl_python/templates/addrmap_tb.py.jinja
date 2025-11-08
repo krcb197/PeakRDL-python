@@ -404,8 +404,8 @@ class {{fq_block_name}}_single_access({{top_node.inst_name}}_TestCase): # type: 
         # test access operations (read and/or write) to field:
         # {{'.'.join(node.get_path_segments())}}
         with self.subTest(msg='field: {{'.'.join(node.get_path_segments())}}'):
-        with patch.object(self,'write_callback') as write_callback_mock, \
-            patch.object(self,'read_callback', return_value=0) as read_callback_mock:
+            with patch.object(self,'write_callback') as write_callback_mock, \
+                patch.object(self,'read_callback', return_value=0) as read_callback_mock:
 
                 {% if node.is_sw_readable %}
                 # read back test
