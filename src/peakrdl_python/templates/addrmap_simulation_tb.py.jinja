@@ -20,6 +20,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 {% from 'template_ultilities.py.jinja' import peakrdl_python_sim_lib with context %}
 {% from 'template_ultilities.py.jinja' import peakrdl_python_lib with context %}
+{% from 'template_ultilities.py.jinja' import peakrdl_python_lib_test with context %}
 {# the following defining the number relative steps up to the lib and sim_lib packages from the current file #}
 {% set lib_depth = 1 %}
 
@@ -49,6 +50,8 @@ from ._{{top_node.inst_name}}_test_base import random_enum_reg_value
 {% if not legacy_enum_type %}
 from {{ peakrdl_python_lib(depth=lib_depth) }} import SystemRDLEnum
 {% endif %}
+
+from {{ peakrdl_python_lib_test(depth=lib_depth) }} import reverse_bits
 
 class {{fq_block_name}}_single_access({{top_node.inst_name}}_SimTestCase): # type: ignore[valid-type,misc]
 
@@ -141,12 +144,12 @@ class {{fq_block_name}}_single_access({{top_node.inst_name}}_SimTestCase): # typ
 
             {%- if 'encode' in node.list_properties() %}
             random_field_value = random_enum_reg_value(self.dut.{{'.'.join(get_python_path_segments(node))}}.enum_cls)
-            random_value = (random.randrange(0, {{get_reg_max_value_hex_string(node.parent)}}+1) & {{get_field_inv_bitmask_hex_string(node)}}) | ({% if node.msb == node.high %}random_field_value.value{% else %}self._reverse_bits(value=random_field_value.value, number_bits={{node.width}}){% endif %} << {{node.low}})
+            random_value = (random.randrange(0, {{get_reg_max_value_hex_string(node.parent)}}+1) & {{get_field_inv_bitmask_hex_string(node)}}) | ({% if node.msb == node.high %}random_field_value.value{% else %}reverse_bits(value=random_field_value.value, number_bits={{node.width}}){% endif %} << {{node.low}})
             {% else %}
             random_value = random.randrange(0, {{get_reg_max_value_hex_string(node.parent)}}+1)
             random_field_value = (random_value & {{get_field_bitmask_hex_string(node)}}) >> {{node.low}}
                 {% if node.msb == node.low %}
-            random_field_value = self._reverse_bits(value=random_field_value, number_bits={{node.width}})
+            random_field_value = reverse_bits(value=random_field_value, number_bits={{node.width}})
                 {% endif %}
             {% endif %}
             sim_register.value = random_value
@@ -156,22 +159,22 @@ class {{fq_block_name}}_single_access({{top_node.inst_name}}_SimTestCase): # typ
             {%- if 'encode' in node.list_properties() %}
             random_field_value = random_enum_reg_value(self.dut.{{'.'.join(get_python_path_segments(node))}}.enum_cls)
             sim_field.value = random_field_value.value
-            self.assertEqual(sim_register.value, (previous_register_value & {{get_field_inv_bitmask_hex_string(node)}}) | ({% if node.msb == node.high %}random_field_value.value{% else %}self._reverse_bits(value=random_field_value.value, number_bits={{node.width}}){% endif %} << {{node.low}}))
+            self.assertEqual(sim_register.value, (previous_register_value & {{get_field_inv_bitmask_hex_string(node)}}) | ({% if node.msb == node.high %}random_field_value.value{% else %}reverse_bits(value=random_field_value.value, number_bits={{node.width}}){% endif %} << {{node.low}}))
             {% else %}
             random_field_value = random.randrange(0, {{get_field_max_value_hex_string(node)}}+1)
             sim_field.value = random_field_value
-            self.assertEqual(sim_register.value, (previous_register_value & {{get_field_inv_bitmask_hex_string(node)}}) | ({% if node.msb == node.high %}random_field_value{% else %}self._reverse_bits(value=random_field_value, number_bits={{node.width}}){% endif %} << {{node.low}}))
+            self.assertEqual(sim_register.value, (previous_register_value & {{get_field_inv_bitmask_hex_string(node)}}) | ({% if node.msb == node.high %}random_field_value{% else %}reverse_bits(value=random_field_value, number_bits={{node.width}}){% endif %} << {{node.low}}))
             {% endif %}
             self.assertEqual({% if asyncoutput %}await {%endif %}self.dut.{{'.'.join(get_python_path_segments(node))}}.read(), random_field_value)
             # hook up the call backs to check they work correctly
             {%- if 'encode' in node.list_properties() %}
             random_field_value = random_enum_reg_value(self.dut.{{'.'.join(get_python_path_segments(node))}}.enum_cls)
-            random_value = (random.randrange(0, {{get_reg_max_value_hex_string(node.parent)}}+1) & {{get_field_inv_bitmask_hex_string(node)}}) | ({% if node.msb == node.high %}random_field_value.value{% else %}self._reverse_bits(value=random_field_value.value, number_bits={{node.width}}){% endif %} << {{node.low}})
+            random_value = (random.randrange(0, {{get_reg_max_value_hex_string(node.parent)}}+1) & {{get_field_inv_bitmask_hex_string(node)}}) | ({% if node.msb == node.high %}random_field_value.value{% else %}reverse_bits(value=random_field_value.value, number_bits={{node.width}}){% endif %} << {{node.low}})
             {% else %}
             random_value = random.randrange(0, {{get_reg_max_value_hex_string(node.parent)}}+1)
             random_field_value = (random_value & {{get_field_bitmask_hex_string(node)}}) >> {{node.low}}
                 {% if node.msb == node.low %}
-            random_field_value = self._reverse_bits(value=random_field_value, number_bits={{node.width}})
+            random_field_value = reverse_bits(value=random_field_value, number_bits={{node.width}})
                 {% endif %}
             {% endif %}
             sim_register.value = random_value
@@ -199,12 +202,12 @@ class {{fq_block_name}}_single_access({{top_node.inst_name}}_SimTestCase): # typ
             sim_field.write_callback = None
             {%- if 'encode' in node.list_properties() %}
             random_field_value = random_enum_reg_value(self.dut.{{'.'.join(get_python_path_segments(node))}}.enum_cls)
-            random_value = (random.randrange(0, {{get_reg_max_value_hex_string(node.parent)}}+1) & {{get_field_inv_bitmask_hex_string(node)}}) | ({% if node.msb == node.high %}random_field_value.value{% else %}self._reverse_bits(value=random_field_value.value, number_bits={{node.width}}){% endif %} << {{node.low}})
+            random_value = (random.randrange(0, {{get_reg_max_value_hex_string(node.parent)}}+1) & {{get_field_inv_bitmask_hex_string(node)}}) | ({% if node.msb == node.high %}random_field_value.value{% else %}reverse_bits(value=random_field_value.value, number_bits={{node.width}}){% endif %} << {{node.low}})
             {% else %}
             random_value = random.randrange(0, {{get_reg_max_value_hex_string(node.parent)}}+1)
             random_field_value = (random_value & {{get_field_bitmask_hex_string(node)}}) >> {{node.low}}
                 {% if node.msb == node.low %}
-            random_field_value = self._reverse_bits(value=random_field_value, number_bits={{node.width}})
+            random_field_value = reverse_bits(value=random_field_value, number_bits={{node.width}})
                 {% endif %}
             {% endif %}
             sim_register.value = random_value
@@ -233,9 +236,9 @@ class {{fq_block_name}}_single_access({{top_node.inst_name}}_SimTestCase): # typ
             {% endif %}
             {% if asyncoutput %}await {%endif %}self.dut.{{'.'.join(get_python_path_segments(node))}}.write(random_field_value) # type: ignore[arg-type]
             {%- if 'encode' in node.list_properties() %}
-            self.assertEqual(sim_register.value, (inital_reg_random_value & {{get_field_inv_bitmask_hex_string(node)}}) | ({{get_field_bitmask_hex_string(node)}} & ({% if node.msb == node.high %}random_field_value.value{% else %}self._reverse_bits(value=random_field_value.value, number_bits={{node.width}}){% endif %} << {{node.low}})))
+            self.assertEqual(sim_register.value, (inital_reg_random_value & {{get_field_inv_bitmask_hex_string(node)}}) | ({{get_field_bitmask_hex_string(node)}} & ({% if node.msb == node.high %}random_field_value.value{% else %}reverse_bits(value=random_field_value.value, number_bits={{node.width}}){% endif %} << {{node.low}})))
             {% else %}
-            self.assertEqual(sim_register.value, (inital_reg_random_value & {{get_field_inv_bitmask_hex_string(node)}}) | ({{get_field_bitmask_hex_string(node)}} & ({% if node.msb == node.high %}random_field_value{% else %}self._reverse_bits(value=random_field_value, number_bits={{node.width}}){% endif %} << {{node.low}})))
+            self.assertEqual(sim_register.value, (inital_reg_random_value & {{get_field_inv_bitmask_hex_string(node)}}) | ({{get_field_bitmask_hex_string(node)}} & ({% if node.msb == node.high %}random_field_value{% else %}reverse_bits(value=random_field_value, number_bits={{node.width}}){% endif %} << {{node.low}})))
             {% endif %}
             register_write_callback.assert_not_called()
             register_read_callback.assert_not_called()
@@ -254,12 +257,12 @@ class {{fq_block_name}}_single_access({{top_node.inst_name}}_SimTestCase): # typ
             {% endif %}
             {% if asyncoutput %}await {%endif %}self.dut.{{'.'.join(get_python_path_segments(node))}}.write(random_field_value) # type: ignore[arg-type]
             {%- if 'encode' in node.list_properties() %}
-            self.assertEqual(sim_register.value, (inital_reg_random_value & {{get_field_inv_bitmask_hex_string(node)}}) | ({{get_field_bitmask_hex_string(node)}} & ({% if node.msb == node.high %}random_field_value.value{% else %}self._reverse_bits(value=random_field_value.value, number_bits={{node.width}}){% endif %} << {{node.low}})))
-            register_write_callback.assert_called_once_with(value=(reg_random_value & {{get_field_inv_bitmask_hex_string(node)}}) | ({{get_field_bitmask_hex_string(node)}} & ({% if node.msb == node.high %}random_field_value.value{% else %}self._reverse_bits(value=random_field_value.value, number_bits={{node.width}}){% endif %} << {{node.low}})))
+            self.assertEqual(sim_register.value, (inital_reg_random_value & {{get_field_inv_bitmask_hex_string(node)}}) | ({{get_field_bitmask_hex_string(node)}} & ({% if node.msb == node.high %}random_field_value.value{% else %}reverse_bits(value=random_field_value.value, number_bits={{node.width}}){% endif %} << {{node.low}})))
+            register_write_callback.assert_called_once_with(value=(reg_random_value & {{get_field_inv_bitmask_hex_string(node)}}) | ({{get_field_bitmask_hex_string(node)}} & ({% if node.msb == node.high %}random_field_value.value{% else %}reverse_bits(value=random_field_value.value, number_bits={{node.width}}){% endif %} << {{node.low}})))
             field_write_callback.assert_called_once_with(value=random_field_value.value) # type: ignore[attr-defined]
             {% else %}
-            self.assertEqual(sim_register.value, (inital_reg_random_value & {{get_field_inv_bitmask_hex_string(node)}}) | ({{get_field_bitmask_hex_string(node)}} & ({% if node.msb == node.high %}random_field_value{% else %}self._reverse_bits(value=random_field_value, number_bits={{node.width}}){% endif %} << {{node.low}})))
-            register_write_callback.assert_called_once_with(value=(reg_random_value & {{get_field_inv_bitmask_hex_string(node)}}) | ({{get_field_bitmask_hex_string(node)}} & ({% if node.msb == node.high %}random_field_value{% else %}self._reverse_bits(value=random_field_value, number_bits={{node.width}}){% endif %} << {{node.low}})))
+            self.assertEqual(sim_register.value, (inital_reg_random_value & {{get_field_inv_bitmask_hex_string(node)}}) | ({{get_field_bitmask_hex_string(node)}} & ({% if node.msb == node.high %}random_field_value{% else %}reverse_bits(value=random_field_value, number_bits={{node.width}}){% endif %} << {{node.low}})))
+            register_write_callback.assert_called_once_with(value=(reg_random_value & {{get_field_inv_bitmask_hex_string(node)}}) | ({{get_field_bitmask_hex_string(node)}} & ({% if node.msb == node.high %}random_field_value{% else %}reverse_bits(value=random_field_value, number_bits={{node.width}}){% endif %} << {{node.low}})))
             field_write_callback.assert_called_once_with(value=random_field_value)
             {% endif %}
             register_read_callback.assert_not_called()
@@ -279,9 +282,9 @@ class {{fq_block_name}}_single_access({{top_node.inst_name}}_SimTestCase): # typ
             {% endif %}
             {% if asyncoutput %}await {%endif %}self.dut.{{'.'.join(get_python_path_segments(node))}}.write(random_field_value) # type: ignore[arg-type]
             {%- if 'encode' in node.list_properties() %}
-            self.assertEqual(sim_register.value, (inital_reg_random_value & {{get_field_inv_bitmask_hex_string(node)}}) | ({{get_field_bitmask_hex_string(node)}} & ({% if node.msb == node.high %}random_field_value.value{% else %}self._reverse_bits(value=random_field_value.value, number_bits={{node.width}}){% endif %} << {{node.low}})))
+            self.assertEqual(sim_register.value, (inital_reg_random_value & {{get_field_inv_bitmask_hex_string(node)}}) | ({{get_field_bitmask_hex_string(node)}} & ({% if node.msb == node.high %}random_field_value.value{% else %}reverse_bits(value=random_field_value.value, number_bits={{node.width}}){% endif %} << {{node.low}})))
             {% else %}
-            self.assertEqual(sim_register.value, (inital_reg_random_value & {{get_field_inv_bitmask_hex_string(node)}}) | ({{get_field_bitmask_hex_string(node)}} & ({% if node.msb == node.high %}random_field_value{% else %}self._reverse_bits(value=random_field_value, number_bits={{node.width}}){% endif %} << {{node.low}})))
+            self.assertEqual(sim_register.value, (inital_reg_random_value & {{get_field_inv_bitmask_hex_string(node)}}) | ({{get_field_bitmask_hex_string(node)}} & ({% if node.msb == node.high %}random_field_value{% else %}reverse_bits(value=random_field_value, number_bits={{node.width}}){% endif %} << {{node.low}})))
             {% endif %}
             register_write_callback.assert_not_called()
             register_read_callback.assert_not_called()
