@@ -127,7 +127,7 @@ class AsyncLibTestBase(unittest.IsolatedAsyncioTestCase, CommonTestBase, ABC):
             read_callback_mock.return_value = random_value
             field_value = (random_value & fut.bitmask) >> fut.low
             if fut.msb == fut.high:
-                self.assertEqual(await fut.read(), random_field_value)
+                self.assertEqual(await fut.read(), field_value)
             else:
                 self.assertEqual(await fut.read(),
                                  reverse_bits(value=field_value, number_bits=fut.width))
