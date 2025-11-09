@@ -382,137 +382,18 @@ class {{fq_block_name}}_single_access({{top_node.inst_name}}_TestCase): # type: 
                 read_callback_mock.assert_not_called()
         {% endfor %}
 
-    {% if asyncoutput %}async {% endif %}def test_int_field_read_and_write(self) -> None:
+    {% if asyncoutput %}async {% endif %}def test_field_read_and_write(self) -> None:
         """
-        Check the ability to read and write to integer (non-encoded) fields
+        Check the ability to read and write to fields integer and enum
         """
-        {% for node in owned_elements.fields -%}
-            {%- if 'encode' not in node.list_properties() %}
+        {% for node in owned_elements.fields %}
         with self.subTest(msg='field: {{'.'.join(node.get_path_segments())}}'):
+            {%- if 'encode' not in node.list_properties() %}
             {% if asyncoutput %}await {%endif %}self._single_int_field_read_and_write_test(fut=self.dut.{{'.'.join(get_python_path_segments(node))}}, is_sw_readable={{node.is_sw_readable}}, is_sw_writable={{node.is_sw_writable}})
+            {%- else %}
+            {% if asyncoutput %}await {%endif %}self._single_enum_field_read_and_write_test(fut=self.dut.{{'.'.join(get_python_path_segments(node))}}, is_sw_readable={{node.is_sw_readable}}, is_sw_writable={{node.is_sw_writable}}, enum_definition={ {% for enum_entry in node.get_property('encode') %}'{{enum_entry.name.upper()}}':{{enum_entry.value}},{% endfor %} })
             {%- endif %}
         {%- endfor %}
-
-    {% if uses_enum %}
-    {% if asyncoutput %}async {% endif %}def test_enum_field_read_and_write(self) -> None:
-        """
-        Check the ability to read and write to enum fields
-        """
-    {% for node in owned_elements.fields -%}
-        {%- if 'encode' in node.list_properties() %}
-
-        # test access operations (read and/or write) to field:
-        # {{'.'.join(node.get_path_segments())}}
-        with self.subTest(msg='field: {{'.'.join(node.get_path_segments())}}'):
-            with patch.object(self,'write_callback') as write_callback_mock, \
-                patch.object(self,'read_callback', return_value=0) as read_callback_mock:
-
-                {% if node.is_sw_readable %}
-                # read back test
-                for enum_name, enum_value in ({% for enum_entry in node.get_property('encode') %}('{{enum_entry.name.upper()}}',{{enum_entry.value}}),{% endfor %}):
-                    random_reg_value = random.randrange(0, {{get_reg_max_value_hex_string(node.parent)}} + 1)
-                    read_callback_mock.reset_mock()
-                    {% if node.msb == node.high -%}
-                    read_callback_mock.return_value = (random_reg_value & {{get_field_inv_bitmask_hex_string(node)}}) | \
-                                                      ({{get_field_bitmask_hex_string(node)}} & (enum_value << {{node.low}} ))
-                    {% else -%}
-                    read_callback_mock.return_value = (random_reg_value & {{get_field_inv_bitmask_hex_string(node)}}) | \
-                                                      ({{get_field_bitmask_hex_string(node)}} & (reverse_bits(value=enum_value, number_bits={{node.width}}) << {{node.low}} ))
-                    {% endif -%}
-
-                    self.assertEqual({% if asyncoutput %}await {%endif %}self.dut.{{'.'.join(get_python_path_segments(node))}}.read(), # type: ignore[union-attr]
-                                     self.dut.{{'.'.join(get_python_path_segments(node))}}.enum_cls[enum_name] # type: ignore[attr-defined]
-                                     )
-                    read_callback_mock.assert_called_once_with(
-                                        addr={{node.parent.absolute_address}},
-                                        width={{node.parent.size * 8}},
-                                        accesswidth=self.dut.{{'.'.join(get_python_path_segments(node))}}.parent_register.accesswidth) # type: ignore[union-attr]
-
-
-                {# only run this if there are field values that are not part of the enum #}
-                {% if node.get_property('encode').__len__() < (2**node.width) %}
-                # check that other values of the field int that don't appear in the enum generate
-                # an error
-                    {% if node.width <= 8 %}
-                    {# for enumerated fields of up to 8 bit all combinations can be exhaustively tested #}
-                for field_value in set(range({{get_field_max_value_hex_string(node)}}+1)) - { {%- for value_of_enum_needed in node.get_property('encode') -%}{{value_of_enum_needed.value}}{% if not loop.last %}, {% endif %}{%- endfor %} }:
-                    {% else %}
-                    {# for enumerated fields of with larger sizes look for up to 100 illegal values #}
-                for field_value in { random.randint(0, {{get_field_max_value_hex_string(node)}}+1) for _ in range(100)  } - { {%- for value_of_enum_needed in node.get_property('encode') -%}{{value_of_enum_needed.value}}{% if not loop.last %}, {% endif %}{%- endfor %} }:
-                    {% endif %}
-                    read_callback_mock.reset_mock()
-                    random_reg_value = random.randrange(0, {{get_reg_max_value_hex_string(node.parent)}} + 1)
-                    {% if node.msb == node.high -%}
-                    read_callback_mock.return_value = (random_reg_value & {{get_field_inv_bitmask_hex_string(node)}}) | \
-                                     ({{get_field_bitmask_hex_string(node)}} & (field_value << {{node.low}}))
-                    {% else -%}
-                    read_callback_mock.return_value = (random_reg_value & {{get_field_inv_bitmask_hex_string(node)}}) | \
-                                     ({{get_field_bitmask_hex_string(node)}} & (reverse_bits(value=field_value, number_bits={{node.width}}) << {{node.low}}))
-                    {% endif -%}
-                    with self.assertRaises(ValueError):
-                        _ = {% if asyncoutput %}await {%endif %}self.dut.{{'.'.join(get_python_path_segments(node))}}.read() # type: ignore[union-attr]
-                    read_callback_mock.assert_called_once_with(
-                                        addr={{node.parent.absolute_address}},
-                                        width={{node.parent.size * 8}},
-                                        accesswidth=self.dut.{{'.'.join(get_python_path_segments(node))}}.parent_register.accesswidth) # type: ignore[union-attr]
-                {% endif %}
-                write_callback_mock.assert_not_called()
-                {% endif %}
-
-                {% if node.is_sw_writable %}
-                {% for value_of_enum_needed in node.get_property('encode') %}
-                random_reg_value = random.randrange(0, {{get_reg_max_value_hex_string(node.parent)}} + 1)
-                read_callback_mock.reset_mock()
-                write_callback_mock.reset_mock()
-                read_callback_mock.return_value = random_reg_value
-
-                {% if asyncoutput %}await {%endif %}self.dut.{{'.'.join(get_python_path_segments(node))}}.write(self.dut.{{'.'.join(get_python_path_segments(node))}}.enum_cls.{{value_of_enum_needed.name.upper()}})
-
-                {% if ( node.width < (node.parent.size*8)) and (node.parent.has_sw_readable) %}
-                read_callback_mock.assert_called_once()
-                {% else %}
-                read_callback_mock.assert_not_called()
-                {%- endif %}
-
-                {% if node.parent.has_sw_readable -%}
-                {% if node.msb == node.high -%}
-                write_callback_mock.assert_called_once_with(
-                                    addr={{node.parent.absolute_address}},
-                                    width={{node.parent.size * 8}},
-                                    accesswidth=self.dut.{{'.'.join(get_python_path_segments(node))}}.parent_register.accesswidth, # type: ignore[union-attr]
-                                    data=(random_reg_value & {{get_field_inv_bitmask_hex_string(node)}}) | \
-                                         ({{get_field_bitmask_hex_string(node)}} & ({{value_of_enum_needed.value}} << {{node.low}})))
-                {% else -%}
-                write_callback_mock.assert_called_once_with(
-                                    addr={{node.parent.absolute_address}},
-                                    width={{node.parent.size * 8}},
-                                    accesswidth=self.dut.{{'.'.join(get_python_path_segments(node))}}.parent_register.accesswidth, # type: ignore[union-attr]
-                                    data=(random_reg_value & {{get_field_inv_bitmask_hex_string(node)}}) | \
-                                         ({{get_field_bitmask_hex_string(node)}} & (reverse_bits(value={{value_of_enum_needed.value}}, number_bits={{node.width}}) << {{node.low}})))
-                {% endif -%}
-                {% else -%}
-                # if the register is not readable, the value is simply written
-                {% if node.msb == node.high -%}
-                write_callback_mock.assert_called_once_with(
-                                    addr={{node.parent.absolute_address}},
-                                    width={{node.parent.size * 8}},
-                                    accesswidth=self.dut.{{'.'.join(get_python_path_segments(node))}}.parent_register.accesswidth, # type: ignore[union-attr]
-                                    data={{value_of_enum_needed.value}} << {{node.low}})
-                {% else -%}
-                write_callback_mock.assert_called_once_with(
-                                    addr={{node.parent.absolute_address}},
-                                    width={{node.parent.size * 8}},
-                                    accesswidth=self.dut.{{'.'.join(get_python_path_segments(node))}}.parent_register.accesswidth, # type: ignore[union-attr]
-                                    data=reverse_bits(value={{value_of_enum_needed.value}}, number_bits={{node.width}}) << {{node.low}})
-                {% endif -%}
-                {% endif %}
-
-                {% endfor %}
-                {% endif %}
-
-        {%- endif %}
-    {%- endfor %}
-    {%- endif %}
 
     {% if asyncoutput %}async {% endif %}def test_register_read_fields(self) -> None:
         """
