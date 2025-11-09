@@ -20,18 +20,66 @@ Python tool. It provide the base class common to both the async and non-async ve
 """
 import unittest
 from abc import ABC
-from typing import Union
-from unittest.mock import patch
-from itertools import product
+from typing import Union, Optional
 
 from ..lib import FieldReadWrite, FieldReadOnly, FieldWriteOnly
 from ..lib import FieldEnumReadWrite, FieldEnumReadOnly, FieldEnumWriteOnly
-from ..sim_lib.dummy_callbacks import dummy_read
-from ..sim_lib.dummy_callbacks import dummy_write
-
-from .utilities import reverse_bits, expected_reg_write_data
-from .utilities import reg_value_for_field_read_with_random_base
-from .utilities import random_field_value, random_field_parent_reg_value
+from ..lib import FieldAsyncReadOnly, FieldAsyncWriteOnly, FieldAsyncReadWrite
+from ..lib import FieldEnumAsyncReadOnly, FieldEnumAsyncWriteOnly, FieldEnumAsyncReadWrite
 
 class CommonTestBase(unittest.TestCase, ABC):
-    ...
+
+    def _single_field_property_test(self, *,
+                                    fut: Union[FieldReadWrite,
+                                               FieldReadOnly,
+                                               FieldWriteOnly,
+                                               FieldEnumReadWrite,
+                                               FieldEnumReadOnly,
+                                               FieldEnumWriteOnly,
+                                               FieldAsyncReadOnly,
+                                               FieldAsyncWriteOnly,
+                                               FieldAsyncReadWrite,
+                                               FieldEnumAsyncReadOnly,
+                                               FieldEnumAsyncWriteOnly,
+                                               FieldEnumAsyncReadWrite],
+                                    lsb: int,
+                                    msb: int,
+                                    low: int,
+                                    high: int,
+                                    bitmask: int,
+                                    inverse_bitmask: int,
+                                    max_value: int,
+                                    is_volatile: bool,
+                                    default: Optional[int]
+
+                                      ):
+        self.assertEqual(fut.lsb, lsb)
+        self.assertEqual(fut.msb, msb)
+        self.assertEqual(fut.low, low)
+        self.assertEqual(fut.high, high)
+        self.assertEqual(fut.bitmask, bitmask)
+        self.assertEqual(fut.inverse_bitmask, inverse_bitmask)
+        self.assertEqual(fut.max_value, max_value)
+        self.assertEqual(fut.is_volatile, is_volatile)
+
+        if default is None:
+            self.assertIsNone(fut.default)
+        else:
+            if isinstance(fut, (FieldEnumReadWrite,
+                                FieldEnumReadOnly,
+                                FieldEnumWriteOnly,
+                                FieldEnumAsyncReadOnly,
+                                FieldEnumAsyncWriteOnly,
+                                FieldEnumAsyncReadWrite)):
+                # pylint does not realise this is a class being returned rather than an object, so
+                # is unhappy with the name
+                # pylint:disable-next=invalid-name
+                EnumCls = fut.enum_cls
+                if default in list(EnumCls.values()):
+                    self.assertEqual(fut.default, EnumCls(default))
+                else:
+                    # this is a special case if the default value for the field does not map
+                    # to a legal value of the encoding
+                    self.assertIsNone(fut.default)
+            else:
+                self.assertEqual(fut.default, default)

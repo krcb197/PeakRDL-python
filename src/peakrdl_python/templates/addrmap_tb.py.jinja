@@ -179,42 +179,6 @@ class {{fq_block_name}}_single_access({{top_node.inst_name}}_TestCase): # type: 
             {% if 'accesswidth' in node.list_properties() -%}self.assertEqual(mut.accesswidth, {{node.get_property('accesswidth')}}){%- else -%}self.assertEqual(mut.accesswidth, mut.accesswidth){%- endif %}
         {% endfor %}
 
-    def test_field_properties(self)  -> None:
-        """
-        walk the address map and check:
-        - that the lsb and msb of every field is correct
-        - that where default values are provided they are applied correctly
-        """
-        fut:Field
-        {% for node in owned_elements.fields -%}
-        with self.subTest(msg='field: {{'.'.join(node.get_path_segments())}}'):
-            # test properties of field: {{'.'.join(node.get_path_segments())}}
-            fut = self.dut.{{'.'.join(get_python_path_segments(node))}} # type: ignore[union-attr]
-            if not isinstance(fut, Field):
-                raise TypeError('This test relies on node being of type Field')
-            self.assertEqual(fut.lsb,{{node.lsb}})
-            self.assertEqual(fut.msb,{{node.msb}})
-            self.assertEqual(fut.low,{{node.low}})
-            self.assertEqual(fut.high,{{node.high}})
-            self.assertEqual(fut.bitmask,{{get_field_bitmask_hex_string(node)}})
-            self.assertEqual(fut.inverse_bitmask,{{get_field_inv_bitmask_hex_string(node)}})
-            self.assertEqual(fut.max_value,{{get_field_max_value_hex_string(node)}})
-                {% if 'encode' in node.list_properties() %}
-                {# only attempt to test enum fields if the reset value is legal for the field #}
-                    {% if get_field_default_value(node) in get_enum_values(node.get_property('encode')) %}
-            if fut.default is None:
-                # This is needed to ensure type checking with mypy is happy
-                raise TypeError('The default should be set')
-            self.assertEqual(fut.default.value,{{get_field_default_value(node)}})
-                    {% else %}
-            self.assertIsNone(fut.default)
-                    {% endif %}
-                {% else %}
-            self.assertEqual(fut.default,{{get_field_default_value(node)}})
-                {% endif %}
-            self.assertEqual(fut.is_volatile,{{node.is_hw_writable}})
-        {% endfor %}
-
     def test_field_encoding_properties(self)  -> None:
         """
         Check that enumeration has the name and desc meta data from the systemRDL
@@ -382,12 +346,13 @@ class {{fq_block_name}}_single_access({{top_node.inst_name}}_TestCase): # type: 
                 read_callback_mock.assert_not_called()
         {% endfor %}
 
-    {% if asyncoutput %}async {% endif %}def test_field_read_and_write(self) -> None:
+    {% if asyncoutput %}async {% endif %}def test_field(self) -> None:
         """
-        Check the ability to read and write to fields integer and enum
+        Check the properties and function (read and write) on the fields both integer and enum
         """
         {% for node in owned_elements.fields %}
         with self.subTest(msg='field: {{'.'.join(node.get_path_segments())}}'):
+            self._single_field_property_test(fut=self.dut.{{'.'.join(get_python_path_segments(node))}}, lsb={{node.lsb}}, msb={{node.msb}}, low={{node.low}}, high={{node.high}}, bitmask={{get_field_bitmask_hex_string(node)}}, inverse_bitmask={{get_field_inv_bitmask_hex_string(node)}}, max_value={{get_field_max_value_hex_string(node)}}, is_volatile={{node.is_hw_writable}}, default={{get_field_default_value(node)}})
             {%- if 'encode' not in node.list_properties() %}
             {% if asyncoutput %}await {%endif %}self._single_int_field_read_and_write_test(fut=self.dut.{{'.'.join(get_python_path_segments(node))}}, is_sw_readable={{node.is_sw_readable}}, is_sw_writable={{node.is_sw_writable}})
             {%- else %}
