@@ -17,6 +17,8 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 This package It provide methods used by the tests
 """
+import random
+
 from ..lib import Field
 
 def reverse_bits(value: int, number_bits: int) -> int:
@@ -67,3 +69,40 @@ def expected_reg_write_data(fut: Field,
     if fut.msb == fut.high:
         return field_value << fut.low
     return reverse_bits(value=field_value, number_bits=fut.width) << fut.low
+
+def reg_value_for_field_read(fut: Field,reg_base_value: int, field_value: int) -> int:
+    """
+    Return the register value that when a field read occurs will result in the field
+    read providing a value of field_value
+    """
+    reg_value = reg_base_value & fut.inverse_bitmask
+    if fut.msb == fut.high:
+        return reg_value | fut.bitmask & (field_value << fut.low)
+
+    return reg_value | fut.bitmask & (reverse_bits(value=field_value,
+                                             number_bits=fut.width) << fut.low)
+
+def reg_value_for_field_read_with_random_base(fut: Field, field_value: int) -> int:
+    """
+    Return the register value that when a field read occurs will result in the field
+    read providing a value of field_value. With all other register bits being in a random
+    state
+    """
+    return reg_value_for_field_read(
+        fut=fut,
+        field_value=field_value,
+        reg_base_value=random_field_parent_reg_value(fut))
+
+def random_field_value(fut: Field) -> int:
+    """
+    Return a random integer values within the legal range for a field
+    """
+    return random.randint(0, fut.max_value)
+
+def random_field_parent_reg_value(fut: Field) -> int:
+    """
+    Return a random integer values within the legal range for a field's register parent
+    """
+    # this needs a mypy ignore because the parent type of the register is not defined at the
+    # field level, as it can be sync or async
+    return random.randint(0, fut.parent_register.max_value)  # type: ignore[attr-defined]
