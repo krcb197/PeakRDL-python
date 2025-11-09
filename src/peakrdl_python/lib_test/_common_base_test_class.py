@@ -78,7 +78,7 @@ class CommonTestBase(unittest.TestCase, ABC):
                 # is unhappy with the name
                 # pylint:disable-next=invalid-name
                 EnumCls = fut.enum_cls
-                if default in list(EnumCls.values()):
+                if default in [item.value for item in fut.enum_cls]:
                     self.assertEqual(fut.default, EnumCls(default))
                 else:
                     # this is a special case if the default value for the field does not map
