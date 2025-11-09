@@ -356,7 +356,8 @@ class {{fq_block_name}}_single_access({{top_node.inst_name}}_TestCase): # type: 
             {%- if 'encode' not in node.list_properties() %}
             {% if asyncoutput %}await {%endif %}self._single_int_field_read_and_write_test(fut=self.dut.{{'.'.join(get_python_path_segments(node))}}, is_sw_readable={{node.is_sw_readable}}, is_sw_writable={{node.is_sw_writable}})
             {%- else %}
-            {% if asyncoutput %}await {%endif %}self._single_enum_field_read_and_write_test(fut=self.dut.{{'.'.join(get_python_path_segments(node))}}, is_sw_readable={{node.is_sw_readable}}, is_sw_writable={{node.is_sw_writable}}, enum_definition={ {% for enum_entry in node.get_property('encode') %}'{{enum_entry.name.upper()}}':{{enum_entry.value}},{% endfor %} })
+            {% if asyncoutput %}await {%endif %}self._single_enum_field_read_and_write_test(fut=self.dut.{{'.'.join(get_python_path_segments(node))}}, # type: ignore[arg-type]
+                                                                                            is_sw_readable={{node.is_sw_readable}}, is_sw_writable={{node.is_sw_writable}}, enum_definition={ {% for enum_entry in node.get_property('encode') %}'{{enum_entry.name.upper()}}':{{enum_entry.value}},{% endfor %} })
             {%- endif %}
         {%- endfor %}
 
