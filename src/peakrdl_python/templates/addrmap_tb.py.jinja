@@ -148,20 +148,6 @@ class {{fq_block_name}}_single_access({{top_node.inst_name}}_TestCase): # type: 
             self.assertEqual(self.dut.{{'.'.join(get_python_path_segments(block))}}.size, {{block.size}}) # type: ignore[union-attr]
         {% endif %}
 
-
-    def test_register_properties(self)  -> None:
-        """
-        Walk the address map and check the address, size and accesswidth of every register is
-        correct
-        """
-        {% for node in owned_elements.registers -%}
-        with self.subTest(msg='register: {{'.'.join(node.get_path_segments())}}'):
-            self.assertEqual(self.dut.{{'.'.join(get_python_path_segments(node))}}.address, {{node.absolute_address}}) # type: ignore[union-attr]
-            self.assertEqual(self.dut.{{'.'.join(get_python_path_segments(node))}}.width, {{node.size * 8}}) # type: ignore[union-attr]
-            self.assertEqual(self.dut.{{'.'.join(get_python_path_segments(node))}}.size, {{node.size}}) # type: ignore[union-attr]
-            {% if 'accesswidth' in node.list_properties() -%}self.assertEqual(self.dut.{{'.'.join(get_python_path_segments(node))}}.accesswidth, {{node.get_property('accesswidth')}}){%- else -%} self.assertEqual(self.dut.{{'.'.join(get_python_path_segments(node))}}.accesswidth, self.dut.{{'.'.join(get_python_path_segments(node))}}.accesswidth){%- endif %} # type: ignore[union-attr]
-        {% endfor %}
-
     def test_memory_properties(self)  -> None:
         """
         Walk the address map and check the address, size and accesswidth of every memory is
@@ -239,6 +225,7 @@ class {{fq_block_name}}_single_access({{top_node.inst_name}}_TestCase): # type: 
         rut: Reg
         {% for node in owned_elements.registers -%}
         with self.subTest(msg='register: {{'.'.join(node.get_path_segments())}}'):
+            self._single_register_property_test(rut=self.dut.{{'.'.join(get_python_path_segments(node))}}, address={{node.absolute_address}}, width={{node.size * 8}}, accesswidth={% if 'accesswidth' in node.list_properties() -%}{{node.get_property('accesswidth')}}{% else %}None{%- endif %})
             {% if asyncoutput %}await {%endif %}self._single_register_read_and_write_test(rut=self.dut.{{'.'.join(get_python_path_segments(node))}}, has_sw_readable={{node.has_sw_readable}}, has_sw_writable={{node.has_sw_writable}})
         {% endfor %}
 
