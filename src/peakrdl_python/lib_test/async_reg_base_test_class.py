@@ -30,8 +30,11 @@ from unittest.mock import patch
 from itertools import product
 
 from ..lib import FieldAsyncReadOnly, FieldAsyncWriteOnly, FieldAsyncReadWrite
+from ..lib import RegAsyncReadOnly, RegAsyncReadWrite, RegAsyncWriteOnly
 from ..sim_lib.dummy_callbacks import async_dummy_read
 from ..sim_lib.dummy_callbacks import async_dummy_write
+
+from .utilities import random_reg_value
 
 
 from .utilities import reverse_bits, expected_reg_write_data
@@ -183,3 +186,69 @@ class AsyncLibTestBase(unittest.IsolatedAsyncioTestCase, ABC):
 
                 with self.assertRaises(ValueError):
                     await fut.write(-1)
+
+    async def _single_register_read_and_write_test(self,
+                                             rut: Union[RegAsyncReadOnly,
+                                                        RegAsyncReadWrite,
+                                                        RegAsyncWriteOnly],
+                                             has_sw_readable: bool,
+                                             has_sw_writable: bool) -> None:
+
+        # the register properties are tested separately so are available to be used here
+
+        if has_sw_readable:
+            if not isinstance(rut, (RegAsyncReadOnly, RegAsyncReadWrite)):
+                raise TypeError('Test can not proceed as the fut is not a readable field')
+            await self.__single_reg_read_test(rut=rut)
+        else:
+            # test that a non-readable register has no read method and
+            # attempting one generates and error
+            with self.assertRaises(AttributeError):
+                _= rut.read(0)  # type: ignore[union-attr,call-arg]
+
+        if has_sw_writable:
+            if not isinstance(rut, (RegAsyncWriteOnly, RegAsyncReadWrite)):
+                raise TypeError('Test can not proceed as the fut is not a writable field')
+            await self.__single_reg_write_test(rut=rut)
+        else:
+            # test that a non-writable register has no write method and
+            # attempting one generates and error
+            with self.assertRaises(AttributeError):
+                await rut.write(0)  # type: ignore[union-attr,call-arg]
+
+    async def __single_reg_read_test(self, rut: Union[RegAsyncReadOnly, RegAsyncReadWrite]) -> None:
+
+        with patch.object(self, 'write_callback') as write_callback_mock, \
+                patch.object(self, 'read_callback', return_value=1) as read_callback_mock:
+            for reg_value in [0, 1, rut.max_value, random_reg_value(rut)]:
+                read_callback_mock.reset_mock()
+                read_callback_mock.return_value = reg_value
+                self.assertEqual(await rut.read(), reg_value)
+                read_callback_mock.assert_called_once_with(
+                    addr=rut.address,
+                    width=rut.width,
+                    accesswidth=rut.accesswidth)
+            write_callback_mock.assert_not_called()
+
+    async def __single_reg_write_test(self,
+                                      rut: Union[RegAsyncWriteOnly, RegAsyncReadWrite]) -> None:
+        with patch.object(self, 'write_callback') as write_callback_mock, \
+                patch.object(self, 'read_callback', return_value=0) as read_callback_mock:
+            for reg_value in [0, 1, rut.max_value, random_reg_value(rut)]:
+                write_callback_mock.reset_mock()
+                read_callback_mock.return_value = reg_value
+                await rut.write(reg_value)
+                write_callback_mock.assert_called_once_with(
+                    addr=rut.address,
+                    width=rut.width,
+                    accesswidth=rut.accesswidth,
+                    data=reg_value)
+            read_callback_mock.assert_not_called()
+
+            # test writing a value beyond the register range is blocked with an exception
+            # being raised
+            with self.assertRaises(ValueError):
+                await rut.write(-1)
+
+            with self.assertRaises(ValueError):
+                await rut.write(rut.max_value + 1)

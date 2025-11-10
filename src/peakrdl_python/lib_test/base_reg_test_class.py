@@ -26,10 +26,12 @@ from unittest.mock import patch
 from itertools import product
 
 from ..lib import FieldReadWrite, FieldReadOnly, FieldWriteOnly
+from ..lib import RegReadOnly, RegReadWrite, RegWriteOnly
 from ..sim_lib.dummy_callbacks import dummy_read
 from ..sim_lib.dummy_callbacks import dummy_write
 
 from .utilities import reverse_bits, expected_reg_write_data
+from .utilities import random_reg_value
 
 class LibTestBase(unittest.TestCase, ABC):
     """
@@ -164,3 +166,65 @@ class LibTestBase(unittest.TestCase, ABC):
             if not isinstance(fut, (FieldWriteOnly, FieldReadWrite)):
                 raise TypeError('Test can not proceed as the fut is not a writable field')
             self.__single_field_write_test(fut=fut)
+
+    def _single_register_read_and_write_test(self,
+                                             rut: Union[RegReadOnly, RegReadWrite, RegWriteOnly],
+                                             has_sw_readable: bool,
+                                             has_sw_writable: bool) -> None:
+
+        # the register properties are tested separately so are available to be used here
+
+        if has_sw_readable:
+            if not isinstance(rut, (RegReadOnly, RegReadWrite)):
+                raise TypeError('Test can not proceed as the fut is not a readable field')
+            self.__single_reg_read_test(rut=rut)
+        else:
+            # test that a non-readable register has no read method and
+            # attempting one generates and error
+            with self.assertRaises(AttributeError):
+                _= rut.read(0)  # type: ignore[union-attr,call-arg]
+
+        if has_sw_writable:
+            if not isinstance(rut, (RegWriteOnly, RegReadWrite)):
+                raise TypeError('Test can not proceed as the fut is not a writable field')
+            self.__single_reg_write_test(rut=rut)
+        else:
+            # test that a non-writable register has no write method and
+            # attempting one generates and error
+            with self.assertRaises(AttributeError):
+                rut.write(0)  # type: ignore[union-attr,call-arg]
+
+    def __single_reg_read_test(self, rut: Union[RegReadOnly, RegReadWrite]) -> None:
+
+        with patch.object(self, 'write_callback') as write_callback_mock, \
+                patch.object(self, 'read_callback', return_value=1) as read_callback_mock:
+            for reg_value in [0, 1, rut.max_value, random_reg_value(rut)]:
+                read_callback_mock.reset_mock()
+                read_callback_mock.return_value = reg_value
+                self.assertEqual(rut.read(), reg_value)
+                read_callback_mock.assert_called_once_with(
+                    addr=rut.address,
+                    width=rut.width,
+                    accesswidth=rut.accesswidth)
+            write_callback_mock.assert_not_called()
+
+    def __single_reg_write_test(self, rut: Union[RegWriteOnly, RegReadWrite]) -> None:
+        with patch.object(self, 'write_callback') as write_callback_mock, \
+                patch.object(self, 'read_callback', return_value=0) as read_callback_mock:
+            for reg_value in [0, 1, rut.max_value, random_reg_value(rut)]:
+                write_callback_mock.reset_mock()
+                read_callback_mock.return_value = reg_value
+                rut.write(reg_value)
+                write_callback_mock.assert_called_once_with(
+                    addr=rut.address,
+                    width=rut.width,
+                    accesswidth=rut.accesswidth,
+                    data=reg_value)
+            read_callback_mock.assert_not_called()
+
+            # test writing a value beyond the register range is blocked with an exception being raised
+            with self.assertRaises(ValueError):
+                rut.write(-1)
+
+            with self.assertRaises(ValueError):
+                rut.write(rut.max_value + 1)

@@ -17,7 +17,10 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 This package It provide methods used by the tests
 """
+import random
+
 from ..lib import Field
+from ..lib.base_register import BaseReg
 
 def reverse_bits(value: int, number_bits: int) -> int:
     """
@@ -67,3 +70,9 @@ def expected_reg_write_data(fut: Field,
     if fut.msb == fut.high:
         return field_value << fut.low
     return reverse_bits(value=field_value, number_bits=fut.width) << fut.low
+
+def random_reg_value(rut: BaseReg) -> int:
+    """
+    Returns a random register value
+    """
+    return random.randint(0, rut.max_value)
