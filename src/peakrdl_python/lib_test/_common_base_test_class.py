@@ -26,6 +26,7 @@ from ..lib import FieldReadWrite, FieldReadOnly, FieldWriteOnly
 from ..lib import FieldEnumReadWrite, FieldEnumReadOnly, FieldEnumWriteOnly
 from ..lib import FieldAsyncReadOnly, FieldAsyncWriteOnly, FieldAsyncReadWrite
 from ..lib import FieldEnumAsyncReadOnly, FieldEnumAsyncWriteOnly, FieldEnumAsyncReadWrite
+from ..lib.base_register import BaseReg
 
 class CommonTestBase(unittest.TestCase, ABC):
     """
@@ -86,3 +87,15 @@ class CommonTestBase(unittest.TestCase, ABC):
                     self.assertIsNone(fut.default)
             else:
                 self.assertEqual(fut.default, default)
+
+    def _single_register_property_test(self, *,
+                                       rut: BaseReg,
+                                       address: int,
+                                       width: int,
+                                       accesswidth: Optional[int]) -> None:
+        self.assertEqual(rut.address, address)
+        self.assertEqual(rut.width, width)
+        if accesswidth is not None:
+            self.assertEqual(rut.accesswidth, accesswidth)
+        else:
+            self.assertEqual(rut.accesswidth, width)
