@@ -258,7 +258,7 @@ class AsyncLibTestBase(unittest.IsolatedAsyncioTestCase, CommonTestBase, ABC):
 
             for enum_name, enum_value in enum_definition.items():
                 reg_value = random_field_parent_reg_value(fut)
-                read_callback_mock.return_value = random_reg_value
+                read_callback_mock.return_value = reg_value
                 await fut.write(EnumCls[enum_name])
 
                 # the read is skipped if the register is not readable or has the same width
