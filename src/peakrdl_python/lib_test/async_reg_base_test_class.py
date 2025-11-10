@@ -257,7 +257,7 @@ class AsyncLibTestBase(unittest.IsolatedAsyncioTestCase, CommonTestBase, ABC):
                 patch.object(self, 'read_callback', return_value=0) as read_callback_mock:
 
             for enum_name, enum_value in enum_definition.items():
-                random_reg_value = random_field_parent_reg_value(fut)
+                reg_value = random_field_parent_reg_value(fut)
                 read_callback_mock.return_value = random_reg_value
                 await fut.write(EnumCls[enum_name])
 
@@ -276,7 +276,7 @@ class AsyncLibTestBase(unittest.IsolatedAsyncioTestCase, CommonTestBase, ABC):
                     width=fut.parent_register.width,
                     accesswidth=fut.parent_register.accesswidth,
                     data=expected_reg_write_data(fut=fut,
-                                                 reg_base_value=random_reg_value,
+                                                 reg_base_value=reg_value,
                                                  readable_reg=readable_reg,
                                                  field_value=enum_value))
 
