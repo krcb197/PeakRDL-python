@@ -140,4 +140,5 @@ def get_field_inv_bitmask(field: Field) -> str:
         inverse bitmask as a string prefixed by 0x
 
     """
-    return field.parent_register.max_value ^ get_field_bitmask_int(field)
+    reg_max_value = field.parent_register.max_value  # type: ignore[attr-defined]
+    return reg_max_value ^ get_field_bitmask_int(field)
