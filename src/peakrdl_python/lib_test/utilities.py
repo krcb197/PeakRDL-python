@@ -21,6 +21,7 @@ import random
 
 from ..lib import Field
 from ..lib.base_register import BaseReg
+from ..lib.utility_functions import calculate_bitmask
 
 def reverse_bits(value: int, number_bits: int) -> int:
     """
@@ -113,3 +114,30 @@ def random_reg_value(rut: BaseReg) -> int:
     Returns a random register value
     """
     return random.randint(0, rut.max_value)
+
+
+def get_field_bitmask_int(field: Field) -> int:
+    """
+    Integer bitmask for a field
+
+    Args:
+        field: node to be analysed
+
+    Returns:
+        bitmask as a string prefixed by 0x
+
+    """
+    return calculate_bitmask(high=field.high, low=field.low)
+
+def get_field_inv_bitmask(field: Field) -> str:
+    """
+     Integer inverse bitmask for a field
+
+    Args:
+        field: node to be analysed
+
+    Returns:
+        inverse bitmask as a string prefixed by 0x
+
+    """
+    return field.parent_register.max_value ^ get_field_bitmask_int(field)

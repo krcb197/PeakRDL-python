@@ -27,6 +27,7 @@ from ..lib import FieldEnumReadWrite, FieldEnumReadOnly, FieldEnumWriteOnly
 from ..lib import FieldAsyncReadOnly, FieldAsyncWriteOnly, FieldAsyncReadWrite
 from ..lib import FieldEnumAsyncReadOnly, FieldEnumAsyncWriteOnly, FieldEnumAsyncReadWrite
 from ..lib.base_register import BaseReg
+from .utilities import get_field_bitmask_int, get_field_inv_bitmask
 
 class CommonTestBase(unittest.TestCase, ABC):
     """
@@ -52,18 +53,17 @@ class CommonTestBase(unittest.TestCase, ABC):
                                     msb: int,
                                     low: int,
                                     high: int,
-                                    bitmask: int,
-                                    inverse_bitmask: int,
-                                    max_value: int,
                                     is_volatile: bool,
                                     default: Optional[int]) -> None:
         self.assertEqual(fut.lsb, lsb)
         self.assertEqual(fut.msb, msb)
         self.assertEqual(fut.low, low)
         self.assertEqual(fut.high, high)
-        self.assertEqual(fut.bitmask, bitmask)
-        self.assertEqual(fut.inverse_bitmask, inverse_bitmask)
-        self.assertEqual(fut.max_value, max_value)
+        self.assertEqual(fut.bitmask, get_field_bitmask_int(fut))
+        self.assertEqual(fut.inverse_bitmask, get_field_inv_bitmask(fut))
+        width = (fut.high - fut.low) + 1
+        self.assertEqual(fut.width, width)
+        self.assertEqual(fut.max_value, (2**width) - 1)
         self.assertEqual(fut.is_volatile, is_volatile)
 
         if default is None:

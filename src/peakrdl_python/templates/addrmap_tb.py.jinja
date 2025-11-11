@@ -235,7 +235,7 @@ class {{fq_block_name}}_single_access({{top_node.inst_name}}_TestCase): # type: 
         """
         {% for node in owned_elements.fields %}
         with self.subTest(msg='field: {{'.'.join(node.get_path_segments())}}'):
-            self._single_field_property_test(fut=self.dut.{{'.'.join(get_python_path_segments(node))}}, lsb={{node.lsb}}, msb={{node.msb}}, low={{node.low}}, high={{node.high}}, bitmask={{get_field_bitmask_hex_string(node)}}, inverse_bitmask={{get_field_inv_bitmask_hex_string(node)}}, max_value={{get_field_max_value_hex_string(node)}}, is_volatile={{node.is_hw_writable}}, default={{get_field_default_value(node)}})
+            self._single_field_property_test(fut=self.dut.{{'.'.join(get_python_path_segments(node))}}, lsb={{node.lsb}}, msb={{node.msb}}, low={{node.low}}, high={{node.high}}, is_volatile={{node.is_hw_writable}}, default={{get_field_default_value(node)}})
             {%- if 'encode' not in node.list_properties() %}
             {% if asyncoutput %}await {%endif %}self._single_int_field_read_and_write_test(fut=self.dut.{{'.'.join(get_python_path_segments(node))}}, is_sw_readable={{node.is_sw_readable}}, is_sw_writable={{node.is_sw_writable}})
             {%- else %}
