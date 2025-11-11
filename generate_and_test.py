@@ -41,6 +41,7 @@ from unittest import TextTestRunner
 sys.path.append('src')
 from peakrdl_python import PythonExporter
 from peakrdl_python import compiler_with_udp_registers
+from peakrdl_python import NodeHashingMethod
 
 CommandLineParser = argparse.ArgumentParser(description='Test the framework')
 CommandLineParser.add_argument('--RDL_source_file', dest='root_RDL_file',
@@ -113,6 +114,15 @@ CommandLineParser.add_argument('--skip_systemrdl_name_and_desc_in_docstring',
                                     'attributes within the doc string of the built code. Setting '
                                     'this will skip this reducing the size of the python code '
                                     'generated')
+CommandLineParser.add_argument('--hashing_mode',
+                               dest='hashing_mode',
+                               type=str,
+                               choices=[item.name for item in NodeHashingMethod],
+                               default='PYTHONHASH',
+                               help='The method used to generate the hash of the node, in order to '
+                                    'deduplicate the register model. Set this to `SHA256` if '
+                                    'the python names need to stay consistent one export to the '
+                                    'next. However, this mode is slower')
 
 
 def build_logging_cong(logfilepath:str):
@@ -213,7 +223,8 @@ if __name__ == '__main__':
         skip_systemrdl_name_and_desc_properties=
         CommandLineArgs.skip_systemrdl_name_and_desc_properties,
         skip_systemrdl_name_and_desc_in_docstring=
-        CommandLineArgs.skip_systemrdl_name_and_desc_in_docstring
+        CommandLineArgs.skip_systemrdl_name_and_desc_in_docstring,
+        hashing_method=NodeHashingMethod[CommandLineArgs.hashing_mode]
     )
     print(f'generation time {time.time() - start_time}s')
 
