@@ -390,6 +390,6 @@ class AsyncLibTestBase(unittest.IsolatedAsyncioTestCase, CommonTestBase, ABC):
                                 for field in rut.readable_fields }
             read_callback_mock.reset_mock()
 
-            self.assertDictEqual(rut.read_fields(), await ref_read_fields)
+            self.assertDictEqual(await rut.read_fields(), ref_read_fields)
             read_callback_mock.assert_called_once()
             write_callback_mock.assert_not_called()
