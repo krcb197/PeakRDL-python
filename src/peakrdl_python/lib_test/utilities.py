@@ -18,8 +18,10 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 This package It provide methods used by the tests
 """
 import random
+from typing import Union
 
 from ..lib import Field
+from ..lib import AsyncReg, Reg
 from ..lib.base_register import BaseReg
 from ..lib.utility_functions import calculate_bitmask
 
@@ -114,6 +116,27 @@ def random_reg_value(rut: BaseReg) -> int:
     Returns a random register value
     """
     return random.randint(0, rut.max_value)
+
+def random_field_values_in_reg(rut: Union[AsyncReg, Reg] ) -> int:
+    """
+    Returns a random register value, based on legal values for the fields within the register
+    """
+
+    # build up a register value, starting with a random register value
+    reg_value = random_reg_value(rut=rut)
+    for field in rut.fields:
+        if hasattr(field, 'enum_cls'):
+            reg_value = reg_value_for_field_read(
+                fut=field,
+                reg_base_value=reg_value,
+                field_value=random.choice(list(field.enum_cls)).value)
+        else:
+            reg_value = reg_value_for_field_read(
+                fut=field,
+                reg_base_value=reg_value,
+                field_value=random_field_value(field))
+
+    return reg_value
 
 
 def get_field_bitmask_int(field: Field) -> int:

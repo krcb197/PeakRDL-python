@@ -244,65 +244,6 @@ class {{fq_block_name}}_single_access({{top_node.inst_name}}_TestCase): # type: 
             {%- endif %}
         {%- endfor %}
 
-    {% if asyncoutput %}async {% endif %}def test_register_read_fields(self) -> None:
-        """
-        Walk the register map and check every register read_fields method
-        """
-        reference_read_fields: dict[str, Union[bool, {% if legacy_enum_type %}IntEnum{% else %}SystemRDLEnum{% endif %}, int]]
-        {% for node in owned_elements.registers -%}
-        {% if node.has_sw_readable %}
-        with self.subTest(msg='register: {{'.'.join(node.get_path_segments())}}'):
-            # test read_fields to register:
-            # {{'.'.join(node.get_path_segments())}}
-            # build up the register value with a random base value, overlaid with
-            # a random value for each field
-            rand_reg_value = random.randrange(0, {{get_reg_max_value_hex_string(node)}} + 1)
-            {%- for child_node in node.children() %}
-                {% if isinstance(child_node, systemrdlSignalNode) %}
-            # do nothing with signal {{ child_node.inst_name }}
-                {% elif isinstance(child_node, systemrdlFieldNode) %}
-                    {% if child_node.is_sw_readable %}
-                        {% if 'encode' in child_node.list_properties() %}
-            rand_field_value = random_enum_reg_value(self.dut.{{'.'.join(get_python_path_segments(child_node))}}.enum_cls).value
-                        {%- else %}
-            rand_field_value = random.randrange(0, {{ get_field_max_value_hex_string(child_node) }} + 1)
-                        {% endif %}
-                        {% if child_node.msb == child_node.high %}
-            rand_reg_value = (rand_reg_value & {{get_field_inv_bitmask_hex_string(child_node)}}) | (rand_field_value << {{ child_node.low }})
-                        {% else %}
-            rand_reg_value = (rand_reg_value & {{get_field_inv_bitmask_hex_string(child_node)}}) | (reverse_bits(value=rand_field_value, number_bits={{child_node.width}}) << {{ child_node.low }})
-                         {% endif %}
-                    {% endif %}
-                {% else %}
-            {{ raise_template_error('unexpected type') }}
-                {% endif %}
-            {% endfor %}
-            with patch.object(self,'write_callback') as write_callback_mock, \
-                patch.object(self,'read_callback', return_value=rand_reg_value) as read_callback_mock:
-                # the read_fields method gets a dictionary back
-                # from the object with all the read back field
-                # values
-                reference_read_fields = { {% for child_node in node.children() -%}
-                                            {% if isinstance(child_node, systemrdlFieldNode) %}
-                                                {%- if child_node.is_sw_readable %}
-                                                    {%- if not hide_node_func(child_node) %}
-                                          '{{ child_node.inst_name }}' : {% if asyncoutput %}await {%endif %}self.dut.{{'.'.join(get_python_path_segments(child_node))}}.read(){%- if not loop.last -%}, {%- endif %}
-                                                    {%- endif -%}
-                                                {%- endif -%}
-                                              {%- endif -%}
-                                          {%- endfor %}
-                                        }
-
-                read_callback_mock.reset_mock()
-
-                self.assertDictEqual({% if asyncoutput %}await {% endif %}self.dut.{{'.'.join(get_python_path_segments(node))}}.read_fields(),
-                                     reference_read_fields)
-                read_callback_mock.assert_called_once()
-                write_callback_mock.assert_not_called()
-
-        {%- endif %}
-        {%- endfor %}
-
     {% if asyncoutput %}async {% endif %}def test_register_read_context_manager(self) -> None:
         """
         Walk the register map and check every register read_fields method

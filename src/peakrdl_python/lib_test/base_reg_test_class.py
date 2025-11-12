@@ -32,7 +32,7 @@ from ..sim_lib.dummy_callbacks import dummy_write
 from .utilities import reverse_bits, expected_reg_write_data
 from .utilities import reg_value_for_field_read_with_random_base
 from .utilities import random_field_value, random_field_parent_reg_value
-from .utilities import random_reg_value
+from .utilities import random_reg_value, random_field_values_in_reg
 
 from ._common_base_test_class import CommonTestBase
 
@@ -302,6 +302,7 @@ class LibTestBase(CommonTestBase, ABC):
             if not isinstance(rut, (RegReadOnly, RegReadWrite)):
                 raise TypeError('Test can not proceed as the fut is not a readable field')
             self.__single_reg_read_test(rut=rut)
+            self.__single_reg_read_fields_test(rut=rut)
         else:
             # test that a non-readable register has no read method and
             # attempting one generates and error
@@ -353,3 +354,19 @@ class LibTestBase(CommonTestBase, ABC):
 
             with self.assertRaises(ValueError):
                 rut.write(rut.max_value + 1)
+
+    def __single_reg_read_fields_test(self, rut: Union[RegReadOnly, RegReadWrite]) -> None:
+
+        # build up a register value, starting with a random register value
+        reg_value = random_field_values_in_reg(rut)
+
+        with patch.object(self, 'write_callback') as write_callback_mock, \
+            patch.object(self, 'read_callback', return_value=reg_value) as read_callback_mock:
+
+            # build the expected return structure
+            ref_read_fields = { field.inst_name: field.read() for field in rut.readable_fields }
+            read_callback_mock.reset_mock()
+
+            self.assertDictEqual(rut.read_fields(), ref_read_fields)
+            read_callback_mock.assert_called_once()
+            write_callback_mock.assert_not_called()
