@@ -321,7 +321,7 @@ class AsyncLibTestBase(unittest.IsolatedAsyncioTestCase, CommonTestBase, ABC):
             if not isinstance(rut, (RegAsyncReadOnly, RegAsyncReadWrite)):
                 raise TypeError('Test can not proceed as the fut is not a readable field')
             await self.__single_reg_read_test(rut=rut)
-            await self.__single_reg_read_fields_test(rut=rut)
+            await self.__single_reg_read_fields_and_context_test(rut=rut)
         else:
             # test that a non-readable register has no read method and
             # attempting one generates and error
@@ -375,7 +375,7 @@ class AsyncLibTestBase(unittest.IsolatedAsyncioTestCase, CommonTestBase, ABC):
             with self.assertRaises(ValueError):
                 await rut.write(rut.max_value + 1)
 
-    async def __single_reg_read_fields_test(
+    async def __single_reg_read_fields_and_context_test(
             self,
             rut: Union[RegAsyncReadOnly, RegAsyncReadWrite]) -> None:
 
@@ -391,5 +391,22 @@ class AsyncLibTestBase(unittest.IsolatedAsyncioTestCase, CommonTestBase, ABC):
             read_callback_mock.reset_mock()
 
             self.assertDictEqual(await rut.read_fields(), ref_read_fields)
-            read_callback_mock.assert_called_once()
+            read_callback_mock.assert_called_once_with(
+                addr=rut.address,
+                width=rut.width,
+                accesswidth=rut.accesswidth)
+            read_callback_mock.reset_mock()
+
+            async with rut.single_read() as rut_context_inst:
+                context_ref_read_fields = {field.inst_name: await rut_context_inst.read()
+                                           for field in rut.readable_fields}
+            self.assertDictEqual(await rut.read_fields(), context_ref_read_fields)
+            read_callback_mock.assert_called_once_with(
+                addr=rut.address,
+                width=rut.width,
+                accesswidth=rut.accesswidth)
+
+
+
+
             write_callback_mock.assert_not_called()

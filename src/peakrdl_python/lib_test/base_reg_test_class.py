@@ -302,7 +302,8 @@ class LibTestBase(CommonTestBase, ABC):
             if not isinstance(rut, (RegReadOnly, RegReadWrite)):
                 raise TypeError('Test can not proceed as the fut is not a readable field')
             self.__single_reg_read_test(rut=rut)
-            self.__single_reg_read_fields_test(rut=rut)
+            # check the read fields and read context manager
+            self.__single_reg_read_fields_and_context_test(rut=rut)
         else:
             # test that a non-readable register has no read method and
             # attempting one generates and error
@@ -355,7 +356,11 @@ class LibTestBase(CommonTestBase, ABC):
             with self.assertRaises(ValueError):
                 rut.write(rut.max_value + 1)
 
-    def __single_reg_read_fields_test(self, rut: Union[RegReadOnly, RegReadWrite]) -> None:
+    def __single_reg_read_fields_and_context_test(self,
+                                                  rut: Union[RegReadOnly, RegReadWrite]) -> None:
+        """
+        Check the `read_fields` and `single_read` methods
+        """
 
         # build up a register value, starting with a random register value
         reg_value = random_field_values_in_reg(rut)
@@ -368,5 +373,18 @@ class LibTestBase(CommonTestBase, ABC):
             read_callback_mock.reset_mock()
 
             self.assertDictEqual(rut.read_fields(), ref_read_fields)
-            read_callback_mock.assert_called_once()
+            read_callback_mock.assert_called_once_with(
+                addr=rut.address,
+                width=rut.width,
+                accesswidth=rut.accesswidth)
+
+            with rut.single_read() as rut_context_inst:
+                context_ref_read_fields = {field.inst_name: rut_context_inst.read()
+                                           for field in rut.readable_fields}
+            self.assertDictEqual(ref_read_fields, context_ref_read_fields)
+            read_callback_mock.assert_called_once_with(
+                addr=rut.address,
+                width=rut.width,
+                accesswidth=rut.accesswidth)
+
             write_callback_mock.assert_not_called()
