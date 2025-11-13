@@ -667,7 +667,7 @@ class RegReadWrite(RegReadOnly, RegWriteOnly, ABC):
     # pylint: enable=too-many-arguments, duplicate-code
 
     @contextmanager
-    def single_read_modify_write(self, verify: bool = False, skip_write: bool = False) -> \
+    def single_read_modify_write(self, verify: bool = False) -> \
             Generator[Self]:
         """
         Context manager to allow multiple field reads/write to be done with a single set of
@@ -682,11 +682,6 @@ class RegReadWrite(RegReadOnly, RegWriteOnly, ABC):
             raise RuntimeError('using the `single_read_modify_write` context manager within the '
                                'single_read` is not permitted')
 
-        if skip_write is True:
-            warn('The `skip_write` argument will be removed in the future, use `single_read`'
-                 ' instead',
-                 DeprecationWarning, stacklevel=2)
-
         self.__register_state = self.read()
         self.__in_read_write_context_manager = True
         try:
@@ -695,9 +690,7 @@ class RegReadWrite(RegReadOnly, RegWriteOnly, ABC):
             # need to make sure the state flag is cleared even if an exception occurs within
             # the context
             self.__in_read_write_context_manager = False
-
-        if not skip_write:
-            self.write(self.__register_state, verify)
+        self.write(self.__register_state, verify)
 
         # clear the register states at the end of the context manager
         self.__register_state = None
