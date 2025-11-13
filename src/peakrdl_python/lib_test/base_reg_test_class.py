@@ -377,10 +377,11 @@ class LibTestBase(CommonTestBase, ABC):
                 addr=rut.address,
                 width=rut.width,
                 accesswidth=rut.accesswidth)
+            read_callback_mock.reset_mock()
 
             with rut.single_read() as rut_context_inst:
-                context_ref_read_fields = {field.inst_name: rut_context_inst.read()
-                                           for field in rut.readable_fields}
+                context_ref_read_fields = {field.inst_name: field.read()
+                                           for field in rut_context_inst.readable_fields}
             self.assertDictEqual(ref_read_fields, context_ref_read_fields)
             read_callback_mock.assert_called_once_with(
                 addr=rut.address,

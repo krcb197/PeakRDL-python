@@ -398,15 +398,12 @@ class AsyncLibTestBase(unittest.IsolatedAsyncioTestCase, CommonTestBase, ABC):
             read_callback_mock.reset_mock()
 
             async with rut.single_read() as rut_context_inst:
-                context_ref_read_fields = {field.inst_name: await rut_context_inst.read()
-                                           for field in rut.readable_fields}
-            self.assertDictEqual(await rut.read_fields(), context_ref_read_fields)
+                context_ref_read_fields = {field.inst_name: await field.read()
+                                           for field in rut_context_inst.readable_fields}
+            self.assertDictEqual(ref_read_fields, context_ref_read_fields)
             read_callback_mock.assert_called_once_with(
                 addr=rut.address,
                 width=rut.width,
                 accesswidth=rut.accesswidth)
-
-
-
 
             write_callback_mock.assert_not_called()

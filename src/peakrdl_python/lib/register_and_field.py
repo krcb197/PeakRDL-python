@@ -26,7 +26,6 @@ from abc import ABC, abstractmethod
 from contextlib import contextmanager
 from array import array as Array
 import sys
-from warnings import warn
 
 from .sections import AddressMap, RegFile
 from .utility_functions import get_array_typecode
