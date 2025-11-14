@@ -408,7 +408,7 @@ class RegArray(BaseRegArray[RegArrayElementType], ABC):
         field operations
 
         Args:
-            verify (bool): very the write with a read afterwards
+            verify (bool): verify the write with a read afterwards
             skip_write (bool): skip the write back at the end
         """
         self.__register_address_array = \
@@ -666,15 +666,13 @@ class RegReadWrite(RegReadOnly, RegWriteOnly, ABC):
     # pylint: enable=too-many-arguments, duplicate-code
 
     @contextmanager
-    def single_read_modify_write(self, verify: bool = False) -> \
-            Generator[Self]:
+    def single_read_modify_write(self, verify: bool = False) -> Generator[Self]:
         """
         Context manager to allow multiple field reads/write to be done with a single set of
         field operations
 
         Args:
-            verify (bool): very the write with a read afterwards
-            skip_write (bool): skip the write back at the end
+            verify (bool): verify the write with a read afterwards
 
         """
         if self.__in_read_context_manager:
@@ -695,8 +693,7 @@ class RegReadWrite(RegReadOnly, RegWriteOnly, ABC):
         self.__register_state = None
 
     @contextmanager
-    def single_read(self) -> \
-            Generator[Self]:
+    def single_read(self) -> Generator[Self]:
         """
         Context manager to allow multiple field reads with a single register read
         """
@@ -829,8 +826,7 @@ class RegReadOnlyArray(RegArray[RegReadOnly], ABC):
     # pylint: enable=too-many-arguments,duplicate-code
 
     @contextmanager
-    def single_read(self) -> \
-            Generator[Self]:
+    def single_read(self) -> Generator[Self]:
         """
         Context manager to allow multiple field reads/write to be done with a single set of
         field operations
@@ -881,8 +877,7 @@ class RegWriteOnlyArray(RegArray[RegWriteOnly], ABC):
     # pylint: enable=too-many-arguments,duplicate-code
 
     @contextmanager
-    def single_write(self) -> \
-            Generator[Self]:
+    def single_write(self) -> Generator[Self]:
         """
         Context manager to allow multiple field reads/write to be done with a single set of
         field operations
