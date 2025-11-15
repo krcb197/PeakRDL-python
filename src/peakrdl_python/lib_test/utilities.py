@@ -180,6 +180,8 @@ class RegWriteTestSequence(RandomReg):
     Instance for testing a sequence of operations that occur when a register is written too,
     starting with a random register value.
     """
+    rut: Union[AsyncReg, Reg]
+    value: int = dataclass_field(init=False)
     fields: Iterable[Field]
     start_value: int = dataclass_field(init=False)
     write_sequence: dict[str, Union[int, Enum]] = dataclass_field(init=False)
@@ -188,6 +190,19 @@ class RegWriteTestSequence(RandomReg):
         super().__post_init__()
         self.start_value = self.value
         self.value, self.write_sequence = self._random_legal_values(initial_value=self.start_value,
+                                                                    field_iter=self.fields)
+
+@dataclass()
+class RegWriteZeroStartTestSequence(RandomReg):
+    """
+    Instance for testing a sequence of operations that occur when a register is written too,
+    starting with a random register value.
+    """
+    fields: Iterable[Field]
+    write_sequence: dict[str, Union[int, Enum]] = dataclass_field(init=False)
+
+    def __post_init__(self) -> None:
+        self.value, self.write_sequence = self._random_legal_values(initial_value=0,
                                                                     field_iter=self.fields)
 
 

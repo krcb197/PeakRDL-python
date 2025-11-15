@@ -39,7 +39,8 @@ from ..sim_lib.dummy_callbacks import async_dummy_write
 from .utilities import reverse_bits, expected_reg_write_data
 from .utilities import reg_value_for_field_read_with_random_base
 from .utilities import random_int_field_value, random_field_parent_reg_value
-from .utilities import random_reg_value, RandomReg, RegWriteTestSequence
+from .utilities import random_reg_value, RandomReg
+from .utilities import RegWriteTestSequence,RegWriteZeroStartTestSequence
 
 from ._common_base_test_class import CommonTestBase
 
@@ -337,7 +338,11 @@ class AsyncLibTestBase(unittest.IsolatedAsyncioTestCase, CommonTestBase, ABC):
                 if not isinstance(rut, RegAsyncReadWrite):
                     raise TypeError('Test can not proceed as the rut is not a read '
                                     'and writable register')
-                await self.__single_reg_write_context_test(rut)
+                await self.__single_reg_write_fields_and_context_test(rut)
+            else:
+                if not isinstance(rut, RegAsyncWriteOnly):
+                    raise TypeError('Test can not proceed as the rut is not a writable register')
+                await self.__single_reg_full_write_fields_test(rut)
         else:
             # test that a non-writable register has no write method and
             # attempting one generates and error
@@ -414,7 +419,7 @@ class AsyncLibTestBase(unittest.IsolatedAsyncioTestCase, CommonTestBase, ABC):
 
             write_callback_mock.assert_not_called()
 
-    async def __single_reg_write_context_test(self, rut: RegAsyncReadWrite) -> None:
+    async def __single_reg_write_fields_and_context_test(self, rut: RegAsyncReadWrite) -> None:
         with patch.object(self, 'write_callback') as write_callback_mock, \
                 patch.object(self, 'read_callback', return_value=0) as read_callback_mock:
             # fix for #196 (excessive test time) if the number of fields is greater than 4
@@ -474,3 +479,41 @@ class AsyncLibTestBase(unittest.IsolatedAsyncioTestCase, CommonTestBase, ABC):
 
                 write_callback_mock.reset_mock()
                 read_callback_mock.reset_mock()
+
+                # check the write_fields
+                read_callback_mock.return_value = reg_sequence.start_value
+                # make the kwargs by replacing the field names with the safe versions
+                kwargs = { rut.systemrdl_python_child_name_map[unsafe_name] : value
+                           for unsafe_name, value in reg_sequence.write_sequence.items() }
+                await rut.write_fields(**kwargs)
+                write_callback_mock.assert_called_once_with(
+                    addr=rut.address,
+                    width=rut.width,
+                    accesswidth=rut.accesswidth,
+                    data=reg_sequence.value)
+                read_callback_mock.assert_called_once()
+                write_callback_mock.reset_mock()
+                read_callback_mock.reset_mock()
+
+    async def __single_reg_full_write_fields_test(self, rut: RegAsyncWriteOnly) -> None:
+        """
+        Test the `write_fields` method of a Write Only Register
+        """
+        with patch.object(self, 'write_callback') as write_callback_mock, \
+                patch.object(self, 'read_callback') as read_callback_mock:
+            # in the case of a write only register the only legal case is a full field write in
+            # one go
+            reg_sequence = RegWriteZeroStartTestSequence(rut, fields=rut.writable_fields)
+
+            # make the kwargs by replacing the field names with the safe versions
+            kwargs = { rut.systemrdl_python_child_name_map[unsafe_name] : value
+                       for unsafe_name, value in reg_sequence.write_sequence.items() }
+            await rut.write_fields(**kwargs)
+            write_callback_mock.assert_called_once_with(
+                addr=rut.address,
+                width=rut.width,
+                accesswidth=rut.accesswidth,
+                data=reg_sequence.value)
+            read_callback_mock.assert_not_called()
+            write_callback_mock.reset_mock()
+            read_callback_mock.reset_mock()
