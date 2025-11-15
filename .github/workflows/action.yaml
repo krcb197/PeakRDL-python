@@ -134,26 +134,42 @@ jobs:
         run: |
 
           python -m generate_and_test --RDL_source_file tests/testcases/simulator_test.rdl --root_node simulator_test
+          sleep 10
           python -m generate_and_test --RDL_source_file tests/testcases/simulator_test.rdl --root_node simulator_test --async
+          sleep 10
 
           python -m generate_and_test --RDL_source_file tests/testcases/accelera-generic_example.rdl --root_node some_register_map
+          sleep 10
           python -m generate_and_test --RDL_source_file tests/testcases/accelera-generic_example.rdl --root_node some_register_map --legacy_block_access
+          sleep 10
           python -m generate_and_test --RDL_source_file tests/testcases/accelera-generic_example.rdl --root_node some_register_map --legacy_enum_type
+          sleep 10
           python -m generate_and_test --RDL_source_file tests/testcases/accelera-generic_example.rdl --root_node some_register_map --copy_libraries
+          sleep 10
           python -m generate_and_test --RDL_source_file tests/testcases/accelera-generic_example.rdl --root_node some_register_map --hashing_mode PYTHONHASH
+          sleep 10
           python -m generate_and_test --RDL_source_file tests/testcases/accelera-generic_example.rdl --root_node some_register_map --hashing_mode SHA256
+          sleep 10
 
           python -m generate_and_test --RDL_source_file tests/testcases/user_defined_properties.rdl --root_node user_defined_properties --udp bool_property_to_include
+          sleep 10
           python -m generate_and_test --RDL_source_file tests/testcases/user_defined_properties.rdl --root_node user_defined_properties --udp bool_property_to_include enum_property_to_include
+          sleep 10
           python -m generate_and_test --RDL_source_file tests/testcases/user_defined_properties.rdl --root_node user_defined_properties --udp bool_property_to_include enum_property_to_include int_property_to_include
+          sleep 10
           python -m generate_and_test --RDL_source_file tests/testcases/user_defined_properties.rdl --root_node user_defined_properties --udp bool_property_to_include enum_property_to_include int_property_to_include str_property_to_include
+          sleep 10
           python -m generate_and_test --RDL_source_file tests/testcases/user_defined_properties.rdl --root_node user_defined_properties --udp bool_property_to_include enum_property_to_include int_property_to_include str_property_to_include struct_property_to_include double_layer_struct_property_to_include
+          sleep 10
           
           python -m generate_and_test --RDL_source_file tests/testcases/user_defined_properties.rdl --root_node user_defined_properties --udp_regex "bool_property_to_include|enum_property_to_include|int_property_to_include|str_property_to_include|struct_property_to_include|double_layer_struct_property_to_include"
+          sleep 10
 
           python -m generate_and_test --RDL_source_file tests/testcases/reserved_elements.rdl --root_node reserved_elements --hide_regex "(?:[\w_\[\]]+\.)+RSVD"
+          sleep 10
           
           python -m generate_and_test --RDL_source_file tests/testcases/name_desc_all_levels.rdl --root_node name_desc_all_levels --skip_systemrdl_name_and_desc_properties
+          sleep 10
 
   peakrdl_integration:
     needs:

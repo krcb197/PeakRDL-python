@@ -26,17 +26,21 @@ import unittest
 from abc import ABC
 from typing import Union
 from unittest.mock import patch
-from itertools import product
+from itertools import product, chain, combinations
+from collections.abc import Iterable
 
 from ..lib import FieldAsyncReadOnly, FieldAsyncWriteOnly, FieldAsyncReadWrite
 from ..lib import FieldEnumAsyncReadOnly, FieldEnumAsyncWriteOnly, FieldEnumAsyncReadWrite
+from ..lib import RegAsyncReadOnly, RegAsyncReadWrite, RegAsyncWriteOnly
+from ..lib import RegisterWriteVerifyError
 from ..sim_lib.dummy_callbacks import async_dummy_read
 from ..sim_lib.dummy_callbacks import async_dummy_write
 
-
 from .utilities import reverse_bits, expected_reg_write_data
 from .utilities import reg_value_for_field_read_with_random_base
-from .utilities import random_field_value, random_field_parent_reg_value
+from .utilities import random_int_field_value, random_field_parent_reg_value
+from .utilities import random_reg_value, RandomReg
+from .utilities import RegWriteTestSequence,RegWriteZeroStartTestSequence
 
 from ._common_base_test_class import CommonTestBase
 
@@ -152,7 +156,7 @@ class AsyncLibTestBase(unittest.IsolatedAsyncioTestCase, CommonTestBase, ABC):
 
             for reg_base_value, field_value in product(
                     [0, fut.parent_register.max_value, random_field_parent_reg_value(fut)],
-                    [0, fut.max_value, random_field_value(fut)]):
+                    [0, fut.max_value, random_int_field_value(fut)]):
                 read_callback_mock.reset_mock()
                 write_callback_mock.reset_mock()
                 read_callback_mock.return_value = reg_base_value
@@ -221,7 +225,7 @@ class AsyncLibTestBase(unittest.IsolatedAsyncioTestCase, CommonTestBase, ABC):
                 if fut.width <= 8:
                     bad_field_value_iter = set(range(fut.max_value+1))
                 else:
-                    bad_field_value_iter = {random_field_value(fut) for _ in range(100)}
+                    bad_field_value_iter = {random_int_field_value(fut) for _ in range(100)}
 
                 for bad_field_value in bad_field_value_iter - legal_enum_values_set:
                     read_callback_mock.reset_mock()
@@ -254,8 +258,8 @@ class AsyncLibTestBase(unittest.IsolatedAsyncioTestCase, CommonTestBase, ABC):
                 patch.object(self, 'read_callback', return_value=0) as read_callback_mock:
 
             for enum_name, enum_value in enum_definition.items():
-                random_reg_value = random_field_parent_reg_value(fut)
-                read_callback_mock.return_value = random_reg_value
+                reg_value = random_field_parent_reg_value(fut)
+                read_callback_mock.return_value = reg_value
                 await fut.write(EnumCls[enum_name])
 
                 # the read is skipped if the register is not readable or has the same width
@@ -273,7 +277,7 @@ class AsyncLibTestBase(unittest.IsolatedAsyncioTestCase, CommonTestBase, ABC):
                     width=fut.parent_register.width,
                     accesswidth=fut.parent_register.accesswidth,
                     data=expected_reg_write_data(fut=fut,
-                                                 reg_base_value=random_reg_value,
+                                                 reg_base_value=reg_value,
                                                  readable_reg=readable_reg,
                                                  field_value=enum_value))
 
@@ -305,3 +309,211 @@ class AsyncLibTestBase(unittest.IsolatedAsyncioTestCase, CommonTestBase, ABC):
                 raise TypeError('Test can not proceed as the fut is not a writable field')
             await self.__single_enum_field_write_test(fut=fut,
                                                 enum_definition=enum_definition)
+
+    async def _single_register_read_and_write_test(self,
+                                             rut: Union[RegAsyncReadOnly,
+                                                        RegAsyncReadWrite,
+                                                        RegAsyncWriteOnly],
+                                             has_sw_readable: bool,
+                                             has_sw_writable: bool) -> None:
+
+        # the register properties are tested separately so are available to be used here
+
+        if has_sw_readable:
+            if not isinstance(rut, (RegAsyncReadOnly, RegAsyncReadWrite)):
+                raise TypeError('Test can not proceed as the rut is not a readable register')
+            await self.__single_reg_read_test(rut=rut)
+            await self.__single_reg_read_fields_and_context_test(rut=rut)
+        else:
+            # test that a non-readable register has no read method and
+            # attempting one generates and error
+            with self.assertRaises(AttributeError):
+                _= rut.read(0)  # type: ignore[union-attr,call-arg]
+
+        if has_sw_writable:
+            if not isinstance(rut, (RegAsyncWriteOnly, RegAsyncReadWrite)):
+                raise TypeError('Test can not proceed as the rut is not a writable register')
+            await self.__single_reg_write_test(rut=rut)
+            if has_sw_readable:
+                if not isinstance(rut, RegAsyncReadWrite):
+                    raise TypeError('Test can not proceed as the rut is not a read '
+                                    'and writable register')
+                await self.__single_reg_write_fields_and_context_test(rut)
+            else:
+                if not isinstance(rut, RegAsyncWriteOnly):
+                    raise TypeError('Test can not proceed as the rut is not a writable register')
+                await self.__single_reg_full_write_fields_test(rut)
+        else:
+            # test that a non-writable register has no write method and
+            # attempting one generates and error
+            with self.assertRaises(AttributeError):
+                await rut.write(0)  # type: ignore[union-attr,call-arg]
+
+    async def __single_reg_read_test(self, rut: Union[RegAsyncReadOnly, RegAsyncReadWrite]) -> None:
+
+        with patch.object(self, 'write_callback') as write_callback_mock, \
+                patch.object(self, 'read_callback', return_value=1) as read_callback_mock:
+            for reg_value in [0, 1, rut.max_value, random_reg_value(rut)]:
+                read_callback_mock.reset_mock()
+                read_callback_mock.return_value = reg_value
+                self.assertEqual(await rut.read(), reg_value)
+                read_callback_mock.assert_called_once_with(
+                    addr=rut.address,
+                    width=rut.width,
+                    accesswidth=rut.accesswidth)
+            write_callback_mock.assert_not_called()
+
+    async def __single_reg_write_test(self,
+                                      rut: Union[RegAsyncWriteOnly, RegAsyncReadWrite]) -> None:
+        with patch.object(self, 'write_callback') as write_callback_mock, \
+                patch.object(self, 'read_callback', return_value=0) as read_callback_mock:
+            for reg_value in [0, 1, rut.max_value, random_reg_value(rut)]:
+                write_callback_mock.reset_mock()
+                read_callback_mock.return_value = reg_value
+                await rut.write(reg_value)
+                write_callback_mock.assert_called_once_with(
+                    addr=rut.address,
+                    width=rut.width,
+                    accesswidth=rut.accesswidth,
+                    data=reg_value)
+            read_callback_mock.assert_not_called()
+
+            # test writing a value beyond the register range is blocked with an exception
+            # being raised
+            with self.assertRaises(ValueError):
+                await rut.write(-1)
+
+            with self.assertRaises(ValueError):
+                await rut.write(rut.max_value + 1)
+
+    async def __single_reg_read_fields_and_context_test(
+            self,
+            rut: Union[RegAsyncReadOnly, RegAsyncReadWrite]) -> None:
+
+        # build up a register value, starting with a random register value
+        reg_value = RandomReg(rut).value
+
+        with patch.object(self, 'write_callback') as write_callback_mock, \
+            patch.object(self, 'read_callback', return_value=reg_value) as read_callback_mock:
+
+            # build the expected return structure
+            ref_read_fields = { field.inst_name: await field.read()
+                                for field in rut.readable_fields }
+            read_callback_mock.reset_mock()
+
+            self.assertDictEqual(await rut.read_fields(), ref_read_fields)
+            read_callback_mock.assert_called_once_with(
+                addr=rut.address,
+                width=rut.width,
+                accesswidth=rut.accesswidth)
+            read_callback_mock.reset_mock()
+
+            async with rut.single_read() as rut_context_inst:
+                context_ref_read_fields = {field.inst_name: await field.read()
+                                           for field in rut_context_inst.readable_fields}
+            self.assertDictEqual(ref_read_fields, context_ref_read_fields)
+            read_callback_mock.assert_called_once_with(
+                addr=rut.address,
+                width=rut.width,
+                accesswidth=rut.accesswidth)
+
+            write_callback_mock.assert_not_called()
+
+    async def __single_reg_write_fields_and_context_test(self, rut: RegAsyncReadWrite) -> None:
+        with patch.object(self, 'write_callback') as write_callback_mock, \
+                patch.object(self, 'read_callback', return_value=0) as read_callback_mock:
+            # fix for #196 (excessive test time) if the number of fields is greater than 4
+            # the combinations are reduced to only tests combinations of three plus the full
+            # set
+            num_writable_fields = len(list(rut.writable_fields))
+            if num_writable_fields > 4:
+                perms_iterator: Iterable[int] = chain(range(1, 4), [num_writable_fields])
+            else:
+                perms_iterator = range(1, num_writable_fields + 1)
+            for fields_to_write in chain.from_iterable(
+                    (combinations(rut.writable_fields, perms) for perms in perms_iterator)):
+
+                reg_sequence = RegWriteTestSequence(rut, fields=fields_to_write)
+
+                # read/write without verify
+                read_callback_mock.return_value = reg_sequence.start_value
+                async with rut.single_read_modify_write(verify=False) as reg_session:
+                    for field_name, field_value in reg_sequence.write_sequence.items():
+                        field = reg_session.get_child_by_system_rdl_name(field_name)
+                        await field.write(field_value)
+
+                write_callback_mock.assert_called_once_with(
+                    addr=rut.address,
+                    width=rut.width,
+                    accesswidth=rut.accesswidth,
+                    data=reg_sequence.value)
+                read_callback_mock.assert_called_once()
+                write_callback_mock.reset_mock()
+                read_callback_mock.reset_mock()
+
+                # read/write/verify pass
+                async with rut.single_read_modify_write(verify=True) as reg_session:
+                    for field_name, field_value in reg_sequence.write_sequence.items():
+                        field = reg_session.get_child_by_system_rdl_name(field_name)
+                        await field.write(field_value)
+                    read_callback_mock.return_value = reg_sequence.value
+
+                write_callback_mock.assert_called_once_with(
+                    addr=rut.address,
+                    width=rut.width,
+                    accesswidth=rut.accesswidth,
+                    data=reg_sequence.value)
+                self.assertEqual(read_callback_mock.call_count, 2)
+                write_callback_mock.reset_mock()
+                read_callback_mock.reset_mock()
+
+                # read/write/verify pass
+                with self.assertRaises(RegisterWriteVerifyError):
+                    async with rut.single_read_modify_write(verify=True) as reg_session:
+                        for field_name, field_value in reg_sequence.write_sequence.items():
+                            field = reg_session.get_child_by_system_rdl_name(field_name)
+                            await field.write(field_value)
+                        # changing the readback value to the inverse of the expected value
+                        # causes an error on the exit from the context manager
+                        read_callback_mock.return_value = reg_sequence.value ^ reg_session.max_value
+
+                write_callback_mock.reset_mock()
+                read_callback_mock.reset_mock()
+
+                # check the write_fields
+                read_callback_mock.return_value = reg_sequence.start_value
+                # make the kwargs by replacing the field names with the safe versions
+                kwargs = { rut.systemrdl_python_child_name_map[unsafe_name] : value
+                           for unsafe_name, value in reg_sequence.write_sequence.items() }
+                await rut.write_fields(**kwargs)
+                write_callback_mock.assert_called_once_with(
+                    addr=rut.address,
+                    width=rut.width,
+                    accesswidth=rut.accesswidth,
+                    data=reg_sequence.value)
+                read_callback_mock.assert_called_once()
+                write_callback_mock.reset_mock()
+                read_callback_mock.reset_mock()
+
+    async def __single_reg_full_write_fields_test(self, rut: RegAsyncWriteOnly) -> None:
+        """
+        Test the `write_fields` method of a Write Only Register
+        """
+        with patch.object(self, 'write_callback') as write_callback_mock, \
+                patch.object(self, 'read_callback') as read_callback_mock:
+            # in the case of a write only register the only legal case is a full field write in
+            # one go
+            reg_sequence = RegWriteZeroStartTestSequence(rut, fields=rut.writable_fields)
+
+            # make the kwargs by replacing the field names with the safe versions
+            kwargs = { rut.systemrdl_python_child_name_map[unsafe_name] : value
+                       for unsafe_name, value in reg_sequence.write_sequence.items() }
+            await rut.write_fields(**kwargs)
+            write_callback_mock.assert_called_once_with(
+                addr=rut.address,
+                width=rut.width,
+                accesswidth=rut.accesswidth,
+                data=reg_sequence.value)
+            read_callback_mock.assert_not_called()
+            write_callback_mock.reset_mock()
+            read_callback_mock.reset_mock()

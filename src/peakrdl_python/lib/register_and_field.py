@@ -26,7 +26,6 @@ from abc import ABC, abstractmethod
 from contextlib import contextmanager
 from array import array as Array
 import sys
-from warnings import warn
 
 from .sections import AddressMap, RegFile
 from .utility_functions import get_array_typecode
@@ -409,7 +408,7 @@ class RegArray(BaseRegArray[RegArrayElementType], ABC):
         field operations
 
         Args:
-            verify (bool): very the write with a read afterwards
+            verify (bool): verify the write with a read afterwards
             skip_write (bool): skip the write back at the end
         """
         self.__register_address_array = \
@@ -667,25 +666,18 @@ class RegReadWrite(RegReadOnly, RegWriteOnly, ABC):
     # pylint: enable=too-many-arguments, duplicate-code
 
     @contextmanager
-    def single_read_modify_write(self, verify: bool = False, skip_write: bool = False) -> \
-            Generator[Self]:
+    def single_read_modify_write(self, verify: bool = False) -> Generator[Self]:
         """
         Context manager to allow multiple field reads/write to be done with a single set of
         field operations
 
         Args:
-            verify (bool): very the write with a read afterwards
-            skip_write (bool): skip the write back at the end
+            verify (bool): verify the write with a read afterwards
 
         """
         if self.__in_read_context_manager:
             raise RuntimeError('using the `single_read_modify_write` context manager within the '
                                'single_read` is not permitted')
-
-        if skip_write is True:
-            warn('The `skip_write` argument will be removed in the future, use `single_read`'
-                 ' instead',
-                 DeprecationWarning, stacklevel=2)
 
         self.__register_state = self.read()
         self.__in_read_write_context_manager = True
@@ -695,16 +687,13 @@ class RegReadWrite(RegReadOnly, RegWriteOnly, ABC):
             # need to make sure the state flag is cleared even if an exception occurs within
             # the context
             self.__in_read_write_context_manager = False
-
-        if not skip_write:
-            self.write(self.__register_state, verify)
+        self.write(self.__register_state, verify)
 
         # clear the register states at the end of the context manager
         self.__register_state = None
 
     @contextmanager
-    def single_read(self) -> \
-            Generator[Self]:
+    def single_read(self) -> Generator[Self]:
         """
         Context manager to allow multiple field reads with a single register read
         """
@@ -837,8 +826,7 @@ class RegReadOnlyArray(RegArray[RegReadOnly], ABC):
     # pylint: enable=too-many-arguments,duplicate-code
 
     @contextmanager
-    def single_read(self) -> \
-            Generator[Self]:
+    def single_read(self) -> Generator[Self]:
         """
         Context manager to allow multiple field reads/write to be done with a single set of
         field operations
@@ -889,8 +877,7 @@ class RegWriteOnlyArray(RegArray[RegWriteOnly], ABC):
     # pylint: enable=too-many-arguments,duplicate-code
 
     @contextmanager
-    def single_write(self) -> \
-            Generator[Self]:
+    def single_write(self) -> Generator[Self]:
         """
         Context manager to allow multiple field reads/write to be done with a single set of
         field operations
