@@ -42,7 +42,6 @@ class CommonTestBase(unittest.TestCase, ABC):
         """
         Simulator configured for the DUT
         """
-        ...
 
     # pylint:disable-next=too-many-arguments
     def _single_field_property_test(self, *,

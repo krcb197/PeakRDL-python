@@ -35,10 +35,12 @@ from ..lib import RegAsyncReadOnly, RegAsyncReadWrite, RegAsyncWriteOnly
 from ..lib import RegisterWriteVerifyError
 from ..sim_lib.register import Register as SimRegister
 from ..sim_lib.register import MemoryRegister as SimMemoryRegister
+from ..sim_lib.register import Field as SimField
 
 from .utilities import reverse_bits, expected_reg_write_data
 from .utilities import reg_value_for_field_read_with_random_base
 from .utilities import random_int_field_value, random_field_parent_reg_value
+from .utilities import random_encoded_field_value,reg_value_for_field_read
 from .utilities import random_reg_value, RandomReg
 from .utilities import RegWriteTestSequence,RegWriteZeroStartTestSequence
 
@@ -87,6 +89,10 @@ class AsyncLibTestBase(unittest.IsolatedAsyncioTestCase, CommonTestBase, ABC):
         # the lsb, msb, high, low, bitmask, inv_bitmask and max_value are all checked as part of
         # `test_field_properties` so do no need to checked here. Similarly, the properties of
         # parent register are checked as part of `test_register_properties`
+
+        await self.__single_int_field_simulator_read_and_write_test(fut=fut,
+                                                                    is_sw_readable=is_sw_readable,
+                                                                    is_sw_writable=is_sw_writable)
 
         if is_sw_readable:
             if not isinstance(fut, (FieldAsyncReadOnly, FieldAsyncReadWrite)):
@@ -295,17 +301,21 @@ class AsyncLibTestBase(unittest.IsolatedAsyncioTestCase, CommonTestBase, ABC):
         # `test_field_properties` so do not need to checked here. Similarly, the properties of
         # parent register are checked as part of `test_register_properties`
 
+        await self.__single_enum_field_simulator_read_and_write_test(fut=fut,
+                                                                     is_sw_readable=is_sw_readable,
+                                                                     is_sw_writable=is_sw_writable)
+
         if is_sw_readable:
             if not isinstance(fut, (FieldEnumAsyncReadOnly, FieldEnumAsyncReadWrite)):
                 raise TypeError('Test can not proceed as the fut is not a readable field')
             await self.__single_enum_field_read_test(fut=fut,
-                                               enum_definition=enum_definition)
+                                                     enum_definition=enum_definition)
 
         if is_sw_writable:
             if not isinstance(fut, (FieldEnumAsyncWriteOnly, FieldEnumAsyncReadWrite)):
                 raise TypeError('Test can not proceed as the fut is not a writable field')
             await self.__single_enum_field_write_test(fut=fut,
-                                                enum_definition=enum_definition)
+                                                      enum_definition=enum_definition)
 
     async def _single_register_read_and_write_test(
             self,
@@ -583,3 +593,299 @@ class AsyncLibTestBase(unittest.IsolatedAsyncioTestCase, CommonTestBase, ABC):
                     raise TypeError('Test can not proceed as the rut is not a read '
                                     'and writable register')
                 self.assertEqual(await rut.read(), random_value)
+
+    async def __single_int_field_simulator_read_and_write_test(
+            self,
+            fut: Union[FieldAsyncReadOnly, FieldAsyncWriteOnly, FieldAsyncReadWrite],
+            is_sw_readable: bool,
+            is_sw_writable: bool) -> None:
+        #pylint:disable=too-many-statements
+
+        sim_register = self.simulator_instance.register_by_full_name(
+            fut.parent_register.full_inst_name)
+        self.assertIsInstance(sim_register, (SimRegister, SimMemoryRegister))
+        sim_field = self.simulator_instance.field_by_full_name(fut.full_inst_name)
+        self.assertIsInstance(sim_field, SimField)
+        register_read_callback = Mock()
+        register_write_callback = Mock()
+        field_read_callback = Mock()
+        field_write_callback = Mock()
+
+        # pylint:disable-next=protected-access
+        readable_reg = fut.parent_register._is_readable
+
+        if is_sw_readable:
+            # register read checks
+            # update the register value via the backdoor in the simulator
+            if not isinstance(fut, (FieldAsyncReadOnly, FieldAsyncReadWrite)):
+                raise TypeError('Test can not proceed as the fut is not a readable field')
+
+            random_field_value = random_int_field_value(fut)
+            random_value = reg_value_for_field_read_with_random_base(
+                fut=fut,
+                field_value=random_field_value)
+            sim_register.value = random_value
+            self.assertEqual(await fut.read(), random_field_value)
+            # update the field value via the backdoor in the simulator
+            previous_register_value = random_value
+
+            random_field_value = random_int_field_value(fut)
+            sim_field.value = random_field_value
+            random_value = reg_value_for_field_read(
+                fut=fut,
+                reg_base_value=previous_register_value,
+                field_value=random_field_value)
+            self.assertEqual(sim_register.value, random_value)
+            self.assertEqual(await fut.read(), random_field_value)
+            # hook up the callbacks to check they work correctly
+            random_field_value = random_int_field_value(fut)
+            random_value = reg_value_for_field_read_with_random_base(
+                fut=fut,
+                field_value=random_field_value)
+            sim_register.value = random_value
+            sim_register.read_callback = register_read_callback
+            sim_register.write_callback = register_write_callback
+            sim_field.read_callback = field_read_callback
+            sim_field.write_callback = field_write_callback
+            self.assertEqual(await fut.read(), random_field_value)
+            register_write_callback.assert_not_called()
+            register_read_callback.assert_called_once_with(value=random_value)
+            field_write_callback.assert_not_called()
+            field_read_callback.assert_called_once_with(value=random_field_value)
+            # revert the callbacks and check again
+            register_write_callback.reset_mock()
+            register_read_callback.reset_mock()
+            field_write_callback.reset_mock()
+            field_read_callback.reset_mock()
+            sim_register.read_callback = None
+            sim_register.write_callback = None
+            sim_field.read_callback = None
+            sim_field.write_callback = None
+            #random_field_value = random_int_field_value(fut)
+            random_value = reg_value_for_field_read_with_random_base(
+                fut=fut,
+                field_value=random_field_value)
+            sim_register.value = random_value
+            self.assertEqual(await fut.read(), random_field_value)
+            register_write_callback.assert_not_called()
+            register_read_callback.assert_not_called()
+            field_write_callback.assert_not_called()
+            field_read_callback.assert_not_called()
+
+        if is_sw_writable:
+            # register write checks
+            # update the register value via the backdoor in the simulator, then perform a field
+            # write and make sure it is updated
+
+            if not isinstance(fut, (FieldAsyncWriteOnly, FieldAsyncReadWrite)):
+                raise TypeError('Test can not proceed as the fut is not a writable field')
+
+            if readable_reg:
+                initial_reg_random_value = random_field_parent_reg_value(fut)
+                sim_register.value = initial_reg_random_value
+            else:
+                # if the register is not readable the write assumes the rest of the register is 0
+                initial_reg_random_value = 0
+
+            random_field_value = random_int_field_value(fut)
+            sim_field.value = random_field_value
+            random_value = reg_value_for_field_read(
+                fut=fut,
+                reg_base_value=initial_reg_random_value,
+                field_value=random_field_value)
+            await fut.write(random_field_value)
+            self.assertEqual(sim_register.value, random_value)
+
+            register_write_callback.assert_not_called()
+            register_read_callback.assert_not_called()
+            field_write_callback.assert_not_called()
+            field_read_callback.assert_not_called()
+            # hook up the call backs
+            sim_register.read_callback = None
+            sim_register.write_callback = register_write_callback
+            sim_field.read_callback = None
+            sim_field.write_callback = field_write_callback
+            random_field_value = random_int_field_value(fut)
+            await fut.write(random_field_value)
+            random_value = reg_value_for_field_read(
+                fut=fut,
+                reg_base_value=initial_reg_random_value,
+                field_value=random_field_value)
+            self.assertEqual(sim_register.value, random_value)
+            register_write_callback.assert_called_once_with(
+                value=random_value)
+            field_write_callback.assert_called_once_with(
+                value=random_field_value)
+            register_read_callback.assert_not_called()
+            field_read_callback.assert_not_called()
+            # revert the callbacks and check again
+            register_write_callback.reset_mock()
+            register_read_callback.reset_mock()
+            field_write_callback.reset_mock()
+            field_read_callback.reset_mock()
+            sim_register.write_callback = None
+            sim_field.write_callback = None
+            random_field_value = random_int_field_value(fut)
+            await fut.write(random_field_value)
+            random_value = reg_value_for_field_read(
+                fut=fut,
+                reg_base_value=initial_reg_random_value,
+                field_value=random_field_value)
+            self.assertEqual(sim_register.value, random_value)
+            register_write_callback.assert_not_called()
+            register_read_callback.assert_not_called()
+            field_write_callback.assert_not_called()
+            field_read_callback.assert_not_called()
+
+    async def __single_enum_field_simulator_read_and_write_test(
+            self,
+            fut: Union[FieldEnumAsyncReadOnly, FieldEnumAsyncWriteOnly, FieldEnumAsyncReadWrite],
+            is_sw_readable: bool,
+            is_sw_writable: bool) -> None:
+        # pylint:disable=too-many-statements
+
+        sim_register = self.simulator_instance.register_by_full_name(
+            fut.parent_register.full_inst_name)
+        self.assertIsInstance(sim_register, (SimRegister, SimMemoryRegister))
+        sim_field = self.simulator_instance.field_by_full_name(fut.full_inst_name)
+        self.assertIsInstance(sim_field, SimField)
+        register_read_callback = Mock()
+        register_write_callback = Mock()
+        field_read_callback = Mock()
+        field_write_callback = Mock()
+
+        # pylint:disable-next=protected-access
+        readable_reg = fut.parent_register._is_readable
+
+        if is_sw_readable:
+            # register read checks
+            # update the register value via the backdoor in the simulator
+
+            if not isinstance(fut, (FieldEnumAsyncReadOnly, FieldEnumAsyncReadWrite)):
+                raise TypeError('Test can not proceed as the fut is not a readable field')
+
+            random_field_value = random_encoded_field_value(fut)
+            random_value = reg_value_for_field_read_with_random_base(
+                fut=fut,
+                field_value=random_field_value.value)
+
+            sim_register.value = random_value
+            self.assertEqual(await fut.read(), random_field_value)
+            # update the field value via the backdoor in the simulator
+            previous_register_value = random_value
+            random_field_value = random_encoded_field_value(fut)
+            sim_field.value = random_field_value.value
+            random_value = reg_value_for_field_read(
+                fut=fut,
+                reg_base_value=previous_register_value,
+                field_value=random_field_value.value)
+            self.assertEqual(sim_register.value, random_value)
+            self.assertEqual(await fut.read(), random_field_value)
+
+
+            # hook up the callbacks to check they work correctly
+            random_field_value = random_encoded_field_value(fut)
+            random_value = reg_value_for_field_read_with_random_base(
+                fut=fut,
+                field_value=random_field_value.value)
+
+            sim_register.value = random_value
+            sim_register.read_callback = register_read_callback
+            sim_register.write_callback = register_write_callback
+            sim_field.read_callback = field_read_callback
+            sim_field.write_callback = field_write_callback
+            self.assertEqual(await fut.read(), random_field_value)
+            register_write_callback.assert_not_called()
+            register_read_callback.assert_called_once_with(value=random_value)
+            field_write_callback.assert_not_called()
+            field_read_callback.assert_called_once_with(value=random_field_value.value)
+
+            # revert the callbacks and check again
+            register_write_callback.reset_mock()
+            register_read_callback.reset_mock()
+            field_write_callback.reset_mock()
+            field_read_callback.reset_mock()
+            sim_register.read_callback = None
+            sim_register.write_callback = None
+            sim_field.read_callback = None
+            sim_field.write_callback = None
+            random_field_value = random_encoded_field_value(fut)
+            random_value = reg_value_for_field_read_with_random_base(
+                fut=fut,
+                field_value=random_field_value.value)
+
+            sim_register.value = random_value
+            self.assertEqual(fut.read(), random_field_value)
+            register_write_callback.assert_not_called()
+            register_read_callback.assert_not_called()
+            field_write_callback.assert_not_called()
+            field_read_callback.assert_not_called()
+
+
+        if is_sw_writable:
+            # register write checks
+            # update the register value via the backdoor in the simulator, then perform a field
+            # write and make sure it is updated
+
+            if not isinstance(fut, (FieldEnumAsyncWriteOnly, FieldEnumAsyncReadWrite)):
+                raise TypeError('Test can not proceed as the fut is not a writable field')
+
+            if readable_reg:
+                initial_reg_random_value = random_field_parent_reg_value(fut)
+                sim_register.value = initial_reg_random_value
+            else:
+                # if the register is not readable the write assumes the rest of the register is 0
+                initial_reg_random_value = 0
+
+
+            random_field_value = random_encoded_field_value(fut)
+            sim_field.value = random_field_value.value
+            random_value = reg_value_for_field_read(
+                fut=fut,
+                reg_base_value=initial_reg_random_value,
+                field_value=random_field_value.value)
+            await fut.write(random_field_value)
+
+
+            self.assertEqual(sim_register.value, random_value)
+
+            register_write_callback.assert_not_called()
+            register_read_callback.assert_not_called()
+            field_write_callback.assert_not_called()
+            field_read_callback.assert_not_called()
+            # hook up the call backs
+            sim_register.read_callback = None
+            sim_register.write_callback = register_write_callback
+            sim_field.read_callback = None
+            sim_field.write_callback = field_write_callback
+            random_field_value = random_encoded_field_value(fut)
+            await fut.write(random_field_value)
+            random_value = reg_value_for_field_read(
+                fut=fut,
+                reg_base_value=initial_reg_random_value,
+                field_value=random_field_value.value)
+            self.assertEqual(sim_register.value, random_value)
+            register_write_callback.assert_called_once_with(
+                value=random_value)
+            field_write_callback.assert_called_once_with(
+                value=random_field_value.value)
+            register_read_callback.assert_not_called()
+            field_read_callback.assert_not_called()
+            # revert the callbacks and check again
+            register_write_callback.reset_mock()
+            register_read_callback.reset_mock()
+            field_write_callback.reset_mock()
+            field_read_callback.reset_mock()
+            sim_register.write_callback = None
+            sim_field.write_callback = None
+            random_field_value = random_encoded_field_value(fut)
+            await fut.write(random_field_value)
+            random_value = reg_value_for_field_read(
+                fut=fut,
+                reg_base_value=initial_reg_random_value,
+                field_value=random_field_value.value)
+            self.assertEqual(sim_register.value, random_value)
+            register_write_callback.assert_not_called()
+            register_read_callback.assert_not_called()
+            field_write_callback.assert_not_called()
+            field_read_callback.assert_not_called()
