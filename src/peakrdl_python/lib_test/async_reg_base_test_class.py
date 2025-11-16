@@ -815,7 +815,7 @@ class AsyncLibTestBase(unittest.IsolatedAsyncioTestCase, CommonTestBase, ABC):
                 field_value=random_field_value.value)
 
             sim_register.value = random_value
-            self.assertEqual(fut.read(), random_field_value)
+            self.assertEqual(await fut.read(), random_field_value)
             register_write_callback.assert_not_called()
             register_read_callback.assert_not_called()
             field_write_callback.assert_not_called()
