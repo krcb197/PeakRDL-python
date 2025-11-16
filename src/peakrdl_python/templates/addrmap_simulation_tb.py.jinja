@@ -54,6 +54,9 @@ from {{ peakrdl_python_lib(depth=lib_depth) }} import SystemRDLEnum
 from {{ peakrdl_python_lib_test(depth=lib_depth) }} import reverse_bits
 
 class {{fq_block_name}}_single_access({{top_node.inst_name}}_SimTestCase): # type: ignore[valid-type,misc]
+    """
+    tests for all the non-block access methods
+    """
 
     {% if uses_memory %}
     {% if asyncoutput %}async {% endif %}def test_memory_read_and_write(self) -> None:
