@@ -225,7 +225,7 @@ class {{fq_block_name}}_single_access({{top_node.inst_name}}_TestCase): # type: 
         {% for node in owned_elements.registers -%}
         with self.subTest(msg='register: {{'.'.join(node.get_path_segments())}}'):
             self._single_register_property_test(rut=self.dut.{{'.'.join(get_python_path_segments(node))}}, address={{node.absolute_address}}, width={{node.size * 8}}, accesswidth={% if 'accesswidth' in node.list_properties() -%}{{node.get_property('accesswidth')}}{% else %}None{%- endif %})
-            {% if asyncoutput %}await {%endif %}self._single_register_read_and_write_test(rut=self.dut.{{'.'.join(get_python_path_segments(node))}}, sim_register=self.sim.register_by_full_name('{{'.'.join(node.get_path_segments())}}'),  has_sw_readable={{node.has_sw_readable}}, has_sw_writable={{node.has_sw_writable}})
+            {% if asyncoutput %}await {%endif %}self._single_register_read_and_write_test(rut=self.dut.{{'.'.join(get_python_path_segments(node))}}, has_sw_readable={{node.has_sw_readable}}, has_sw_writable={{node.has_sw_writable}})
         {% endfor %}
 
     {% if asyncoutput %}async {% endif %}def test_field(self) -> None:

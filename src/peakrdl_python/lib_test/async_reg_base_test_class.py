@@ -310,7 +310,6 @@ class AsyncLibTestBase(unittest.IsolatedAsyncioTestCase, CommonTestBase, ABC):
     async def _single_register_read_and_write_test(
             self,
             rut: Union[RegAsyncReadOnly, RegAsyncReadWrite, RegAsyncWriteOnly],
-            sim_register: Union[SimRegister, SimMemoryRegister],
             has_sw_readable: bool,
             has_sw_writable: bool) -> None:
 
@@ -318,7 +317,6 @@ class AsyncLibTestBase(unittest.IsolatedAsyncioTestCase, CommonTestBase, ABC):
 
         await self.__single_register_simulator_read_and_write_test(
             rut=rut,
-            sim_register=sim_register,
             has_sw_readable=has_sw_readable,
             has_sw_writable=has_sw_writable)
 
@@ -524,15 +522,18 @@ class AsyncLibTestBase(unittest.IsolatedAsyncioTestCase, CommonTestBase, ABC):
     async def __single_register_simulator_read_and_write_test(
             self,
             rut: Union[RegAsyncReadOnly,RegAsyncReadWrite,RegAsyncWriteOnly],
-            sim_register: Union[SimRegister, SimMemoryRegister],
             has_sw_readable: bool,
             has_sw_writable: bool) -> None:
+
+        sim_register = self.simulator_instance.register_by_full_name(rut.full_inst_name)
 
         self.assertIsInstance(sim_register, (SimRegister, SimMemoryRegister))
         register_read_callback = Mock()
         register_write_callback = Mock()
 
         if has_sw_readable:
+            if not isinstance(rut, (RegAsyncReadOnly, RegAsyncReadWrite)):
+                raise TypeError('Test can not proceed as the rut is not a readable register')
             # register read checks
             # update the value via the backdoor in the simulator
             random_value = random_reg_value(rut)
@@ -556,6 +557,8 @@ class AsyncLibTestBase(unittest.IsolatedAsyncioTestCase, CommonTestBase, ABC):
             register_read_callback.assert_not_called()
 
         if has_sw_writable:
+            if not isinstance(rut, (RegAsyncWriteOnly, RegAsyncReadWrite)):
+                raise TypeError('Test can not proceed as the rut is not a writable register')
             # register write checks
             random_value = random_reg_value(rut)
             await rut.write(random_value)
@@ -576,4 +579,7 @@ class AsyncLibTestBase(unittest.IsolatedAsyncioTestCase, CommonTestBase, ABC):
             await rut.write(random_value)
             self.assertEqual(sim_register.value, random_value)
             if has_sw_readable:
+                if not isinstance(rut, RegAsyncReadWrite):
+                    raise TypeError('Test can not proceed as the rut is not a read '
+                                    'and writable register')
                 self.assertEqual(await rut.read(), random_value)

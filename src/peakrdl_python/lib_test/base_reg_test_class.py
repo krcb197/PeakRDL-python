@@ -298,14 +298,12 @@ class LibTestBase(CommonTestBase, ABC):
 
     def _single_register_read_and_write_test(self,
                                              rut: Union[RegReadOnly, RegReadWrite, RegWriteOnly],
-                                             sim_register: Union[SimRegister, SimMemoryRegister],
                                              has_sw_readable: bool,
                                              has_sw_writable: bool) -> None:
 
         # the register properties are tested separately so are available to be used here
 
         self.__single_register_simulator_read_and_write_test(rut=rut,
-                                                             sim_register=sim_register,
                                                              has_sw_readable=has_sw_readable,
                                                              has_sw_writable=has_sw_writable)
 
@@ -511,15 +509,18 @@ class LibTestBase(CommonTestBase, ABC):
     def __single_register_simulator_read_and_write_test(
             self,
             rut: Union[RegReadOnly, RegReadWrite, RegWriteOnly],
-            sim_register: Union[SimRegister, SimMemoryRegister],
             has_sw_readable: bool,
             has_sw_writable: bool) -> None:
+
+        sim_register = self.simulator_instance.register_by_full_name(rut.full_inst_name)
 
         self.assertIsInstance(sim_register, (SimRegister, SimMemoryRegister))
         register_read_callback = Mock()
         register_write_callback = Mock()
 
         if has_sw_readable:
+            if not isinstance(rut, (RegReadOnly, RegReadWrite)):
+                raise TypeError('Test can not proceed as the rut is not a readable register')
             # register read checks
             # update the value via the backdoor in the simulator
             random_value = random_reg_value(rut)
@@ -543,6 +544,8 @@ class LibTestBase(CommonTestBase, ABC):
             register_read_callback.assert_not_called()
 
         if has_sw_writable:
+            if not isinstance(rut, (RegWriteOnly, RegReadWrite)):
+                raise TypeError('Test can not proceed as the rut is not a writable register')
             # register write checks
             random_value = random_reg_value(rut)
             rut.write(random_value)
@@ -563,4 +566,7 @@ class LibTestBase(CommonTestBase, ABC):
             rut.write(random_value)
             self.assertEqual(sim_register.value, random_value)
             if has_sw_readable:
+                if not isinstance(rut, RegReadWrite):
+                    raise TypeError('Test can not proceed as the rut is not a read '
+                                    'and writable register')
                 self.assertEqual(rut.read(), random_value)
