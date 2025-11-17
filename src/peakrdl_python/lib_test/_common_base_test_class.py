@@ -112,7 +112,7 @@ class CommonTestBase(unittest.TestCase, ABC):
     def _single_node_rdl_name_and_desc_test(self,
                                             dut: Base,
                                             rdl_name: Optional[str],
-                                            rdl_desc: Optional[str]):
+                                            rdl_desc: Optional[str]) -> None:
         """
         Check the SystemRDL Name and Desc properties for a node
         """
