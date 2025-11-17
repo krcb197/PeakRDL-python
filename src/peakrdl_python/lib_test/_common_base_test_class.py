@@ -27,6 +27,7 @@ from ..lib import FieldEnumReadWrite, FieldEnumReadOnly, FieldEnumWriteOnly
 from ..lib import FieldAsyncReadOnly, FieldAsyncWriteOnly, FieldAsyncReadWrite
 from ..lib import FieldEnumAsyncReadOnly, FieldEnumAsyncWriteOnly, FieldEnumAsyncReadWrite
 from ..lib.base_register import BaseReg
+from ..lib import Base
 from .utilities import get_field_bitmask_int, get_field_inv_bitmask
 from ..sim_lib.simulator import BaseSimulator
 
@@ -107,3 +108,20 @@ class CommonTestBase(unittest.TestCase, ABC):
             self.assertEqual(rut.accesswidth, accesswidth)
         else:
             self.assertEqual(rut.accesswidth, width)
+
+    def _single_node_rdl_name_and_desc_test(self,
+                                            dut: Base,
+                                            rdl_name: Optional[str],
+                                            rdl_desc: Optional[str]):
+        """
+        Check the SystemRDL Name and Desc properties for a node
+        """
+        if rdl_name is None:
+            self.assertIsNone(dut.rdl_name)
+        else:
+            self.assertEqual(dut.rdl_name, rdl_name)
+
+        if rdl_desc is None:
+            self.assertIsNone(dut.rdl_desc)
+        else:
+            self.assertEqual(dut.rdl_desc, rdl_desc)
