@@ -149,6 +149,6 @@ class Field(Base):
             self.__parent_register.value = value
         else:
             # do a read, modify write
-            reg_value = self.__parent_register.read()
+            reg_value = self.__parent_register.value
             self.__parent_register.value = (reg_value & self.__inverse_bitmask) | \
                                            (value << self.__low)
