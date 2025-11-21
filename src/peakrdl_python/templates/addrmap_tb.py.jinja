@@ -94,40 +94,15 @@ class {{fq_block_name}}_single_access({{top_node.inst_name}}_TestCase): # type: 
             self.assertEqual(self.dut.{{'.'.join(get_python_path_segments(node))}}.full_inst_name, '{{'.'.join(node.get_path_segments())}}')  # type: ignore[union-attr]
         {% endfor %}
 
-    def test_name_property(self)  -> None:
+    def test_rdl_name_and_desc_property(self)  -> None:
         """
-        Walk the address map and check the name property has been correctly populated
-        """
-        {% for node in owned_elements.nodes -%}
-        with self.subTest(msg='node: {{'.'.join(node.get_path_segments())}}'):
-            {% if skip_systemrdl_name_and_desc_properties %}
-                self.assertIsNone(self.dut.{{'.'.join(get_python_path_segments(node))}}.rdl_name)  # type: ignore[union-attr]
-            {% else %}
-                {% if node.get_property('name', default=None) is none %}
-            self.assertIsNone(self.dut.{{'.'.join(get_python_path_segments(node))}}.rdl_name)  # type: ignore[union-attr]
-                {% else %}
-            self.assertEqual(self.dut.{{'.'.join(get_python_path_segments(node))}}.rdl_name, {{node.get_property('name') | tojson}}) # type: ignore[union-attr]
-                {% endif %}
-            {% endif %}
-
-        {% endfor %}
-
-    def test_desc(self)  -> None:
-        """
-        Walk the address map and check the desc property has been correctly populated
+        Walk the address map and check the system rdl name and desc property has been correctly populated
         """
         {% for node in owned_elements.nodes -%}
         with self.subTest(msg='node: {{'.'.join(node.get_path_segments())}}'):
-            {% if skip_systemrdl_name_and_desc_properties %}
-                self.assertIsNone(self.dut.{{'.'.join(get_python_path_segments(node))}}.rdl_desc)  # type: ignore[union-attr]
-            {% else %}
-                {% if node.get_property('desc', default=None) is none %}
-            self.assertIsNone(self.dut.{{'.'.join(get_python_path_segments(node))}}.rdl_desc)  # type: ignore[union-attr]
-                {% else %}
-            self.assertEqual(self.dut.{{'.'.join(get_python_path_segments(node))}}.rdl_desc, {{node.get_property('desc') | tojson}}) # type: ignore[union-attr]
-                {% endif %}
-            {% endif %}
-
+            self._single_node_rdl_name_and_desc_test(dut=self.dut.{{'.'.join(get_python_path_segments(node))}},
+                                                     rdl_name={% if skip_systemrdl_name_and_desc_properties %}None{% elif node.get_property('name', default=None) is none %}None{% else %}{{node.get_property('name') | tojson}}{% endif %},
+                                                     rdl_desc={% if skip_systemrdl_name_and_desc_properties %}None{% elif node.get_property('desc', default=None) is none %}None{% else %}{{node.get_property('desc') | tojson}}{% endif %})
         {% endfor %}
 
     def test_sizes(self) -> None:
