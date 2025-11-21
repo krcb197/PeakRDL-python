@@ -205,7 +205,7 @@ if __name__ == '__main__':
     node_list = []
     for node in spec.descendants(unroll=True):
         node_list.append(node)
-        print(node.inst_name)
+        # print(node.inst_name)
 
     # write out text file of all the nodes names, this can be used to debug regex issues
     if CommandLineArgs.full_inst_file is not None:
