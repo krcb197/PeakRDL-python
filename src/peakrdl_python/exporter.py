@@ -3,16 +3,16 @@ peakrdl-python is a tool to generate Python Register Access Layer (RAL) from Sys
 Copyright (C) 2021 - 2025
 
 This program is free software: you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
+it under the terms of the GNU Lesser General Public License as 
+published by the Free Software Foundation, either version 3 of 
+the License, or (at your option) any later version.
 
 This program is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
+GNU Lesser General Public License for more details.
 
-You should have received a copy of the GNU General Public License
+You should have received a copy of the GNU Lesser General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 Main Classes for the peakrdl-python
@@ -982,7 +982,7 @@ class PythonExporter:
             skip_library_copy: skip copy the libraries to the generated package, this is
                                useful to turn off when developing peakrdl python to avoid
                                editing the wrong copy of the library. It also avoids the
-                               GPL code being part of the package for distribution,
+                               potential licensing implications of package distribution,
                                However, this means the end-user is responsible for
                                installing the libraries.
             legacy_block_access: version 0.8 changed the block access methods from using
