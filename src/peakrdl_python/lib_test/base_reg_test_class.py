@@ -312,9 +312,17 @@ class LibTestBase(CommonTestBase, ABC):
     def _single_register_read_and_write_test(self,
                                              rut: Union[RegReadOnly, RegReadWrite, RegWriteOnly],
                                              has_sw_readable: bool,
-                                             has_sw_writable: bool) -> None:
+                                             has_sw_writable: bool,
+                                             readable_fields: set[str],
+                                             writeable_fields: set[str]) -> None:
 
         # the register properties are tested separately so are available to be used here
+
+        self._test_register_iterators(rut=rut,
+                                      has_sw_readable=has_sw_readable,
+                                      has_sw_writable=has_sw_writable,
+                                      readable_fields=readable_fields,
+                                      writeable_fields=writeable_fields)
 
         self.__single_register_simulator_read_and_write_test(rut=rut,
                                                              has_sw_readable=has_sw_readable,

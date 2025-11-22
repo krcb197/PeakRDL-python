@@ -26,6 +26,8 @@ from ..lib import FieldReadWrite, FieldReadOnly, FieldWriteOnly
 from ..lib import FieldEnumReadWrite, FieldEnumReadOnly, FieldEnumWriteOnly
 from ..lib import FieldAsyncReadOnly, FieldAsyncWriteOnly, FieldAsyncReadWrite
 from ..lib import FieldEnumAsyncReadOnly, FieldEnumAsyncWriteOnly, FieldEnumAsyncReadWrite
+from ..lib import RegReadOnly, RegReadWrite, RegWriteOnly
+from ..lib import RegAsyncReadOnly, RegAsyncReadWrite, RegAsyncWriteOnly
 from ..lib.base_register import BaseReg
 from ..lib import Base
 from .utilities import get_field_bitmask_int, get_field_inv_bitmask
@@ -125,3 +127,50 @@ class CommonTestBase(unittest.TestCase, ABC):
             self.assertIsNone(dut.rdl_desc)
         else:
             self.assertEqual(dut.rdl_desc, rdl_desc)
+
+    def _test_register_iterators(self,
+                                 rut: Union[RegReadOnly,
+                                            RegReadWrite,
+                                            RegWriteOnly,
+                                            RegAsyncReadOnly,
+                                            RegAsyncReadWrite,
+                                            RegAsyncWriteOnly],
+                                 has_sw_readable: bool,
+                                 has_sw_writable: bool,
+                                 readable_fields: set[str],
+                                 writeable_fields: set[str]):
+        if has_sw_readable:
+            if not isinstance(rut, (RegReadOnly,
+                                    RegReadWrite,
+                                    RegAsyncReadOnly,
+                                    RegAsyncReadWrite,
+                                    )):
+                raise TypeError(f'Register was expected to readable, got {type(rut)}')
+
+            child_readable_field_names = { field.inst_name for field in rut.readable_fields}
+
+            self.assertEqual(readable_fields, child_readable_field_names)
+        else:
+            self.assertFalse(hasattr(rut, 'readable_fields'))
+            # check the readable_fields is empty
+            self.assertFalse(readable_fields)
+
+        if has_sw_writable:
+            if not isinstance(rut, (RegWriteOnly,
+                                    RegReadWrite,
+                                    RegAsyncWriteOnly,
+                                    RegAsyncReadWrite,
+                                    )):
+                raise TypeError(f'Register was expected to readable, got {type(rut)}')
+
+            child_writeable_fields_names = {field.inst_name for field in rut.writable_fields}
+
+            self.assertEqual(writeable_fields, child_writeable_fields_names)
+        else:
+            self.assertFalse(hasattr(rut, 'writeable_fields'))
+            # check the writeable_fields is empty
+            self.assertFalse(writeable_fields)
+
+        child_field_names = {field.inst_name for field in rut.fields}
+        self.assertEqual(readable_fields | writeable_fields, child_field_names)
+
