@@ -137,8 +137,8 @@ class BaseSimulator(ABC):
         return memory_entry
 
     def _read(self, addr: int,
-             width: int, # pylint: disable=unused-argument
-             accesswidth: int) -> int: # pylint: disable=unused-argument
+              width: int,  # pylint: disable=unused-argument
+              accesswidth: int) -> int:  # pylint: disable=unused-argument
         """
         function to simulate a device read, this needs to match the protocol for the callbacks
         """

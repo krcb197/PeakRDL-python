@@ -245,7 +245,9 @@ class {{fq_block_name}}_single_access({{top_node.inst_name}}_SimTestCase): # typ
             # hook up the call backs
             sim_register.read_callback = None
             sim_register.write_callback = register_write_callback
+            {% if node.is_sw_readable -%}
             sim_field.read_callback = None
+            {% endif %}
             sim_field.write_callback = field_write_callback
             {%- if 'encode' in node.list_properties() %}
             random_field_value = random_enum_reg_value(self.dut.{{'.'.join(get_python_path_segments(node))}}.enum_cls)
