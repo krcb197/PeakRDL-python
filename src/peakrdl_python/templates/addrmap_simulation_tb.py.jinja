@@ -178,7 +178,9 @@ class {{fq_block_name}}_single_access({{top_node.inst_name}}_SimTestCase): # typ
             sim_register.read_callback = register_read_callback
             sim_register.write_callback = register_write_callback
             sim_field.read_callback = field_read_callback
+            {% if node.is_sw_writable -%}
             sim_field.write_callback = field_write_callback
+            {% endif %}
             self.assertEqual({% if asyncoutput %}await {%endif %}self.dut.{{'.'.join(get_python_path_segments(node))}}.read(), random_field_value)
             register_write_callback.assert_not_called()
             register_read_callback.assert_called_once_with(value=random_value)
@@ -196,7 +198,9 @@ class {{fq_block_name}}_single_access({{top_node.inst_name}}_SimTestCase): # typ
             sim_register.read_callback = None
             sim_register.write_callback = None
             sim_field.read_callback = None
+            {% if node.is_sw_writable -%}
             sim_field.write_callback = None
+            {% endif %}
             {%- if 'encode' in node.list_properties() %}
             random_field_value = random_enum_reg_value(self.dut.{{'.'.join(get_python_path_segments(node))}}.enum_cls)
             random_value = (random.randrange(0, {{get_reg_max_value_hex_string(node.parent)}}+1) & {{get_field_inv_bitmask_hex_string(node)}}) | ({% if node.msb == node.high %}random_field_value.value{% else %}self._reverse_bits(value=random_field_value.value, number_bits={{node.width}}){% endif %} << {{node.low}})
