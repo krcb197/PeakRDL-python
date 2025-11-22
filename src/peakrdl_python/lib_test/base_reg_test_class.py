@@ -318,11 +318,11 @@ class LibTestBase(CommonTestBase, ABC):
 
         # the register properties are tested separately so are available to be used here
 
-        self._test_register_iterators(rut=rut,
-                                      has_sw_readable=has_sw_readable,
-                                      has_sw_writable=has_sw_writable,
-                                      readable_fields=readable_fields,
-                                      writeable_fields=writeable_fields)
+        self._test_field_iterators(rut=rut,
+                                   has_sw_readable=has_sw_readable,
+                                   has_sw_writable=has_sw_writable,
+                                   readable_fields=readable_fields,
+                                   writeable_fields=writeable_fields)
 
         self.__single_register_simulator_read_and_write_test(rut=rut,
                                                              has_sw_readable=has_sw_readable,

@@ -28,6 +28,8 @@ from ..lib import FieldAsyncReadOnly, FieldAsyncWriteOnly, FieldAsyncReadWrite
 from ..lib import FieldEnumAsyncReadOnly, FieldEnumAsyncWriteOnly, FieldEnumAsyncReadWrite
 from ..lib import RegReadOnly, RegReadWrite, RegWriteOnly
 from ..lib import RegAsyncReadOnly, RegAsyncReadWrite, RegAsyncWriteOnly
+from ..lib import AddressMap, AsyncAddressMap
+from ..lib import RegFile, AsyncRegFile
 from ..lib.base_register import BaseReg
 from ..lib import Base
 from .utilities import get_field_bitmask_int, get_field_inv_bitmask
@@ -128,17 +130,17 @@ class CommonTestBase(unittest.TestCase, ABC):
         else:
             self.assertEqual(dut.rdl_desc, rdl_desc)
 
-    def _test_register_iterators(self,
-                                 rut: Union[RegReadOnly,
+    def _test_field_iterators(self,
+                              rut: Union[RegReadOnly,
                                             RegReadWrite,
                                             RegWriteOnly,
                                             RegAsyncReadOnly,
                                             RegAsyncReadWrite,
                                             RegAsyncWriteOnly],
-                                 has_sw_readable: bool,
-                                 has_sw_writable: bool,
-                                 readable_fields: set[str],
-                                 writeable_fields: set[str]):
+                              has_sw_readable: bool,
+                              has_sw_writable: bool,
+                              readable_fields: set[str],
+                              writeable_fields: set[str]):
         if has_sw_readable:
             if not isinstance(rut, (RegReadOnly,
                                     RegReadWrite,
@@ -173,4 +175,58 @@ class CommonTestBase(unittest.TestCase, ABC):
 
         child_field_names = {field.inst_name for field in rut.fields}
         self.assertEqual(readable_fields | writeable_fields, child_field_names)
+
+    def _test_register_iterators(self,
+                                 dut: Union[AddressMap, AsyncAddressMap, RegFile, AsyncRegFile],
+                                 readable_registers: set[str],
+                                 writeable_registers: set[str]):
+
+        child_readable_reg_names = { reg.inst_name for reg in
+                                     dut.get_writable_registers(unroll=True)}
+        self.assertEqual(readable_registers, child_readable_reg_names)
+        child_writable_reg_names = {reg.inst_name for reg in
+                                    dut.get_writable_registers(unroll=True)}
+        self.assertEqual(writeable_registers, child_writable_reg_names)
+
+
+    def _test_memory_iterators(self,
+                               dut: Union[AddressMap, AsyncAddressMap],
+                               memories: set[str]):
+        child_mem_names = {reg.inst_name for reg in
+                                    dut.get_memories(unroll=True)}
+        self.assertEqual(memories, child_mem_names)
+
+    def __test_section_iterators(self,
+                                 dut: Union[AddressMap, AsyncAddressMap, RegFile, AsyncRegFile],
+                                 memories: set[str]):
+        child_mem_names = {reg.inst_name for reg in
+                                    dut.get_memories(unroll=True)}
+        self.assertEqual(memories, child_mem_names)
+
+    def _test_addrmap_iterators(self,
+                                dut: Union[AddressMap, AsyncAddressMap],
+                                memories: set[str],
+                                sections: set[str],
+                                readable_registers: set[str],
+                                writeable_registers: set[str]):
+        self._test_register_iterators(dut=dut,
+                                      readable_registers=readable_registers,
+                                      writeable_registers=writeable_registers)
+        self._test_memory_iterators(dut=dut,
+                                    memories=memories)
+        self.__test_section_iterators(dut=dut,
+                                      sections=sections)
+
+    def _test_regfile_iterators(self,
+                                dut: Union[RegFile, AsyncRegFile],
+                                memories: set[str],
+                                sections: set[str],
+                                readable_registers: set[str],
+                                writeable_registers: set[str]):
+        self._test_register_iterators(dut=dut,
+                                      readable_registers=readable_registers,
+                                      writeable_registers=writeable_registers)
+        self.__test_section_iterators(dut=dut,
+                                      sections=sections)
+        self.assertFalse(hasattr(dut, 'get_memories'))
 
