@@ -56,13 +56,13 @@ class BaseRegister(Base, ABC):
         self._width = width
         self._readable = readable
         self._writable = writable
-        self.fields = tuple([field_def.class_type(low=field_def.low,
-                                            high=field_def.high,
-                                            msb=field_def.msb,
-                                            lsb=field_def.lsb,
-                                            inst_name=field_def.inst_name,
-                                            parent_register=self,
-                                            parent_width=width) for field_def in fields])
+        self.fields = tuple(field_def.class_type(low=field_def.low,
+                                                 high=field_def.high,
+                                                 msb=field_def.msb,
+                                                 lsb=field_def.lsb,
+                                                 inst_name=field_def.inst_name,
+                                                 parent_register=self,
+                                                 parent_width=width) for field_def in fields)
         self.__read_callback: Optional[RegisterReadCallback] = None
         self.__write_callback: Optional[RegisterWriteCallback] = None
 
@@ -151,8 +151,8 @@ class BaseRegister(Base, ABC):
         Iterator of the Writable fields
         """
         def is_writable(field: Union[WriteOnlyField, ReadWriteField, ReadOnlyField]) -> \
-                    TypeGuard[Union[WriteOnlyField, ReadWriteField]]:
-                return isinstance(field, (WriteOnlyField, ReadWriteField))
+                TypeGuard[Union[WriteOnlyField, ReadWriteField]]:
+            return isinstance(field, (WriteOnlyField, ReadWriteField))
 
         return filter(is_writable, self.fields)
 
