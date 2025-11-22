@@ -125,3 +125,14 @@ class CommonTestBase(unittest.TestCase, ABC):
             self.assertIsNone(dut.rdl_desc)
         else:
             self.assertEqual(dut.rdl_desc, rdl_desc)
+
+    def _test_node_inst_name(self,
+                             dut: Base,
+                             parent_full_inst_name:str,
+                             inst_name:str) -> None:
+        """
+        Test the `inst_name` and `full_inst_name` attributes of a node
+        """
+        self.assertEqual(dut.inst_name, inst_name)
+        full_inst_name = parent_full_inst_name + '.' + inst_name
+        self.assertEqual(dut.full_inst_name, full_inst_name)
