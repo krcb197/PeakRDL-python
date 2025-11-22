@@ -34,6 +34,7 @@ if TYPE_CHECKING:
 
 # pylint: disable=too-many-instance-attributes,too-many-arguments
 
+#pylint:disable-next=too-few-public-methods
 class _FieldBase(Base):
     """
     class for all fields
@@ -121,12 +122,10 @@ class _FieldBase(Base):
                                            (value << self.__low)
 
 class ReadOnlyField(_FieldBase):
-
-    def __init__(self, *, low: int, high: int, msb: int, lsb: int,
-                 parent_register: 'BaseRegister', parent_width: int, inst_name: str):
-        super().__init__(low=low, high=high, msb=msb, lsb=lsb, parent_register=parent_register,
-                         parent_width=parent_width, inst_name=inst_name)
-
+    """
+    Simulation of a read-only field
+    """
+    __slots__: list[str] = []
 
     @property
     def read_callback(self) -> Optional[FieldReadCallback]:
@@ -141,13 +140,12 @@ class ReadOnlyField(_FieldBase):
 
 
 class WriteOnlyField(_FieldBase):
+    """
+    Simulation of a write-only field
+    """
+    __slots__:list[str] = []
 
-    __slots__ = ['__write_callback']
 
-    def __init__(self, *, low: int, high: int, msb: int, lsb: int,
-                 parent_register: 'BaseRegister', parent_width: int, inst_name: str):
-        super().__init__(low=low, high=high, msb=msb, lsb=lsb, parent_register=parent_register,
-                         parent_width=parent_width, inst_name=inst_name)
 
 
     @property
@@ -162,7 +160,9 @@ class WriteOnlyField(_FieldBase):
         self._write_callback = callback
 
 class ReadWriteField(ReadOnlyField, WriteOnlyField):
-
+    """
+    Simulation of a read/write field
+    """
     __slots__:list[str] = []
 
 
@@ -170,13 +170,20 @@ Field = Union[ReadOnlyField, WriteOnlyField, ReadWriteField]
 
 
 class FieldType(Enum):
+    """
+    types of register field to be simulated based on the software access
+    """
     READONLY = auto()
     WRITEONLY = auto()
     READWRITE = auto()
 
-_class_type_map = {FieldType.READONLY: ReadOnlyField,
-                   FieldType.WRITEONLY: WriteOnlyField,
-                   FieldType.READWRITE: ReadWriteField}
+
+_class_type_map: dict[FieldType, Union[type[ReadOnlyField],
+                                       type[WriteOnlyField],
+                                       type[ReadWriteField]]] = {
+    FieldType.READONLY: ReadOnlyField,
+    FieldType.WRITEONLY: WriteOnlyField,
+    FieldType.READWRITE: ReadWriteField}
 
 @dataclass
 class FieldDefinition:
@@ -196,4 +203,3 @@ class FieldDefinition:
         Classtype to be used base on the fieldtype
         """
         return _class_type_map[self.field_type]
-

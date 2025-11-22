@@ -61,6 +61,7 @@ class TestSimCallback(unittest.TestCase):
         Context manager to build the python wrappers with the specified UDPs included then import
         them and clean up afterwards
         """
+        # pylint:disable=duplicate-code
 
         # compile the code for the test
         rdlc = compiler_with_udp_registers()
@@ -104,8 +105,10 @@ class TestSimCallback(unittest.TestCase):
             # no read/write are attempted so this can yield out a version with no callbacks
             # configured
             sim_inst = sim_cls(0)
-            yield RegModelAndSim(reg_model=dut_cls(callbacks=NormalCallbackSet(read_callback=sim_inst.read,
-                                                      write_callback=sim_inst.write)), sim=sim_inst)
+            yield RegModelAndSim(
+                reg_model=dut_cls(callbacks=NormalCallbackSet(read_callback=sim_inst.read,
+                                                              write_callback=sim_inst.write)),
+                sim=sim_inst)
 
             sys.path.remove(tmpdirname)
 
@@ -126,15 +129,23 @@ class TestSimCallback(unittest.TestCase):
         with self.build_wrappers_and_import() as reg_model_sim:
 
             # setup the mocks:
-            tx_reg_sim = reg_model_sim.sim.register_by_full_name('overlapping_registers_and_fields.tx')
-            tx_data_sim = reg_model_sim.sim.field_by_full_name('overlapping_registers_and_fields.tx.data')
-            rx_reg_sim = reg_model_sim.sim.register_by_full_name('overlapping_registers_and_fields.rx')
-            rx_data_sim = reg_model_sim.sim.field_by_full_name('overlapping_registers_and_fields.rx.data')
+            tx_reg_sim = reg_model_sim.sim.register_by_full_name(
+                'overlapping_registers_and_fields.tx')
+            tx_data_sim = reg_model_sim.sim.field_by_full_name(
+                'overlapping_registers_and_fields.tx.data')
+            rx_reg_sim = reg_model_sim.sim.register_by_full_name(
+                'overlapping_registers_and_fields.rx')
+            rx_data_sim = reg_model_sim.sim.field_by_full_name(
+                'overlapping_registers_and_fields.rx.data')
 
-            tx_reg_sim_read_call_back, tx_reg_sim_write_call_back = self._configure_callbacks(tx_reg_sim)
-            rx_reg_sim_read_call_back, rx_reg_sim_write_call_back = self._configure_callbacks(rx_reg_sim)
-            tx_data_sim_read_call_back, tx_data_sim_write_call_back = self._configure_callbacks(tx_data_sim)
-            rx_data_sim_read_call_back, rx_data_sim_write_call_back = self._configure_callbacks(rx_data_sim)
+            tx_reg_sim_read_call_back, tx_reg_sim_write_call_back =\
+                self._configure_callbacks(tx_reg_sim)
+            rx_reg_sim_read_call_back, rx_reg_sim_write_call_back =\
+                self._configure_callbacks(rx_reg_sim)
+            tx_data_sim_read_call_back, tx_data_sim_write_call_back =\
+                self._configure_callbacks(tx_data_sim)
+            rx_data_sim_read_call_back, rx_data_sim_write_call_back =\
+                self._configure_callbacks(rx_data_sim)
 
             # do a write test
             reg_model_sim.reg_model.tx.data.write(1)
@@ -175,17 +186,24 @@ class TestSimCallback(unittest.TestCase):
         with self.build_wrappers_and_import() as reg_model_sim:
 
             # setup the mocks:
-            reg_sim = reg_model_sim.sim.register_by_full_name('overlapping_registers_and_fields.mixed_overlapping_and_noneoverlapping')
-            ro_field_sim = reg_model_sim.sim.field_by_full_name('overlapping_registers_and_fields.mixed_overlapping_and_noneoverlapping.ro_field')
-            wo_field_sim = reg_model_sim.sim.field_by_full_name('overlapping_registers_and_fields.mixed_overlapping_and_noneoverlapping.wo_field')
-            rw_field_sim = reg_model_sim.sim.field_by_full_name('overlapping_registers_and_fields.mixed_overlapping_and_noneoverlapping.rw_field')
+            reg_sim = reg_model_sim.sim.register_by_full_name(
+                'overlapping_registers_and_fields.mixed_overlapping_and_noneoverlapping')
+            ro_field_sim = reg_model_sim.sim.field_by_full_name(
+                'overlapping_registers_and_fields.mixed_overlapping_and_noneoverlapping.ro_field')
+            wo_field_sim = reg_model_sim.sim.field_by_full_name(
+                'overlapping_registers_and_fields.mixed_overlapping_and_noneoverlapping.wo_field')
+            rw_field_sim = reg_model_sim.sim.field_by_full_name(
+                'overlapping_registers_and_fields.mixed_overlapping_and_noneoverlapping.rw_field')
 
 
 
             reg_sim_read_call_back, reg_sim_write_call_back = self._configure_callbacks(reg_sim)
-            ro_field_sim_read_call_back, ro_field_sim_write_call_back = self._configure_callbacks(ro_field_sim)
-            wo_field_sim_read_call_back, wo_field_sim_write_call_back = self._configure_callbacks(wo_field_sim)
-            rw_field_sim_read_call_back, rw_field_sim_write_call_back = self._configure_callbacks(rw_field_sim)
+            ro_field_sim_read_call_back, ro_field_sim_write_call_back =\
+                self._configure_callbacks(ro_field_sim)
+            wo_field_sim_read_call_back, wo_field_sim_write_call_back =\
+                self._configure_callbacks(wo_field_sim)
+            rw_field_sim_read_call_back, rw_field_sim_write_call_back =\
+                self._configure_callbacks(rw_field_sim)
 
 
             # do a write test

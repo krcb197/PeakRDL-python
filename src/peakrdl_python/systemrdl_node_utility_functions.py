@@ -500,4 +500,3 @@ def simulator_field_definition(node: FieldNode) -> str:
         return FieldType.WRITEONLY.name
 
     raise RuntimeError('Encountered a field node that was neither readable or writable')
-
