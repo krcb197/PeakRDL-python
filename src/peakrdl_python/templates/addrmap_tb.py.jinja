@@ -201,7 +201,9 @@ class {{fq_block_name}}_single_access({{top_node.inst_name}}_TestCase): # type: 
         {% for node in owned_elements.registers -%}
         with self.subTest(msg='register: {{'.'.join(node.get_path_segments())}}'):
             self._single_register_property_test(rut=self.dut.{{'.'.join(get_python_path_segments(node))}}, address={{node.absolute_address}}, width={{node.size * 8}}, accesswidth={% if 'accesswidth' in node.list_properties() -%}{{node.get_property('accesswidth')}}{% else %}None{%- endif %})
-            {% if asyncoutput %}await {%endif %}self._single_register_read_and_write_test(rut=self.dut.{{'.'.join(get_python_path_segments(node))}}, has_sw_readable={{node.has_sw_readable}}, has_sw_writable={{node.has_sw_writable}})
+            {% if asyncoutput %}await {%endif %}self._single_register_read_and_write_test(rut=self.dut.{{'.'.join(get_python_path_segments(node))}}, has_sw_readable={{node.has_sw_readable}}, has_sw_writable={{node.has_sw_writable}},
+                                                                                          readable_fields=set([ {%- for child_node in node.children(unroll=True) -%}{%- if not hide_node_func(child_node) -%}{% if isinstance(child_node, systemrdlFieldNode) %}{% if child_node.is_sw_readable %}'{{child_node.inst_name}}',{% endif %}{% endif %}{% endif %}{% endfor %} ]),
+                                                                                          writeable_fields=set([ {%- for child_node in node.children(unroll=True) -%}{%- if not hide_node_func(child_node) -%}{% if isinstance(child_node, systemrdlFieldNode) %}{% if child_node.is_sw_writable %}'{{child_node.inst_name}}',{% endif %}{% endif %}{% endif %}{% endfor %} ]) )
         {% endfor %}
 
     {% if asyncoutput %}async {% endif %}def test_field(self) -> None:
@@ -341,308 +343,45 @@ class {{fq_block_name}}_single_access({{top_node.inst_name}}_TestCase): # type: 
 
     {% if block == top_node %}
     def test_top_traversal_iterators(self) -> None:
-        {% if asyncoutput %}
-        expected_writable_regs: list[WritableAsyncRegister]
-        expected_readable_regs: list[ReadableAsyncRegister]
-        expected_memories:list[Union[MemoryAsyncReadOnly{% if legacy_block_access %}Legacy{% endif %}, MemoryAsyncWriteOnly{% if legacy_block_access %}Legacy{% endif %}, MemoryAsyncReadWrite{% if legacy_block_access %}Legacy{% endif %}]]
 
-        {% else %}
-        expected_writable_regs: list[WritableRegister]
-        expected_readable_regs: list[ReadableRegister]
-        expected_memories:list[Union[MemoryReadOnly{% if legacy_block_access %}Legacy{% endif %}, MemoryWriteOnly{% if legacy_block_access %}Legacy{% endif %}, MemoryReadWrite{% if legacy_block_access %}Legacy{% endif %}]]
-        {% endif %}
-        expected_sections : list[Union[{% if asyncoutput %}Async{% endif %}AddressMap, {% if asyncoutput %}Async{% endif %}RegFile]]
-
-        # check the readable registers
-        expected_readable_regs = [ {%- for child_node in top_node.children(unroll=True) %}
-                                       {%- if not hide_node_func(child_node) %}
-                                    {%- if isinstance(child_node, systemrdlRegNode) %}{% if child_node.has_sw_readable %}self.dut.{{'.'.join(get_python_path_segments(child_node))}}, # type: ignore[union-attr,list-item] {% endif %}{% endif %}
-                                        {% endif %}
-                                    {% endfor %} ]
-        readable_regs = []
-        for readable_reg in self.dut.get_readable_registers(unroll=True):  # type: ignore[union-attr]
-            self.assertIsInstance(readable_reg, (Reg{% if asyncoutput %}Async{% endif %}ReadWrite, Reg{% if asyncoutput %}Async{% endif %}ReadOnly))
-            readable_regs.append(readable_reg)
-        self.assertCountEqual(expected_readable_regs, readable_regs)
-        {# check the rolled case second #}
-        expected_readable_regs = [ {%- for child_node in top_node.children(unroll=False) %}
-                                       {%- if not hide_node_func(child_node) %}
-                                   {%- if isinstance(child_node, systemrdlRegNode) %}{% if child_node.has_sw_readable %}self.dut.{{'.'.join(get_python_path_segments(child_node))}}, # type: ignore[union-attr,list-item] {% endif %}{% endif %}
-                                       {% endif %}
-                                   {% endfor %} ]
-        readable_regs = []
-        for readable_reg in self.dut.get_readable_registers(unroll=False):  # type: ignore[union-attr]
-            readable_regs.append(readable_reg)
-        self.assertCountEqual(expected_readable_regs, readable_regs)
-
-        # check the writable registers
-        expected_writable_regs = [ {%- for child_node in top_node.children(unroll=True) %}
-                                       {%- if not hide_node_func(child_node) %}
-                                   {%- if isinstance(child_node, systemrdlRegNode) %}{% if child_node.has_sw_writable %}self.dut.{{'.'.join(get_python_path_segments(child_node))}}, # type: ignore[union-attr,list-item] {% endif %}{% endif %}
-                                       {% endif %}
-                                   {% endfor %} ]
-        writable_regs = []
-        for writable_reg in self.dut.get_writable_registers(unroll=True):  # type: ignore[union-attr]
-            self.assertIsInstance(writable_reg, (Reg{% if asyncoutput %}Async{% endif %}ReadWrite, Reg{% if asyncoutput %}Async{% endif %}WriteOnly))
-            writable_regs.append(writable_reg)
-        self.assertCountEqual(expected_writable_regs, writable_regs)
-        {# check the rolled case second #}
-        expected_writable_regs = [ {%- for child_node in top_node.children(unroll=False) %}
-                                       {%- if not hide_node_func(child_node) %}
-                                   {%- if isinstance(child_node, systemrdlRegNode) %}{% if child_node.has_sw_writable %}self.dut.{{'.'.join(get_python_path_segments(child_node))}}, # type: ignore[union-attr,list-item] {% endif %}{% endif %}
-                                       {% endif %}
-                                   {% endfor %} ]
-        writable_regs = []
-        for writable_reg in self.dut.get_writable_registers(unroll=False):  # type: ignore[union-attr]
-            writable_regs.append(writable_reg)
-        self.assertCountEqual(expected_writable_regs, writable_regs)
-
-        # check the sections
-        expected_sections = [ {%- for child_node in top_node.children(unroll=True) %}
-                                  {%- if not hide_node_func(child_node) %}
-                              {%- if isinstance(child_node, (systemrdlAddrmapNode, systemrdlRegfileNode)) %}self.dut.{{'.'.join(get_python_path_segments(child_node))}}, # type: ignore[union-attr,list-item] {% endif %}
-                                  {% endif %}
-                              {% endfor %} ]
-        sections = []
-        for section in self.dut.get_sections(unroll=True):  # type: ignore[union-attr]
-            self.assertIsInstance(section, ({% if asyncoutput %}Async{% endif %}AddressMap, {% if asyncoutput %}Async{% endif %}RegFile))
-            sections.append(section)
-        self.assertCountEqual(expected_sections, sections)
-        {# check the rolled case second #}
-        expected_sections = [ {%- for child_node in top_node.children(unroll=False) %}
-                                  {%- if not hide_node_func(child_node) %}
-                              {%- if isinstance(child_node, (systemrdlAddrmapNode, systemrdlRegfileNode)) %}self.dut.{{'.'.join(get_python_path_segments(child_node))}},  # type: ignore[union-attr,list-item] {% endif %}
-                                  {% endif %}
-                              {% endfor %} ]
-        sections = []
-        for section in self.dut.get_sections(unroll=False):  # type: ignore[union-attr]
-            sections.append(section)
-        self.assertCountEqual(expected_sections, sections)
-
-        # check the memories
-        expected_memories = [ {%- for child_node in top_node.children(unroll=True) %}
-                                  {%- if not hide_node_func(child_node) %}
-                              {%- if isinstance(child_node, systemrdlMemNode) %}self.dut.{{'.'.join(get_python_path_segments(child_node))}}, # type: ignore[union-attr,list-item] {% endif %}
-                                  {% endif %}
-                              {% endfor %} ]
-        memories = []
-        for memory in self.dut.get_memories(unroll=True):  # type: ignore[union-attr]
-            self.assertIsInstance(memory, (Memory{% if asyncoutput %}Async{% endif %}ReadOnly{% if legacy_block_access %}Legacy{% endif %}, Memory{% if asyncoutput %}Async{% endif %}WriteOnly{% if legacy_block_access %}Legacy{% endif %}, Memory{% if asyncoutput %}Async{% endif %}ReadWrite{% if legacy_block_access %}Legacy{% endif %}))
-            memories.append(memory)
-        self.assertCountEqual(expected_memories, memories)
-        {# check the rolled case second #}
-        expected_memories = [ {%- for child_node in top_node.children(unroll=False) %}
-                                  {%- if not hide_node_func(child_node) %}
-                              {%- if isinstance(child_node, systemrdlMemNode) %}self.dut.{{'.'.join(get_python_path_segments(child_node))}}, # type: ignore[union-attr,list-item] {% endif %}
-                                  {% endif %}
-                              {% endfor %} ]
-        memories = []
-        for memory in self.dut.get_memories(unroll=False):  # type: ignore[union-attr]
-            self.assertIsInstance(memory, (Memory{% if asyncoutput %}Async{% endif %}ReadOnly{% if legacy_block_access %}Legacy{% endif %}, Memory{% if asyncoutput %}Async{% endif %}WriteOnly{% if legacy_block_access %}Legacy{% endif %}, Memory{% if asyncoutput %}Async{% endif %}ReadWrite{% if legacy_block_access %}Legacy{% endif %}, Memory{% if asyncoutput %}Async{% endif %}ReadOnly{% if legacy_block_access %}Legacy{% endif %}Array, Memory{% if asyncoutput %}Async{% endif %}WriteOnly{% if legacy_block_access %}Legacy{% endif %}Array, Memory{% if asyncoutput %}Async{% endif %}ReadWrite{% if legacy_block_access %}Legacy{% endif %}Array))
-            memories.append(memory)
-        self.assertCountEqual(expected_memories, memories)
+        self._test_addrmap_iterators(dut=self.dut,
+                                     writeable_registers=set([ {%- for child_node in top_node.children(unroll=True) %}{%- if not hide_node_func(child_node) %}{%- if isinstance(child_node, systemrdlRegNode) %}{% if child_node.has_sw_writable %}'{{child_node.get_path_segments()[-1]}}',{% endif %}{% endif %}{% endif %}{% endfor %} ]),
+                                     readable_registers=set([ {%- for child_node in top_node.children(unroll=True) %}{%- if not hide_node_func(child_node) %}{%- if isinstance(child_node, systemrdlRegNode) %}{% if child_node.has_sw_readable %}'{{child_node.get_path_segments()[-1]}}',{% endif %}{% endif %}{% endif %}{% endfor %} ]),
+                                     sections=set([ {%- for child_node in top_node.children(unroll=True) %}{%- if not hide_node_func(child_node) %}{%- if isinstance(child_node, (systemrdlRegfileNode,systemrdlAddrmapNode)) %}'{{child_node.get_path_segments()[-1]}}',{% endif %}{% endif %}{% endfor %} ]),
+                                     memories=set([ {%- for child_node in top_node.children(unroll=True) %}{%- if not hide_node_func(child_node) %}{%- if isinstance(child_node, systemrdlMemNode) %}'{{child_node.get_path_segments()[-1]}}',{% endif %}{% endif %}{% endfor %} ]))
 
     {% endif %}{# if block == top_block #}
-
-    {% macro check_readable_register_iterators(node) %}
-        {# check the unrolled case first #}
-        expected_readable_regs = [ {%- for child_node in node.children(unroll=True) %}
-                                       {%- if not hide_node_func(child_node) %}
-                                    {%- if isinstance(child_node, systemrdlRegNode) %}{% if child_node.has_sw_readable %}self.dut.{{'.'.join(get_python_path_segments(child_node))}}, # type: ignore[union-attr,list-item] {% endif %}{% endif %}
-                                        {% endif %}
-                                    {% endfor %} ]
-        readable_regs = []
-        for readable_reg in self.dut.{{'.'.join(get_python_path_segments(node))}}.get_readable_registers(unroll=True):  # type: ignore[union-attr]
-            self.assertIsInstance(readable_reg, (Reg{% if asyncoutput %}Async{% endif %}ReadWrite, Reg{% if asyncoutput %}Async{% endif %}ReadOnly))
-            readable_regs.append(readable_reg)
-        self.assertCountEqual(expected_readable_regs, readable_regs)
-        {# check the rolled case second #}
-        expected_readable_regs = [ {%- for child_node in node.children(unroll=False) %}
-                                      {%- if not hide_node_func(child_node) %}
-                                   {%- if isinstance(child_node, systemrdlRegNode) %}{% if child_node.has_sw_readable %}self.dut.{{'.'.join(get_python_path_segments(child_node))}}, # type: ignore[union-attr,list-item] {% endif %}{% endif %}
-                                       {% endif %}
-                                   {% endfor %} ]
-        readable_regs = []
-        for readable_reg in self.dut.{{'.'.join(get_python_path_segments(node))}}.get_readable_registers(unroll=False):  # type: ignore[union-attr]
-            self.assertIsInstance(readable_reg, (Reg{% if asyncoutput %}Async{% endif %}ReadWrite, Reg{% if asyncoutput %}Async{% endif %}ReadOnly, Reg{% if asyncoutput %}Async{% endif %}ReadWriteArray, Reg{% if asyncoutput %}Async{% endif %}ReadOnlyArray))
-            readable_regs.append(readable_reg)
-        self.assertCountEqual(expected_readable_regs, readable_regs)
-    {% endmacro %}
-
-    {% macro check_writable_register_iterators(node) %}
-        {# check the unrolled case first #}
-        expected_writable_regs = [ {%- for child_node in node.children(unroll=True) %}
-                                       {%- if not hide_node_func(child_node) %}
-                                   {%- if isinstance(child_node, systemrdlRegNode) %}{% if child_node.has_sw_writable %}self.dut.{{'.'.join(get_python_path_segments(child_node))}}, # type: ignore[union-attr,list-item] {% endif %}{% endif %}
-                                       {% endif %}
-                                   {% endfor %} ]
-        writable_regs = []
-        for writable_reg in self.dut.{{'.'.join(get_python_path_segments(node))}}.get_writable_registers(unroll=True):  # type: ignore[union-attr]
-            self.assertIsInstance(writable_reg, (Reg{% if asyncoutput %}Async{% endif %}ReadWrite, Reg{% if asyncoutput %}Async{% endif %}WriteOnly))
-            writable_regs.append(writable_reg)
-        self.assertCountEqual(expected_writable_regs, writable_regs)
-        {# check the rolled case second #}
-        expected_writable_regs = [ {%- for child_node in node.children(unroll=False) %}
-                                      {%- if not hide_node_func(child_node) %}
-                                   {%- if isinstance(child_node, systemrdlRegNode) %}{% if child_node.has_sw_writable %}self.dut.{{'.'.join(get_python_path_segments(child_node))}}, # type: ignore[union-attr,list-item] {% endif %}{% endif %}
-                                       {% endif %}
-                                   {% endfor %} ]
-        writable_regs = []
-        for writable_reg in self.dut.{{'.'.join(get_python_path_segments(node))}}.get_writable_registers(unroll=False):  # type: ignore[union-attr]
-            self.assertIsInstance(writable_reg, (Reg{% if asyncoutput %}Async{% endif %}ReadWrite, Reg{% if asyncoutput %}Async{% endif %}WriteOnly, Reg{% if asyncoutput %}Async{% endif %}ReadWriteArray, Reg{% if asyncoutput %}Async{% endif %}WriteOnlyArray))
-            writable_regs.append(writable_reg)
-        self.assertCountEqual(expected_writable_regs, writable_regs)
-    {% endmacro %}
-
-    {% macro check_section_iterators(node) %}
-        {# check the unrolled case first #}
-        expected_sections = [ {%- for child_node in node.children(unroll=True) %}
-                                  {%- if not hide_node_func(child_node) %}
-                              {%- if isinstance(child_node, (systemrdlAddrmapNode, systemrdlRegfileNode)) %}self.dut.{{'.'.join(get_python_path_segments(child_node))}}, # type: ignore[union-attr,list-item] {% endif %}
-                                  {% endif %}
-                              {% endfor %} ]
-        sections = []
-        for section in self.dut.{{'.'.join(get_python_path_segments(node))}}.get_sections(unroll=True):  # type: ignore[union-attr]
-            self.assertIsInstance(section, ({% if asyncoutput %}Async{% endif %}AddressMap, {% if asyncoutput %}Async{% endif %}RegFile))
-            sections.append(section)
-        self.assertCountEqual(expected_sections, sections)
-        {# check the rolled case second #}
-        expected_sections = [ {%- for child_node in node.children(unroll=False) %}
-                                  {%- if not hide_node_func(child_node) %}
-                              {%- if isinstance(child_node, (systemrdlAddrmapNode, systemrdlRegfileNode)) %}self.dut.{{'.'.join(get_python_path_segments(child_node))}},  # type: ignore[union-attr,list-item] {% endif %}
-                                  {% endif %}
-                              {% endfor %} ]
-        sections = []
-        for section in self.dut.{{'.'.join(get_python_path_segments(node))}}.get_sections(unroll=False):  # type: ignore[union-attr]
-            self.assertIsInstance(section, ({% if asyncoutput %}Async{% endif %}AddressMap, {% if asyncoutput %}Async{% endif %}RegFile, {% if asyncoutput %}Async{% endif %}AddressMapArray, {% if asyncoutput %}Async{% endif %}RegFileArray))
-            sections.append(section)
-        self.assertCountEqual(expected_sections, sections)
-    {% endmacro %}
-
-    {% macro check_memory_iterators(node) %}
-        {# check the unrolled case first #}
-        expected_memories = [ {%- for child_node in node.children(unroll=True) %}
-                                  {%- if not hide_node_func(child_node) %}
-                              {%- if isinstance(child_node, systemrdlMemNode) %}self.dut.{{'.'.join(get_python_path_segments(child_node))}}, # type: ignore[union-attr,list-item] {% endif %}
-                                  {% endif %}
-                              {% endfor %} ]
-        memories = []
-        for memory in self.dut.{{'.'.join(get_python_path_segments(node))}}.get_memories(unroll=True):  # type: ignore[union-attr]
-            self.assertIsInstance(memory, (Memory{% if asyncoutput %}Async{% endif %}ReadOnly{% if legacy_block_access %}Legacy{% endif %}, Memory{% if asyncoutput %}Async{% endif %}WriteOnly{% if legacy_block_access %}Legacy{% endif %}, Memory{% if asyncoutput %}Async{% endif %}ReadWrite{% if legacy_block_access %}Legacy{% endif %}))
-            memories.append(memory)
-        self.assertCountEqual(expected_memories, memories)
-        {# check the rolled case second #}
-        expected_memories = [ {%- for child_node in node.children(unroll=False) %}
-                                  {%- if not hide_node_func(child_node) %}
-                              {%- if isinstance(child_node, systemrdlMemNode) %}self.dut.{{'.'.join(get_python_path_segments(child_node))}}, # type: ignore[union-attr,list-item] {% endif %}
-                                  {% endif %}
-                              {% endfor %} ]
-        memories = []
-        for memory in self.dut.{{'.'.join(get_python_path_segments(node))}}.get_memories(unroll=False):  # type: ignore[union-attr]
-            self.assertIsInstance(memory, (Memory{% if asyncoutput %}Async{% endif %}ReadOnly{% if legacy_block_access %}Legacy{% endif %}, Memory{% if asyncoutput %}Async{% endif %}WriteOnly{% if legacy_block_access %}Legacy{% endif %}, Memory{% if asyncoutput %}Async{% endif %}ReadWrite{% if legacy_block_access %}Legacy{% endif %}, Memory{% if asyncoutput %}Async{% endif %}ReadOnly{% if legacy_block_access %}Legacy{% endif %}Array, Memory{% if asyncoutput %}Async{% endif %}WriteOnly{% if legacy_block_access %}Legacy{% endif %}Array, Memory{% if asyncoutput %}Async{% endif %}ReadWrite{% if legacy_block_access %}Legacy{% endif %}Array))
-            memories.append(memory)
-        self.assertCountEqual(expected_memories, memories)
-    {% endmacro %}
 
     def test_traversal_iterators(self) -> None:
         """
         Walk the address map and check that the iterators for each node as as expected
         """
-        {% if asyncoutput %}
-        expected_writable_fields: list[Union[FieldAsyncWriteOnly, FieldAsyncReadWrite]]
-        expected_readable_fields: list[Union[FieldAsyncReadOnly, FieldAsyncReadWrite]]
-        expected_fields: list[Union[FieldAsyncWriteOnly, FieldAsyncReadOnly, FieldAsyncReadWrite]]
-        expected_writable_regs: list[WritableAsyncRegister]
-        expected_readable_regs: list[ReadableAsyncRegister]
-        expected_memories:list[Union[MemoryAsyncReadOnly{% if legacy_block_access %}Legacy{% endif %}, MemoryAsyncWriteOnly{% if legacy_block_access %}Legacy{% endif %}, MemoryAsyncReadWrite{% if legacy_block_access %}Legacy{% endif %}]]
 
-        {% else %}
-        expected_writable_fields: list[Union[FieldWriteOnly, FieldReadWrite]]
-        expected_readable_fields: list[Union[FieldReadOnly, FieldReadWrite]]
-        expected_fields: list[Union[FieldWriteOnly, FieldReadOnly, FieldReadWrite]]
-        expected_writable_regs: list[WritableRegister]
-        expected_readable_regs: list[ReadableRegister]
-        expected_memories:list[Union[MemoryReadOnly{% if legacy_block_access %}Legacy{% endif %}, MemoryWriteOnly{% if legacy_block_access %}Legacy{% endif %}, MemoryReadWrite{% if legacy_block_access %}Legacy{% endif %}]]
-        {% endif %}
-        expected_sections : list[Union[{% if asyncoutput %}Async{% endif %}AddressMap, {% if asyncoutput %}Async{% endif %}RegFile]]
 
-        # test all the registers
-        {% for node in owned_elements.registers -%}
-        with self.subTest(msg='register: {{'.'.join(node.get_path_segments())}}'):
-                {# a register can only have fields beneath it #}
-            expected_fields = [ {%- for child_node in node.children(unroll=True) -%}
-                                    {% if isinstance(child_node, systemrdlFieldNode) %}
-                                        {%- if not hide_node_func(child_node) -%}
-                                    self.dut.{{'.'.join(get_python_path_segments(child_node))}}, # type: ignore[union-attr,list-item]
-                                        {% endif %}
-                                    {% endif %}
-                                 {% endfor %}
-                                         ]
-            fields = []
-            for field in self.dut.{{'.'.join(get_python_path_segments(node))}}.fields:  # type: ignore[union-attr]
-                fields.append(field)
-            self.assertCountEqual(expected_fields, fields)
-                {% if node.has_sw_writable %}
-            expected_writable_fields = [ {%- for child_node in node.children(unroll=True) -%}
-                                            {%- if not hide_node_func(child_node) -%}
-                                         {% if isinstance(child_node, systemrdlFieldNode) %}{% if child_node.is_sw_writable %}self.dut.{{'.'.join(get_python_path_segments(child_node))}}, # type: ignore[union-attr,list-item] {% endif %}{% endif %}
-                                            {% endif %}
-                                         {% endfor %}
-                                         ]
-            writable_fields = []
-            for writable_field in self.dut.{{'.'.join(get_python_path_segments(node))}}.writable_fields:  # type: ignore[union-attr]
-                writable_fields.append(writable_field)
-            self.assertCountEqual(expected_writable_fields, writable_fields)
-                    {% else %}
-            # register should not have writable_fields attribute
-            self.assertFalse(hasattr(self.dut.{{'.'.join(get_python_path_segments(node))}}, 'writable_fields')) # type: ignore[union-attr]
-                    {% endif %}
-                    {% if node.has_sw_readable %}
-            expected_readable_fields = [ {%- for child_node in node.children(unroll=True) -%}
-                                            {%- if not hide_node_func(child_node) -%}
-                                         {% if isinstance(child_node, systemrdlFieldNode) %}{% if child_node.is_sw_readable %}self.dut.{{'.'.join(get_python_path_segments(child_node))}}, # type: ignore[union-attr,list-item] {% endif %}{% endif %}
-                                            {% endif %}
-                                         {% endfor %}
-                                         ]
-            readable_fields = []
-            for readable_field in self.dut.{{'.'.join(get_python_path_segments(node))}}.readable_fields: # type: ignore[union-attr]
-                readable_fields.append(readable_field)
-            self.assertCountEqual(expected_readable_fields, readable_fields)
-                    {% else %}
-            # register should not have readable_fields attribute
-            self.assertFalse(hasattr(self.dut.{{'.'.join(get_python_path_segments(node))}}, 'readable_fields')) # type: ignore[union-attr]
-                    {% endif %}
-        {% endfor %}
+
         # test all the memories
         {% for node in owned_elements.memories -%}
-
         with self.subTest(msg='memory: {{'.'.join(node.get_path_segments())}}'):
-                    {% if node.is_sw_writable %}
-                        {{ check_writable_register_iterators(node) | indent }}
-                    {% else %}
-            self.assertFalse(hasattr(self.dut.{{'.'.join(get_python_path_segments(node))}}, 'get_writeable_registers')) # type: ignore[union-attr]
-                    {% endif %}
-                    {% if node.is_sw_readable %}
-                        {{ check_readable_register_iterators(node) | indent}}
-                    {% else %}
-            self.assertFalse(hasattr(self.dut.{{'.'.join(get_python_path_segments(node))}}, 'get_readable_registers')) # type: ignore[union-attr]
-                    {% endif %}
+            self._test_register_iterators(dut=self.dut.{{'.'.join(get_python_path_segments(node))}},
+                                          writeable_registers=set([ {%- for child_node in node.children(unroll=True) %}{%- if not hide_node_func(child_node) %}{%- if isinstance(child_node, systemrdlRegNode) %}{% if child_node.has_sw_writable %}'{{child_node.get_path_segments()[-1]}}',{% endif %}{% endif %}{% endif %}{% endfor %} ]),
+                                          readable_registers=set([ {%- for child_node in node.children(unroll=True) %}{%- if not hide_node_func(child_node) %}{%- if isinstance(child_node, systemrdlRegNode) %}{% if child_node.has_sw_readable %}'{{child_node.get_path_segments()[-1]}}',{% endif %}{% endif %}{% endif %}{% endfor %} ]))
         {% endfor %}
         # test all the address maps
         {% for node in owned_elements.addr_maps -%}
         with self.subTest(msg='addrmap: {{'.'.join(node.get_path_segments())}}'):
-            {{ check_readable_register_iterators(node) | indent }}
-            {{ check_writable_register_iterators(node) | indent}}
-            {{ check_section_iterators(node) | indent }}
-            {{ check_memory_iterators(node) | indent}}
+            self._test_addrmap_iterators(dut=self.dut.{{'.'.join(get_python_path_segments(node))}},
+                                         writeable_registers=set([ {%- for child_node in node.children(unroll=True) %}{%- if not hide_node_func(child_node) %}{%- if isinstance(child_node, systemrdlRegNode) %}{% if child_node.has_sw_writable %}'{{child_node.get_path_segments()[-1]}}',{% endif %}{% endif %}{% endif %}{% endfor %} ]),
+                                         readable_registers=set([ {%- for child_node in node.children(unroll=True) %}{%- if not hide_node_func(child_node) %}{%- if isinstance(child_node, systemrdlRegNode) %}{% if child_node.has_sw_readable %}'{{child_node.get_path_segments()[-1]}}',{% endif %}{% endif %}{% endif %}{% endfor %} ]),
+                                         sections=set([ {%- for child_node in node.children(unroll=True) %}{%- if not hide_node_func(child_node) %}{%- if isinstance(child_node, (systemrdlRegfileNode,systemrdlAddrmapNode)) %}'{{child_node.get_path_segments()[-1]}}',{% endif %}{% endif %}{% endfor %} ]),
+                                         memories=set([ {%- for child_node in node.children(unroll=True) %}{%- if not hide_node_func(child_node) %}{%- if isinstance(child_node, systemrdlMemNode) %}'{{child_node.get_path_segments()[-1]}}',{% endif %}{% endif %}{% endfor %} ]))
         {% endfor %}
         # test all the register files
         {% for node in owned_elements.reg_files -%}
         with self.subTest(msg='regfile: {{'.'.join(node.get_path_segments())}}'):
-            {{ check_readable_register_iterators(node) | indent }}
-            {{ check_writable_register_iterators(node)  | indent}}
-            {{ check_section_iterators(node) | indent }}
-            self.assertFalse(hasattr(self.dut.{{'.'.join(get_python_path_segments(node))}}, 'get_memories')) # type: ignore[union-attr]
+            self._test_regfile_iterators(dut=self.dut.{{'.'.join(get_python_path_segments(node))}},
+                                         writeable_registers=set([ {%- for child_node in node.children(unroll=True) %}{%- if not hide_node_func(child_node) %}{%- if isinstance(child_node, systemrdlRegNode) %}{% if child_node.has_sw_writable %}'{{child_node.get_path_segments()[-1]}}',{% endif %}{% endif %}{% endif %}{% endfor %} ]),
+                                         readable_registers=set([ {%- for child_node in node.children(unroll=True) %}{%- if not hide_node_func(child_node) %}{%- if isinstance(child_node, systemrdlRegNode) %}{% if child_node.has_sw_readable %}'{{child_node.get_path_segments()[-1]}}',{% endif %}{% endif %}{% endif %}{% endfor %} ]),
+                                         sections=set([ {%- for child_node in node.children(unroll=True) %}{%- if not hide_node_func(child_node) %}{%- if isinstance(child_node, (systemrdlRegfileNode,systemrdlAddrmapNode)) %}'{{child_node.get_path_segments()[-1]}}',{% endif %}{% endif %}{% endfor %} ]))
         {% endfor %}
 
     def test_name_map(self) -> None:

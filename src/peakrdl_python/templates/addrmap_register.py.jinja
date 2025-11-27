@@ -93,7 +93,7 @@ class {{node.python_class_name}}({{node.base_class(asyncoutput)}}):
                     Memory{% if asyncoutput %}Async{% endif -%}ReadWrite{% if legacy_block_access %}Legacy{% endif %}
                  {%- elif node.read_only -%}
                     Readable{% if asyncoutput %}Async{% endif -%}Memory{% if legacy_block_access %}Legacy{% endif %}
-                 {%- elif node.read_only -%}
+                 {%- elif node.write_only -%}
                     Writable{% if asyncoutput %}Async{% endif -%}Memory{% if legacy_block_access %}Legacy{% endif %}
                  {%- endif -%}
                  ]):
