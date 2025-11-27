@@ -23,6 +23,10 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 {% if skip_lib_copy %}peakrdl_python.{% else %}.{{ '.' * depth }}{% endif %}sim_lib
 {%- endmacro -%}
 
+{%- macro peakrdl_python_lib_test(depth) -%}
+{% if skip_lib_copy %}peakrdl_python.{% else %}.{{ '.' * depth }}{% endif %}lib_test
+{%- endmacro -%}
+
 {%- macro peakrld_version_check() %}
 {% if skip_lib_copy %}
 from peakrdl_python.__about__ import __version__

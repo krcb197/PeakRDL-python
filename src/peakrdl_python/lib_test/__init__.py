@@ -15,6 +15,10 @@ GNU Lesser General Public License for more details.
 You should have received a copy of the GNU Lesser General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-Variables that describes the peakrdl-python Package
+This package is intended to distributed as part of automatically generated code by the PeakRDL
+Python tool. It provides a set of base test classes to reduce the size of the auto generated code
 """
-__version__ = "3.0.0rc5"
+from .base_reg_test_class import LibTestBase
+from .async_reg_base_test_class import AsyncLibTestBase
+
+from .utilities import reverse_bits

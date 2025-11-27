@@ -36,7 +36,7 @@ from unittest import TextTestRunner
 
 #from coverage import Coverage
 
-#from peakrdl_ipxact import IPXACTImporter
+from peakrdl_ipxact import IPXACTImporter
 
 sys.path.append('src')
 from peakrdl_python import PythonExporter
@@ -46,6 +46,8 @@ from peakrdl_python import NodeHashingMethod
 CommandLineParser = argparse.ArgumentParser(description='Test the framework')
 CommandLineParser.add_argument('--RDL_source_file', dest='root_RDL_file',
                                type=pathlib.Path, required=True)
+CommandLineParser.add_argument('--RDL_additional_file', dest='additional_file_RDL_file',
+                               type=pathlib.Path)
 CommandLineParser.add_argument('--root_node', dest='root_node',
                                type=str, required=True)
 CommandLineParser.add_argument('--output', dest='output_path',
@@ -195,13 +197,15 @@ if __name__ == '__main__':
         else:
             raise(RuntimeError('not a list'))
 
+    if CommandLineArgs.additional_file_RDL_file is not None:
+        rdlc.compile_file(CommandLineArgs.additional_file_RDL_file)
     rdlc.compile_file(CommandLineArgs.root_RDL_file)
     spec = rdlc.elaborate(top_def_name=CommandLineArgs.root_node).top
 
     node_list = []
     for node in spec.descendants(unroll=True):
         node_list.append(node)
-        print(node.inst_name)
+        # print(node.inst_name)
 
     # write out text file of all the nodes names, this can be used to debug regex issues
     if CommandLineArgs.full_inst_file is not None:
