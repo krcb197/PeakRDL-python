@@ -130,11 +130,14 @@ class {{fq_block_name}}_single_access({{top_node.inst_name}}_SimTestCase): # typ
             self.assertIsInstance(sim_register, (Register,MemoryRegister))
             sim_field = self.sim.field_by_full_name('{{'.'.join(node.get_path_segments())}}')
             {% if node.is_sw_readable and node.is_sw_writable -%}
-            self.assertIsInstance(sim_field, ReadWriteField)
+            if not isinstance(sim_field, ReadWriteField):
+                raise TypeError(f'should be a simulated read/write field got {type(sim_field)}')
             {% elif node.is_sw_readable and not node.is_sw_writable -%}
-            self.assertIsInstance(sim_field, ReadOnlyField)
+            if not isinstance(sim_field, ReadOnlyField):
+                raise TypeError(f'should be a simulated read/write field got {type(sim_field)}')
             {% elif not node.is_sw_readable and node.is_sw_writable -%}
-            self.assertIsInstance(sim_field, WriteOnlyField)
+            if not isinstance(sim_field, WriteOnlyField):
+                raise TypeError(f'should be a simulated read/write field got {type(sim_field)}')
             {% endif %}
             register_read_callback = Mock()
             register_write_callback = Mock()
