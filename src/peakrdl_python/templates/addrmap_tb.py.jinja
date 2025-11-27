@@ -90,8 +90,9 @@ class {{fq_block_name}}_single_access({{top_node.inst_name}}_TestCase): # type: 
         """
         {% for node in owned_elements.nodes -%}
         with self.subTest(msg='node: {{'.'.join(node.get_path_segments())}}'):
-            self.assertEqual(self.dut.{{'.'.join(get_python_path_segments(node))}}.inst_name, '{{node.get_path_segments()[-1]}}') # type: ignore[union-attr]
-            self.assertEqual(self.dut.{{'.'.join(get_python_path_segments(node))}}.full_inst_name, '{{'.'.join(node.get_path_segments())}}')  # type: ignore[union-attr]
+            self._test_node_inst_name(dut=self.dut.{{'.'.join(get_python_path_segments(node))}},
+                                      inst_name='{{node.get_path_segments()[-1]}}',
+                                      parent_full_inst_name='{{'.'.join(node.get_path_segments()[:-1])}}')
         {% endfor %}
 
     def test_rdl_name_and_desc_property(self)  -> None:
