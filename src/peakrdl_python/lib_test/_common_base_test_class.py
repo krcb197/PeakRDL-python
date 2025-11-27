@@ -136,7 +136,7 @@ class CommonTestBase(unittest.TestCase, ABC):
         else:
             self.assertEqual(dut.rdl_desc, rdl_desc)
 
-    def _test_field_iterators(self,
+    def _test_field_iterators(self, *,
                               rut: Union[RegReadOnly,
                                             RegReadWrite,
                                             RegWriteOnly,
@@ -169,7 +169,7 @@ class CommonTestBase(unittest.TestCase, ABC):
                                     RegAsyncWriteOnly,
                                     RegAsyncReadWrite,
                                     )):
-                raise TypeError(f'Register was expected to readable, got {type(rut)}')
+                raise TypeError(f'Register was expected to writable, got {type(rut)}')
 
             child_writeable_fields_names = {field.inst_name for field in rut.writable_fields}
 
@@ -231,7 +231,7 @@ class CommonTestBase(unittest.TestCase, ABC):
         child_section_names = {reg.inst_name for reg in dut.get_sections(unroll=True)}
         self.assertEqual(sections, child_section_names)
 
-    def _test_addrmap_iterators(self,
+    def _test_addrmap_iterators(self, *,
                                 dut: Union[AddressMap, AsyncAddressMap],
                                 memories: set[str],
                                 sections: set[str],
@@ -256,4 +256,3 @@ class CommonTestBase(unittest.TestCase, ABC):
         self.__test_section_iterators(dut=dut,
                                       sections=sections)
         self.assertFalse(hasattr(dut, 'get_memories'))
-

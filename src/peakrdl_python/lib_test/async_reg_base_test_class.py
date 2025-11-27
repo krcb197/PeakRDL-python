@@ -318,7 +318,7 @@ class AsyncLibTestBase(unittest.IsolatedAsyncioTestCase, CommonTestBase, ABC):
                                                       enum_definition=enum_definition)
 
     async def _single_register_read_and_write_test(
-            self,
+            self, *,
             rut: Union[RegAsyncReadOnly, RegAsyncReadWrite, RegAsyncWriteOnly],
             has_sw_readable: bool,
             has_sw_writable: bool,

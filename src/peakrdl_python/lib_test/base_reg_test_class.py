@@ -309,7 +309,7 @@ class LibTestBase(CommonTestBase, ABC):
             self.__single_enum_field_write_test(fut=fut,
                                                 enum_definition=enum_definition)
 
-    def _single_register_read_and_write_test(self,
+    def _single_register_read_and_write_test(self, *,
                                              rut: Union[RegReadOnly, RegReadWrite, RegWriteOnly],
                                              has_sw_readable: bool,
                                              has_sw_writable: bool,
