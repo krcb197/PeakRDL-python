@@ -22,3 +22,5 @@ from .base_reg_test_class import LibTestBase
 from .async_reg_base_test_class import AsyncLibTestBase
 
 from .utilities import reverse_bits
+
+from ._common_base_test_class import NodeIterators

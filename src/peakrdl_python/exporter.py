@@ -46,7 +46,8 @@ from .systemrdl_node_utility_functions import get_reg_writable_fields, \
     get_memory_max_entry_value_hex_string, get_memory_width_bytes, \
     get_field_default_value, get_enum_values, get_properties_to_include, \
     HideNodeCallback, hide_based_on_property, \
-    full_slice_accessor, ShowUDPCallback
+    full_slice_accessor, ShowUDPCallback, \
+    node_iterator_entry
 from .unique_component_iterator import UniqueComponents
 from .unique_component_iterator import PeakRDLPythonUniqueRegisterComponents
 from .unique_component_iterator import PeakRDLPythonUniqueMemoryComponents
@@ -865,7 +866,8 @@ class PythonExporter:
                 'get_properties_to_include': get_properties_to_include,
                 'hide_node_func': hide_node_func,
                 'legacy_enum_type': legacy_enum_type,
-                'skip_systemrdl_name_and_desc_properties': skip_systemrdl_name_and_desc_properties
+                'skip_systemrdl_name_and_desc_properties': skip_systemrdl_name_and_desc_properties,
+                'node_iterator_entry': node_iterator_entry,
             }
 
             self.__stream_jinja_template(template_name="addrmap_tb.py.jinja",

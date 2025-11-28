@@ -480,3 +480,18 @@ def full_slice_accessor(node: AddressableNode) -> str:
     if dimensions is None:
         raise RuntimeError('array node should have dimensions')
     return '[' + ','.join([':' for _ in range(len(dimensions))]) + ']'
+
+def node_iterator_entry(node: AddressableNode) -> str:
+    """
+    The NodeIterators in the lib_test requires all the children of a node to be presented in the
+    following format:
+    - non-array node: str of the name inst name from the system RDL
+    - array node: a tuple with the inst name and the length
+    """
+    if node.is_array:
+        dimensions = node.array_dimensions
+        if dimensions is None:
+            raise RuntimeError('array node should have dimensions')
+        return f"('{node.inst_name}', {str(dimensions)})"
+
+    return "'" + node.inst_name + "'"
