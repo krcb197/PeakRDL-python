@@ -46,7 +46,7 @@ from .systemrdl_node_utility_functions import get_reg_writable_fields, \
     get_memory_max_entry_value_hex_string, get_memory_width_bytes, \
     get_field_default_value, get_enum_values, get_properties_to_include, \
     HideNodeCallback, hide_based_on_property, \
-    full_slice_accessor, ShowUDPCallback
+    full_slice_accessor, ShowUDPCallback, simulator_field_definition
 from .unique_component_iterator import UniqueComponents
 from .unique_component_iterator import PeakRDLPythonUniqueRegisterComponents
 from .unique_component_iterator import PeakRDLPythonUniqueMemoryComponents
@@ -675,16 +675,17 @@ class PythonExporter:
                 raise TypeError(f'node should be a register, got {type(node)}')
             reg_addr = node.absolute_address
             if reg_addr in reg_dict:
+                if not node.has_overlaps:
+                    raise RuntimeError('A non-overlaping node should not have a duplicate address')
                 existing_entry = reg_dict[reg_addr]
-                # if the entry is already list simply append to it
-                if isinstance(existing_entry, list):
-                    existing_entry.append(node)
-                elif isinstance(existing_entry, RegNode):
-                    reg_dict[reg_addr] = [existing_entry, node]
-                else:
-                    raise TypeError(f'exiting entry of unexpected type: {type(existing_entry)}')
+                if not isinstance(existing_entry, list):
+                    raise RuntimeError('A overlapping entry should have been made as list')
+                existing_entry.append(node)
             else:
-                reg_dict[reg_addr] = node
+                if node.has_overlaps:
+                    reg_dict[reg_addr] = [node,]
+                else:
+                    reg_dict[reg_addr] = node
 
 
         context = {
@@ -696,7 +697,8 @@ class PythonExporter:
             'asyncoutput': asyncoutput,
             'skip_lib_copy': skip_lib_copy,
             'legacy_block_access': legacy_block_access,
-            'list': list
+            'list': list,
+            'simulator_field_definition': simulator_field_definition,
         }
 
         module_name = top_block.inst_name

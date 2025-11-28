@@ -40,7 +40,7 @@ from enum import IntEnum
 {% endif %}
 
 from {{ peakrdl_python_sim_lib(depth=lib_depth) }}.register import Register,MemoryRegister
-from {{ peakrdl_python_sim_lib(depth=lib_depth) }}.field import Field
+from {{ peakrdl_python_sim_lib(depth=lib_depth) }}.field import ReadOnlyField, WriteOnlyField, ReadWriteField
 
 from ._{{top_node.inst_name}}_sim_test_base import {{top_node.inst_name}}_SimTestCase, {{top_node.inst_name}}_SimTestCase_BlockAccess
 from ._{{top_node.inst_name}}_sim_test_base import __name__ as base_name
@@ -129,7 +129,16 @@ class {{fq_block_name}}_single_access({{top_node.inst_name}}_SimTestCase): # typ
             sim_register = self.sim.register_by_full_name('{{'.'.join(node.parent.get_path_segments())}}')
             self.assertIsInstance(sim_register, (Register,MemoryRegister))
             sim_field = self.sim.field_by_full_name('{{'.'.join(node.get_path_segments())}}')
-            self.assertIsInstance(sim_field, Field)
+            {% if node.is_sw_readable and node.is_sw_writable -%}
+            if not isinstance(sim_field, ReadWriteField):
+                raise TypeError(f'should be a simulated read/write field got {type(sim_field)}')
+            {% elif node.is_sw_readable and not node.is_sw_writable -%}
+            if not isinstance(sim_field, ReadOnlyField):
+                raise TypeError(f'should be a simulated read/write field got {type(sim_field)}')
+            {% elif not node.is_sw_readable and node.is_sw_writable -%}
+            if not isinstance(sim_field, WriteOnlyField):
+                raise TypeError(f'should be a simulated read/write field got {type(sim_field)}')
+            {% endif %}
             register_read_callback = Mock()
             register_write_callback = Mock()
             field_read_callback = Mock()
@@ -178,7 +187,9 @@ class {{fq_block_name}}_single_access({{top_node.inst_name}}_SimTestCase): # typ
             sim_register.read_callback = register_read_callback
             sim_register.write_callback = register_write_callback
             sim_field.read_callback = field_read_callback
+            {% if node.is_sw_writable -%}
             sim_field.write_callback = field_write_callback
+            {% endif %}
             self.assertEqual({% if asyncoutput %}await {%endif %}self.dut.{{'.'.join(get_python_path_segments(node))}}.read(), random_field_value)
             register_write_callback.assert_not_called()
             register_read_callback.assert_called_once_with(value=random_value)
@@ -196,7 +207,9 @@ class {{fq_block_name}}_single_access({{top_node.inst_name}}_SimTestCase): # typ
             sim_register.read_callback = None
             sim_register.write_callback = None
             sim_field.read_callback = None
+            {% if node.is_sw_writable -%}
             sim_field.write_callback = None
+            {% endif %}
             {%- if 'encode' in node.list_properties() %}
             random_field_value = random_enum_reg_value(self.dut.{{'.'.join(get_python_path_segments(node))}}.enum_cls)
             random_value = (random.randrange(0, {{get_reg_max_value_hex_string(node.parent)}}+1) & {{get_field_inv_bitmask_hex_string(node)}}) | ({% if node.msb == node.high %}random_field_value.value{% else %}self._reverse_bits(value=random_field_value.value, number_bits={{node.width}}){% endif %} << {{node.low}})
@@ -245,7 +258,9 @@ class {{fq_block_name}}_single_access({{top_node.inst_name}}_SimTestCase): # typ
             # hook up the call backs
             sim_register.read_callback = None
             sim_register.write_callback = register_write_callback
+            {% if node.is_sw_readable -%}
             sim_field.read_callback = None
+            {% endif %}
             sim_field.write_callback = field_write_callback
             {%- if 'encode' in node.list_properties() %}
             random_field_value = random_enum_reg_value(self.dut.{{'.'.join(get_python_path_segments(node))}}.enum_cls)

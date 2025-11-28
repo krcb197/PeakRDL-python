@@ -35,6 +35,7 @@ from systemrdl.node import SignalNode
 from systemrdl.rdltypes.user_enum import UserEnumMeta
 
 from .lib.utility_functions import calculate_bitmask
+from .sim_lib.field import FieldType
 
 class HideNodeCallback(Protocol):
     """
@@ -480,3 +481,22 @@ def full_slice_accessor(node: AddressableNode) -> str:
     if dimensions is None:
         raise RuntimeError('array node should have dimensions')
     return '[' + ','.join([':' for _ in range(len(dimensions))]) + ']'
+
+def simulator_field_definition(node: FieldNode) -> str:
+    """
+    Based on whether the field is readable and/or writeable, returns the value of the FieldType
+    to use
+    """
+    if not isinstance(node, FieldNode):
+        raise TypeError(f'This should only be called on an FieldNode, got {type(node)}')
+
+    if node.is_sw_readable and node.is_sw_writable:
+        return FieldType.READWRITE.name
+
+    if node.is_sw_readable and not node.is_sw_writable:
+        return FieldType.READONLY.name
+
+    if not node.is_sw_readable and node.is_sw_writable:
+        return FieldType.WRITEONLY.name
+
+    raise RuntimeError('Encountered a field node that was neither readable or writable')

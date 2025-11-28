@@ -8,7 +8,7 @@ dynamic = ["version"]
 # Callable is broken in python 3.9.0 and 3.9.1 so these need to be excluded
 requires-python = ">=3.9.2"
 dependencies = [
-    "systemrdl-compiler>=1.29.3", # this is needed to make sure all the latest type checking
+    "systemrdl-compiler>=1.31.0", # this is needed for the latest overlappign register features
     "jinja2",
     "typing-extensions;python_version<'3.11'",
     # the batched fucntion was adopted into the standard python library at 3.13
