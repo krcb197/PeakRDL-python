@@ -75,6 +75,7 @@ from {{ peakrdl_python_lib(depth=lib_depth) }} import Reg
 from {{ peakrdl_python_lib(depth=lib_depth) }} import SystemRDLEnum, SystemRDLEnumEntry
 {% endif %}
 from {{ peakrdl_python_lib_test(depth=lib_depth) }} import reverse_bits
+from {{ peakrdl_python_lib_test(depth=lib_depth) }} import NodeIterators
 
 from ._{{top_node.inst_name}}_test_base import {{top_node.inst_name}}_TestCase, {{top_node.inst_name}}_TestCase_BlockAccess, {{top_node.inst_name}}_TestCase_AltBlockAccess
 from ._{{top_node.inst_name}}_test_base import __name__ as base_name
@@ -345,10 +346,10 @@ class {{fq_block_name}}_single_access({{top_node.inst_name}}_TestCase): # type: 
     def test_top_traversal_iterators(self) -> None:
 
         self._test_addrmap_iterators(dut=self.dut,
-                                     writeable_registers=set([ {%- for child_node in top_node.children(unroll=True) %}{%- if not hide_node_func(child_node) %}{%- if isinstance(child_node, systemrdlRegNode) %}{% if child_node.has_sw_writable %}'{{child_node.get_path_segments()[-1]}}',{% endif %}{% endif %}{% endif %}{% endfor %} ]),
-                                     readable_registers=set([ {%- for child_node in top_node.children(unroll=True) %}{%- if not hide_node_func(child_node) %}{%- if isinstance(child_node, systemrdlRegNode) %}{% if child_node.has_sw_readable %}'{{child_node.get_path_segments()[-1]}}',{% endif %}{% endif %}{% endif %}{% endfor %} ]),
-                                     sections=set([ {%- for child_node in top_node.children(unroll=True) %}{%- if not hide_node_func(child_node) %}{%- if isinstance(child_node, (systemrdlRegfileNode,systemrdlAddrmapNode)) %}'{{child_node.get_path_segments()[-1]}}',{% endif %}{% endif %}{% endfor %} ]),
-                                     memories=set([ {%- for child_node in top_node.children(unroll=True) %}{%- if not hide_node_func(child_node) %}{%- if isinstance(child_node, systemrdlMemNode) %}'{{child_node.get_path_segments()[-1]}}',{% endif %}{% endif %}{% endfor %} ]))
+                                     writeable_registers=NodeIterators({%- for child_node in top_node.children(unroll=False) %}{%- if not hide_node_func(child_node) %}{%- if isinstance(child_node, systemrdlRegNode) %}{% if child_node.has_sw_writable %}{{node_iterator_entry(child_node)}},{% endif %}{% endif %}{% endif %}{% endfor %}),
+                                     readable_registers=NodeIterators({%- for child_node in top_node.children(unroll=False) %}{%- if not hide_node_func(child_node) %}{%- if isinstance(child_node, systemrdlRegNode) %}{% if child_node.has_sw_readable %}{{node_iterator_entry(child_node)}},{% endif %}{% endif %}{% endif %}{% endfor %}),
+                                     sections=NodeIterators({%- for child_node in top_node.children(unroll=False) %}{%- if not hide_node_func(child_node) %}{%- if isinstance(child_node, (systemrdlRegfileNode,systemrdlAddrmapNode)) %}{{node_iterator_entry(child_node)}},{% endif %}{% endif %}{% endfor %}),
+                                     memories=NodeIterators({%- for child_node in top_node.children(unroll=False) %}{%- if not hide_node_func(child_node) %}{%- if isinstance(child_node, systemrdlMemNode) %}{{node_iterator_entry(child_node)}},{% endif %}{% endif %}{% endfor %}))
 
     {% endif %}{# if block == top_block #}
 
@@ -363,25 +364,25 @@ class {{fq_block_name}}_single_access({{top_node.inst_name}}_TestCase): # type: 
         {% for node in owned_elements.memories -%}
         with self.subTest(msg='memory: {{'.'.join(node.get_path_segments())}}'):
             self._test_register_iterators(dut=self.dut.{{'.'.join(get_python_path_segments(node))}},
-                                          writeable_registers=set([ {%- for child_node in node.children(unroll=True) %}{%- if not hide_node_func(child_node) %}{%- if isinstance(child_node, systemrdlRegNode) %}{% if child_node.has_sw_writable %}'{{child_node.get_path_segments()[-1]}}',{% endif %}{% endif %}{% endif %}{% endfor %} ]),
-                                          readable_registers=set([ {%- for child_node in node.children(unroll=True) %}{%- if not hide_node_func(child_node) %}{%- if isinstance(child_node, systemrdlRegNode) %}{% if child_node.has_sw_readable %}'{{child_node.get_path_segments()[-1]}}',{% endif %}{% endif %}{% endif %}{% endfor %} ]))
+                                          writeable_registers=NodeIterators( {%- for child_node in node.children(unroll=False) %}{%- if not hide_node_func(child_node) %}{%- if isinstance(child_node, systemrdlRegNode) %}{% if child_node.has_sw_writable %}{{node_iterator_entry(child_node)}},{% endif %}{% endif %}{% endif %}{% endfor %}),
+                                          readable_registers=NodeIterators( {%- for child_node in node.children(unroll=False) %}{%- if not hide_node_func(child_node) %}{%- if isinstance(child_node, systemrdlRegNode) %}{% if child_node.has_sw_readable %}{{node_iterator_entry(child_node)}},{% endif %}{% endif %}{% endif %}{% endfor %}))
         {% endfor %}
         # test all the address maps
         {% for node in owned_elements.addr_maps -%}
         with self.subTest(msg='addrmap: {{'.'.join(node.get_path_segments())}}'):
             self._test_addrmap_iterators(dut=self.dut.{{'.'.join(get_python_path_segments(node))}},
-                                         writeable_registers=set([ {%- for child_node in node.children(unroll=True) %}{%- if not hide_node_func(child_node) %}{%- if isinstance(child_node, systemrdlRegNode) %}{% if child_node.has_sw_writable %}'{{child_node.get_path_segments()[-1]}}',{% endif %}{% endif %}{% endif %}{% endfor %} ]),
-                                         readable_registers=set([ {%- for child_node in node.children(unroll=True) %}{%- if not hide_node_func(child_node) %}{%- if isinstance(child_node, systemrdlRegNode) %}{% if child_node.has_sw_readable %}'{{child_node.get_path_segments()[-1]}}',{% endif %}{% endif %}{% endif %}{% endfor %} ]),
-                                         sections=set([ {%- for child_node in node.children(unroll=True) %}{%- if not hide_node_func(child_node) %}{%- if isinstance(child_node, (systemrdlRegfileNode,systemrdlAddrmapNode)) %}'{{child_node.get_path_segments()[-1]}}',{% endif %}{% endif %}{% endfor %} ]),
-                                         memories=set([ {%- for child_node in node.children(unroll=True) %}{%- if not hide_node_func(child_node) %}{%- if isinstance(child_node, systemrdlMemNode) %}'{{child_node.get_path_segments()[-1]}}',{% endif %}{% endif %}{% endfor %} ]))
+                                         writeable_registers=NodeIterators( {%- for child_node in node.children(unroll=False) %}{%- if not hide_node_func(child_node) %}{%- if isinstance(child_node, systemrdlRegNode) %}{% if child_node.has_sw_writable %}{{node_iterator_entry(child_node)}},{% endif %}{% endif %}{% endif %}{% endfor %}),
+                                         readable_registers=NodeIterators( {%- for child_node in node.children(unroll=False) %}{%- if not hide_node_func(child_node) %}{%- if isinstance(child_node, systemrdlRegNode) %}{% if child_node.has_sw_readable %}{{node_iterator_entry(child_node)}},{% endif %}{% endif %}{% endif %}{% endfor %}),
+                                         sections=NodeIterators( {%- for child_node in node.children(unroll=False) %}{%- if not hide_node_func(child_node) %}{%- if isinstance(child_node, (systemrdlRegfileNode,systemrdlAddrmapNode)) %}{{node_iterator_entry(child_node)}},{% endif %}{% endif %}{% endfor %}),
+                                         memories=NodeIterators( {%- for child_node in node.children(unroll=False) %}{%- if not hide_node_func(child_node) %}{%- if isinstance(child_node, systemrdlMemNode) %}{{node_iterator_entry(child_node)}},{% endif %}{% endif %}{% endfor %}))
         {% endfor %}
         # test all the register files
         {% for node in owned_elements.reg_files -%}
         with self.subTest(msg='regfile: {{'.'.join(node.get_path_segments())}}'):
             self._test_regfile_iterators(dut=self.dut.{{'.'.join(get_python_path_segments(node))}},
-                                         writeable_registers=set([ {%- for child_node in node.children(unroll=True) %}{%- if not hide_node_func(child_node) %}{%- if isinstance(child_node, systemrdlRegNode) %}{% if child_node.has_sw_writable %}'{{child_node.get_path_segments()[-1]}}',{% endif %}{% endif %}{% endif %}{% endfor %} ]),
-                                         readable_registers=set([ {%- for child_node in node.children(unroll=True) %}{%- if not hide_node_func(child_node) %}{%- if isinstance(child_node, systemrdlRegNode) %}{% if child_node.has_sw_readable %}'{{child_node.get_path_segments()[-1]}}',{% endif %}{% endif %}{% endif %}{% endfor %} ]),
-                                         sections=set([ {%- for child_node in node.children(unroll=True) %}{%- if not hide_node_func(child_node) %}{%- if isinstance(child_node, (systemrdlRegfileNode,systemrdlAddrmapNode)) %}'{{child_node.get_path_segments()[-1]}}',{% endif %}{% endif %}{% endfor %} ]))
+                                         writeable_registers=NodeIterators({%- for child_node in node.children(unroll=False) %}{%- if not hide_node_func(child_node) %}{%- if isinstance(child_node, systemrdlRegNode) %}{% if child_node.has_sw_writable %}{{node_iterator_entry(child_node)}},{% endif %}{% endif %}{% endif %}{% endfor %}),
+                                         readable_registers=NodeIterators({%- for child_node in node.children(unroll=False) %}{%- if not hide_node_func(child_node) %}{%- if isinstance(child_node, systemrdlRegNode) %}{% if child_node.has_sw_readable %}{{node_iterator_entry(child_node)}},{% endif %}{% endif %}{% endif %}{% endfor %}),
+                                         sections=NodeIterators({%- for child_node in node.children(unroll=False) %}{%- if not hide_node_func(child_node) %}{%- if isinstance(child_node, (systemrdlRegfileNode,systemrdlAddrmapNode)) %}{{node_iterator_entry(child_node)}},{% endif %}{% endif %}{% endfor %}))
         {% endfor %}
 
     def test_name_map(self) -> None:

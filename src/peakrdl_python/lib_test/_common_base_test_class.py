@@ -21,6 +21,7 @@ Python tool. It provide the base class common to both the async and non-async ve
 import unittest
 from abc import ABC, abstractmethod
 from typing import Union, Optional
+from itertools import product
 
 from ..lib import FieldReadWrite, FieldReadOnly, FieldWriteOnly
 from ..lib import FieldEnumReadWrite, FieldEnumReadOnly, FieldEnumWriteOnly
@@ -40,6 +41,46 @@ from ..lib.base_register import BaseReg
 from ..lib import Base
 from .utilities import get_field_bitmask_int, get_field_inv_bitmask
 from ..sim_lib.simulator import BaseSimulator
+
+class NodeIterators:
+    """
+    The Node Iterator class is intended to an efficient way to define the iterators of particular
+    type that are present on a node
+    """
+    __slots__ = ['__node_descriptions']
+    def __init__(self, *args:Union[str, tuple[str, list[int]]]):
+        self.__node_descriptions = args
+
+    @staticmethod
+    def __rolled_item(item:Union[str, tuple[str, list[int]]]) -> str:
+        if isinstance(item, tuple):
+            return item[0]
+        return item
+
+    @property
+    def rolled(self) -> set[str]:
+        """
+        name of all the rolled nodes in a set
+        """
+        return { self.__rolled_item(item) for item in self.__node_descriptions }
+
+    @property
+    def unrolled(self) -> set[str]:
+        """
+        name of all the unrolled nodes in a set
+        """
+        return_list = []
+        for item in self.__node_descriptions:
+            if isinstance(item, tuple):
+                dim_set =  list(product(*[range(dim) for dim in item[1]]))
+                for dim in dim_set:
+                    # to match the systemrdl compiler dimension put into the inst name of
+                    # the array, the name must be item[x][y]
+                    dim_str = ''.join([f'[{str(i)}]' for i in dim])
+                    return_list.append(f'{item[0]}{dim_str}')
+            else:
+                return_list.append(item)
+        return set(return_list)
 
 class CommonTestBase(unittest.TestCase, ABC):
     """
@@ -201,8 +242,8 @@ class CommonTestBase(unittest.TestCase, ABC):
                                             MemoryAsyncReadOnly, MemoryAsyncReadOnlyLegacy,
                                             MemoryAsyncWriteOnly, MemoryAsyncWriteOnlyLegacy,
                                             MemoryAsyncReadWrite, MemoryAsyncReadWriteLegacy],
-                                 readable_registers: set[str],
-                                 writeable_registers: set[str]) -> None:
+                                 readable_registers: NodeIterators,
+                                 writeable_registers: NodeIterators) -> None:
 
         if isinstance(dut, (AddressMap, AsyncAddressMap, RegFile, AsyncRegFile,
                             MemoryReadOnly, MemoryReadOnlyLegacy,
@@ -211,7 +252,10 @@ class CommonTestBase(unittest.TestCase, ABC):
                             MemoryAsyncReadWrite, MemoryAsyncReadWriteLegacy)):
             child_readable_reg_names = { reg.inst_name for reg in
                                          dut.get_readable_registers(unroll=True)}
-            self.assertEqual(readable_registers, child_readable_reg_names)
+            self.assertEqual(readable_registers.unrolled, child_readable_reg_names)
+            child_readable_reg_names = {reg.inst_name for reg in
+                                        dut.get_readable_registers(unroll=False)}
+            self.assertEqual(readable_registers.rolled, child_readable_reg_names)
         else:
             self.assertFalse(hasattr(dut, 'get_readable_registers'))
 
@@ -222,32 +266,43 @@ class CommonTestBase(unittest.TestCase, ABC):
                             MemoryAsyncReadWrite, MemoryAsyncReadWriteLegacy)):
             child_writable_reg_names = {reg.inst_name for reg in
                                         dut.get_writable_registers(unroll=True)}
-            self.assertEqual(writeable_registers, child_writable_reg_names)
+            self.assertEqual(writeable_registers.unrolled, child_writable_reg_names)
+            child_writable_reg_names = {reg.inst_name for reg in
+                                        dut.get_writable_registers(unroll=False)}
+            self.assertEqual(writeable_registers.rolled, child_writable_reg_names)
         else:
             self.assertFalse(hasattr(dut, 'get_writable_registers'))
 
         child_reg_names = {field.inst_name for field in dut.get_registers(unroll=True)}
-        self.assertEqual(readable_registers | writeable_registers, child_reg_names)
+        self.assertEqual(readable_registers.unrolled | writeable_registers.unrolled,
+                         child_reg_names)
+        child_reg_names = {field.inst_name for field in dut.get_registers(unroll=False)}
+        self.assertEqual(readable_registers.rolled | writeable_registers.rolled,
+                         child_reg_names)
 
 
     def _test_memory_iterators(self,
                                dut: Union[AddressMap, AsyncAddressMap],
-                               memories: set[str]) -> None:
+                               memories: NodeIterators) -> None:
         child_mem_names = {reg.inst_name for reg in dut.get_memories(unroll=True)}
-        self.assertEqual(memories, child_mem_names)
+        self.assertEqual(memories.unrolled, child_mem_names)
+        child_mem_names = {reg.inst_name for reg in dut.get_memories(unroll=False)}
+        self.assertEqual(memories.rolled, child_mem_names)
 
     def __test_section_iterators(self,
                                  dut: Union[AddressMap, AsyncAddressMap, RegFile, AsyncRegFile],
-                                 sections: set[str]) -> None:
+                                 sections: NodeIterators) -> None:
         child_section_names = {reg.inst_name for reg in dut.get_sections(unroll=True)}
-        self.assertEqual(sections, child_section_names)
+        self.assertEqual(sections.unrolled, child_section_names)
+        child_section_names = {reg.inst_name for reg in dut.get_sections(unroll=False)}
+        self.assertEqual(sections.rolled, child_section_names)
 
     def _test_addrmap_iterators(self, *,
                                 dut: Union[AddressMap, AsyncAddressMap],
-                                memories: set[str],
-                                sections: set[str],
-                                readable_registers: set[str],
-                                writeable_registers: set[str]) -> None:
+                                memories: NodeIterators,
+                                sections: NodeIterators,
+                                readable_registers: NodeIterators,
+                                writeable_registers: NodeIterators) -> None:
         self._test_register_iterators(dut=dut,
                                       readable_registers=readable_registers,
                                       writeable_registers=writeable_registers)
@@ -258,9 +313,9 @@ class CommonTestBase(unittest.TestCase, ABC):
 
     def _test_regfile_iterators(self,
                                 dut: Union[RegFile, AsyncRegFile],
-                                sections: set[str],
-                                readable_registers: set[str],
-                                writeable_registers: set[str]) -> None:
+                                sections: NodeIterators,
+                                readable_registers: NodeIterators,
+                                writeable_registers: NodeIterators) -> None:
         self._test_register_iterators(dut=dut,
                                       readable_registers=readable_registers,
                                       writeable_registers=writeable_registers)
