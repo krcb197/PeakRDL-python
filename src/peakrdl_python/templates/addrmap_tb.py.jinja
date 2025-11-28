@@ -26,7 +26,6 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 from typing import Union,Iterable
 from array import array as Array
 {% if asyncoutput %}
-import sys
 import asyncio
 import unittest
 from unittest.mock import patch, call
@@ -719,15 +718,5 @@ class {{fq_block_name}}_alt_block_access({{top_node.inst_name}}_TestCase_AltBloc
 
 
 if __name__ == '__main__':
-{% if asyncoutput %}
-    if sys.version_info < (3, 8):
-        asynctest.main()
-    else:
-        unittest.main()
-{% else %}
+
     unittest.main()
-{% endif %}
-
-
-
-
