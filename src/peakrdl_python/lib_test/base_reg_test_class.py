@@ -1033,7 +1033,7 @@ class LibTestBase(CommonTestBase, ABC):
             if self.legacy_block_access:
                 if not isinstance(mut, (MemoryWriteOnlyLegacy, MemoryReadWriteLegacy)):
                     raise TypeError(f'Memory should be legacy type but got {type(mut)}')
-                mut.write(start_entry=entry, data=Array(mut.array_typecode, rand_data_list))
+                mut.write(start_entry=0, data=Array(mut.array_typecode, rand_data_list))
             else:
                 if not isinstance(mut, (MemoryWriteOnly, MemoryReadWrite)):
                     raise TypeError(f'Memory should be non-legacy type but got {type(mut)}')
