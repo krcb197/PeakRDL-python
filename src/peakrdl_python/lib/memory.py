@@ -100,6 +100,20 @@ class BaseMemory(Node, ABC):
         return self.__memwidth
 
     @property
+    def max_entry_value(self) -> int:
+        """
+        maximum unsigned integer value that can be stored in a memory entry
+
+        For example:
+
+        * 8-bit memory width returns 0xFF (255)
+        * 16-bit memory width returns 0xFFFF (65535)
+        * 32-bit memory width returns 0xFFFF_FFFF (4294967295)
+
+        """
+        return (2 ** self.width) - 1
+
+    @property
     def width_in_bytes(self) -> int:
         """
         The width of the memory bytes, i.e. the width in bits divided by 8

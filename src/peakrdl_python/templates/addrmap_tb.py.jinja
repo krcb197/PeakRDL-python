@@ -40,14 +40,13 @@ import math
 from enum import IntEnum
 {% endif %}
 
-from {{ peakrdl_python_lib(depth=lib_depth) }} import RegisterWriteVerifyError, UnsupportedWidthError
+from {{ peakrdl_python_lib(depth=lib_depth) }} import UnsupportedWidthError
 
 from ..reg_model import RegModel
 from ..reg_model.{{top_node.inst_name}}_property_enums import *
 
 {% if asyncoutput %}
 from {{ peakrdl_python_lib(depth=lib_depth) }} import FieldAsyncReadOnly, FieldAsyncWriteOnly, FieldAsyncReadWrite
-from {{ peakrdl_python_lib(depth=lib_depth) }} import WritableAsyncRegister, ReadableAsyncRegister
 from {{ peakrdl_python_lib(depth=lib_depth) }} import RegAsyncReadWrite, RegAsyncReadOnly, RegAsyncWriteOnly
 from {{ peakrdl_python_lib(depth=lib_depth) }} import RegAsyncReadWriteArray, RegAsyncReadOnlyArray, RegAsyncWriteOnlyArray
 from {{ peakrdl_python_lib(depth=lib_depth) }} import MemoryAsyncReadOnly{% if legacy_block_access %}Legacy{% endif %}, MemoryAsyncWriteOnly{% if legacy_block_access %}Legacy{% endif %}, MemoryAsyncReadWrite{% if legacy_block_access %}Legacy{% endif %}
@@ -57,7 +56,6 @@ from {{ peakrdl_python_lib(depth=lib_depth) }} import AsyncAddressMapArray, Asyn
 from {{ peakrdl_python_lib(depth=lib_depth) }} import AsyncMemory
 {% else %}
 from {{ peakrdl_python_lib(depth=lib_depth) }} import FieldReadOnly, FieldWriteOnly, FieldReadWrite
-from {{ peakrdl_python_lib(depth=lib_depth) }} import WritableRegister, ReadableRegister
 from {{ peakrdl_python_lib(depth=lib_depth) }} import RegReadWrite, RegReadOnly, RegWriteOnly
 from {{ peakrdl_python_lib(depth=lib_depth) }} import RegReadWriteArray, RegReadOnlyArray, RegWriteOnlyArray
 from {{ peakrdl_python_lib(depth=lib_depth) }} import MemoryReadOnly{% if legacy_block_access %}Legacy{% endif %}, MemoryWriteOnly{% if legacy_block_access %}Legacy{% endif %}, MemoryReadWrite{% if legacy_block_access %}Legacy{% endif %}
@@ -124,23 +122,6 @@ class {{fq_block_name}}_single_access({{top_node.inst_name}}_TestCase): # type: 
             self.assertEqual(self.dut.{{'.'.join(get_python_path_segments(block))}}.size, {{block.size}}) # type: ignore[union-attr]
         {% endif %}
 
-    def test_memory_properties(self)  -> None:
-        """
-        Walk the address map and check the address, size and accesswidth of every memory is
-        correct
-        """
-        mut: {% if asyncoutput %}Async{% endif %}Memory
-        {% for node in owned_elements.memories -%}
-        with self.subTest(msg='memory: {{'.'.join(node.get_path_segments())}}'):
-            mut = self.dut.{{'.'.join(get_python_path_segments(node))}} # type: ignore[union-attr,assignment]
-
-            self.assertIsInstance(mut, (Memory{% if asyncoutput %}Async{% endif %}ReadOnly{% if legacy_block_access %}Legacy{% endif %}, Memory{% if asyncoutput %}Async{% endif %}WriteOnly{% if legacy_block_access %}Legacy{% endif %}, Memory{% if asyncoutput %}Async{% endif %}ReadWrite{% if legacy_block_access %}Legacy{% endif %}))
-            self.assertEqual(mut.address, {{node.absolute_address}})
-            self.assertEqual(mut.width, {{node.get_property('memwidth')}})
-            self.assertEqual(mut.entries, {{node.get_property('mementries')}})
-            {% if 'accesswidth' in node.list_properties() -%}self.assertEqual(mut.accesswidth, {{node.get_property('accesswidth')}}){%- else -%}self.assertEqual(mut.accesswidth, mut.accesswidth){%- endif %}
-        {% endfor %}
-
     def test_field_encoding_properties(self)  -> None:
         """
         Check that enumeration has the name and desc meta data from the systemRDL
@@ -194,9 +175,27 @@ class {{fq_block_name}}_single_access({{top_node.inst_name}}_TestCase): # type: 
             {% endif %}
         {% endfor %}
 
-    {% if asyncoutput %}async {% endif %}def test_register_read_and_write(self) -> None:
+    {% if uses_memory %}
+    {% if asyncoutput %}async {% endif %}def test_memory(self) -> None:
         """
-        Walk the register map and check every register can be read and written to correctly
+        Walk the memory instances in the register map and check:
+        - the properties
+        - it can be read and written to correctly
+        """
+        {% for node in owned_elements.memories -%}
+        with self.subTest(msg='memory: {{'.'.join(node.get_path_segments())}}'):
+            self._single_memory_property_test(mut=self.dut.{{'.'.join(get_python_path_segments(node))}}, address={{node.absolute_address}}, width={{node.get_property('memwidth')}}, entries={{node.get_property('mementries')}}, accesswidth={% if 'accesswidth' in node.list_properties() -%}{{node.get_property('accesswidth')}}{% else %}None{%- endif %}, array_typecode='{{get_array_typecode(node.get_property('memwidth'))}}')
+            {% if asyncoutput %}await {%endif %} self._single_memory_read_and_write_test(mut=self.dut.{{'.'.join(get_python_path_segments(node))}}, is_sw_readable={{node.is_sw_readable}}, is_sw_writable={{node.is_sw_writable}},
+                                                                                         writeable_registers=NodeIterators( {%- for child_node in node.children(unroll=False) %}{%- if not hide_node_func(child_node) %}{%- if isinstance(child_node, systemrdlRegNode) %}{% if child_node.has_sw_writable %}{{node_iterator_entry(child_node)}},{% endif %}{% endif %}{% endif %}{% endfor %}),
+                                                                                         readable_registers=NodeIterators( {%- for child_node in node.children(unroll=False) %}{%- if not hide_node_func(child_node) %}{%- if isinstance(child_node, systemrdlRegNode) %}{% if child_node.has_sw_readable %}{{node_iterator_entry(child_node)}},{% endif %}{% endif %}{% endif %}{% endfor %}))
+        {% endfor %}
+    {% endif %} {# end if memory #}
+
+    {% if asyncoutput %}async {% endif %}def test_register(self) -> None:
+        """
+        Walk the registers in the register map and check:
+        - the properties
+        - it can be read and written to correctly
         """
         {% for node in owned_elements.registers -%}
         with self.subTest(msg='register: {{'.'.join(node.get_path_segments())}}'):
@@ -220,110 +219,6 @@ class {{fq_block_name}}_single_access({{top_node.inst_name}}_TestCase): # type: 
                                                                                             is_sw_readable={{node.is_sw_readable}}, is_sw_writable={{node.is_sw_writable}}, enum_definition={ {% for enum_entry in node.get_property('encode') %}'{{enum_entry.name.upper()}}':{{enum_entry.value}},{% endfor %} })
             {%- endif %}
         {%- endfor %}
-
-    {% if uses_memory %}
-    {% if asyncoutput %}async {% endif %}def test_memory_read_and_write(self) -> None:
-        """
-        Walk the register map and check every register can be read and written to correctly
-        """
-        {% for node in owned_elements.memories -%}
-
-        # test access operations (read and/or write) to register:
-        # {{'.'.join(node.get_path_segments())}}
-        with self.subTest(msg='memory: {{'.'.join(node.get_path_segments())}}'):
-            with patch.object(self,'write_callback') as write_callback_mock, \
-                patch.object(self,'read_callback', return_value=1) as read_callback_mock:
-
-                {% if node.is_sw_readable -%}
-                # checks single unit accesses at the first entry, the last entry and a random entry in
-                # in each case check a 0, max value and random value being read
-                for entry in [0, random.randint(0,{{node.get_property('mementries')-1}}), {{node.get_property('mementries')-1}}]:
-                    for value in [0, random.randint(0,{{get_memory_max_entry_value_hex_string(node)}}), {{get_memory_max_entry_value_hex_string(node)}}]:
-                        read_callback_mock.reset_mock()
-                        read_callback_mock.return_value = value
-                        {% if legacy_block_access %}
-                        self.assertEqual({% if asyncoutput %}await {%endif %}self.dut.{{'.'.join(get_python_path_segments(node))}}.read(start_entry=entry, number_entries=1), # type: ignore[union-attr]
-                                                                 Array('{{get_array_typecode(node.get_property('memwidth'))}}', [value]))
-                        {% else %}
-                        self.assertEqual({% if asyncoutput %}await {%endif %}self.dut.{{'.'.join(get_python_path_segments(node))}}.read(start_entry=entry, number_entries=1), # type: ignore[union-attr]
-                                                                 [value])
-                        {% endif %}
-
-                        read_callback_mock.assert_called_once_with(
-                                            addr={{node.absolute_address}}+(entry * {{get_memory_width_bytes(node)}}),
-                                            width={{node.get_property('memwidth')}},
-                                            accesswidth={{node.get_property('memwidth')}})
-
-                # check a multi-entry read, if the memory is small do the entire memory, however, if
-                # it is large limit the number of entries to 10
-                entries_to_test = {% if node.get_property('mementries') > 10 %}10{% else %}{{node.get_property('mementries')}}{% endif %}
-                {% if legacy_block_access %}
-                random_data = Array('{{get_array_typecode(node.get_property('memwidth'))}}',
-                                    [random.randint(0,{{get_memory_max_entry_value_hex_string(node)}}) for x in range(entries_to_test)])
-                {% else %}
-                random_data = [random.randint(0,{{get_memory_max_entry_value_hex_string(node)}}) for x in range(entries_to_test)]
-                {% endif %}
-
-
-                def read_data_mock(addr:int, width:int, accesswidth:int) -> int:
-                    mem_entry = (addr - {{node.absolute_address}}) // {{get_memory_width_bytes(node)}}
-                    return random_data[mem_entry]
-
-                read_callback_mock.reset_mock()
-                read_callback_mock.side_effect=read_data_mock
-
-                self.assertEqual({% if asyncoutput %}await {%endif %}self.dut.{{'.'.join(get_python_path_segments(node))}}.read(start_entry=0, number_entries=entries_to_test), # type: ignore[union-attr]
-                                 random_data)
-
-                write_callback_mock.assert_not_called()
-                read_callback_mock.reset_mock()
-                {% endif %}
-
-                {% if node.is_sw_writable -%}
-                # checks single unit accesses at the first entry, the last entry and a random entry in
-                # in each case check a 0, max value and random value being read
-                for entry in [0, random.randint(0,{{node.get_property('mementries')-1}}), {{node.get_property('mementries')-1}}]:
-                    for value in [0, random.randint(0,{{get_memory_max_entry_value_hex_string(node)}}), {{get_memory_max_entry_value_hex_string(node)}}]:
-                        write_callback_mock.reset_mock()
-                        {% if legacy_block_access %}
-                        {% if asyncoutput %}await {%endif %}self.dut.{{'.'.join(get_python_path_segments(node))}}.write(start_entry=entry, data=Array('{{get_array_typecode(node.get_property('memwidth'))}}', [value])) # type: ignore[union-attr]
-                        {% else %}
-                        {% if asyncoutput %}await {%endif %}self.dut.{{'.'.join(get_python_path_segments(node))}}.write(start_entry=entry, data=[value]) # type: ignore[union-attr]
-                        {% endif %}
-                        write_callback_mock.assert_called_once_with(
-                                            addr={{node.absolute_address}}+(entry * {{get_memory_width_bytes(node)}}),
-                                            width={{node.get_property('memwidth')}},
-                                            accesswidth={{node.get_property('memwidth')}},
-                                            data=value)
-
-                read_callback_mock.assert_not_called()
-                write_callback_mock.reset_mock()
-
-                # check a multi-entry read, if the memory is small do the entire memory, however, if
-                # it is large limit the number of entries to 10
-                entries_to_test = {% if node.get_property('mementries') > 10 %}10{% else %}{{node.get_property('mementries')}}{% endif %}
-                {% if legacy_block_access %}
-                random_data = Array('{{get_array_typecode(node.get_property('memwidth'))}}',
-                                    [random.randint(0,{{get_memory_max_entry_value_hex_string(node)}}) for x in range(entries_to_test)])
-                {% else %}
-                random_data = [random.randint(0,{{get_memory_max_entry_value_hex_string(node)}}) for x in range(entries_to_test)]
-                {% endif %}
-                {% if asyncoutput %}await {%endif %}self.dut.{{'.'.join(get_python_path_segments(node))}}.write(start_entry=0, data=random_data) # type: ignore[union-attr]
-
-                for x in range(entries_to_test):
-                    self.assertEqual(write_callback_mock.call_args_list[x],
-                                     call(addr={{node.absolute_address}} + (x * {{get_memory_width_bytes(node)}}),
-                                          width={{node.get_property('memwidth')}},
-                                          accesswidth={% if 'accesswidth' in node.list_properties() -%}{{node.get_property('accesswidth')}}{%- else -%}{{node.get_property('memwidth')}}{%- endif -%},
-                                          data=random_data[x]))
-
-                read_callback_mock.assert_not_called()
-                write_callback_mock.reset_mock()
-
-                {%- endif %}
-
-        {%- endfor %}
-    {%- endif %}
 
     def test_adding_attributes(self) -> None:
         """
@@ -357,15 +252,6 @@ class {{fq_block_name}}_single_access({{top_node.inst_name}}_TestCase): # type: 
         Walk the address map and check that the iterators for each node as as expected
         """
 
-
-
-        # test all the memories
-        {% for node in owned_elements.memories -%}
-        with self.subTest(msg='memory: {{'.'.join(node.get_path_segments())}}'):
-            self._test_register_iterators(dut=self.dut.{{'.'.join(get_python_path_segments(node))}},
-                                          writeable_registers=NodeIterators( {%- for child_node in node.children(unroll=False) %}{%- if not hide_node_func(child_node) %}{%- if isinstance(child_node, systemrdlRegNode) %}{% if child_node.has_sw_writable %}{{node_iterator_entry(child_node)}},{% endif %}{% endif %}{% endif %}{% endfor %}),
-                                          readable_registers=NodeIterators( {%- for child_node in node.children(unroll=False) %}{%- if not hide_node_func(child_node) %}{%- if isinstance(child_node, systemrdlRegNode) %}{% if child_node.has_sw_readable %}{{node_iterator_entry(child_node)}},{% endif %}{% endif %}{% endif %}{% endfor %}))
-        {% endfor %}
         # test all the address maps
         {% for node in owned_elements.addr_maps -%}
         with self.subTest(msg='addrmap: {{'.'.join(node.get_path_segments())}}'):
