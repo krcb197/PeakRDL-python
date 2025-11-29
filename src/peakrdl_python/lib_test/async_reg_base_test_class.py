@@ -1057,6 +1057,13 @@ class AsyncLibTestBase(unittest.IsolatedAsyncioTestCase, CommonTestBase, ABC):
                           data=rand_data_list[entry]) for entry in range(entries_to_test)]
             write_callback_mock.assert_has_calls(calls, any_order=False)
 
+            # check invalid write values bounce
+            with self.assertRaises(ValueError):
+                await mut.write(start_entry=0, data=mut.max_entry_value + 1)
+
+            with self.assertRaises(ValueError):
+                await mut.write(start_entry=0, data=-1)
+
             read_callback_mock.assert_not_called()
 
     async def __single_memory_simulator_read_and_write_test(
