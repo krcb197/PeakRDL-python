@@ -1046,11 +1046,16 @@ class LibTestBase(CommonTestBase, ABC):
             write_callback_mock.assert_has_calls(calls, any_order=False)
 
             # check invalid write values bounce
-            with self.assertRaises(ValueError):
-                mut.write(start_entry=0, data=mut.max_entry_value + 1)
-
-            with self.assertRaises(ValueError):
-                mut.write(start_entry=0, data=-1)
+            if self.legacy_block_access:
+                if not isinstance(mut, (MemoryWriteOnlyLegacy, MemoryReadWriteLegacy)):
+                    raise TypeError(f'Memory should be legacy type but got {type(mut)}')
+                with self.assertRaises(ValueError):
+                    mut.write(start_entry=0, data=Array(mut.array_typecode, [mut.max_entry_value + 1]))
+            else:
+                if not isinstance(mut, (MemoryWriteOnly, MemoryReadWrite)):
+                    raise TypeError(f'Memory should be non-legacy type but got {type(mut)}')
+                with self.assertRaises(ValueError):
+                    mut.write(start_entry=0, data=[mut.max_entry_value + 1])
 
             read_callback_mock.assert_not_called()
 
