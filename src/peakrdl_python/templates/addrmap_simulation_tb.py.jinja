@@ -27,7 +27,6 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 {% if legacy_block_access %}from array import array as Array{% endif %}
 from typing import Union, cast
 {% if asyncoutput %}
-import sys
 import asyncio
 import unittest
 from unittest.mock import Mock
@@ -186,14 +185,9 @@ class {{fq_block_name}}_block_access({{top_node.inst_name}}_SimTestCase_BlockAcc
     {%- endif %}
 
 if __name__ == '__main__':
-{% if asyncoutput %}
-    if sys.version_info < (3, 8):
-        asynctest.main()
-    else:
-        unittest.main()
-{% else %}
+
     unittest.main()
-{% endif %}
+
 
 
 
