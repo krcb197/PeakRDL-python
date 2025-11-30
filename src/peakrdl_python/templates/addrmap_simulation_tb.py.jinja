@@ -42,7 +42,7 @@ from enum import IntEnum
 from {{ peakrdl_python_sim_lib(depth=lib_depth) }}.register import Register,MemoryRegister
 from {{ peakrdl_python_sim_lib(depth=lib_depth) }}.field import Field
 
-from ._{{top_node.inst_name}}_sim_test_base import {{top_node.inst_name}}_SimTestCase, {{top_node.inst_name}}_SimTestCase_BlockAccess
+from ._{{top_node.inst_name}}_sim_test_base import {{top_node.inst_name}}_SimTestCase_BlockAccess
 from ._{{top_node.inst_name}}_sim_test_base import __name__ as base_name
 from ._{{top_node.inst_name}}_test_base import random_enum_reg_value
 
