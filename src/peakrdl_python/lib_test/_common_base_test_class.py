@@ -122,7 +122,12 @@ class CommonTestBase(unittest.TestCase, ABC):
                                     low: int,
                                     high: int,
                                     is_volatile: bool,
-                                    default: Optional[int]) -> None:
+                                    default: Optional[int],
+                                    rdl_name: Optional[str],
+                                    rdl_desc: Optional[str],
+                                    parent_full_inst_name: str,
+                                    inst_name: str
+                                    ) -> None:
         self.assertEqual(fut.lsb, lsb)
         self.assertEqual(fut.msb, msb)
         self.assertEqual(fut.low, low)
@@ -156,17 +161,40 @@ class CommonTestBase(unittest.TestCase, ABC):
             else:
                 self.assertEqual(fut.default, default)
 
+        self.__single_node_rdl_name_and_desc_test(dut=fut,
+                                                  rdl_name=rdl_name,
+                                                  rdl_desc=rdl_desc)
+
+        self.__test_node_inst_name(dut=fut,
+                                   parent_full_inst_name=parent_full_inst_name,
+                                   inst_name=inst_name)
+
     def _single_register_property_test(self, *,
                                        rut: BaseReg,
                                        address: int,
                                        width: int,
-                                       accesswidth: Optional[int]) -> None:
+                                       accesswidth: Optional[int],
+                                       size: int,
+                                       rdl_name: Optional[str],
+                                       rdl_desc: Optional[str],
+                                       parent_full_inst_name: str,
+                                       inst_name: str
+                                       ) -> None:
         self.assertEqual(rut.address, address)
         self.assertEqual(rut.width, width)
         if accesswidth is not None:
             self.assertEqual(rut.accesswidth, accesswidth)
         else:
             self.assertEqual(rut.accesswidth, width)
+        self.assertEqual(rut.size, size)
+
+        self.__single_node_rdl_name_and_desc_test(dut=rut,
+                                                  rdl_name=rdl_name,
+                                                  rdl_desc=rdl_desc)
+
+        self.__test_node_inst_name(dut=rut,
+                                   parent_full_inst_name=parent_full_inst_name,
+                                   inst_name=inst_name)
 
     # pylint:disable-next=too-many-arguments
     def _single_memory_property_test(self, *,
@@ -175,7 +203,13 @@ class CommonTestBase(unittest.TestCase, ABC):
                                      width: int,
                                      entries: int,
                                      accesswidth: Optional[int],
-                                     array_typecode: str) -> None:
+                                     array_typecode: str,
+                                     size: int,
+                                     rdl_name: Optional[str],
+                                     rdl_desc: Optional[str],
+                                     parent_full_inst_name: str,
+                                     inst_name: str
+                                     ) -> None:
         self.assertEqual(mut.address, address)
         self.assertEqual(mut.width, width)
         self.assertEqual(mut.entries, entries)
@@ -184,8 +218,55 @@ class CommonTestBase(unittest.TestCase, ABC):
         else:
             self.assertEqual(mut.accesswidth, width)
         self.assertEqual(mut.array_typecode, array_typecode)
+        self.assertEqual(mut.size, size)
 
-    def _single_node_rdl_name_and_desc_test(self,
+        self.__single_node_rdl_name_and_desc_test(dut=mut,
+                                                  rdl_name=rdl_name,
+                                                  rdl_desc=rdl_desc)
+
+        self.__test_node_inst_name(dut=mut,
+                                   parent_full_inst_name=parent_full_inst_name,
+                                   inst_name=inst_name)
+
+    def _single_addrmap_property_test(self, *,
+                                      dut: Union[AddressMap, AsyncAddressMap],
+                                      size: int,
+                                      rdl_name: Optional[str],
+                                      rdl_desc: Optional[str],
+                                      parent_full_inst_name: str,
+                                      inst_name: str
+                                      ):
+
+        self.assertEqual(dut.size, size)
+
+        self.__single_node_rdl_name_and_desc_test(dut=dut,
+                                                  rdl_name=rdl_name,
+                                                  rdl_desc=rdl_desc)
+
+        self.__test_node_inst_name(dut=dut,
+                                   parent_full_inst_name=parent_full_inst_name,
+                                   inst_name=inst_name)
+
+    def _single_regfile_property_test(self, *,
+                                      dut: Union[RegFile, AsyncRegFile],
+                                      size: int,
+                                      rdl_name: Optional[str],
+                                      rdl_desc: Optional[str],
+                                      parent_full_inst_name: str,
+                                      inst_name: str
+                                      ):
+
+        self.assertEqual(dut.size, size)
+
+        self.__single_node_rdl_name_and_desc_test(dut=dut,
+                                                  rdl_name=rdl_name,
+                                                  rdl_desc=rdl_desc)
+
+        self.__test_node_inst_name(dut=dut,
+                                   parent_full_inst_name=parent_full_inst_name,
+                                   inst_name=inst_name)
+
+    def __single_node_rdl_name_and_desc_test(self,
                                             dut: Base,
                                             rdl_name: Optional[str],
                                             rdl_desc: Optional[str]) -> None:
@@ -202,7 +283,7 @@ class CommonTestBase(unittest.TestCase, ABC):
         else:
             self.assertEqual(dut.rdl_desc, rdl_desc)
 
-    def _test_node_inst_name(self,
+    def __test_node_inst_name(self,
                              dut: Base,
                              parent_full_inst_name:str,
                              inst_name:str) -> None:
