@@ -519,6 +519,10 @@ class _MemoryWriteOnly(Memory, ABC):
         if not isinstance(data, (Array, list)):
             raise TypeError(f'data should be an List or array.array got {type(data)}')
 
+        if (max(data) > self.max_entry_value) or (min(data) < 0):
+            raise ValueError('Data out of range for memory must be in the '
+                             f'range 0 to {self.max_entry_value}')
+
         if len(data) not in range(0, self.entries - start_entry + 1):
             raise ValueError(f'data length must be in range 0 to {self.entries - start_entry:d} '
                              f'but got {len(data):d}')
