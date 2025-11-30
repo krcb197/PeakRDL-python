@@ -169,6 +169,7 @@ class CommonTestBase(unittest.TestCase, ABC):
                                    parent_full_inst_name=parent_full_inst_name,
                                    inst_name=inst_name)
 
+    # pylint:disable-next=too-many-arguments
     def _single_register_property_test(self, *,
                                        rut: BaseReg,
                                        address: int,
@@ -231,14 +232,15 @@ class CommonTestBase(unittest.TestCase, ABC):
                                    parent_full_inst_name=parent_full_inst_name,
                                    inst_name=inst_name)
 
+    # pylint:disable-next=too-many-arguments
     def _single_addrmap_property_test(self, *,
                                       dut: Union[AddressMap, AsyncAddressMap],
                                       size: int,
                                       rdl_name: Optional[str],
                                       rdl_desc: Optional[str],
-                                      parent_full_inst_name: str,
+                                      parent_full_inst_name: Optional[str],
                                       inst_name: str
-                                      ):
+                                      ) -> None:
 
         self.assertEqual(dut.size, size)
 
@@ -250,6 +252,7 @@ class CommonTestBase(unittest.TestCase, ABC):
                                    parent_full_inst_name=parent_full_inst_name,
                                    inst_name=inst_name)
 
+    # pylint:disable-next=too-many-arguments
     def _single_regfile_property_test(self, *,
                                       dut: Union[RegFile, AsyncRegFile],
                                       size: int,
@@ -257,7 +260,7 @@ class CommonTestBase(unittest.TestCase, ABC):
                                       rdl_desc: Optional[str],
                                       parent_full_inst_name: str,
                                       inst_name: str
-                                      ):
+                                      ) -> None:
 
         self.assertEqual(dut.size, size)
 
@@ -288,14 +291,18 @@ class CommonTestBase(unittest.TestCase, ABC):
 
     def __test_node_inst_name(self,
                              dut: Base,
-                             parent_full_inst_name:str,
+                             parent_full_inst_name:Optional[str],
                              inst_name:str) -> None:
         """
         Test the `inst_name` and `full_inst_name` attributes of a node
         """
         self.assertEqual(dut.inst_name, inst_name)
-        full_inst_name = parent_full_inst_name + '.' + inst_name
-        self.assertEqual(dut.full_inst_name, full_inst_name)
+        if parent_full_inst_name is None:
+            # root node (which has no parent)
+            self.assertEqual(dut.full_inst_name, inst_name)
+        else:
+            full_inst_name = parent_full_inst_name + '.' + inst_name
+            self.assertEqual(dut.full_inst_name, full_inst_name)
 
     def _test_field_iterators(self, *,
                               rut: Union[RegReadOnly,
