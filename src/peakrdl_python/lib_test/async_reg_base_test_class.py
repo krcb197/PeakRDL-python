@@ -1061,10 +1061,10 @@ class AsyncLibTestBase(unittest.IsolatedAsyncioTestCase, CommonTestBase, ABC):
             if self.legacy_block_access:
                 if not isinstance(mut, (MemoryAsyncWriteOnlyLegacy, MemoryAsyncReadWriteLegacy)):
                     raise TypeError(f'Memory should be legacy type but got {type(mut)}')
-                with self.assertRaises(ValueError):
+                with self.assertRaises(OverflowError):
                     await mut.write(start_entry=0, data=Array(mut.array_typecode,
                                                               [mut.max_entry_value + 1]))
-                with self.assertRaises(ValueError):
+                with self.assertRaises(OverflowError):
                     await mut.write(start_entry=0, data=Array(mut.array_typecode,
                                                               [-1]))
             else:

@@ -59,7 +59,7 @@ def get_array_typecode(width: int) -> str:
         return 'Q'
 
     if width == 16:
-        return 'I'
+        return 'H'
 
     if width == 8:
         return 'B'
