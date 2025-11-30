@@ -1058,9 +1058,17 @@ class LibTestBase(CommonTestBase, ABC):
             if self.legacy_block_access:
                 if not isinstance(mut, (MemoryWriteOnlyLegacy, MemoryReadWriteLegacy)):
                     raise TypeError(f'Memory should be legacy type but got {type(mut)}')
-                with self.assertRaises(OverflowError):
-                    mut.write(start_entry=0, data=Array(mut.array_typecode,
-                                                        [mut.max_entry_value + 1]))
+                # depending the hardware array sizes the error may be at the point the array is
+                # constructed on internal
+                dummy_array = Array(mut.array_typecode, [0])
+                if dummy_array.itemsize > mut.width_in_bytes:
+                    with self.assertRaises(ValueError):
+                        mut.write(start_entry=0, data=Array(mut.array_typecode,
+                                                            [mut.max_entry_value + 1]))
+                else:
+                    with self.assertRaises(OverflowError):
+                        mut.write(start_entry=0, data=Array(mut.array_typecode,
+                                                            [mut.max_entry_value + 1]))
                 with self.assertRaises(OverflowError):
                     mut.write(start_entry=0, data=Array(mut.array_typecode,[-1]))
             else:
