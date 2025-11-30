@@ -40,6 +40,7 @@ from ..lib import RegisterWriteVerifyError
 from ..sim_lib.register import Register as SimRegister
 from ..sim_lib.register import MemoryRegister as SimMemoryRegister
 from ..sim_lib.register import Field as SimField
+from ..sim_lib.memory import Memory as SimMemory
 
 from .utilities import reverse_bits, expected_reg_write_data
 from .utilities import reg_value_for_field_read_with_random_base
@@ -50,6 +51,9 @@ from .utilities import RegWriteTestSequence,RegWriteZeroStartTestSequence
 from .utilities import random_memory_entry,random_memory_entry_value
 
 from ._common_base_test_class import CommonTestBase, NodeIterators
+
+# This module is planned to be split, see #272, for now the length is supressed
+# pylint:disable=too-many-lines
 
 class AsyncLibTestBase(unittest.IsolatedAsyncioTestCase, CommonTestBase, ABC):
     """
@@ -922,18 +926,12 @@ class AsyncLibTestBase(unittest.IsolatedAsyncioTestCase, CommonTestBase, ABC):
                                       readable_registers=readable_registers,
                                       writeable_registers=writeable_registers)
 
-        await self.__single_memory_simulator_read_and_write_test(mut=mut,
-                                                                 is_sw_readable=is_sw_readable,
-                                                                 is_sw_writable=is_sw_writable)
-
         if is_sw_readable:
             if not isinstance(mut, (MemoryAsyncReadOnly, MemoryAsyncReadOnlyLegacy,
                                     MemoryAsyncReadWrite, MemoryAsyncReadWriteLegacy)):
                 raise TypeError('Test can not proceed as the mut is not a readable memory')
             await self.__single_memory_read_test(mut=mut)
-            # check the read fields and read context manager
-            # TODO see if there is context manager test for the memory
-            # self.__single_reg_read_fields_and_context_test(rut=rut)
+            await self.__single_memory_simulator_read_test(mut=mut)
         else:
             # test that a non-readable memory has no read method and
             # attempting one generates and error
@@ -945,6 +943,7 @@ class AsyncLibTestBase(unittest.IsolatedAsyncioTestCase, CommonTestBase, ABC):
                                     MemoryAsyncReadWrite, MemoryAsyncReadWriteLegacy)):
                 raise TypeError('Test can not proceed as the mut is not a writable memory')
             await self.__single_memory_write_test(mut=mut)
+            await self.__single_memory_simulator_write_test(mut=mut)
         else:
             # test that a non-writable memory has no write method and
             # attempting one generates and error
@@ -987,6 +986,9 @@ class AsyncLibTestBase(unittest.IsolatedAsyncioTestCase, CommonTestBase, ABC):
             # it is large limit the number of entries to 10
             entries_to_test = mut.entries if mut.entries < 10 else 10
             rand_data_list = [random_memory_entry_value(mut) for _ in range(entries_to_test)]
+            # the following needs to have the same parameters as the callback so has some unused
+            # args
+            # pylint:disable-next=unused-argument
             def read_data_mock(addr: int, width: int, accesswidth: int) -> int:
                 mem_entry = (addr - mut.address) // mut.width_in_bytes
                 return rand_data_list[mem_entry]
@@ -1010,6 +1012,10 @@ class AsyncLibTestBase(unittest.IsolatedAsyncioTestCase, CommonTestBase, ABC):
             mut: Union[MemoryAsyncWriteOnly, MemoryAsyncWriteOnlyLegacy,
                        MemoryAsyncReadWrite, MemoryAsyncReadWriteLegacy]
         ) -> None:
+
+        # this function will simplify once all the legacy modes are removed later so we have
+        # allowed more branches for now
+        # pylint:disable=too-many-branches
 
         with patch.object(self, 'write_callback') as write_callback_mock, \
             patch.object(self, 'read_callback', return_value=0) as read_callback_mock:
@@ -1077,13 +1083,91 @@ class AsyncLibTestBase(unittest.IsolatedAsyncioTestCase, CommonTestBase, ABC):
 
             read_callback_mock.assert_not_called()
 
-    async def __single_memory_simulator_read_and_write_test(
+    async def __single_memory_simulator_read_test(
             self,
             mut: Union[MemoryAsyncReadOnly, MemoryAsyncReadOnlyLegacy,
-                       MemoryAsyncWriteOnly, MemoryAsyncWriteOnlyLegacy,
                        MemoryAsyncReadWrite, MemoryAsyncReadWriteLegacy],
-            is_sw_readable: bool,
-            is_sw_writable: bool
         ) -> None:
-        pass
-        # TODO copy in the test of the simulator
+
+        sim_memory = self.simulator_instance.memory_by_full_name(mut.full_inst_name)
+        self.assertIsInstance(sim_memory, SimMemory)
+
+        # single entry read test
+        for entry, value in product(
+                [0, mut.entries - 1, random_memory_entry(mut)],
+                [0, mut.max_entry_value, random_memory_entry_value(mut)]):
+
+            sim_memory.value[entry] = value
+
+            if self.legacy_block_access:
+                if not isinstance(mut, (MemoryAsyncReadOnlyLegacy, MemoryAsyncReadWriteLegacy)):
+                    raise TypeError(f'Memory should be legacy type but got {type(mut)}')
+                self.assertEqual(await mut.read(start_entry=entry, number_entries=1),
+                                 Array(mut.array_typecode, [value]))
+            else:
+                if not isinstance(mut, (MemoryAsyncReadOnly, MemoryAsyncReadWrite)):
+                    raise TypeError(f'Memory should be non-legacy type but got {type(mut)}')
+                self.assertEqual(await mut.read(start_entry=entry, number_entries=1), [value])
+
+        # multi-entry read
+        # check a multi-entry read, if the memory is small do the entire memory, however, if
+        # it is large limit the number of entries to 10
+        entries_to_test = mut.entries if mut.entries < 10 else 10
+        rand_data_list = [random_memory_entry_value(mut) for _ in range(entries_to_test)]
+        for entry in range(entries_to_test):
+            sim_memory.value[entry] = rand_data_list[entry]
+
+        if self.legacy_block_access:
+            if not isinstance(mut, (MemoryAsyncReadOnlyLegacy, MemoryAsyncReadWriteLegacy)):
+                raise TypeError(f'Memory should be legacy type but got {type(mut)}')
+            self.assertEqual(await mut.read(start_entry=0,number_entries=entries_to_test),
+                             Array(mut.array_typecode, rand_data_list))
+        else:
+            if not isinstance(mut, (MemoryAsyncReadOnly, MemoryAsyncReadWrite)):
+                raise TypeError(f'Memory should be non-legacy type but got {type(mut)}')
+            self.assertEqual(await mut.read(start_entry=0, number_entries=entries_to_test),
+                             rand_data_list)
+
+    async def __single_memory_simulator_write_test(
+            self,
+            mut: Union[MemoryAsyncWriteOnly, MemoryAsyncWriteOnlyLegacy,
+                       MemoryAsyncReadWrite, MemoryAsyncReadWriteLegacy]
+        ) -> None:
+
+        sim_memory = self.simulator_instance.memory_by_full_name(mut.full_inst_name)
+        self.assertIsInstance(sim_memory, SimMemory)
+
+        # single entry write test
+        for entry, value in product(
+                [0, mut.entries - 1, random_memory_entry(mut)],
+                [0, mut.max_entry_value, random_memory_entry_value(mut)]):
+
+            if self.legacy_block_access:
+                if not isinstance(mut, (MemoryAsyncWriteOnlyLegacy, MemoryAsyncReadWriteLegacy)):
+                    raise TypeError(f'Memory should be legacy type but got {type(mut)}')
+                await mut.write(start_entry=entry, data=Array(mut.array_typecode, [value]))
+            else:
+                if not isinstance(mut, (MemoryAsyncWriteOnly, MemoryAsyncReadWrite)):
+                    raise TypeError(
+                        f'Memory should be non-legacy type but got {type(mut)}')
+                await mut.write(start_entry=entry, data=[value])
+
+            self.assertEqual(sim_memory.value[entry], value)
+
+        # multi-entry read
+        # check a multi-entry read, if the memory is small do the entire memory, however, if
+        # it is large limit the number of entries to 10
+        entries_to_test = mut.entries if mut.entries < 10 else 10
+        rand_data_list = [random_memory_entry_value(mut) for _ in range(entries_to_test)]
+
+        if self.legacy_block_access:
+            if not isinstance(mut, (MemoryAsyncWriteOnlyLegacy, MemoryAsyncReadWriteLegacy)):
+                raise TypeError(f'Memory should be legacy type but got {type(mut)}')
+            await mut.write(start_entry=0, data=Array(mut.array_typecode, rand_data_list))
+        else:
+            if not isinstance(mut, (MemoryAsyncWriteOnly, MemoryAsyncReadWrite)):
+                raise TypeError(f'Memory should be non-legacy type but got {type(mut)}')
+            await mut.write(start_entry=0, data=rand_data_list)
+
+        for entry in range(entries_to_test):
+            self.assertEqual(sim_memory.value[entry], rand_data_list[entry])
