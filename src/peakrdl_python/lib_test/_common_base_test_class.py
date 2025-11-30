@@ -169,6 +169,8 @@ class CommonTestBase(unittest.TestCase, ABC):
                                    parent_full_inst_name=parent_full_inst_name,
                                    inst_name=inst_name)
 
+        self.__bad_attribute_test(dut=fut)
+
     # pylint:disable-next=too-many-arguments
     def _single_register_property_test(self, *,
                                        rut: BaseReg,
@@ -196,6 +198,8 @@ class CommonTestBase(unittest.TestCase, ABC):
         self.__test_node_inst_name(dut=rut,
                                    parent_full_inst_name=parent_full_inst_name,
                                    inst_name=inst_name)
+
+        self.__bad_attribute_test(dut=rut)
 
     # pylint:disable-next=too-many-arguments
     def _single_memory_property_test(self, *,
@@ -232,6 +236,8 @@ class CommonTestBase(unittest.TestCase, ABC):
                                    parent_full_inst_name=parent_full_inst_name,
                                    inst_name=inst_name)
 
+        self.__bad_attribute_test(dut=mut)
+
     # pylint:disable-next=too-many-arguments
     def _single_addrmap_property_test(self, *,
                                       dut: Union[AddressMap, AsyncAddressMap],
@@ -251,6 +257,8 @@ class CommonTestBase(unittest.TestCase, ABC):
         self.__test_node_inst_name(dut=dut,
                                    parent_full_inst_name=parent_full_inst_name,
                                    inst_name=inst_name)
+
+        self.__bad_attribute_test(dut=dut)
 
     # pylint:disable-next=too-many-arguments
     def _single_regfile_property_test(self, *,
@@ -272,6 +280,8 @@ class CommonTestBase(unittest.TestCase, ABC):
                                    parent_full_inst_name=parent_full_inst_name,
                                    inst_name=inst_name)
 
+        self.__bad_attribute_test(dut=dut)
+
     def __single_node_rdl_name_and_desc_test(self,
                                             dut: Base,
                                             rdl_name: Optional[str],
@@ -290,9 +300,9 @@ class CommonTestBase(unittest.TestCase, ABC):
             self.assertEqual(dut.rdl_desc, rdl_desc)
 
     def __test_node_inst_name(self,
-                             dut: Base,
-                             parent_full_inst_name:Optional[str],
-                             inst_name:str) -> None:
+                              dut: Base,
+                              parent_full_inst_name:Optional[str],
+                              inst_name:str) -> None:
         """
         Test the `inst_name` and `full_inst_name` attributes of a node
         """
@@ -303,6 +313,16 @@ class CommonTestBase(unittest.TestCase, ABC):
         else:
             full_inst_name = parent_full_inst_name + '.' + inst_name
             self.assertEqual(dut.full_inst_name, full_inst_name)
+
+    def __bad_attribute_test(self, dut: Base) -> None:
+        """
+        Check that adding an attribute fails, the __slots__ should prevent this
+
+        The attribute name: cppkbrgmgeloagvfgjjeiiushygirh was randomly generated to be unlikely to
+        every be a attribute name
+        """
+        with self.assertRaises(AttributeError):
+            dut.cppkbrgmgeloagvfgjjeiiushygirh = 1  # type: ignore[attr-defined,union-attr]
 
     def _test_field_iterators(self, *,
                               rut: Union[RegReadOnly,
