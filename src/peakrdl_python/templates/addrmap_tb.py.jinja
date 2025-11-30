@@ -144,7 +144,7 @@ class {{fq_block_name}}_single_access({{top_node.inst_name}}_TestCase): # type: 
         """
         {% for node in owned_elements.memories -%}
         with self.subTest(msg='memory: {{'.'.join(node.get_path_segments())}}'):
-            self._single_memory_property_test(mut=self.dut.{{'.'.join(get_python_path_segments(node))}}, address={{node.absolute_address}}, width={{node.get_property('memwidth')}}, entries={{node.get_property('mementries')}}, accesswidth={% if 'accesswidth' in node.list_properties() -%}{{node.get_property('accesswidth')}}{% else %}None{%- endif %}, array_typecode='{{get_array_typecode(node.get_property('memwidth'))}}', size={{node.size}},
+            self._single_memory_property_test(mut=self.dut.{{'.'.join(get_python_path_segments(node))}}, address={{node.absolute_address}}, width={{node.get_property('memwidth')}}, entries={{node.get_property('mementries')}}, accesswidth={% if 'accesswidth' in node.list_properties() -%}{{node.get_property('accesswidth')}}{% else %}None{%- endif %}, array_typecode={% if legacy_block_access %}'{{get_array_typecode(node.get_property('memwidth'))}}'{% else %}None{% endif %}, size={{node.size}},
                                               rdl_name={% if skip_systemrdl_name_and_desc_properties %}None{% elif node.get_property('name', default=None) is none %}None{% else %}{{node.get_property('name') | tojson}}{% endif %},
                                               rdl_desc={% if skip_systemrdl_name_and_desc_properties %}None{% elif node.get_property('desc', default=None) is none %}None{% else %}{{node.get_property('desc') | tojson}}{% endif %},
                                               inst_name='{{node.get_path_segments()[-1]}}',

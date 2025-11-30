@@ -203,7 +203,7 @@ class CommonTestBase(unittest.TestCase, ABC):
                                      width: int,
                                      entries: int,
                                      accesswidth: Optional[int],
-                                     array_typecode: str,
+                                     array_typecode: Optional[str],
                                      size: int,
                                      rdl_name: Optional[str],
                                      rdl_desc: Optional[str],
@@ -217,7 +217,10 @@ class CommonTestBase(unittest.TestCase, ABC):
             self.assertEqual(mut.accesswidth, accesswidth)
         else:
             self.assertEqual(mut.accesswidth, width)
-        self.assertEqual(mut.array_typecode, array_typecode)
+        if self.legacy_block_access:
+            self.assertEqual(mut.array_typecode, array_typecode)
+        else:
+            self.assertIsNone(array_typecode)
         self.assertEqual(mut.size, size)
 
         self.__single_node_rdl_name_and_desc_test(dut=mut,
