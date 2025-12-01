@@ -31,6 +31,7 @@ from ..lib import RegReadOnly, RegReadWrite, RegWriteOnly
 from ..lib import RegAsyncReadOnly, RegAsyncReadWrite, RegAsyncWriteOnly
 from ..lib import AddressMap, AsyncAddressMap
 from ..lib import RegFile, AsyncRegFile
+from ..lib.memory import BaseMemory
 from ..lib import MemoryReadOnly, MemoryReadOnlyLegacy
 from ..lib import MemoryWriteOnly, MemoryWriteOnlyLegacy
 from ..lib import MemoryReadWrite, MemoryReadWriteLegacy
@@ -93,6 +94,13 @@ class CommonTestBase(unittest.TestCase, ABC):
     def simulator_instance(self) -> BaseSimulator:
         """
         Simulator configured for the DUT
+        """
+
+    @property
+    @abstractmethod
+    def legacy_block_access(self) -> bool:
+        """
+        Whether the register model has been configured for legacy block access or not
         """
 
     # pylint:disable-next=too-many-arguments
@@ -160,6 +168,26 @@ class CommonTestBase(unittest.TestCase, ABC):
         else:
             self.assertEqual(rut.accesswidth, width)
 
+    # pylint:disable-next=too-many-arguments
+    def _single_memory_property_test(self, *,
+                                     mut: BaseMemory,
+                                     address: int,
+                                     width: int,
+                                     entries: int,
+                                     accesswidth: Optional[int],
+                                     array_typecode: Optional[str]) -> None:
+        self.assertEqual(mut.address, address)
+        self.assertEqual(mut.width, width)
+        self.assertEqual(mut.entries, entries)
+        if accesswidth is not None:
+            self.assertEqual(mut.accesswidth, accesswidth)
+        else:
+            self.assertEqual(mut.accesswidth, width)
+        if self.legacy_block_access:
+            self.assertEqual(mut.array_typecode, array_typecode)
+        else:
+            self.assertIsNone(array_typecode)
+
     def _single_node_rdl_name_and_desc_test(self,
                                             dut: Base,
                                             rdl_name: Optional[str],
@@ -190,11 +218,11 @@ class CommonTestBase(unittest.TestCase, ABC):
 
     def _test_field_iterators(self, *,
                               rut: Union[RegReadOnly,
-                                            RegReadWrite,
-                                            RegWriteOnly,
-                                            RegAsyncReadOnly,
-                                            RegAsyncReadWrite,
-                                            RegAsyncWriteOnly],
+                                         RegReadWrite,
+                                         RegWriteOnly,
+                                         RegAsyncReadOnly,
+                                         RegAsyncReadWrite,
+                                         RegAsyncWriteOnly],
                               has_sw_readable: bool,
                               has_sw_writable: bool,
                               readable_fields: set[str],

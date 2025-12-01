@@ -47,13 +47,6 @@ TestCaseBase = unittest.IsolatedAsyncioTestCase
 TestCaseBase = unittest.TestCase
 {% endif %}
 
-class {{top_node.inst_name}}_SimTestCase(TestCaseBase): # type: ignore[valid-type,misc]
-
-    def setUp(self) -> None:
-        self.sim = Simulator(address=0)
-        self.dut = RegModel(callbacks={% if asyncoutput %}AsyncCallbackSet{% else %}NormalCallbackSet{% endif %}{% if legacy_block_access %}Legacy{% endif %}(read_callback=self.sim.read,
-                                                          write_callback=self.sim.write))
-
 class {{top_node.inst_name}}_SimTestCase_BlockAccess(TestCaseBase): # type: ignore[valid-type,misc]
 
     def setUp(self) -> None:

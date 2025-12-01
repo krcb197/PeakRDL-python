@@ -100,6 +100,20 @@ class BaseMemory(Node, ABC):
         return self.__memwidth
 
     @property
+    def max_entry_value(self) -> int:
+        """
+        maximum unsigned integer value that can be stored in a memory entry
+
+        For example:
+
+        * 8-bit memory width returns 0xFF (255)
+        * 16-bit memory width returns 0xFFFF (65535)
+        * 32-bit memory width returns 0xFFFF_FFFF (4294967295)
+
+        """
+        return (2 ** self.width) - 1
+
+    @property
     def width_in_bytes(self) -> int:
         """
         The width of the memory bytes, i.e. the width in bits divided by 8
@@ -504,6 +518,10 @@ class _MemoryWriteOnly(Memory, ABC):
 
         if not isinstance(data, (Array, list)):
             raise TypeError(f'data should be an List or array.array got {type(data)}')
+
+        if (max(data) > self.max_entry_value) or (min(data) < 0):
+            raise ValueError('Data out of range for memory must be in the '
+                             f'range 0 to {self.max_entry_value}')
 
         if len(data) not in range(0, self.entries - start_entry + 1):
             raise ValueError(f'data length must be in range 0 to {self.entries - start_entry:d} '

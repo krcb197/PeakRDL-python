@@ -104,6 +104,10 @@ class {{top_node.inst_name}}_TestCase(TestCaseBase): # type: ignore[valid-type,m
     def simulator_instance(self) -> BaseSimulator:
         return self.sim
 
+    @property
+    def legacy_block_access(self) -> bool:
+        return {{ legacy_block_access }}
+
     def setUp(self) -> None:
         self.sim = Simulator(address=0)
         self.dut = RegModel(callbacks={% if asyncoutput %}AsyncCallbackSet{% else %}NormalCallbackSet{% endif %}{% if legacy_block_access %}Legacy{% endif %}(read_callback=self.outer_read_callback,

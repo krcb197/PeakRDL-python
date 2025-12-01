@@ -31,6 +31,7 @@ from ..lib import AsyncReg, Reg
 from ..lib.base_register import BaseReg
 from ..lib.utility_functions import calculate_bitmask
 from ..lib import FieldEnum
+from ..lib.memory import BaseMemory
 
 def reverse_bits(value: int, number_bits: int) -> int:
     """
@@ -233,3 +234,15 @@ def get_field_inv_bitmask(field: Field) -> str:
     """
     reg_max_value = field.parent_register.max_value  # type: ignore[attr-defined]
     return reg_max_value ^ get_field_bitmask_int(field)
+
+def random_memory_entry(mut: BaseMemory) -> int:
+    """
+    Returns a random memory entry
+    """
+    return random.randint(0, mut.entries-1)
+
+def random_memory_entry_value(mut: BaseMemory) -> int:
+    """
+    Returns a random memory entry value (note that this value may not have legal field decodes)
+    """
+    return random.randint(0, mut.max_entry_value)
