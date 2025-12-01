@@ -39,6 +39,7 @@ from ..lib import MemoryAsyncReadOnly, MemoryAsyncReadOnlyLegacy
 from ..lib import MemoryAsyncWriteOnly, MemoryAsyncWriteOnlyLegacy
 from ..lib import MemoryAsyncReadWrite, MemoryAsyncReadWriteLegacy
 from ..lib.base_register import BaseReg
+from ..lib import Node
 from ..lib import Base
 from .utilities import get_field_bitmask_int, get_field_inv_bitmask
 from ..sim_lib.simulator import BaseSimulator
@@ -324,6 +325,16 @@ class CommonTestBase(unittest.TestCase, ABC):
         with self.assertRaises(AttributeError):
             dut.cppkbrgmgeloagvfgjjeiiushygirh = 1  # type: ignore[attr-defined,union-attr]
 
+    def __test_name_map(self, dut: Node, child_names: set[str]) -> None:
+        """
+        Test that the get_child_by_system_rdl_name and systemrdl_python_child_name_map are
+        populated correctly
+        """
+        self.assertCountEqual(dut.systemrdl_python_child_name_map, child_names)
+        self.assertEqual(set(dut.systemrdl_python_child_name_map.keys()), child_names)
+        for child_name in child_names:
+            self.assertEqual(dut.get_child_by_system_rdl_name(child_name).inst_name, child_name)
+
     def _test_field_iterators(self, *,
                               rut: Union[RegReadOnly,
                                          RegReadWrite,
@@ -369,6 +380,9 @@ class CommonTestBase(unittest.TestCase, ABC):
 
         child_field_names = {field.inst_name for field in rut.fields}
         self.assertEqual(readable_fields | writeable_fields, child_field_names)
+
+        # Check the child name map
+        self.__test_name_map(dut=rut, child_names= readable_fields | writeable_fields)
 
     def _test_register_iterators(self,
                                  dut: Union[AddressMap, AsyncAddressMap, RegFile, AsyncRegFile,
@@ -416,6 +430,19 @@ class CommonTestBase(unittest.TestCase, ABC):
         self.assertEqual(readable_registers.rolled | writeable_registers.rolled,
                          child_reg_names)
 
+        # The register file and addrmap have other items in their child map so it has to be
+        # tested at the next level up, however, a memory only has child registers
+        if isinstance(dut, (MemoryReadOnly, MemoryReadOnlyLegacy,
+                            MemoryWriteOnly, MemoryWriteOnlyLegacy,
+                            MemoryReadWrite, MemoryReadWriteLegacy,
+                            MemoryAsyncReadOnly, MemoryAsyncReadOnlyLegacy,
+                            MemoryAsyncWriteOnly, MemoryAsyncWriteOnlyLegacy,
+                            MemoryAsyncReadWrite, MemoryAsyncReadWriteLegacy)):
+            # Check the child name map
+            self.__test_name_map(dut=dut,
+                                 child_names=readable_registers.rolled |
+                                             writeable_registers.rolled)
+
 
     def _test_memory_iterators(self,
                                dut: Union[AddressMap, AsyncAddressMap],
@@ -447,6 +474,10 @@ class CommonTestBase(unittest.TestCase, ABC):
         self.__test_section_iterators(dut=dut,
                                       sections=sections)
 
+        # Check the child name map
+        self.__test_name_map(dut=dut, child_names=memories.rolled | readable_registers.rolled |
+                                                  writeable_registers.rolled | sections.rolled)
+
     def _test_regfile_iterators(self,
                                 dut: Union[RegFile, AsyncRegFile],
                                 sections: NodeIterators,
@@ -458,3 +489,8 @@ class CommonTestBase(unittest.TestCase, ABC):
         self.__test_section_iterators(dut=dut,
                                       sections=sections)
         self.assertFalse(hasattr(dut, 'get_memories'))
+
+        # Check the child name map
+        self.__test_name_map(dut=dut, child_names=readable_registers.rolled |
+                                                  writeable_registers.rolled |
+                                                  sections.rolled)

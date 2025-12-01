@@ -249,20 +249,6 @@ class {{fq_block_name}}_single_access({{top_node.inst_name}}_TestCase): # type: 
                                          sections=NodeIterators({%- for child_node in node.children(unroll=False) %}{%- if not hide_node_func(child_node) %}{%- if isinstance(child_node, (systemrdlRegfileNode,systemrdlAddrmapNode)) %}{{node_iterator_entry(child_node)}},{% endif %}{% endif %}{% endfor %}))
         {% endfor %}
 
-    def test_name_map(self) -> None:
-        """
-        Check that the function for getting a node by its original systemRDL name works
-        """
-        {% for node in owned_elements.nodes -%}
-        {% for child_node in node.children(unroll=False) %}
-        {% if not isinstance(child_node, systemrdlSignalNode) %}
-        {%- if not hide_node_func(child_node) %}
-        self.assertEqual(self.dut.{{'.'.join(get_python_path_segments(node))}}.get_child_by_system_rdl_name('{{child_node.inst_name}}').inst_name, '{{child_node.inst_name}}')
-        {% endif %}
-        {% endif %}
-        {% endfor %}
-        {% endfor %}
-
     {% if owned_elements.has_hidden_nodes %}
     def test_hidden(self) -> None:
         """
