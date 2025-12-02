@@ -82,46 +82,6 @@ from ._{{top_node.inst_name}}_test_base import random_enum_reg_value
 
 class {{fq_block_name}}_single_access({{top_node.inst_name}}_TestCase): # type: ignore[valid-type,misc]
 
-    def test_inst_name(self)  -> None:
-        """
-        Walk the address map and check the inst name has been correctly populated
-        """
-        {% for node in owned_elements.nodes -%}
-        with self.subTest(msg='node: {{'.'.join(node.get_path_segments())}}'):
-            self._test_node_inst_name(dut=self.dut.{{'.'.join(get_python_path_segments(node))}},
-                                      inst_name='{{node.get_path_segments()[-1]}}',
-                                      parent_full_inst_name='{{'.'.join(node.get_path_segments()[:-1])}}')
-        {% endfor %}
-
-    def test_rdl_name_and_desc_property(self)  -> None:
-        """
-        Walk the address map and check the system rdl name and desc property has been correctly populated
-        """
-        {% for node in owned_elements.nodes -%}
-        with self.subTest(msg='node: {{'.'.join(node.get_path_segments())}}'):
-            self._single_node_rdl_name_and_desc_test(dut=self.dut.{{'.'.join(get_python_path_segments(node))}},
-                                                     rdl_name={% if skip_systemrdl_name_and_desc_properties %}None{% elif node.get_property('name', default=None) is none %}None{% else %}{{node.get_property('name') | tojson}}{% endif %},
-                                                     rdl_desc={% if skip_systemrdl_name_and_desc_properties %}None{% elif node.get_property('desc', default=None) is none %}None{% else %}{{node.get_property('desc') | tojson}}{% endif %})
-        {% endfor %}
-
-    def test_sizes(self) -> None:
-        """
-        Check that the sizes all match
-        """
-        {% for node in owned_elements.addressable_nodes -%}
-        with self.subTest(msg='node: {{'.'.join(node.get_path_segments())}}'):
-            self.assertEqual(self.dut.{{'.'.join(get_python_path_segments(node))}}.size, {{node.size}}) # type: ignore[union-attr]
-        {% endfor %}
-
-        # check the size of the address map itself
-        {% if block == top_node %}
-        with self.subTest(msg='node: {{'.'.join(block.get_path_segments())}}'):
-            self.assertEqual(self.dut.size, {{block.size}}) # type: ignore[union-attr]
-        {% else %}
-        with self.subTest(msg='node: {{'.'.join(block.get_path_segments())}}'):
-            self.assertEqual(self.dut.{{'.'.join(get_python_path_segments(block))}}.size, {{block.size}}) # type: ignore[union-attr]
-        {% endif %}
-
     def test_field_encoding_properties(self)  -> None:
         """
         Check that enumeration has the name and desc meta data from the systemRDL
@@ -184,7 +144,11 @@ class {{fq_block_name}}_single_access({{top_node.inst_name}}_TestCase): # type: 
         """
         {% for node in owned_elements.memories -%}
         with self.subTest(msg='memory: {{'.'.join(node.get_path_segments())}}'):
-            self._single_memory_property_test(mut=self.dut.{{'.'.join(get_python_path_segments(node))}}, address={{node.absolute_address}}, width={{node.get_property('memwidth')}}, entries={{node.get_property('mementries')}}, accesswidth={% if 'accesswidth' in node.list_properties() -%}{{node.get_property('accesswidth')}}{% else %}None{%- endif %}, array_typecode={% if legacy_block_access %}'{{get_array_typecode(node.get_property('memwidth'))}}'{% else %}None{% endif %})
+            self._single_memory_property_test(mut=self.dut.{{'.'.join(get_python_path_segments(node))}}, address={{node.absolute_address}}, width={{node.get_property('memwidth')}}, entries={{node.get_property('mementries')}}, accesswidth={% if 'accesswidth' in node.list_properties() -%}{{node.get_property('accesswidth')}}{% else %}None{%- endif %}, array_typecode={% if legacy_block_access %}'{{get_array_typecode(node.get_property('memwidth'))}}'{% else %}None{% endif %}, size={{node.size}},
+                                              rdl_name={% if skip_systemrdl_name_and_desc_properties %}None{% elif node.get_property('name', default=None) is none %}None{% else %}{{node.get_property('name') | tojson}}{% endif %},
+                                              rdl_desc={% if skip_systemrdl_name_and_desc_properties %}None{% elif node.get_property('desc', default=None) is none %}None{% else %}{{node.get_property('desc') | tojson}}{% endif %},
+                                              inst_name='{{node.get_path_segments()[-1]}}',
+                                              parent_full_inst_name='{{'.'.join(node.get_path_segments()[:-1])}}')
             {% if asyncoutput %}await {%endif %}self._single_memory_read_and_write_test(mut=self.dut.{{'.'.join(get_python_path_segments(node))}}, is_sw_readable={{node.is_sw_readable}}, is_sw_writable={{node.is_sw_writable}},
                                                                                         writeable_registers=NodeIterators( {%- for child_node in node.children(unroll=False) %}{%- if not hide_node_func(child_node) %}{%- if isinstance(child_node, systemrdlRegNode) %}{% if child_node.has_sw_writable %}{{node_iterator_entry(child_node)}},{% endif %}{% endif %}{% endif %}{% endfor %}),
                                                                                         readable_registers=NodeIterators( {%- for child_node in node.children(unroll=False) %}{%- if not hide_node_func(child_node) %}{%- if isinstance(child_node, systemrdlRegNode) %}{% if child_node.has_sw_readable %}{{node_iterator_entry(child_node)}},{% endif %}{% endif %}{% endif %}{% endfor %}))
@@ -199,7 +163,11 @@ class {{fq_block_name}}_single_access({{top_node.inst_name}}_TestCase): # type: 
         """
         {% for node in owned_elements.registers -%}
         with self.subTest(msg='register: {{'.'.join(node.get_path_segments())}}'):
-            self._single_register_property_test(rut=self.dut.{{'.'.join(get_python_path_segments(node))}}, address={{node.absolute_address}}, width={{node.size * 8}}, accesswidth={% if 'accesswidth' in node.list_properties() -%}{{node.get_property('accesswidth')}}{% else %}None{%- endif %})
+            self._single_register_property_test(rut=self.dut.{{'.'.join(get_python_path_segments(node))}}, address={{node.absolute_address}}, width={{node.size * 8}}, accesswidth={% if 'accesswidth' in node.list_properties() -%}{{node.get_property('accesswidth')}}{% else %}None{%- endif %}, size={{node.size}},
+                                                rdl_name={% if skip_systemrdl_name_and_desc_properties %}None{% elif node.get_property('name', default=None) is none %}None{% else %}{{node.get_property('name') | tojson}}{% endif %},
+                                                rdl_desc={% if skip_systemrdl_name_and_desc_properties %}None{% elif node.get_property('desc', default=None) is none %}None{% else %}{{node.get_property('desc') | tojson}}{% endif %},
+                                                inst_name='{{node.get_path_segments()[-1]}}',
+                                                parent_full_inst_name='{{'.'.join(node.get_path_segments()[:-1])}}')
             {% if asyncoutput %}await {%endif %}self._single_register_read_and_write_test(rut=self.dut.{{'.'.join(get_python_path_segments(node))}}, has_sw_readable={{node.has_sw_readable}}, has_sw_writable={{node.has_sw_writable}},
                                                                                           readable_fields=set([ {%- for child_node in node.children(unroll=True) -%}{%- if not hide_node_func(child_node) -%}{% if isinstance(child_node, systemrdlFieldNode) %}{% if child_node.is_sw_readable %}'{{child_node.inst_name}}',{% endif %}{% endif %}{% endif %}{% endfor %} ]),
                                                                                           writeable_fields=set([ {%- for child_node in node.children(unroll=True) -%}{%- if not hide_node_func(child_node) -%}{% if isinstance(child_node, systemrdlFieldNode) %}{% if child_node.is_sw_writable %}'{{child_node.inst_name}}',{% endif %}{% endif %}{% endif %}{% endfor %} ]) )
@@ -211,7 +179,11 @@ class {{fq_block_name}}_single_access({{top_node.inst_name}}_TestCase): # type: 
         """
         {% for node in owned_elements.fields %}
         with self.subTest(msg='field: {{'.'.join(node.get_path_segments())}}'):
-            self._single_field_property_test(fut=self.dut.{{'.'.join(get_python_path_segments(node))}}, lsb={{node.lsb}}, msb={{node.msb}}, low={{node.low}}, high={{node.high}}, is_volatile={{node.is_hw_writable}}, default={{get_field_default_value(node)}})
+            self._single_field_property_test(fut=self.dut.{{'.'.join(get_python_path_segments(node))}}, lsb={{node.lsb}}, msb={{node.msb}}, low={{node.low}}, high={{node.high}}, is_volatile={{node.is_hw_writable}}, default={{get_field_default_value(node)}},
+                                             rdl_name={% if skip_systemrdl_name_and_desc_properties %}None{% elif node.get_property('name', default=None) is none %}None{% else %}{{node.get_property('name') | tojson}}{% endif %},
+                                             rdl_desc={% if skip_systemrdl_name_and_desc_properties %}None{% elif node.get_property('desc', default=None) is none %}None{% else %}{{node.get_property('desc') | tojson}}{% endif %},
+                                             inst_name='{{node.get_path_segments()[-1]}}',
+                                             parent_full_inst_name='{{'.'.join(node.get_path_segments()[:-1])}}')
             {%- if 'encode' not in node.list_properties() %}
             {% if asyncoutput %}await {%endif %}self._single_int_field_read_and_write_test(fut=self.dut.{{'.'.join(get_python_path_segments(node))}}, is_sw_readable={{node.is_sw_readable}}, is_sw_writable={{node.is_sw_writable}})
             {%- else %}
@@ -220,68 +192,61 @@ class {{fq_block_name}}_single_access({{top_node.inst_name}}_TestCase): # type: 
             {%- endif %}
         {%- endfor %}
 
-    def test_adding_attributes(self) -> None:
+    def test_addrmap(self) -> None:
         """
-        Walk the address map and attempt to set a new value on each node
-
-        The attribute name: cppkbrgmgeloagvfgjjeiiushygirh was randomly generated to be unlikely to
-        every be a attribute name
-
+        Check the properties on the addrmaps files
         """
-        {% for node in owned_elements.nodes -%}
-        with self.subTest(msg='node: {{'.'.join(node.get_path_segments())}}'):
-            with self.assertRaises(AttributeError):
-                # this line is trying to set an illegal value so by definition should fail the type
-                # checks
-                self.dut.{{'.'.join(get_python_path_segments(node))}}.cppkbrgmgeloagvfgjjeiiushygirh = 1 # type: ignore[attr-defined,union-attr]
-        {% endfor %}
 
-    {% if block == top_node %}
-    def test_top_traversal_iterators(self) -> None:
+        {% if block == top_node %}
+        with self.subTest(msg='addrmap: top_node'):
+            self._single_addrmap_property_test(dut=self.dut,
+                                               size={{block.size}},
+                                               rdl_name={% if skip_systemrdl_name_and_desc_properties %}None{% elif top_node.get_property('name', default=None) is none %}None{% else %}{{top_node.get_property('name') | tojson}}{% endif %},
+                                               rdl_desc={% if skip_systemrdl_name_and_desc_properties %}None{% elif top_node.get_property('desc', default=None) is none %}None{% else %}{{top_node.get_property('desc') | tojson}}{% endif %},
+                                               inst_name='{{top_node.get_path_segments()[-1]}}',
+                                               parent_full_inst_name=None)
+            self._test_addrmap_iterators(dut=self.dut,
+                                         writeable_registers=NodeIterators({%- for child_node in top_node.children(unroll=False) %}{%- if not hide_node_func(child_node) %}{%- if isinstance(child_node, systemrdlRegNode) %}{% if child_node.has_sw_writable %}{{node_iterator_entry(child_node)}},{% endif %}{% endif %}{% endif %}{% endfor %}),
+                                         readable_registers=NodeIterators({%- for child_node in top_node.children(unroll=False) %}{%- if not hide_node_func(child_node) %}{%- if isinstance(child_node, systemrdlRegNode) %}{% if child_node.has_sw_readable %}{{node_iterator_entry(child_node)}},{% endif %}{% endif %}{% endif %}{% endfor %}),
+                                         sections=NodeIterators({%- for child_node in top_node.children(unroll=False) %}{%- if not hide_node_func(child_node) %}{%- if isinstance(child_node, (systemrdlRegfileNode,systemrdlAddrmapNode)) %}{{node_iterator_entry(child_node)}},{% endif %}{% endif %}{% endfor %}),
+                                         memories=NodeIterators({%- for child_node in top_node.children(unroll=False) %}{%- if not hide_node_func(child_node) %}{%- if isinstance(child_node, systemrdlMemNode) %}{{node_iterator_entry(child_node)}},{% endif %}{% endif %}{% endfor %}))
+        {% endif %}{# if block == top_block #}
 
-        self._test_addrmap_iterators(dut=self.dut,
-                                     writeable_registers=NodeIterators({%- for child_node in top_node.children(unroll=False) %}{%- if not hide_node_func(child_node) %}{%- if isinstance(child_node, systemrdlRegNode) %}{% if child_node.has_sw_writable %}{{node_iterator_entry(child_node)}},{% endif %}{% endif %}{% endif %}{% endfor %}),
-                                     readable_registers=NodeIterators({%- for child_node in top_node.children(unroll=False) %}{%- if not hide_node_func(child_node) %}{%- if isinstance(child_node, systemrdlRegNode) %}{% if child_node.has_sw_readable %}{{node_iterator_entry(child_node)}},{% endif %}{% endif %}{% endif %}{% endfor %}),
-                                     sections=NodeIterators({%- for child_node in top_node.children(unroll=False) %}{%- if not hide_node_func(child_node) %}{%- if isinstance(child_node, (systemrdlRegfileNode,systemrdlAddrmapNode)) %}{{node_iterator_entry(child_node)}},{% endif %}{% endif %}{% endfor %}),
-                                     memories=NodeIterators({%- for child_node in top_node.children(unroll=False) %}{%- if not hide_node_func(child_node) %}{%- if isinstance(child_node, systemrdlMemNode) %}{{node_iterator_entry(child_node)}},{% endif %}{% endif %}{% endfor %}))
-
-    {% endif %}{# if block == top_block #}
-
-    def test_traversal_iterators(self) -> None:
-        """
-        Walk the address map and check that the iterators for each node as as expected
-        """
 
         # test all the address maps
         {% for node in owned_elements.addr_maps -%}
         with self.subTest(msg='addrmap: {{'.'.join(node.get_path_segments())}}'):
+            self._single_addrmap_property_test(dut=self.dut.{{'.'.join(get_python_path_segments(node))}},
+                                               size={{node.size}},
+                                               rdl_name={% if skip_systemrdl_name_and_desc_properties %}None{% elif node.get_property('name', default=None) is none %}None{% else %}{{node.get_property('name') | tojson}}{% endif %},
+                                               rdl_desc={% if skip_systemrdl_name_and_desc_properties %}None{% elif node.get_property('desc', default=None) is none %}None{% else %}{{node.get_property('desc') | tojson}}{% endif %},
+                                               inst_name='{{node.get_path_segments()[-1]}}',
+                                               parent_full_inst_name='{{'.'.join(node.get_path_segments()[:-1])}}')
             self._test_addrmap_iterators(dut=self.dut.{{'.'.join(get_python_path_segments(node))}},
                                          writeable_registers=NodeIterators( {%- for child_node in node.children(unroll=False) %}{%- if not hide_node_func(child_node) %}{%- if isinstance(child_node, systemrdlRegNode) %}{% if child_node.has_sw_writable %}{{node_iterator_entry(child_node)}},{% endif %}{% endif %}{% endif %}{% endfor %}),
                                          readable_registers=NodeIterators( {%- for child_node in node.children(unroll=False) %}{%- if not hide_node_func(child_node) %}{%- if isinstance(child_node, systemrdlRegNode) %}{% if child_node.has_sw_readable %}{{node_iterator_entry(child_node)}},{% endif %}{% endif %}{% endif %}{% endfor %}),
                                          sections=NodeIterators( {%- for child_node in node.children(unroll=False) %}{%- if not hide_node_func(child_node) %}{%- if isinstance(child_node, (systemrdlRegfileNode,systemrdlAddrmapNode)) %}{{node_iterator_entry(child_node)}},{% endif %}{% endif %}{% endfor %}),
                                          memories=NodeIterators( {%- for child_node in node.children(unroll=False) %}{%- if not hide_node_func(child_node) %}{%- if isinstance(child_node, systemrdlMemNode) %}{{node_iterator_entry(child_node)}},{% endif %}{% endif %}{% endfor %}))
         {% endfor %}
+
+    def test_regfile(self) -> None:
+        """
+        Check the properties on the register files
+        """
+
         # test all the register files
         {% for node in owned_elements.reg_files -%}
         with self.subTest(msg='regfile: {{'.'.join(node.get_path_segments())}}'):
+            self._single_regfile_property_test(dut=self.dut.{{'.'.join(get_python_path_segments(node))}},
+                                               size={{node.size}},
+                                               rdl_name={% if skip_systemrdl_name_and_desc_properties %}None{% elif node.get_property('name', default=None) is none %}None{% else %}{{node.get_property('name') | tojson}}{% endif %},
+                                               rdl_desc={% if skip_systemrdl_name_and_desc_properties %}None{% elif node.get_property('desc', default=None) is none %}None{% else %}{{node.get_property('desc') | tojson}}{% endif %},
+                                               inst_name='{{node.get_path_segments()[-1]}}',
+                                               parent_full_inst_name='{{'.'.join(node.get_path_segments()[:-1])}}')
             self._test_regfile_iterators(dut=self.dut.{{'.'.join(get_python_path_segments(node))}},
                                          writeable_registers=NodeIterators({%- for child_node in node.children(unroll=False) %}{%- if not hide_node_func(child_node) %}{%- if isinstance(child_node, systemrdlRegNode) %}{% if child_node.has_sw_writable %}{{node_iterator_entry(child_node)}},{% endif %}{% endif %}{% endif %}{% endfor %}),
                                          readable_registers=NodeIterators({%- for child_node in node.children(unroll=False) %}{%- if not hide_node_func(child_node) %}{%- if isinstance(child_node, systemrdlRegNode) %}{% if child_node.has_sw_readable %}{{node_iterator_entry(child_node)}},{% endif %}{% endif %}{% endif %}{% endfor %}),
                                          sections=NodeIterators({%- for child_node in node.children(unroll=False) %}{%- if not hide_node_func(child_node) %}{%- if isinstance(child_node, (systemrdlRegfileNode,systemrdlAddrmapNode)) %}{{node_iterator_entry(child_node)}},{% endif %}{% endif %}{% endfor %}))
-        {% endfor %}
-
-    def test_name_map(self) -> None:
-        """
-        Check that the function for getting a node by its original systemRDL name works
-        """
-        {% for node in owned_elements.nodes -%}
-        {% for child_node in node.children(unroll=False) %}
-        {% if not isinstance(child_node, systemrdlSignalNode) %}
-        {%- if not hide_node_func(child_node) %}
-        self.assertEqual(self.dut.{{'.'.join(get_python_path_segments(node))}}.get_child_by_system_rdl_name('{{child_node.inst_name}}').inst_name, '{{child_node.inst_name}}')
-        {% endif %}
-        {% endif %}
-        {% endfor %}
         {% endfor %}
 
     {% if owned_elements.has_hidden_nodes %}

@@ -39,6 +39,7 @@ from ..lib import MemoryAsyncReadOnly, MemoryAsyncReadOnlyLegacy
 from ..lib import MemoryAsyncWriteOnly, MemoryAsyncWriteOnlyLegacy
 from ..lib import MemoryAsyncReadWrite, MemoryAsyncReadWriteLegacy
 from ..lib.base_register import BaseReg
+from ..lib import Node
 from ..lib import Base
 from .utilities import get_field_bitmask_int, get_field_inv_bitmask
 from ..sim_lib.simulator import BaseSimulator
@@ -122,7 +123,12 @@ class CommonTestBase(unittest.TestCase, ABC):
                                     low: int,
                                     high: int,
                                     is_volatile: bool,
-                                    default: Optional[int]) -> None:
+                                    default: Optional[int],
+                                    rdl_name: Optional[str],
+                                    rdl_desc: Optional[str],
+                                    parent_full_inst_name: str,
+                                    inst_name: str
+                                    ) -> None:
         self.assertEqual(fut.lsb, lsb)
         self.assertEqual(fut.msb, msb)
         self.assertEqual(fut.low, low)
@@ -156,17 +162,45 @@ class CommonTestBase(unittest.TestCase, ABC):
             else:
                 self.assertEqual(fut.default, default)
 
+        self.__single_node_rdl_name_and_desc_test(dut=fut,
+                                                  rdl_name=rdl_name,
+                                                  rdl_desc=rdl_desc)
+
+        self.__test_node_inst_name(dut=fut,
+                                   parent_full_inst_name=parent_full_inst_name,
+                                   inst_name=inst_name)
+
+        self.__bad_attribute_test(dut=fut)
+
+    # pylint:disable-next=too-many-arguments
     def _single_register_property_test(self, *,
                                        rut: BaseReg,
                                        address: int,
                                        width: int,
-                                       accesswidth: Optional[int]) -> None:
+                                       accesswidth: Optional[int],
+                                       size: int,
+                                       rdl_name: Optional[str],
+                                       rdl_desc: Optional[str],
+                                       parent_full_inst_name: str,
+                                       inst_name: str
+                                       ) -> None:
         self.assertEqual(rut.address, address)
         self.assertEqual(rut.width, width)
         if accesswidth is not None:
             self.assertEqual(rut.accesswidth, accesswidth)
         else:
             self.assertEqual(rut.accesswidth, width)
+        self.assertEqual(rut.size, size)
+
+        self.__single_node_rdl_name_and_desc_test(dut=rut,
+                                                  rdl_name=rdl_name,
+                                                  rdl_desc=rdl_desc)
+
+        self.__test_node_inst_name(dut=rut,
+                                   parent_full_inst_name=parent_full_inst_name,
+                                   inst_name=inst_name)
+
+        self.__bad_attribute_test(dut=rut)
 
     # pylint:disable-next=too-many-arguments
     def _single_memory_property_test(self, *,
@@ -175,7 +209,13 @@ class CommonTestBase(unittest.TestCase, ABC):
                                      width: int,
                                      entries: int,
                                      accesswidth: Optional[int],
-                                     array_typecode: Optional[str]) -> None:
+                                     array_typecode: Optional[str],
+                                     size: int,
+                                     rdl_name: Optional[str],
+                                     rdl_desc: Optional[str],
+                                     parent_full_inst_name: str,
+                                     inst_name: str
+                                     ) -> None:
         self.assertEqual(mut.address, address)
         self.assertEqual(mut.width, width)
         self.assertEqual(mut.entries, entries)
@@ -187,8 +227,63 @@ class CommonTestBase(unittest.TestCase, ABC):
             self.assertEqual(mut.array_typecode, array_typecode)
         else:
             self.assertIsNone(array_typecode)
+        self.assertEqual(mut.size, size)
 
-    def _single_node_rdl_name_and_desc_test(self,
+        self.__single_node_rdl_name_and_desc_test(dut=mut,
+                                                  rdl_name=rdl_name,
+                                                  rdl_desc=rdl_desc)
+
+        self.__test_node_inst_name(dut=mut,
+                                   parent_full_inst_name=parent_full_inst_name,
+                                   inst_name=inst_name)
+
+        self.__bad_attribute_test(dut=mut)
+
+    # pylint:disable-next=too-many-arguments
+    def _single_addrmap_property_test(self, *,
+                                      dut: Union[AddressMap, AsyncAddressMap],
+                                      size: int,
+                                      rdl_name: Optional[str],
+                                      rdl_desc: Optional[str],
+                                      parent_full_inst_name: Optional[str],
+                                      inst_name: str
+                                      ) -> None:
+
+        self.assertEqual(dut.size, size)
+
+        self.__single_node_rdl_name_and_desc_test(dut=dut,
+                                                  rdl_name=rdl_name,
+                                                  rdl_desc=rdl_desc)
+
+        self.__test_node_inst_name(dut=dut,
+                                   parent_full_inst_name=parent_full_inst_name,
+                                   inst_name=inst_name)
+
+        self.__bad_attribute_test(dut=dut)
+
+    # pylint:disable-next=too-many-arguments
+    def _single_regfile_property_test(self, *,
+                                      dut: Union[RegFile, AsyncRegFile],
+                                      size: int,
+                                      rdl_name: Optional[str],
+                                      rdl_desc: Optional[str],
+                                      parent_full_inst_name: str,
+                                      inst_name: str
+                                      ) -> None:
+
+        self.assertEqual(dut.size, size)
+
+        self.__single_node_rdl_name_and_desc_test(dut=dut,
+                                                  rdl_name=rdl_name,
+                                                  rdl_desc=rdl_desc)
+
+        self.__test_node_inst_name(dut=dut,
+                                   parent_full_inst_name=parent_full_inst_name,
+                                   inst_name=inst_name)
+
+        self.__bad_attribute_test(dut=dut)
+
+    def __single_node_rdl_name_and_desc_test(self,
                                             dut: Base,
                                             rdl_name: Optional[str],
                                             rdl_desc: Optional[str]) -> None:
@@ -205,16 +300,40 @@ class CommonTestBase(unittest.TestCase, ABC):
         else:
             self.assertEqual(dut.rdl_desc, rdl_desc)
 
-    def _test_node_inst_name(self,
-                             dut: Base,
-                             parent_full_inst_name:str,
-                             inst_name:str) -> None:
+    def __test_node_inst_name(self,
+                              dut: Base,
+                              parent_full_inst_name:Optional[str],
+                              inst_name:str) -> None:
         """
         Test the `inst_name` and `full_inst_name` attributes of a node
         """
         self.assertEqual(dut.inst_name, inst_name)
-        full_inst_name = parent_full_inst_name + '.' + inst_name
-        self.assertEqual(dut.full_inst_name, full_inst_name)
+        if parent_full_inst_name is None:
+            # root node (which has no parent)
+            self.assertEqual(dut.full_inst_name, inst_name)
+        else:
+            full_inst_name = parent_full_inst_name + '.' + inst_name
+            self.assertEqual(dut.full_inst_name, full_inst_name)
+
+    def __bad_attribute_test(self, dut: Base) -> None:
+        """
+        Check that adding an attribute fails, the __slots__ should prevent this
+
+        The attribute name: cppkbrgmgeloagvfgjjeiiushygirh was randomly generated to be unlikely to
+        every be a attribute name
+        """
+        with self.assertRaises(AttributeError):
+            dut.cppkbrgmgeloagvfgjjeiiushygirh = 1  # type: ignore[attr-defined,union-attr]
+
+    def __test_name_map(self, dut: Node, child_names: set[str]) -> None:
+        """
+        Test that the get_child_by_system_rdl_name and systemrdl_python_child_name_map are
+        populated correctly
+        """
+        self.assertCountEqual(dut.systemrdl_python_child_name_map, child_names)
+        self.assertEqual(set(dut.systemrdl_python_child_name_map.keys()), child_names)
+        for child_name in child_names:
+            self.assertEqual(dut.get_child_by_system_rdl_name(child_name).inst_name, child_name)
 
     def _test_field_iterators(self, *,
                               rut: Union[RegReadOnly,
@@ -262,6 +381,9 @@ class CommonTestBase(unittest.TestCase, ABC):
         child_field_names = {field.inst_name for field in rut.fields}
         self.assertEqual(readable_fields | writeable_fields, child_field_names)
 
+        # Check the child name map
+        self.__test_name_map(dut=rut, child_names= readable_fields | writeable_fields)
+
     def _test_register_iterators(self,
                                  dut: Union[AddressMap, AsyncAddressMap, RegFile, AsyncRegFile,
                                             MemoryReadOnly, MemoryReadOnlyLegacy,
@@ -308,6 +430,19 @@ class CommonTestBase(unittest.TestCase, ABC):
         self.assertEqual(readable_registers.rolled | writeable_registers.rolled,
                          child_reg_names)
 
+        # The register file and addrmap have other items in their child map so it has to be
+        # tested at the next level up, however, a memory only has child registers
+        if isinstance(dut, (MemoryReadOnly, MemoryReadOnlyLegacy,
+                            MemoryWriteOnly, MemoryWriteOnlyLegacy,
+                            MemoryReadWrite, MemoryReadWriteLegacy,
+                            MemoryAsyncReadOnly, MemoryAsyncReadOnlyLegacy,
+                            MemoryAsyncWriteOnly, MemoryAsyncWriteOnlyLegacy,
+                            MemoryAsyncReadWrite, MemoryAsyncReadWriteLegacy)):
+            # Check the child name map
+            self.__test_name_map(dut=dut,
+                                 child_names=readable_registers.rolled |
+                                             writeable_registers.rolled)
+
 
     def _test_memory_iterators(self,
                                dut: Union[AddressMap, AsyncAddressMap],
@@ -339,6 +474,10 @@ class CommonTestBase(unittest.TestCase, ABC):
         self.__test_section_iterators(dut=dut,
                                       sections=sections)
 
+        # Check the child name map
+        self.__test_name_map(dut=dut, child_names=memories.rolled | readable_registers.rolled |
+                                                  writeable_registers.rolled | sections.rolled)
+
     def _test_regfile_iterators(self,
                                 dut: Union[RegFile, AsyncRegFile],
                                 sections: NodeIterators,
@@ -350,3 +489,8 @@ class CommonTestBase(unittest.TestCase, ABC):
         self.__test_section_iterators(dut=dut,
                                       sections=sections)
         self.assertFalse(hasattr(dut, 'get_memories'))
+
+        # Check the child name map
+        self.__test_name_map(dut=dut, child_names=readable_registers.rolled |
+                                                  writeable_registers.rolled |
+                                                  sections.rolled)
