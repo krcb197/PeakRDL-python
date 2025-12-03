@@ -41,8 +41,10 @@ from ..lib import MemoryAsyncReadWrite, MemoryAsyncReadWriteLegacy
 from ..lib.base_register import BaseReg
 from ..lib import Node
 from ..lib import Base
+from ..lib import SystemRDLEnum
 from .utilities import get_field_bitmask_int, get_field_inv_bitmask
 from ..sim_lib.simulator import BaseSimulator
+
 
 class NodeIterators:
     """
@@ -50,11 +52,12 @@ class NodeIterators:
     type that are present on a node
     """
     __slots__ = ['__node_descriptions']
-    def __init__(self, *args:Union[str, tuple[str, list[int]]]):
+
+    def __init__(self, *args: Union[str, tuple[str, list[int]]]):
         self.__node_descriptions = args
 
     @staticmethod
-    def __rolled_item(item:Union[str, tuple[str, list[int]]]) -> str:
+    def __rolled_item(item: Union[str, tuple[str, list[int]]]) -> str:
         if isinstance(item, tuple):
             return item[0]
         return item
@@ -64,7 +67,7 @@ class NodeIterators:
         """
         name of all the rolled nodes in a set
         """
-        return { self.__rolled_item(item) for item in self.__node_descriptions }
+        return {self.__rolled_item(item) for item in self.__node_descriptions}
 
     @property
     def unrolled(self) -> set[str]:
@@ -74,7 +77,7 @@ class NodeIterators:
         return_list = []
         for item in self.__node_descriptions:
             if isinstance(item, tuple):
-                dim_set =  list(product(*[range(dim) for dim in item[1]]))
+                dim_set = list(product(*[range(dim) for dim in item[1]]))
                 for dim in dim_set:
                     # to match the systemrdl compiler dimension put into the inst name of
                     # the array, the name must be item[x][y]
@@ -83,6 +86,7 @@ class NodeIterators:
             else:
                 return_list.append(item)
         return set(return_list)
+
 
 class CommonTestBase(unittest.TestCase, ABC):
     """
@@ -107,17 +111,17 @@ class CommonTestBase(unittest.TestCase, ABC):
     # pylint:disable-next=too-many-arguments
     def _single_field_property_test(self, *,
                                     fut: Union[FieldReadWrite,
-                                               FieldReadOnly,
-                                               FieldWriteOnly,
-                                               FieldEnumReadWrite,
-                                               FieldEnumReadOnly,
-                                               FieldEnumWriteOnly,
-                                               FieldAsyncReadOnly,
-                                               FieldAsyncWriteOnly,
-                                               FieldAsyncReadWrite,
-                                               FieldEnumAsyncReadOnly,
-                                               FieldEnumAsyncWriteOnly,
-                                               FieldEnumAsyncReadWrite],
+                                    FieldReadOnly,
+                                    FieldWriteOnly,
+                                    FieldEnumReadWrite,
+                                    FieldEnumReadOnly,
+                                    FieldEnumWriteOnly,
+                                    FieldAsyncReadOnly,
+                                    FieldAsyncWriteOnly,
+                                    FieldAsyncReadWrite,
+                                    FieldEnumAsyncReadOnly,
+                                    FieldEnumAsyncWriteOnly,
+                                    FieldEnumAsyncReadWrite],
                                     lsb: int,
                                     msb: int,
                                     low: int,
@@ -137,7 +141,7 @@ class CommonTestBase(unittest.TestCase, ABC):
         self.assertEqual(fut.inverse_bitmask, get_field_inv_bitmask(fut))
         width = (fut.high - fut.low) + 1
         self.assertEqual(fut.width, width)
-        self.assertEqual(fut.max_value, (2**width) - 1)
+        self.assertEqual(fut.max_value, (2 ** width) - 1)
         self.assertEqual(fut.is_volatile, is_volatile)
 
         if default is None:
@@ -284,9 +288,9 @@ class CommonTestBase(unittest.TestCase, ABC):
         self.__bad_attribute_test(dut=dut)
 
     def __single_node_rdl_name_and_desc_test(self,
-                                            dut: Base,
-                                            rdl_name: Optional[str],
-                                            rdl_desc: Optional[str]) -> None:
+                                             dut: Base,
+                                             rdl_name: Optional[str],
+                                             rdl_desc: Optional[str]) -> None:
         """
         Check the SystemRDL Name and Desc properties for a node
         """
@@ -302,8 +306,8 @@ class CommonTestBase(unittest.TestCase, ABC):
 
     def __test_node_inst_name(self,
                               dut: Base,
-                              parent_full_inst_name:Optional[str],
-                              inst_name:str) -> None:
+                              parent_full_inst_name: Optional[str],
+                              inst_name: str) -> None:
         """
         Test the `inst_name` and `full_inst_name` attributes of a node
         """
@@ -337,11 +341,11 @@ class CommonTestBase(unittest.TestCase, ABC):
 
     def _test_field_iterators(self, *,
                               rut: Union[RegReadOnly,
-                                         RegReadWrite,
-                                         RegWriteOnly,
-                                         RegAsyncReadOnly,
-                                         RegAsyncReadWrite,
-                                         RegAsyncWriteOnly],
+                              RegReadWrite,
+                              RegWriteOnly,
+                              RegAsyncReadOnly,
+                              RegAsyncReadWrite,
+                              RegAsyncWriteOnly],
                               has_sw_readable: bool,
                               has_sw_writable: bool,
                               readable_fields: set[str],
@@ -354,7 +358,7 @@ class CommonTestBase(unittest.TestCase, ABC):
                                     )):
                 raise TypeError(f'Register was expected to readable, got {type(rut)}')
 
-            child_readable_field_names = { field.inst_name for field in rut.readable_fields}
+            child_readable_field_names = {field.inst_name for field in rut.readable_fields}
 
             self.assertEqual(readable_fields, child_readable_field_names)
         else:
@@ -382,16 +386,16 @@ class CommonTestBase(unittest.TestCase, ABC):
         self.assertEqual(readable_fields | writeable_fields, child_field_names)
 
         # Check the child name map
-        self.__test_name_map(dut=rut, child_names= readable_fields | writeable_fields)
+        self.__test_name_map(dut=rut, child_names=readable_fields | writeable_fields)
 
     def _test_register_iterators(self,
                                  dut: Union[AddressMap, AsyncAddressMap, RegFile, AsyncRegFile,
-                                            MemoryReadOnly, MemoryReadOnlyLegacy,
-                                            MemoryWriteOnly, MemoryWriteOnlyLegacy,
-                                            MemoryReadWrite, MemoryReadWriteLegacy,
-                                            MemoryAsyncReadOnly, MemoryAsyncReadOnlyLegacy,
-                                            MemoryAsyncWriteOnly, MemoryAsyncWriteOnlyLegacy,
-                                            MemoryAsyncReadWrite, MemoryAsyncReadWriteLegacy],
+                                 MemoryReadOnly, MemoryReadOnlyLegacy,
+                                 MemoryWriteOnly, MemoryWriteOnlyLegacy,
+                                 MemoryReadWrite, MemoryReadWriteLegacy,
+                                 MemoryAsyncReadOnly, MemoryAsyncReadOnlyLegacy,
+                                 MemoryAsyncWriteOnly, MemoryAsyncWriteOnlyLegacy,
+                                 MemoryAsyncReadWrite, MemoryAsyncReadWriteLegacy],
                                  readable_registers: NodeIterators,
                                  writeable_registers: NodeIterators) -> None:
 
@@ -400,8 +404,8 @@ class CommonTestBase(unittest.TestCase, ABC):
                             MemoryReadWrite, MemoryReadWriteLegacy,
                             MemoryAsyncReadOnly, MemoryAsyncReadOnlyLegacy,
                             MemoryAsyncReadWrite, MemoryAsyncReadWriteLegacy)):
-            child_readable_reg_names = { reg.inst_name for reg in
-                                         dut.get_readable_registers(unroll=True)}
+            child_readable_reg_names = {reg.inst_name for reg in
+                                        dut.get_readable_registers(unroll=True)}
             self.assertEqual(readable_registers.unrolled, child_readable_reg_names)
             child_readable_reg_names = {reg.inst_name for reg in
                                         dut.get_readable_registers(unroll=False)}
@@ -442,7 +446,6 @@ class CommonTestBase(unittest.TestCase, ABC):
             self.__test_name_map(dut=dut,
                                  child_names=readable_registers.rolled |
                                              writeable_registers.rolled)
-
 
     def _test_memory_iterators(self,
                                dut: Union[AddressMap, AsyncAddressMap],
@@ -494,3 +497,56 @@ class CommonTestBase(unittest.TestCase, ABC):
         self.__test_name_map(dut=dut, child_names=readable_registers.rolled |
                                                   writeable_registers.rolled |
                                                   sections.rolled)
+
+    def _full_to_reduced_enum_conversion(
+            self,
+            full_enum_def: dict[str, tuple[int, Optional[str], Optional[str]]]) -> dict[str, int]:
+        return {key:value[0] for key,value in full_enum_def.items() }
+
+    def _test_enum_def_rdl_name_desc_(
+            self,
+            fut: Union[FieldEnumReadOnly, FieldEnumReadOnly, FieldEnumWriteOnly,
+                       FieldEnumAsyncReadOnly, FieldEnumAsyncReadOnly, FieldEnumAsyncWriteOnly],
+            full_enum_def: dict[str, tuple[int, Optional[str], Optional[str]]]) -> None:
+        """
+        Check that the enumeration in the field matches the enumeration specifed in the
+        systemRDL
+
+        Args:
+            fut: field node
+            full_enum_def: definition of the enumeration a dictionary, with the of the
+                           entry as a key and the value a tuple that has:
+                           1. int value encoding the enumeration
+                           2. system RDL name (or None)
+                           3. system RDL name (or None)
+
+        Returns: None
+
+        """
+
+        # pylint does not realise this is a class being returned rather than an object, so
+        # is unhappy with the name
+        # pylint:disable-next=invalid-name
+        EnumCls = fut.enum_cls
+        for name, value in full_enum_def.items():
+            enum_inst = EnumCls[name]
+            self.assertEqual(enum_inst.value, value[0])
+
+            if issubclass(EnumCls, SystemRDLEnum):
+                if value[1] is None:
+                    self.assertIsNone(enum_inst.rdl_name)
+                else:
+                    self.assertEqual(enum_inst.rdl_name, value[1])
+
+                if value[2] is None:
+                    self.assertIsNone(enum_inst.rdl_desc)
+                else:
+                    self.assertEqual(enum_inst.rdl_desc, value[2])
+
+            else:
+                # if using a legacy enumeration, then the systemRDL name and desc must be None
+                # as the legacy enum did not support these
+                self.assertIsNone(value[1])
+                self.assertIsNone(value[2])
+                self.assertFalse(hasattr(enum_inst, 'rdl_name'))
+                self.assertFalse(hasattr(enum_inst, 'rdl_desc'))
