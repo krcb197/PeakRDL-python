@@ -82,31 +82,7 @@ from ._{{top_node.inst_name}}_test_base import random_enum_reg_value
 
 class {{fq_block_name}}_single_access({{top_node.inst_name}}_TestCase): # type: ignore[valid-type,misc]
 
-    def test_field_encoding_properties(self)  -> None:
-        """
-        Check that enumeration has the name and desc meta data from the systemRDL
-        """
-        {% for node in owned_elements.fields -%}
-            {% if 'encode' in node.list_properties() %}
-        with self.subTest(msg='field: {{'.'.join(node.get_path_segments())}}'):
-            # test properties of field: {{'.'.join(node.get_path_segments())}}
-                {% for encoding_entry in node.get_property('encode') %}
-            self.assertEqual(self.dut.{{'.'.join(get_python_path_segments(node))}}.enum_cls.{{encoding_entry.name | upper}}.value, {{encoding_entry.value}})
-                    {% if not legacy_enum_type %}
-                        {% if encoding_entry.rdl_name is none %}
-            self.assertIsNone(self.dut.{{'.'.join(get_python_path_segments(node))}}.enum_cls.{{encoding_entry.name | upper}}.rdl_name)
-                        {% else %}
-            self.assertEqual(self.dut.{{'.'.join(get_python_path_segments(node))}}.enum_cls.{{encoding_entry.name | upper}}.rdl_name, {{encoding_entry.rdl_name | tojson}})
-                        {% endif %}
-                        {% if encoding_entry.rdl_desc is none %}
-            self.assertIsNone(self.dut.{{'.'.join(get_python_path_segments(node))}}.enum_cls.{{encoding_entry.name | upper}}.rdl_desc)
-                        {% else %}
-            self.assertEqual(self.dut.{{'.'.join(get_python_path_segments(node))}}.enum_cls.{{encoding_entry.name | upper}}.rdl_desc, {{encoding_entry.rdl_desc | tojson}})
-                        {% endif %}
-                    {% endif %}
-                {% endfor %}
-            {% endif %}
-        {% endfor %}
+
 
     def test_user_defined_properties(self)  -> None:
         """
@@ -188,7 +164,7 @@ class {{fq_block_name}}_single_access({{top_node.inst_name}}_TestCase): # type: 
             {% if asyncoutput %}await {%endif %}self._single_int_field_read_and_write_test(fut=self.dut.{{'.'.join(get_python_path_segments(node))}}, is_sw_readable={{node.is_sw_readable}}, is_sw_writable={{node.is_sw_writable}})
             {%- else %}
             {% if asyncoutput %}await {%endif %}self._single_enum_field_read_and_write_test(fut=self.dut.{{'.'.join(get_python_path_segments(node))}}, # type: ignore[arg-type]
-                                                                                            is_sw_readable={{node.is_sw_readable}}, is_sw_writable={{node.is_sw_writable}}, enum_definition={ {% for enum_entry in node.get_property('encode') %}'{{enum_entry.name.upper()}}':{{enum_entry.value}},{% endfor %} })
+                                                                                            is_sw_readable={{node.is_sw_readable}}, is_sw_writable={{node.is_sw_writable}}, full_enum_def={ {% for enum_entry in node.get_property('encode') %}'{{enum_entry.name.upper()}}':({{enum_entry.value}}, {% if enum_entry.rdl_name is none %}None{% else %}{{enum_entry.rdl_name | tojson}}{% endif %}, {% if enum_entry.rdl_desc is none %}None{% else %}{{enum_entry.rdl_desc | tojson}}{% endif %}),{% endfor %} })
             {%- endif %}
         {%- endfor %}
 
