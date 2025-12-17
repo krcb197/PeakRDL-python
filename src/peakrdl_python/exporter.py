@@ -951,12 +951,12 @@ class PythonExporter:
                skip_test_case_generation: bool = False,
                delete_existing_package_content: bool = True,
                skip_library_copy: bool = False,
-               legacy_block_access: bool = True,
+               legacy_block_access: bool = False,
                show_hidden: bool = False,
                user_defined_properties_to_include: Optional[list[str]] = None,
                user_defined_properties_to_include_regex: Optional[str] = None,
                hidden_inst_name_regex: Optional[str] = None,
-               legacy_enum_type: bool = True,
+               legacy_enum_type: bool = False,
                skip_systemrdl_name_and_desc_properties: bool = False,
                skip_systemrdl_name_and_desc_in_docstring: bool = False,
                register_class_per_generated_file: int =
@@ -1011,6 +1011,7 @@ class PythonExporter:
             legacy_enum_type: version 1.2 introduced a new Enum type that allows system
                               rdl ``name`` and ``desc`` properties on field encoding
                               to be included. The legacy mode uses python IntEnum.
+                              .. version-deprecated:: 3.0
             skip_systemrdl_name_and_desc_properties (bool) : version 1.2 introduced new properties
                                                              that include the systemRDL name and
                                                              desc as properties of the built
@@ -1053,6 +1054,16 @@ class PythonExporter:
         Returns:
             modules that have been exported:
         """
+        if legacy_enum_type:
+            warnings.warn('legacy_enum_type is deprecated and '
+                          'will be removed from a future version please try the new mode',
+                          category=DeprecationWarning)
+
+        if legacy_block_access:
+            warnings.warn('legacy_block_access is deprecated and '
+                          'will be removed from a future version please try the new mode',
+                          category=DeprecationWarning)
+
 
         # If it is the root node, skip to top addrmap
         if isinstance(node, RootNode):
