@@ -385,28 +385,6 @@ class _FieldReadOnlyFramework(Field[FieldType], ABC):
     """
     __slots__ : list[str] = []
 
-    def decode_read_value(self, value: int) -> FieldType:
-        """
-        extracts the field value from a register value, by applying the bit
-        mask and shift needed
-
-        Args:
-            value: value to decode, normally read from a register
-
-        Returns:
-            field value
-
-        Warning:
-            This method will be removed from a future version, if you have a compelling use
-            case for it please add a comment to the #184 ticket
-
-        """
-        # end users should not need access to the `decode_read_value` as the decoding is done
-        # for them, it felt like an anomaly that this was public, see #184
-        warnings.warn('decode_read_value will be made private in a future version',
-                      DeprecationWarning, stacklevel=2)
-        return self._decode_read_value(value=value)
-
     def _decode_read_value(self, value: int) -> FieldType:
         """
         extracts the field value from a register value, by applying the bit
@@ -475,29 +453,6 @@ class _FieldWriteOnlyFramework(Field[FieldType], ABC):
         if value > self.max_value:
             raise ValueError(f'value to be written to register must be less '
                              f'than or equal to {self.max_value:d}')
-
-
-    def encode_write_value(self, value: FieldType) -> int:
-        """
-        Check that a value is legal for the field and then encode it in preparation to be written
-        to the register
-
-        Args:
-            value: field value
-
-        Returns:
-            value which can be applied to the register to update the field
-
-        Warning:
-            This method will be removed from a future version, if you have a compelling use
-            case for it please add a comment to the #184 ticket
-
-        """
-        # end users should not need access to the `decode_read_value` as the decoding is done
-        # for them, it felt like an anomaly that this was public, see #184
-        warnings.warn('encode_write_value will be made private in a future version',
-                      DeprecationWarning, stacklevel=2)
-        return self._encode_write_value(value=value)
 
     def _encode_write_value(self, value: FieldType) -> int:
         """
