@@ -39,7 +39,9 @@ from ..lib import MemoryAsyncReadWrite, MemoryAsyncReadWriteLegacy
 from ..lib import RegisterWriteVerifyError
 from ..sim_lib.register import Register as SimRegister
 from ..sim_lib.register import MemoryRegister as SimMemoryRegister
-from ..sim_lib.register import Field as SimField
+from ..sim_lib.field import ReadWriteField as SimReadWriteField
+from ..sim_lib.field import ReadOnlyField as SimReadOnlyField
+from ..sim_lib.field import WriteOnlyField as SimWriteOnlyField
 from ..sim_lib.memory import Memory as SimMemory
 
 from .utilities import reverse_bits, expected_reg_write_data
@@ -626,7 +628,6 @@ class AsyncLibTestBase(unittest.IsolatedAsyncioTestCase, CommonTestBase, ABC):
             fut.parent_register.full_inst_name)
         self.assertIsInstance(sim_register, (SimRegister, SimMemoryRegister))
         sim_field = self.simulator_instance.field_by_full_name(fut.full_inst_name)
-        self.assertIsInstance(sim_field, SimField)
         register_read_callback = Mock()
         register_write_callback = Mock()
         field_read_callback = Mock()
@@ -640,6 +641,9 @@ class AsyncLibTestBase(unittest.IsolatedAsyncioTestCase, CommonTestBase, ABC):
             # update the register value via the backdoor in the simulator
             if not isinstance(fut, (FieldAsyncReadOnly, FieldAsyncReadWrite)):
                 raise TypeError('Test can not proceed as the fut is not a readable field')
+
+            if not isinstance(sim_field, (SimReadOnlyField, SimReadWriteField)):
+                raise TypeError('Test can not proceed as the field is readable')
 
             random_field_value = random_int_field_value(fut)
             random_value = reg_value_for_field_read_with_random_base(
@@ -667,7 +671,10 @@ class AsyncLibTestBase(unittest.IsolatedAsyncioTestCase, CommonTestBase, ABC):
             sim_register.read_callback = register_read_callback
             sim_register.write_callback = register_write_callback
             sim_field.read_callback = field_read_callback
-            sim_field.write_callback = field_write_callback
+            if is_sw_writable:
+                if not isinstance(sim_field, (SimReadWriteField)):
+                    raise TypeError('Field should be read/write')
+                sim_field.write_callback = field_write_callback
             self.assertEqual(await fut.read(), random_field_value)
             register_write_callback.assert_not_called()
             register_read_callback.assert_called_once_with(value=random_value)
@@ -681,7 +688,10 @@ class AsyncLibTestBase(unittest.IsolatedAsyncioTestCase, CommonTestBase, ABC):
             sim_register.read_callback = None
             sim_register.write_callback = None
             sim_field.read_callback = None
-            sim_field.write_callback = None
+            if is_sw_writable:
+                if not isinstance(sim_field, SimReadWriteField):
+                    raise TypeError('Field should be read/write')
+                sim_field.write_callback = None
             #random_field_value = random_int_field_value(fut)
             random_value = reg_value_for_field_read_with_random_base(
                 fut=fut,
@@ -700,6 +710,9 @@ class AsyncLibTestBase(unittest.IsolatedAsyncioTestCase, CommonTestBase, ABC):
 
             if not isinstance(fut, (FieldAsyncWriteOnly, FieldAsyncReadWrite)):
                 raise TypeError('Test can not proceed as the fut is not a writable field')
+
+            if not isinstance(sim_field, (SimWriteOnlyField, SimReadWriteField)):
+                raise TypeError('Test can not proceed as the field is writable')
 
             if readable_reg:
                 initial_reg_random_value = random_field_parent_reg_value(fut)
@@ -724,7 +737,10 @@ class AsyncLibTestBase(unittest.IsolatedAsyncioTestCase, CommonTestBase, ABC):
             # hook up the call backs
             sim_register.read_callback = None
             sim_register.write_callback = register_write_callback
-            sim_field.read_callback = None
+            if is_sw_readable:
+                if not isinstance(sim_field, (SimReadWriteField)):
+                    raise TypeError('Field should be read/write')
+                sim_field.read_callback = None
             sim_field.write_callback = field_write_callback
             random_field_value = random_int_field_value(fut)
             await fut.write(random_field_value)
@@ -769,7 +785,6 @@ class AsyncLibTestBase(unittest.IsolatedAsyncioTestCase, CommonTestBase, ABC):
             fut.parent_register.full_inst_name)
         self.assertIsInstance(sim_register, (SimRegister, SimMemoryRegister))
         sim_field = self.simulator_instance.field_by_full_name(fut.full_inst_name)
-        self.assertIsInstance(sim_field, SimField)
         register_read_callback = Mock()
         register_write_callback = Mock()
         field_read_callback = Mock()
@@ -784,6 +799,9 @@ class AsyncLibTestBase(unittest.IsolatedAsyncioTestCase, CommonTestBase, ABC):
 
             if not isinstance(fut, (FieldEnumAsyncReadOnly, FieldEnumAsyncReadWrite)):
                 raise TypeError('Test can not proceed as the fut is not a readable field')
+
+            if not isinstance(sim_field, (SimReadOnlyField, SimReadWriteField)):
+                raise TypeError('Test can not proceed as the field is readable')
 
             random_field_value = random_encoded_field_value(fut)
             random_value = reg_value_for_field_read_with_random_base(
@@ -814,7 +832,10 @@ class AsyncLibTestBase(unittest.IsolatedAsyncioTestCase, CommonTestBase, ABC):
             sim_register.read_callback = register_read_callback
             sim_register.write_callback = register_write_callback
             sim_field.read_callback = field_read_callback
-            sim_field.write_callback = field_write_callback
+            if is_sw_writable:
+                if not isinstance(sim_field, (SimReadWriteField)):
+                    raise TypeError('Field should be read/write')
+                sim_field.write_callback = field_write_callback
             self.assertEqual(await fut.read(), random_field_value)
             register_write_callback.assert_not_called()
             register_read_callback.assert_called_once_with(value=random_value)
@@ -829,7 +850,10 @@ class AsyncLibTestBase(unittest.IsolatedAsyncioTestCase, CommonTestBase, ABC):
             sim_register.read_callback = None
             sim_register.write_callback = None
             sim_field.read_callback = None
-            sim_field.write_callback = None
+            if is_sw_writable:
+                if not isinstance(sim_field, SimReadWriteField):
+                    raise TypeError('Field should be read/write')
+                sim_field.write_callback = None
             random_field_value = random_encoded_field_value(fut)
             random_value = reg_value_for_field_read_with_random_base(
                 fut=fut,
@@ -850,6 +874,9 @@ class AsyncLibTestBase(unittest.IsolatedAsyncioTestCase, CommonTestBase, ABC):
 
             if not isinstance(fut, (FieldEnumAsyncWriteOnly, FieldEnumAsyncReadWrite)):
                 raise TypeError('Test can not proceed as the fut is not a writable field')
+
+            if not isinstance(sim_field, (SimWriteOnlyField, SimReadWriteField)):
+                raise TypeError('Test can not proceed as the field is writable')
 
             if readable_reg:
                 initial_reg_random_value = random_field_parent_reg_value(fut)
@@ -877,7 +904,10 @@ class AsyncLibTestBase(unittest.IsolatedAsyncioTestCase, CommonTestBase, ABC):
             # hook up the call backs
             sim_register.read_callback = None
             sim_register.write_callback = register_write_callback
-            sim_field.read_callback = None
+            if is_sw_readable:
+                if not isinstance(sim_field, (SimReadWriteField)):
+                    raise TypeError('Field should be read/write')
+                sim_field.read_callback = None
             sim_field.write_callback = field_write_callback
             random_field_value = random_encoded_field_value(fut)
             await fut.write(random_field_value)
