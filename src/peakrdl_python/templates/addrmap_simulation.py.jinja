@@ -27,7 +27,7 @@ from typing import Union
 from {{ peakrdl_python_sim_lib(depth=lib_depth) }}.register import Register, MemoryRegister
 from {{ peakrdl_python_sim_lib(depth=lib_depth) }}.memory import Memory
 from {{ peakrdl_python_sim_lib(depth=lib_depth) }}.simulator import MemoryEntry
-from {{ peakrdl_python_sim_lib(depth=lib_depth) }}.field import FieldDefinition
+from {{ peakrdl_python_sim_lib(depth=lib_depth) }}.field import FieldDefinition, FieldType
 {% if asyncoutput -%}
 from {{ peakrdl_python_sim_lib(depth=lib_depth) }}.simulator import AsyncSimulator{% if legacy_block_access %}Legacy{% endif %} as Simulator{% if legacy_block_access %}Legacy{% endif %}
 {% else %}
@@ -39,7 +39,7 @@ from {{ peakrdl_python_sim_lib(depth=lib_depth) }}.simulator import Simulator{% 
                                          fields=[
 
                                                 {%- for field in node.fields() -%}
-                                                FieldDefinition(high={{field.high}}, low={{field.low}}, msb={{field.msb}}, lsb={{field.lsb}}, inst_name='{{field.inst_name}}'),
+                                                FieldDefinition(high={{field.high}}, low={{field.low}}, msb={{field.msb}}, lsb={{field.lsb}}, inst_name='{{field.inst_name}}', field_type=FieldType.{{simulator_field_definition(field)}}),
                                                 {%- endfor %}
                                                 ])
 {%- endmacro %}

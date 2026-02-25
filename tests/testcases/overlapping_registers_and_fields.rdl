@@ -1,0 +1,39 @@
+/*
+This test was introduced as part of #202 to resolve issues with overlapping registers at the
+same address. It was extended in #255
+*/
+addrmap overlapping_registers_and_fields {
+
+     reg {
+        field { fieldwidth=1; sw=rw; } enable;
+     } control ;
+
+     reg {
+        field { fieldwidth=16; sw=w; hw=r; } data;
+     } tx @ 4;
+
+     reg {
+        field { fieldwidth=16; sw=r; hw=w; } data;
+     } rx @ 4;
+
+     reg {
+        field { fieldwidth=8; sw=r; hw=w; } count;
+     } rx_fifo_fill;
+
+     reg {
+        field { fieldwidth=8; sw=r; hw=w; } count;
+     } tx_fifo_fill;
+
+     reg {
+        field {sw = r;} ro_field[15:0];
+        field {sw = w;} wo_field[15:0];
+     } overlapping_single_reg;
+
+     reg {
+        field {sw = r;} ro_field[15:0];
+        field {sw = w;} wo_field[15:0];
+        field {sw = rw;} rw_field[31:16];
+     } mixed_overlapping_and_noneoverlapping;
+
+};
+
