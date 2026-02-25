@@ -613,7 +613,7 @@ class LibTestBase(CommonTestBase, ABC):
             fut: Union[FieldReadOnly, FieldWriteOnly, FieldReadWrite],
             is_sw_readable: bool,
             is_sw_writable: bool) -> None:
-        #pylint:disable=too-many-statements
+        #pylint:disable=too-many-statements,too-many-branches
 
         sim_register = self.simulator_instance.register_by_full_name(
             fut.parent_register.full_inst_name)
@@ -770,7 +770,7 @@ class LibTestBase(CommonTestBase, ABC):
             fut: Union[FieldEnumReadOnly, FieldEnumWriteOnly, FieldEnumReadWrite],
             is_sw_readable: bool,
             is_sw_writable: bool) -> None:
-        # pylint:disable=too-many-statements
+        # pylint:disable=too-many-statements,too-many-branches
 
         sim_register = self.simulator_instance.register_by_full_name(
             fut.parent_register.full_inst_name)

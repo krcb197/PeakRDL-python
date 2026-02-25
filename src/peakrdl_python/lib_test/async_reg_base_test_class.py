@@ -622,7 +622,7 @@ class AsyncLibTestBase(unittest.IsolatedAsyncioTestCase, CommonTestBase, ABC):
             fut: Union[FieldAsyncReadOnly, FieldAsyncWriteOnly, FieldAsyncReadWrite],
             is_sw_readable: bool,
             is_sw_writable: bool) -> None:
-        #pylint:disable=too-many-statements
+        #pylint:disable=too-many-statements,too-many-branches
 
         sim_register = self.simulator_instance.register_by_full_name(
             fut.parent_register.full_inst_name)
@@ -779,7 +779,7 @@ class AsyncLibTestBase(unittest.IsolatedAsyncioTestCase, CommonTestBase, ABC):
             fut: Union[FieldEnumAsyncReadOnly, FieldEnumAsyncWriteOnly, FieldEnumAsyncReadWrite],
             is_sw_readable: bool,
             is_sw_writable: bool) -> None:
-        # pylint:disable=too-many-statements
+        # pylint:disable=too-many-statements,too-many-branches
 
         sim_register = self.simulator_instance.register_by_full_name(
             fut.parent_register.full_inst_name)
