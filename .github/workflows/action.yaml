@@ -449,7 +449,7 @@ jobs:
 
       - name: build_package
         run: |
-          peakrdl python .\pathological_test/deep.rdl -o ./pathological_test/ --skip_library_copy
+          peakrdl python ./pathological_test/deep.rdl -o ./pathological_test/ --skip_library_copy
 
       - name: type check generated code
         run: |
