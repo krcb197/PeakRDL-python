@@ -445,7 +445,7 @@ jobs:
       - name: Prepare System RDL
         run: |
           mkdir ./pathological_test
-          python -m tests.pathological_register_maps.pathological_rdl_builder pathological_test\deep.rdl deep
+          python -m tests.pathological_register_maps.pathological_rdl_builder ./pathological_test/deep.rdl deep
 
       - name: build_package
         run: |
