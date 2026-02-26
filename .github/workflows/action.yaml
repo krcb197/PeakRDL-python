@@ -425,8 +425,10 @@ jobs:
         mypy autoformatted_output
         python -m unittest discover -s autoformatted_output
 
-    pathological:
+  pathological:
+
     runs-on: ubuntu-latest
+
     steps:
       - uses: actions/checkout@v4
       - name: Set up Python
