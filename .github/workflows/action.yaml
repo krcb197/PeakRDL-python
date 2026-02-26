@@ -427,6 +427,9 @@ jobs:
 
   pathological:
 
+    needs:
+      - integration_tests
+
     runs-on: ubuntu-latest
 
     steps:
