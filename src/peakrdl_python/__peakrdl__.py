@@ -80,7 +80,8 @@ class Exporter(ExporterSubcommandPlugin):
         arg_group.add_argument('--legacy_block_access', action='store_true',
                                dest='legacy_block_access',
                                help='peakrdl python has two methods to hold blocks of data, the '
-                                    'legacy mode based on array.array or the new mode using lists')
+                                    'legacy mode based on array.array or the new mode using '
+                                    'lists. This option will be removed in version 4.0')
         arg_group.add_argument('--show_hidden', action='store_true',
                                dest='show_hidden',
                                help='show addrmap, regfile, memory, register and fields that '
@@ -100,7 +101,8 @@ class Exporter(ExporterSubcommandPlugin):
                                dest='legacy_enum_type',
                                help='peakrdl python has two ways to define field encoding as '
                                      'enums new method and an old method based on IntEnum. '
-                                     'Setting this to true will restore the old behaviour')
+                                     'Setting this to true will restore the old behaviour.'
+                                     ' This option will be removed in version 4.0')
         arg_group.add_argument('--skip_systemrdl_name_and_desc_properties', action='store_true',
                                dest='skip_systemrdl_name_and_desc_properties',
                                help='peakrdl python includes the system RDL name and desc '

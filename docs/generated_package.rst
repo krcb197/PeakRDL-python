@@ -174,6 +174,10 @@ Legacy Block Callback and Block Access
       * ``NormalCallbackSetLegacy`` for standard python function callbacks
       * ``AsyncCallbackSetLegacy`` for async python function callbacks, these are called from the library using ``await``
 
+.. versionchanged:: 3.0.0
+
+    The ``legacy_block_access`` will now default to ``False``
+
 Legacy Enumeration Types
 ------------------------
 
@@ -186,6 +190,10 @@ Legacy Enumeration Types
 
    There was a small risk this may impact some users code, in the case of advanced usage of the
    enumeration. The old behaviour can be brought back using the ``legacy_enum_type`` build option.
+
+.. versionchanged:: 3.0.0
+
+    The ``legacy_enum_type`` will now default to ``False``
 
 
 Using the Register Access Layer

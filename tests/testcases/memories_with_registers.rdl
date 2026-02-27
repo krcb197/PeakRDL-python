@@ -6,11 +6,39 @@ addrmap memories_with_registers {
         sw=rw;
 
         reg mem_entry_definition {
-            field {} lower_entry[15:0];
+            field { sw=rw;} lower_entry[15:0];
         };
 
         mem_entry_definition mem_entry_set1;
         mem_entry_definition mem_entry_set2[4];
 
     } mem_with_internal_registers;
+
+    external mem {
+        mementries = 16;
+        memwidth = 32;
+        sw=r;
+
+        reg mem_entry_definition {
+            field {sw=r;} lower_entry[15:0];
+        };
+
+        mem_entry_definition mem_entry_set1;
+        mem_entry_definition mem_entry_set2[4];
+
+    } mem_with_internal_registers_read_only;
+
+        external mem {
+        mementries = 16;
+        memwidth = 32;
+        sw=w;
+
+        reg mem_entry_definition {
+            field {sw=w;} lower_entry[15:0];
+        };
+
+        mem_entry_definition mem_entry_set1;
+        mem_entry_definition mem_entry_set2[4];
+
+    } mem_with_internal_registers_write_only;
 };

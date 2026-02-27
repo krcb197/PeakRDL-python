@@ -49,16 +49,6 @@ CommandLineParser.add_argument('--copy_libraries', action='store_true', dest='co
                                     'and debugging as multiple copies of the libraries can cause'
                                     'confusion. Therefore by default this script does not copy '
                                     'them over.')
-CommandLineParser.add_argument('--hashing_mode',
-                               dest='hashing_mode',
-                               type=str,
-                               choices=[item.name for item in NodeHashingMethod],
-                               default='PYTHONHASH',
-                               help='The method used to generate the hash of the node, in order to '
-                                    'deduplicate the register model. Set this to `SHA256` if '
-                                    'the python names need to stay consistent one export to the '
-                                    'next. However, this mode is slower')
-
 
 def compile_rdl(infile: str,
                 incl_search_paths: Optional[List[str]] = None,
@@ -158,19 +148,22 @@ if __name__ == '__main__':
         options = {
             'asyncoutput': [True, False],
             'legacy': [True, False],
-            'skip_systemrdl_name_and_desc_in_docstring': [True, False]
+            'skip_systemrdl_name_and_desc_in_docstring': [True, False],
+            'hashing': list(NodeHashingMethod)
         }
 
-        for asyncoutput, legacy, skip_name_and_desc_in_docstring in product(
+        for asyncoutput, legacy, skip_name_and_desc_in_docstring, hashing_method in product(
                 options['asyncoutput'], options['legacy'],
-                options['skip_systemrdl_name_and_desc_in_docstring'] ):
+                options['skip_systemrdl_name_and_desc_in_docstring'],
+                options['hashing']):
 
             # test cases that use the extended widths an not be tested in the non-legacy modes
             if (testcase_name in ['extended_memories', 'extended_sizes_registers_array']) and \
                     (legacy is True):
                 continue
 
-            folder_parts = 'raw'
+            folder_parts = 'raw_'
+            folder_parts += hashing_method.name
             if asyncoutput:
                 folder_parts += '_async'
             if legacy:
@@ -184,7 +177,7 @@ if __name__ == '__main__':
                          legacy_enum_type=legacy,
                          copy_library=CommandLineArgs.copy_libraries,
                          skip_systemrdl_name_and_desc_in_docstring=skip_name_and_desc_in_docstring,
-                         hashing_mode=NodeHashingMethod[CommandLineArgs.hashing_mode])
+                         hashing_mode=hashing_method)
 
             module_fqfn = output_path / folder_parts / '__init__.py'
             with open(module_fqfn, 'w', encoding='utf-8') as fid:

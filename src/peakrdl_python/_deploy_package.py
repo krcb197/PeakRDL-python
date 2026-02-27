@@ -154,8 +154,10 @@ class GeneratedPackage(PythonPackage):
     Args:
         include_tests (bool): include the tests package
     """
+    # pylint:disable=too-many-instance-attributes
     template_lib_package = PythonPackage(Path(__file__).parent / 'lib')
     template_sim_lib_package = PythonPackage(Path(__file__).parent / 'sim_lib')
+    template_lib_test_package = PythonPackage(Path(__file__).parent / 'lib_test')
 
     def __init__(self, path: str, package_name: str, include_tests: bool, include_libraries: bool):
         super().__init__(Path(path) / package_name)
@@ -169,6 +171,9 @@ class GeneratedPackage(PythonPackage):
         self.reg_model = _GeneratedRegModelPackage(self.child_path('reg_model'))
 
         if include_tests:
+            if include_libraries:
+                self.lib_test = self.child_ref_package('lib_test',
+                                                       self.template_lib_test_package)
             self.tests = self.child_package('tests')
 
         if include_libraries:
@@ -200,4 +205,6 @@ class GeneratedPackage(PythonPackage):
         if self._include_libraries:
             self.lib.create_empty_package(cleanup=cleanup)
             self.sim_lib.create_empty_package(cleanup=cleanup)
+            if self._include_tests:
+                self.lib_test.create_empty_package(cleanup=cleanup)
         self.sim.create_empty_package(cleanup=cleanup)

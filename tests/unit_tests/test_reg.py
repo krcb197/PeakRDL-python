@@ -326,15 +326,17 @@ class TestReadWrite(RegTestBase):
                              side_effect=self.write_addr_space) as write_patch:
 
             with self.dut.single_read_modify_write() as reg:
-                _ = reg.field.read()
-                _ = reg.field.read()
+                self.assertEqual(reg.field.read(), False)
+                self.assertEqual(reg.field.read(), False)
+                reg.field.write(True)
+                self.assertEqual(reg.field.read(), True)
 
             read_patch.assert_called_once_with(addr=0,
                                                width=self.dut.width,
                                                accesswidth=self.dut.accesswidth)
             write_patch.assert_called_once_with(addr=0,
                                                width=self.dut.width,
-                                               accesswidth=self.dut.accesswidth, data=0)
+                                               accesswidth=self.dut.accesswidth, data=1)
 
         # check the `skip_write` works as expected, this will however raise an deprecation warning
         # and the feature will be removed at some point in the future
@@ -343,7 +345,7 @@ class TestReadWrite(RegTestBase):
                 patch.object(self.callbacks, 'write_callback',
                              side_effect=self.write_addr_space) as write_patch:
 
-            with self.dut.single_read_modify_write(skip_write=True) as reg:
+            with self.dut.single_read() as reg:
                 _ = reg.field.read()
                 _ = reg.field.read()
 
@@ -358,11 +360,10 @@ class TestReadWrite(RegTestBase):
                 patch.object(self.callbacks, 'write_callback',
                              side_effect=self.write_addr_space) as write_patch:
 
-            with self.dut.single_read_modify_write(skip_write=True) as reg:
+            with self.dut.single_read() as reg:
                 self.assertEqual(reg.field.read(), False)
-                self.assertEqual(reg.field.read(), False)
-                reg.field.write(True)
-                self.assertEqual(reg.field.read(), True)
+                with self.assertRaises(RuntimeError):
+                    reg.field.write(True)
 
             read_patch.assert_called_once_with(addr=0,
                                                width=self.dut.width,

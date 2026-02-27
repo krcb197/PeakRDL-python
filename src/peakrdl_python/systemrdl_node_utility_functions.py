@@ -421,7 +421,7 @@ def get_field_default_value(node: FieldNode) -> Optional[int]:
         return value
 
     if isinstance(value, (FieldNode, SignalNode)):
-        # if the node resets to an external external signal or value of another field, there is no
+        # if the node resets to an external signal or value of another field, there is no
         # knowledge the code can have of this state and it gets treated as None
         return None
 
@@ -500,3 +500,18 @@ def simulator_field_definition(node: FieldNode) -> str:
         return FieldType.WRITEONLY.name
 
     raise RuntimeError('Encountered a field node that was neither readable or writable')
+
+def node_iterator_entry(node: AddressableNode) -> str:
+    """
+    The NodeIterators in the lib_test requires all the children of a node to be presented in the
+    following format:
+    - non-array node: str of the name inst name from the system RDL
+    - array node: a tuple with the inst name and the length
+    """
+    if node.is_array:
+        dimensions = node.array_dimensions
+        if dimensions is None:
+            raise RuntimeError('array node should have dimensions')
+        return f"('{node.inst_name}', {str(dimensions)})"
+
+    return "'" + node.inst_name + "'"

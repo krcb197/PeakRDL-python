@@ -75,9 +75,9 @@ assumes that peakrdl has been installed.
 To make use of the RAL with real hardware or a different simulation, the callbacks will need to be 
 connected to the appropriate access function in order to perform an address space reads and writes 
 
-# Upgrading from previous versions (some important changes)
+# Some important changes
 
-## Upgrading from pre 0.9.0
+## 0.9.0
 
 In order to address a major limitation of peakrdl-python that prevented it from implementing the
 full systemRDL specification, a breaking API change was needed for handling blocks:
@@ -88,7 +88,7 @@ Users are encouraged to upgrade in order to avoid this limitation. However, ther
 to support users with existing designs, see: _Legacy Block Callback and Block Access_ in the 
 documentation
 
-## Upgrading from pre 1.2.0
+## 1.2.0
 
 Version 1.2 introduced a new way to define the enumerations for the field encoding. This allows 
 metadata from the systemRDL to propagate through to the generated code. This may break advanced 
@@ -96,7 +96,7 @@ usage of the python enumerations. User are encouraged to use the new feature, ho
 are problems with the old enumeration types (based on `IntEnum`) can be used, see 
 _Legacy Enumeration Types_ in the documentation
 
-## Upgrading from pre 2.0.0
+## 2.0.0
 
 Version 2.0.0 introduced a significant change to the process for building the register model python
 code. This change was intended to reduce the size of the generated code by only generating 
@@ -113,5 +113,21 @@ changing each time it was regenerated, version 2.1.0 introduces a option to eith
 * Use the `SHA256` hash from the python `hashlib` standard library, this may slow down the export 
   of large register models but will be consistent, therefore is useful if the resultant code is being
   checked into a version control system (such as GIT) and the differences are being reviewed
+
+## 3.0.0
+
+Version 3.0.0 has included a significant refactoring of the generated test cases, moving functions out
+of the templates (generated code) in favour of an enhanced test library. On some cases, this 
+reduced the size of the test case generated code by 90%, significantly improved the time to generate
+the code and also improved the time to run the tests by a 30% reduction.
+
+In preparation for the removal of some legacy features from the early versions in release 4.0.0, 
+the following options were changed:
+- Version 1.2 introduced a new custom enumeration type (rather than using `IntEnum`) in order to allow
+  the content to `name` and `desc` systemRDL properties in be accessible. Until version 3.0.0 the new
+  type was not the default, it now is. The old enumeration types can still be used by setting `legacy_enum_type`.
+- The first versions of PeakRDL Python used the built-in `Array` type for accessing blocks of data efficiently.
+  This had some restrictions, so the a new methodology based on the `list` type was introduced in version 0.9.
+  The old array based behaviour is no longer the default but can be turned on using the `legacy_block_access`
 
 

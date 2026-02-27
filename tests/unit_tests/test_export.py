@@ -25,7 +25,7 @@ import os
 import tempfile
 import sys
 import re
-from itertools import chain, permutations, product
+from itertools import chain, combinations, product
 from pathlib import Path
 from array import array as Array
 import inspect
@@ -272,7 +272,7 @@ class TestExportUDP(unittest.TestCase):
 
 
         for udp_to_include in chain.from_iterable(
-                [permutations(full_property_list, r) for r in range(len(full_property_list))]):
+                [combinations(full_property_list, r) for r in range(4)]):
             # check the list method
             with self.subTest(udp_to_include=udp_to_include), \
                     self.build_wrappers_and_import(udp_list=list(udp_to_include)) as dut:

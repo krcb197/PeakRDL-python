@@ -46,7 +46,8 @@ from .systemrdl_node_utility_functions import get_reg_writable_fields, \
     get_memory_max_entry_value_hex_string, get_memory_width_bytes, \
     get_field_default_value, get_enum_values, get_properties_to_include, \
     HideNodeCallback, hide_based_on_property, \
-    full_slice_accessor, ShowUDPCallback, simulator_field_definition
+    full_slice_accessor, ShowUDPCallback, \
+    node_iterator_entry, simulator_field_definition
 from .unique_component_iterator import UniqueComponents
 from .unique_component_iterator import PeakRDLPythonUniqueRegisterComponents
 from .unique_component_iterator import PeakRDLPythonUniqueMemoryComponents
@@ -867,7 +868,8 @@ class PythonExporter:
                 'get_properties_to_include': get_properties_to_include,
                 'hide_node_func': hide_node_func,
                 'legacy_enum_type': legacy_enum_type,
-                'skip_systemrdl_name_and_desc_properties': skip_systemrdl_name_and_desc_properties
+                'skip_systemrdl_name_and_desc_properties': skip_systemrdl_name_and_desc_properties,
+                'node_iterator_entry': node_iterator_entry,
             }
 
             self.__stream_jinja_template(template_name="addrmap_tb.py.jinja",
@@ -951,12 +953,12 @@ class PythonExporter:
                skip_test_case_generation: bool = False,
                delete_existing_package_content: bool = True,
                skip_library_copy: bool = False,
-               legacy_block_access: bool = True,
+               legacy_block_access: bool = False,
                show_hidden: bool = False,
                user_defined_properties_to_include: Optional[list[str]] = None,
                user_defined_properties_to_include_regex: Optional[str] = None,
                hidden_inst_name_regex: Optional[str] = None,
-               legacy_enum_type: bool = True,
+               legacy_enum_type: bool = False,
                skip_systemrdl_name_and_desc_properties: bool = False,
                skip_systemrdl_name_and_desc_in_docstring: bool = False,
                register_class_per_generated_file: int =
@@ -1011,6 +1013,7 @@ class PythonExporter:
             legacy_enum_type: version 1.2 introduced a new Enum type that allows system
                               rdl ``name`` and ``desc`` properties on field encoding
                               to be included. The legacy mode uses python IntEnum.
+                              .. version-deprecated:: 3.0
             skip_systemrdl_name_and_desc_properties (bool) : version 1.2 introduced new properties
                                                              that include the systemRDL name and
                                                              desc as properties of the built
@@ -1053,6 +1056,16 @@ class PythonExporter:
         Returns:
             modules that have been exported:
         """
+        if legacy_enum_type:
+            warnings.warn('legacy_enum_type is deprecated and '
+                          'will be removed from a future version please try the new mode',
+                          category=DeprecationWarning)
+
+        if legacy_block_access:
+            warnings.warn('legacy_block_access is deprecated and '
+                          'will be removed from a future version please try the new mode',
+                          category=DeprecationWarning)
+
 
         # If it is the root node, skip to top addrmap
         if isinstance(node, RootNode):

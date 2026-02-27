@@ -293,6 +293,22 @@ class BaseSimulator(ABC):
 
         raise ValueError(f'field name not matched: {name}')
 
+    def memory_by_full_name(self, name: str) -> Memory:
+        """
+        Find a memory in the simulator by its fully qualified name
+
+        Args:
+            name: fully qualified field name
+
+        Returns: Field
+
+        """
+        for mem in self._memories:
+            if mem.memory.full_inst_name == name:
+                return mem.memory
+
+        raise ValueError(f'Memory name not matched: {name}')
+
     def node_by_full_name(self, name: str) -> Union[Memory, MemoryRegister, Register, Field]:
         """
         Find a node in the simulator by its fully qualified name

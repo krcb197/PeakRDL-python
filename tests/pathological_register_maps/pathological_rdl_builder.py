@@ -17,6 +17,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 The file is used for making pathological system RDL files for stress testing the tool
 """
+import argparse
 import os
 from typing import Optional
 from pathlib import Path
@@ -232,7 +233,17 @@ class PathologicalRDL:
                                               name_prefix='top_level_addr')
 
 
+CommandLineParser = argparse.ArgumentParser(
+    description='Generate a pathological system RDL file to test the generator')
+CommandLineParser.add_argument('output_filename', type=Path,
+                               help='Filename of the systemRDL file to generate')
+CommandLineParser.add_argument('addrmap_name', type=str,
+                               help='Name of the top level address map')
+
 if __name__ == '__main__':
 
+    CommandLineArgs = CommandLineParser.parse_args()
+
     generator = PathologicalRDL()
-    generator.export_code(Path('deep.rdl'), addrmap_name='deep')
+    generator.export_code(CommandLineArgs.output_filename,
+                          addrmap_name=CommandLineArgs.addrmap_name)

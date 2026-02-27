@@ -346,8 +346,7 @@ class RegAsyncReadWrite(RegAsyncReadOnly, RegAsyncWriteOnly, ABC):
     # pylint: enable=too-many-arguments, duplicate-code
 
     @asynccontextmanager
-    async def single_read_modify_write(self, verify: bool = False, skip_write: bool = False) -> \
-            AsyncGenerator[Self]:
+    async def single_read_modify_write(self, verify: bool = False) -> AsyncGenerator[Self]:
         """
         Context manager to allow multiple field reads/write to be done with a single set of
         field operations
@@ -361,11 +360,6 @@ class RegAsyncReadWrite(RegAsyncReadOnly, RegAsyncWriteOnly, ABC):
         if self.__in_read_context_manager:
             raise RuntimeError('using the `single_read_modify_write` context manager within the '
                                'single_read` is not permitted')
-
-        if skip_write is True:
-            warn('The `skip_write` argument will be removed in the future, use `single_read`'
-                 ' instead',
-                 DeprecationWarning, stacklevel=2)
         # pylint: enable=duplicate-code
 
         self.__register_state = await self.read()
@@ -379,15 +373,13 @@ class RegAsyncReadWrite(RegAsyncReadOnly, RegAsyncWriteOnly, ABC):
         finally:
             self.__in_read_write_context_manager = False
         # pylint: enable=duplicate-code
-        if not skip_write:
-            await self.write(self.__register_state, verify)
+        await self.write(self.__register_state, verify)
 
         # clear the register states at the end of the context manager
         self.__register_state = None
 
     @asynccontextmanager
-    async def single_read(self) -> \
-            AsyncGenerator[Self]:
+    async def single_read(self) -> AsyncGenerator[Self]:
         """
         Context manager to allow multiple field reads with a single register read
         """
