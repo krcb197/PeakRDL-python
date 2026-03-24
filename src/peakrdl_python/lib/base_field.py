@@ -404,7 +404,7 @@ class _FieldReadOnlyFramework(Field[FieldType], ABC):
                              'than or equal to 0')
 
         if value > self.__parent_register.max_value:
-            raise ValueError(f'value to bede coded must be less than or equal '
+            raise ValueError(f'value to be decoded must be less than or equal '
                              f'to {self.__parent_register.max_value:d}')
 
         if self.msb0 is False:
