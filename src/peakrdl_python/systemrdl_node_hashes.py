@@ -168,7 +168,11 @@ def __node_hash_components(node: Node,
             value_to_hash.append(desc)
 
     for udp in get_properties_to_include(node, udp_include_func):
-        value_to_hash.append(node.get_property(udp))
+        udp_value = node.get_property(udp)
+        if isinstance(udp_value, list):
+            value_to_hash.append(tuple(udp_value))
+        else:
+            value_to_hash.append(udp_value)
 
     return value_to_hash
 

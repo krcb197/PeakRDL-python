@@ -256,7 +256,10 @@ class TestExportUDP(unittest.TestCase):
                               'struct_property_to_include',
                               'enum_property_to_include',
                               'int_property_to_include',
-                              'str_property_to_include']
+                              'str_property_to_include',
+                              'int_array_property_to_include',
+                              'str_array_property_to_include',
+                              'enum_array_property_to_include']
         def check_udp_present(dut, udp_to_include:list[str]) -> None:
             for udp in full_property_list:
                 if udp in udp_to_include:
