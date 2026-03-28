@@ -27,6 +27,8 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
     '{{name}}' : {{ type(value).type_name + '_property_enumcls.' + value.name.upper() }} ,
     {% elif isinstance(value, str) %}
     '{{name}}' : "{{ value }}" ,
+    {% elif isinstance(value, systemrdlFieldNode) %}
+    '{{name}}' : self._traverse_from_fully_qualified_name({{ value.get_path_segments() }}) ,
     {% else %}
     '{{name}}' : {{ value }} ,
     {% endif %}

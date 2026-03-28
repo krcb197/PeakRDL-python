@@ -1,0 +1,31 @@
+/*
+Testcase the #292 bug
+with a UDP that cross-references another
+*/
+property field_pointer {
+    type = field;
+    component = field;
+};
+
+property register_pointer {
+    type = reg;
+    component = reg;
+};
+
+addrmap udp_with_referencing {
+    reg {
+        field {
+            hw = rw;
+            sw = rw;
+        } value;
+    } view;
+
+    reg {
+        field {
+            hw = rw;
+            sw = rw;
+        } value;
+    } pointer;
+
+    view.value->field_pointer = pointer.value;
+};

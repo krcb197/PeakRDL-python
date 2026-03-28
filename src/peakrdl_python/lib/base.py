@@ -97,6 +97,35 @@ class Base(ABC):
         """
         return {}
 
+    def _traverse_from_fully_qualified_name(self, fully_qualified_name: list[str]) -> 'Base':
+        """
+        This method allows another node in the structure to located based on a list of string
+        which represented the systemRDL path.
+
+        This function is intended for use with UDPs which reference other UDPs
+        """
+
+        # 1) location the root node by walking backwards up the tree until the parent is
+        #    found
+        def locate_root(node: 'Base') -> 'Base':
+            if node.parent is None:
+                return node
+            return locate_root(node.parent)
+        root_node = locate_root(self)
+        # 2) check the 1st entry in the list matches the name of the root
+        if root_node.inst_name != fully_qualified_name[0]:
+            raise RuntimeError('root node name mismatch')
+        # 3) start walking down the tree matching the nodes
+        walking_node = root_node
+        for node_name in fully_qualified_name[1:]:
+            if not isinstance(walking_node, Node):
+                # the current node being traversed must be a Node type i.e. not a field
+                raise RuntimeError('node traversal has failed as type:{type(walking_node)} was'
+                                   ' unexpectedly encountered')
+            walking_node = walking_node.get_child_by_system_rdl_name(node_name)
+
+        return walking_node
+
     @property
     def rdl_name(self) -> Optional[str]:
         """

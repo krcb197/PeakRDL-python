@@ -168,7 +168,12 @@ def __node_hash_components(node: Node,
             value_to_hash.append(desc)
 
     for udp in get_properties_to_include(node, udp_include_func):
-        value_to_hash.append(node.get_property(udp))
+        udp_value = node.get_property(udp)
+        # systemRDL supports UDPs that cross-reference other parts of the register model
+        if isinstance(udp_value, Node):
+            value_to_hash.append('.'.join(udp_value.get_path_segments()))
+        else:
+            value_to_hash.append(node.get_property(udp))
 
     return value_to_hash
 
