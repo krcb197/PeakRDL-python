@@ -167,14 +167,18 @@ def __node_hash_components(node: Node,
         if desc is not None:
             value_to_hash.append(desc)
 
+    def udp_replace_for_hashing(item):
+        if isinstance(item, list):
+            for child_udp_value in item:
+                udp_replace_for_hashing(child_udp_value)
+        elif isinstance(item, Node):
+            value_to_hash.append('.'.join(item.get_path_segments()))
+        else:
+            value_to_hash.append(item)
+
     for udp in get_properties_to_include(node, udp_include_func):
         udp_value = node.get_property(udp)
-        if isinstance(udp_value, list):
-            value_to_hash.append(tuple(udp_value))
-        elif isinstance(udp_value, Node):
-            value_to_hash.append('.'.join(udp_value.get_path_segments()))
-        else:
-            value_to_hash.append(udp_value)
+        udp_replace_for_hashing(udp_value)
 
     return value_to_hash
 

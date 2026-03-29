@@ -587,6 +587,7 @@ class PythonExporter:
                 context = {
                     'top_node': top_block,
                     'systemrdlFieldNode': FieldNode,
+                    'systemrdlRegNode': RegNode,
                     'systemrdlUserStruct': UserStruct,
                     'systemrdlUserEnum': UserEnum,
                     'isinstance': isinstance,

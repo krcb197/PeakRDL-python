@@ -12,20 +12,79 @@ property register_pointer {
     component = reg;
 };
 
+property register_file_pointer {
+    type = regfile;
+    component = regfile;
+};
+
+property field_parent_pointer {
+    type = reg;
+    component = field;
+};
+
+property register_child_pointer {
+    type = field[];
+    component = reg;
+};
+
+struct addrmap_child {
+    regfile regfile_children[];
+    reg reg_children[];
+    addrmap addrmap_children[];
+};
+
+property addrmap_child_pointer {
+    type = addrmap_child;
+    component = addrmap;
+};
+
+struct regfile_child {
+    regfile regfile_children[];
+    reg reg_children[];
+};
+
+property regfile_child_pointer {
+    type = regfile_child;
+    component = regfile;
+};
+
 addrmap udp_with_referencing {
-    reg {
-        field {
-            hw = rw;
-            sw = rw;
-        } value;
-    } view;
 
-    reg {
-        field {
-            hw = rw;
-            sw = rw;
-        } value;
-    } pointer;
+    reg reg_def {
+        field { fieldwidth=4; } field_a;
+        field { fieldwidth=4; } field_b;
+        field { fieldwidth=4; } field_c;
+        field { fieldwidth=4; } field_d;
+        register_child_pointer = '{ field_a, field_b, field_c, field_d } ;
+    };
 
-    view.value->field_pointer = pointer.value;
+    regfile regfile_def {
+        regfile inner_regfile_def {
+            reg_def reg_value;
+            regfile_child_pointer = regfile_child'{ reg_children:'{ reg_value } };
+        };
+        reg_def reg_value;
+        inner_regfile_def inner_regfile_value;
+        regfile_child_pointer = regfile_child'{ reg_children:'{ reg_value }, regfile_children:'{ inner_regfile_value } };
+    };
+
+    addrmap addrmap_def {
+        addrmap inner_addrmap_def {
+            reg_def reg_value;
+            regfile_def regfile_value;
+            addrmap_child_pointer = addrmap_child'{ reg_children:'{ reg_value }, regfile_children:'{ regfile_value } };
+        };
+        reg_def reg_value;
+        regfile_def regfile_value;
+        inner_addrmap_def addrmap_value;
+        addrmap_child_pointer = addrmap_child'{ reg_children:'{ reg_value }, regfile_children:'{ regfile_value }, addrmap_children:'{ addrmap_value } };
+    };
+
+    addrmap_def main;
+    addrmap_def view;
+
+    view.reg_value.field_a->field_pointer = main.reg_value.field_a;
+    view.reg_value.field_a->field_parent_pointer = main.reg_value;
+
+    view.reg_value->register_pointer = main.reg_value;
 };

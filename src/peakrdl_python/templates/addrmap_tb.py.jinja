@@ -98,9 +98,9 @@ class {{fq_block_name}}_single_access({{top_node.inst_name}}_TestCase): # type: 
                 {% for property_name in property_list %}
                 {% set property_value = node.get_property(property_name) %}
                     {% if isinstance(property_value, list) %}
-            self.assertEqual(self.dut.{{'.'.join(get_python_path_segments(node))}}.udp['{{property_name}}'], [{% for sub_property_value in property_value %}{{ udp_property_entry(sub_property_value) }},{% endfor %}] )
+            self.assertEqual(self.dut.{{'.'.join(get_python_path_segments(node))}}.udp['{{property_name}}'], [{% for sub_property_value in property_value %}{{ udp_property_entry(sub_property_value, true) }},{% endfor %}] )
                     {% else %}
-            self.assertEqual(self.dut.{{'.'.join(get_python_path_segments(node))}}.udp['{{property_name}}'], {{ udp_property_entry(property_value) }} )
+            self.assertEqual(self.dut.{{'.'.join(get_python_path_segments(node))}}.udp['{{property_name}}'], {{ udp_property_entry(property_value, true) }} )
                     {% endif %}
                 {% endfor %}
             {% endif %}
