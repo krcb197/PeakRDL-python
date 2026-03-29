@@ -143,7 +143,7 @@ def __node_hash_components(node: Node,
                            udp_include_func: ShowUDPCallback,
                            include_name_and_desc: bool = True) -> list[Any]:
 
-    value_to_hash = []
+    value_to_hash:list[Any] = []
 
     if isinstance(node, FieldNode):
         value_to_hash.append('Field')
@@ -169,11 +169,12 @@ def __node_hash_components(node: Node,
 
     for udp in get_properties_to_include(node, udp_include_func):
         udp_value = node.get_property(udp)
-        # systemRDL supports UDPs that cross-reference other parts of the register model
-        if isinstance(udp_value, Node):
+        if isinstance(udp_value, list):
+            value_to_hash.append(tuple(udp_value))
+        elif isinstance(udp_value, Node):
             value_to_hash.append('.'.join(udp_value.get_path_segments()))
         else:
-            value_to_hash.append(node.get_property(udp))
+            value_to_hash.append(udp_value)
 
     return value_to_hash
 
