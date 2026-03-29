@@ -167,7 +167,7 @@ def __node_hash_components(node: Node,
         if desc is not None:
             value_to_hash.append(desc)
 
-    def udp_replace_for_hashing(item):
+    def udp_replace_for_hashing(item: Any) -> None:
         if isinstance(item, list):
             for child_udp_value in item:
                 udp_replace_for_hashing(child_udp_value)
