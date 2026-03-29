@@ -30,6 +30,7 @@ property register_child_pointer {
 struct addrmap_child {
     regfile regfile_children[];
     reg reg_children[];
+    mem mem_children[];
     addrmap addrmap_children[];
 };
 
@@ -68,6 +69,13 @@ addrmap udp_with_referencing {
         regfile_child_pointer = regfile_child'{ reg_children:'{ reg_value }, regfile_children:'{ inner_regfile_value } };
     };
 
+    mem mem_def {
+        mementries = 32;
+        memwidth = 32;
+
+        reg_def reg_value;
+    };
+
     addrmap addrmap_def {
         addrmap inner_addrmap_def {
             reg_def reg_value;
@@ -76,8 +84,9 @@ addrmap udp_with_referencing {
         };
         reg_def reg_value;
         regfile_def regfile_value;
+        external mem_def mem_value;
         inner_addrmap_def addrmap_value;
-        addrmap_child_pointer = addrmap_child'{ reg_children:'{ reg_value }, regfile_children:'{ regfile_value }, addrmap_children:'{ addrmap_value } };
+        addrmap_child_pointer = addrmap_child'{ reg_children:'{ reg_value }, regfile_children:'{ regfile_value }, addrmap_children:'{ addrmap_value }, mem_children:'{ mem_value } };
     };
 
     addrmap_def main;
