@@ -243,6 +243,7 @@ class PythonExporter:
             'asyncoutput': asyncoutput,
             'isinstance': isinstance,
             'str': str,
+            'list': list,
             'uses_enum': uses_enum(top_block),
             'get_fully_qualified_type_name': partial(
                 unique_component_walker.python_class_name,
@@ -422,6 +423,7 @@ class PythonExporter:
                     'isinstance': isinstance,
                     'type': type,
                     'str': str,
+                    'list': list,
                     'asyncoutput': asyncoutput,
                     'unique_registers': unique_register_subset,
                     'unique_property_enums':
@@ -519,6 +521,7 @@ class PythonExporter:
                     'isinstance': isinstance,
                     'type': type,
                     'str': str,
+                    'list' : list,
                     'asyncoutput': asyncoutput,
                     'unique_memories': unique_memory_subset,
                     'unique_property_enums':
@@ -589,6 +592,7 @@ class PythonExporter:
                     'isinstance': isinstance,
                     'type': type,
                     'str': str,
+                    'list': list,
                     'asyncoutput': asyncoutput,
                     'unique_fields': unique_fields_subset,
                     'unique_property_enums':
@@ -845,6 +849,7 @@ class PythonExporter:
                 'isinstance': isinstance,
                 'type': type,
                 'str': str,
+                'list': list,
                 'full_slice_accessor': full_slice_accessor,
                 'get_python_path_segments': get_python_path_segments,
                 'safe_node_name': safe_node_name,

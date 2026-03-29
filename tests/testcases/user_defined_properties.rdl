@@ -7,6 +7,7 @@ enum property_enum {
 
 enum inner_property_enum {
 			value0 = 0 { name = "Value 1"; };
+			value10 = 1 { name = "Value 10"; };
 		};
 
 struct property_struct {
@@ -18,6 +19,7 @@ struct property_struct {
 
 struct property_outer_struct {
     boolean a_bool;
+    longint unsigned num_array[];
     property_struct inner_struct;
 };
 
@@ -32,6 +34,7 @@ property int_property_to_exclude { type = number; component = addrmap | regfile 
 property int_array_property_to_include { component = addrmap | regfile | reg | field | mem; type = longint unsigned[] ; } ;
 property str_array_property_to_include { component = addrmap | regfile | reg | field | mem; type = string[] ; } ;
 property enum_array_property_to_include { type = property_enum[]; component = addrmap | regfile | reg | field | mem; };
+property struct_array_property_to_include { type = property_struct[]; component = addrmap | regfile | reg | field | mem; };
 
 addrmap user_defined_properties {
 
@@ -43,12 +46,14 @@ addrmap user_defined_properties {
         enum_property_to_include = property_enum::value1;
         str_property_to_include = "invalid";
         struct_property_to_include = property_struct'{a_bool:true, a_string:"hello", a_number:10, a_enum:inner_property_enum::value0};
-        double_layer_struct_property_to_include = property_outer_struct'{a_bool:true, inner_struct:property_struct'{a_bool:true, a_string:"inner", a_number:11, a_enum:inner_property_enum::value0} };
+        double_layer_struct_property_to_include = property_outer_struct'{a_bool:true, num_array:'{ 1, 2, 3 } ,inner_struct:property_struct'{a_bool:true, a_string:"inner", a_number:11, a_enum:inner_property_enum::value0} };
         int_property_to_include = 10;
         int_property_to_exclude = 15;
         int_array_property_to_include = '{ 2, 34, 73 } ;
         str_array_property_to_include = '{ "foo", "bar" } ;
         enum_array_property_to_include = '{ property_enum::value1, property_enum::value2 };
+        struct_array_property_to_include = '{ property_struct'{a_bool:true,  a_string:"hello",   a_number:10, a_enum:inner_property_enum::value0},
+                                              property_struct'{a_bool:false, a_string:"goodbye", a_number:11, a_enum:inner_property_enum::value10} };
     };
 
     reg register_with_properties {
