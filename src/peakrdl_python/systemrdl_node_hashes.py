@@ -143,7 +143,7 @@ def __node_hash_components(node: Node,
                            udp_include_func: ShowUDPCallback,
                            include_name_and_desc: bool = True) -> list[Any]:
 
-    value_to_hash = []
+    value_to_hash:list[Any] = []
 
     if isinstance(node, FieldNode):
         value_to_hash.append('Field')
