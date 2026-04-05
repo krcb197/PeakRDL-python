@@ -49,6 +49,11 @@ property regfile_child_pointer {
     component = regfile;
 };
 
+property mem_child_pointer {
+    type = reg[];
+    component = mem;
+};
+
 addrmap udp_with_referencing {
 
     reg reg_def {
@@ -74,6 +79,7 @@ addrmap udp_with_referencing {
         memwidth = 32;
 
         reg_def reg_value;
+        mem_child_pointer = '{ reg_value } ;
     };
 
     addrmap addrmap_def {
@@ -83,10 +89,10 @@ addrmap udp_with_referencing {
             addrmap_child_pointer = addrmap_child'{ reg_children:'{ reg_value }, regfile_children:'{ regfile_value } };
         };
         reg_def reg_value;
-        regfile_def regfile_value;
+        regfile_def addrmap_regfile_value;
         external mem_def mem_value;
         inner_addrmap_def addrmap_value;
-        addrmap_child_pointer = addrmap_child'{ reg_children:'{ reg_value }, regfile_children:'{ regfile_value }, addrmap_children:'{ addrmap_value }, mem_children:'{ mem_value } };
+        addrmap_child_pointer = addrmap_child'{ reg_children:'{ reg_value }, regfile_children:'{ addrmap_regfile_value }, addrmap_children:'{ addrmap_value }, mem_children:'{ mem_value } };
     };
 
     addrmap_def main;
@@ -96,4 +102,13 @@ addrmap udp_with_referencing {
     view.reg_value.field_a->field_parent_pointer = main.reg_value;
 
     view.reg_value->register_pointer = main.reg_value;
+
+    reg basic_reg_def {
+        // a register def without any UDPs
+        field { fieldwidth=4; } field_a;
+    };
+
+    basic_reg_def basic_reg_array[3];
+    main.addrmap_value.reg_value -> register_pointer = basic_reg_array[0];
+    main.addrmap_value.regfile_value.reg_value -> register_pointer = basic_reg_array[1];
 };

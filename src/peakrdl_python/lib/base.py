@@ -26,11 +26,14 @@ from abc import ABC, abstractmethod
 from itertools import product
 from enum import IntEnum, Enum, auto
 import math
+import re
 
 from .callbacks import CallbackSet, CallbackSetLegacy
 
 UDPStruct = dict[str, 'UDPType']
 UDPType = Union[str, int, bool, IntEnum, UDPStruct]
+
+array_instance_re = re.compile(r'(?P<root_name>[A-Za-z_0-9]*)\[(?P<index>\d+)\]')
 
 class Base(ABC):
     """
@@ -229,6 +232,18 @@ class Node(Base ,ABC):
         """
         if not isinstance(name, str):
             raise TypeError(f'name must be a string got {type(name)}')
+
+        # check if an array style child pointer
+        array_name_match = array_instance_re.match(name)
+        if array_name_match:
+            root_name = array_name_match.group("root_name")
+            index = int(array_name_match.group("index"))
+            child_array = getattr(self, self.systemrdl_python_child_name_map[root_name])
+            if not isinstance(child_array, NodeArray):
+                raise ValueError('attempting to use array indexing into a non-array '
+                                 f'node: {root_name} of type:{type(child_array)}')
+            return child_array[index]
+
         return getattr(self, self.systemrdl_python_child_name_map[name])
 
     @property
