@@ -1,0 +1,20 @@
+
+
+
+property register_child_pointer {
+    type = field[];
+    component = reg;
+};
+
+addrmap heterogeneous_array_udp {
+
+     reg reg_def {
+        field { fieldwidth=4; } field_a;
+        field { fieldwidth=4; } field_b;
+        field { fieldwidth=4; } field_c;
+        field { fieldwidth=4; } field_d;
+        register_child_pointer = '{ field_a, field_b, field_c, field_d } ;
+     };
+
+     reg_def reg_array[2];
+};
