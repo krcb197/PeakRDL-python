@@ -26,11 +26,14 @@ from abc import ABC, abstractmethod
 from itertools import product
 from enum import IntEnum, Enum, auto
 import math
+import re
 
 from .callbacks import CallbackSet, CallbackSetLegacy
 
 UDPStruct = dict[str, 'UDPType']
 UDPType = Union[str, int, bool, IntEnum, UDPStruct]
+
+array_instance_re = re.compile(r'(?P<root_name>[A-Za-z_0-9]*)\[(?P<index>\d+)\]')
 
 class Base(ABC):
     """
@@ -96,6 +99,35 @@ class Base(ABC):
         A dictionary of the user defined properties for the node
         """
         return {}
+
+    def _traverse_from_fully_qualified_name(self, fully_qualified_name: list[str]) -> 'Base':
+        """
+        This method allows another node in the structure to located based on a list of string
+        which represented the systemRDL path.
+
+        This function is intended for use with UDPs which reference other UDPs
+        """
+
+        # 1) location the root node by walking backwards up the tree until the parent is
+        #    found
+        def locate_root(node: 'Base') -> 'Base':
+            if node.parent is None:
+                return node
+            return locate_root(node.parent)
+        root_node = locate_root(self)
+        # 2) check the 1st entry in the list matches the name of the root
+        if root_node.inst_name != fully_qualified_name[0]:
+            raise RuntimeError('root node name mismatch')
+        # 3) start walking down the tree matching the nodes
+        walking_node = root_node
+        for node_name in fully_qualified_name[1:]:
+            if not isinstance(walking_node, Node):
+                # the current node being traversed must be a Node type i.e. not a field
+                raise RuntimeError('node traversal has failed as type:{type(walking_node)} was'
+                                   ' unexpectedly encountered')
+            walking_node = walking_node.get_child_by_system_rdl_name(node_name)
+
+        return walking_node
 
     @property
     def rdl_name(self) -> Optional[str]:
@@ -200,6 +232,18 @@ class Node(Base ,ABC):
         """
         if not isinstance(name, str):
             raise TypeError(f'name must be a string got {type(name)}')
+
+        # check if an array style child pointer
+        array_name_match = array_instance_re.match(name)
+        if array_name_match:
+            root_name = array_name_match.group("root_name")
+            index = int(array_name_match.group("index"))
+            child_array = getattr(self, self.systemrdl_python_child_name_map[root_name])
+            if not isinstance(child_array, NodeArray):
+                raise ValueError('attempting to use array indexing into a non-array '
+                                 f'node: {root_name} of type:{type(child_array)}')
+            return child_array[index]
+
         return getattr(self, self.systemrdl_python_child_name_map[name])
 
     @property

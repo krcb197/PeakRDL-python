@@ -222,6 +222,7 @@ if __name__ == '__main__':
         skip_library_copy=not CommandLineArgs.copy_libraries,
         legacy_block_access=CommandLineArgs.legacy_block_access,
         user_defined_properties_to_include=CommandLineArgs.udp,
+        user_defined_properties_to_include_regex=CommandLineArgs.udp_regex,
         hidden_inst_name_regex=CommandLineArgs.hide_regex,
         legacy_enum_type=CommandLineArgs.legacy_enum_type,
         skip_systemrdl_name_and_desc_properties=

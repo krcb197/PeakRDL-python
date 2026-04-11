@@ -415,8 +415,11 @@ class PythonExporter:
 
                 context = {
                     'top_node': top_block,
-                    'systemrdlRegNode': RegNode,
                     'systemrdlFieldNode': FieldNode,
+                    'systemrdlRegNode': RegNode,
+                    'systemrdlRegfileNode': RegfileNode,
+                    'systemrdlAddrmapNode': AddrmapNode,
+                    'systemrdlMemNode': MemNode,
                     'systemrdlSignalNode': SignalNode,
                     'systemrdlUserStruct': UserStruct,
                     'systemrdlUserEnum': UserEnum,
@@ -513,8 +516,11 @@ class PythonExporter:
 
                 context = {
                     'top_node': top_block,
-                    'systemrdlMemNode': MemNode,
                     'systemrdlFieldNode': FieldNode,
+                    'systemrdlRegNode': RegNode,
+                    'systemrdlRegfileNode': RegfileNode,
+                    'systemrdlAddrmapNode': AddrmapNode,
+                    'systemrdlMemNode': MemNode,
                     'systemrdlSignalNode': SignalNode,
                     'systemrdlUserStruct': UserStruct,
                     'systemrdlUserEnum': UserEnum,
@@ -587,6 +593,10 @@ class PythonExporter:
                 context = {
                     'top_node': top_block,
                     'systemrdlFieldNode': FieldNode,
+                    'systemrdlRegNode': RegNode,
+                    'systemrdlRegfileNode': RegfileNode,
+                    'systemrdlAddrmapNode': AddrmapNode,
+                    'systemrdlMemNode': MemNode,
                     'systemrdlUserStruct': UserStruct,
                     'systemrdlUserEnum': UserEnum,
                     'isinstance': isinstance,

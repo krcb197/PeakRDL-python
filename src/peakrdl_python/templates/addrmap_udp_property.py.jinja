@@ -16,27 +16,33 @@ You should have received a copy of the GNU Lesser General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #}
 
-{%- macro udp_property_entry(value) %}
+{%- macro udp_property_entry(value, full_qual_resolution) %}
     {%- if isinstance(value, systemrdlUserStruct) -%}
     {
         {%- for sub_name, sub_value in value.members.items() %}
-        {{udp_property_dict_entry(sub_name, sub_value)|indent(4)}}
+        {{udp_property_dict_entry(sub_name, sub_value, full_qual_resolution)|indent(4)}}
         {%- endfor %}
     }
     {%- elif isinstance(value, systemrdlUserEnum) -%}
     {{ type(value).type_name + '_property_enumcls.' + value.name.upper() }}
     {%- elif isinstance(value, str) -%}
     "{{ value }}"
+    {%- elif isinstance(value, (systemrdlFieldNode, systemrdlRegNode, systemrdlRegfileNode, systemrdlAddrmapNode, systemrdlMemNode)) -%}
+        {%- if full_qual_resolution -%}
+    self.dut.{{'.'.join(get_python_path_segments(value))}}
+        {%- else -%}
+    self._traverse_from_fully_qualified_name({{ value.get_path_segments() }})
+        {%- endif -%}
     {%- else -%}
     {{ value }}
     {%- endif -%}
 {%- endmacro %}
 
-{%- macro udp_property_dict_entry(name, value) %}
+{%- macro udp_property_dict_entry(name, value, full_qual_resolution) %}
     {%- if isinstance(value, list) -%}
-    '{{name}}' : [ {% for sub_value in value %}{{udp_property_entry(sub_value)|indent(4)}}, {% endfor %}],
+    '{{name}}' : [ {% for sub_value in value %}{{udp_property_entry(sub_value, full_qual_resolution)}}, {% endfor %}],
     {%- else -%}
-    '{{name}}' : {{ udp_property_entry(value) }},
+    '{{name}}' : {{ udp_property_entry(value, full_qual_resolution) }},
     {%- endif %}
 {% endmacro %}
 
@@ -47,9 +53,9 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
     @property
     def udp(self) -> UDPStruct:
         return {
-            {% for property_name in property_list %}
-            {{udp_property_dict_entry(property_name, node.instance.get_property(property_name))}}
-            {% endfor %}
+            {% for property_name in property_list -%}
+            {{udp_property_dict_entry(property_name, node.instance.get_property(property_name), false)|indent(4)}}
+            {%- endfor %}
                }
 
     {% endif %}
