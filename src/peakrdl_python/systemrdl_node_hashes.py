@@ -143,7 +143,7 @@ def __node_hash_components(node: Node,
                            udp_include_func: ShowUDPCallback,
                            include_name_and_desc: bool = True) -> list[Any]:
 
-    value_to_hash = []
+    value_to_hash:list[Any] = []
 
     if isinstance(node, FieldNode):
         value_to_hash.append('Field')
@@ -167,8 +167,18 @@ def __node_hash_components(node: Node,
         if desc is not None:
             value_to_hash.append(desc)
 
+    def udp_replace_for_hashing(item: Any) -> None:
+        if isinstance(item, list):
+            for child_udp_value in item:
+                udp_replace_for_hashing(child_udp_value)
+        elif isinstance(item, Node):
+            value_to_hash.append('.'.join(item.get_path_segments()))
+        else:
+            value_to_hash.append(item)
+
     for udp in get_properties_to_include(node, udp_include_func):
-        value_to_hash.append(node.get_property(udp))
+        udp_value = node.get_property(udp)
+        udp_replace_for_hashing(udp_value)
 
     return value_to_hash
 

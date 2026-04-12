@@ -243,6 +243,7 @@ class PythonExporter:
             'asyncoutput': asyncoutput,
             'isinstance': isinstance,
             'str': str,
+            'list': list,
             'uses_enum': uses_enum(top_block),
             'get_fully_qualified_type_name': partial(
                 unique_component_walker.python_class_name,
@@ -414,14 +415,18 @@ class PythonExporter:
 
                 context = {
                     'top_node': top_block,
-                    'systemrdlRegNode': RegNode,
                     'systemrdlFieldNode': FieldNode,
+                    'systemrdlRegNode': RegNode,
+                    'systemrdlRegfileNode': RegfileNode,
+                    'systemrdlAddrmapNode': AddrmapNode,
+                    'systemrdlMemNode': MemNode,
                     'systemrdlSignalNode': SignalNode,
                     'systemrdlUserStruct': UserStruct,
                     'systemrdlUserEnum': UserEnum,
                     'isinstance': isinstance,
                     'type': type,
                     'str': str,
+                    'list': list,
                     'asyncoutput': asyncoutput,
                     'unique_registers': unique_register_subset,
                     'unique_property_enums':
@@ -511,14 +516,18 @@ class PythonExporter:
 
                 context = {
                     'top_node': top_block,
-                    'systemrdlMemNode': MemNode,
                     'systemrdlFieldNode': FieldNode,
+                    'systemrdlRegNode': RegNode,
+                    'systemrdlRegfileNode': RegfileNode,
+                    'systemrdlAddrmapNode': AddrmapNode,
+                    'systemrdlMemNode': MemNode,
                     'systemrdlSignalNode': SignalNode,
                     'systemrdlUserStruct': UserStruct,
                     'systemrdlUserEnum': UserEnum,
                     'isinstance': isinstance,
                     'type': type,
                     'str': str,
+                    'list' : list,
                     'asyncoutput': asyncoutput,
                     'unique_memories': unique_memory_subset,
                     'unique_property_enums':
@@ -584,11 +593,16 @@ class PythonExporter:
                 context = {
                     'top_node': top_block,
                     'systemrdlFieldNode': FieldNode,
+                    'systemrdlRegNode': RegNode,
+                    'systemrdlRegfileNode': RegfileNode,
+                    'systemrdlAddrmapNode': AddrmapNode,
+                    'systemrdlMemNode': MemNode,
                     'systemrdlUserStruct': UserStruct,
                     'systemrdlUserEnum': UserEnum,
                     'isinstance': isinstance,
                     'type': type,
                     'str': str,
+                    'list': list,
                     'asyncoutput': asyncoutput,
                     'unique_fields': unique_fields_subset,
                     'unique_property_enums':
@@ -845,6 +859,7 @@ class PythonExporter:
                 'isinstance': isinstance,
                 'type': type,
                 'str': str,
+                'list': list,
                 'full_slice_accessor': full_slice_accessor,
                 'get_python_path_segments': get_python_path_segments,
                 'safe_node_name': safe_node_name,
@@ -1167,7 +1182,7 @@ class PythonExporter:
         """
         enum_needed: list[UserEnumMeta] = []
 
-        def walk_property_struct_node(value: Any) -> None:
+        def walk_property_subnode(value: Any) -> None:
             if isinstance(value, UserEnum) and type(value) not in enum_needed:
                 enum_type = type(value)
                 if not isinstance(enum_type, UserEnumMeta):
@@ -1176,19 +1191,15 @@ class PythonExporter:
 
             if isinstance(value, UserStruct):
                 for sub_value in value.members.values():
-                    walk_property_struct_node(sub_value)
+                    walk_property_subnode(sub_value)
+
+            if isinstance(value, list):
+                for sub_value in value:
+                    walk_property_subnode(sub_value)
 
         for node in unique_components.nodes.values():
             for node_property_name in node.properties_to_include:
                 node_property = node.instance.get_property(node_property_name)
-                if isinstance(node_property, UserEnum) and type(node_property) not in enum_needed:
-                    enum_type = type(node_property)
-                    if not isinstance(enum_type, UserEnumMeta):
-                        raise TypeError(f'enum type should be UserEnumMeta, got {type(enum_type)}')
-                    enum_needed.append(enum_type)
-
-                if isinstance(node_property, UserStruct):
-                    for sub_value in node_property.members.values():
-                        walk_property_struct_node(sub_value)
+                walk_property_subnode(node_property)
 
         return enum_needed
