@@ -48,9 +48,6 @@ if TYPE_CHECKING:
     from .register_and_field import ReadableRegisterArray, WriteableRegisterArray
     from .async_register_and_field import ReadableAsyncRegisterArray, WriteableAsyncRegisterArray
 
-UDPStruct = dict[str, 'UDPType']
-UDPType = Union[str, int, bool, IntEnum, UDPStruct]
-
 class BaseSection(Node, Iterable[Union[Node, NodeArray]], ABC):
     """
     base class of non-async and sync sections (AddressMaps and RegFile)
