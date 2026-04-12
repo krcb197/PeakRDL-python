@@ -25,7 +25,6 @@ from typing import Optional, Union, TYPE_CHECKING,overload, Literal
 from collections.abc import Iterator, Iterable
 from abc import ABC, abstractmethod
 import sys
-from enum import IntEnum
 
 from .base import Node, NodeArray, IterationClassification
 
