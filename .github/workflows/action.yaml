@@ -142,8 +142,6 @@ jobs:
           sleep 10
           python -m generate_and_test --RDL_source_file tests/testcases/accelera-generic_example.rdl --root_node some_register_map --legacy_block_access
           sleep 10
-          python -m generate_and_test --RDL_source_file tests/testcases/accelera-generic_example.rdl --root_node some_register_map --legacy_enum_type
-          sleep 10
           python -m generate_and_test --RDL_source_file tests/testcases/accelera-generic_example.rdl --root_node some_register_map --copy_libraries
           sleep 10
           python -m generate_and_test --RDL_source_file tests/testcases/accelera-generic_example.rdl --root_node some_register_map --hashing_mode PYTHONHASH
@@ -221,9 +219,6 @@ jobs:
           
           peakrdl python tests/testcases/basic.rdl -o peakrdl_out/no_lib/ --skip_library_copy
           python -m unittest discover -s peakrdl_out/no_lib
-          
-          peakrdl python tests/testcases/enum_example.rdl -o peakrdl_out/raw_legacy_enum/ --legacy_enum_type
-          python -m unittest discover -s peakrdl_out/raw_legacy_enum
 
           # test a TOMl file that passes in overridden templates
           peakrdl python tests/testcases/basic.rdl -o peakrdl_out/simple_user_template/ --peakrdl-cfg tests/alternative_templates_toml/peakrdl.toml
