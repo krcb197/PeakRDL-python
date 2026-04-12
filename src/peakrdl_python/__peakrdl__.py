@@ -97,12 +97,6 @@ class Exporter(ExporterSubcommandPlugin):
                                     'be hidden')
         arg_group.add_argument('--skip_library_copy', action='store_true',
                                help='skip the copy of the library code into the generated package')
-        arg_group.add_argument('--legacy_enum_type', action='store_true',
-                               dest='legacy_enum_type',
-                               help='peakrdl python has two ways to define field encoding as '
-                                     'enums new method and an old method based on IntEnum. '
-                                     'Setting this to true will restore the old behaviour.'
-                                     ' This option will be removed in version 4.0')
         arg_group.add_argument('--skip_systemrdl_name_and_desc_properties', action='store_true',
                                dest='skip_systemrdl_name_and_desc_properties',
                                help='peakrdl python includes the system RDL name and desc '
@@ -190,7 +184,6 @@ class Exporter(ExporterSubcommandPlugin):
             user_defined_properties_to_include_regex=options.udp_regex,
             hidden_inst_name_regex=options.hide_regex,
             skip_library_copy=options.skip_library_copy,
-            legacy_enum_type=options.legacy_enum_type,
             skip_systemrdl_name_and_desc_properties=
                 options.skip_systemrdl_name_and_desc_properties,
             skip_systemrdl_name_and_desc_in_docstring=

@@ -30,10 +30,6 @@ import asyncio
 {% endif %}
 import unittest
 import random
-{% if legacy_enum_type %}
-from enum import IntEnum
-{% endif %}
-
 
 from {{ peakrdl_python_lib(depth=lib_depth) }} import RegisterWriteVerifyError
 {% if asyncoutput %}
@@ -66,9 +62,8 @@ from {{ peakrdl_python_lib_test(depth=lib_depth) }} import LibTestBase as TestCa
 BlockTestBase = unittest.TestCase
 {% endif %}
 
-{% if not legacy_enum_type %}
 from {{ peakrdl_python_lib(depth=lib_depth) }} import SystemRDLEnum, SystemRDLEnumEntry
-{% endif %}
+
 
 {% if asyncoutput %}async {% endif %}def read_callback(addr: int, width: int, accesswidth: int) -> int:
     return {% if asyncoutput %}await {% endif %}read_addr_space(addr=addr, width=width, accesswidth=accesswidth)
@@ -88,7 +83,7 @@ from {{ peakrdl_python_lib(depth=lib_depth) }} import SystemRDLEnum, SystemRDLEn
 {% if asyncoutput %}async {%endif %}def write_block_callback_alt(addr: int, width: int, accesswidth: int,  data: {% if not legacy_block_access %}Array{% else %}list[int]{% endif %}) -> None:
     {% if asyncoutput %}await {% endif %}write_block_addr_space_alt(addr=addr, width=width, accesswidth=accesswidth, data=data)
 
-def random_enum_reg_value(enum_class: type[{% if legacy_enum_type %}IntEnum{% else %}SystemRDLEnum{% endif %}]) -> {% if legacy_enum_type %}IntEnum{% else %}SystemRDLEnum{% endif %}:
+def random_enum_reg_value(enum_class: type[SystemRDLEnum]) -> SystemRDLEnum:
     return random.choice(list(enum_class))
 
 
