@@ -21,7 +21,6 @@ import unittest
 from typing import Optional, Union, TypeVar
 from collections.abc import Iterator
 from unittest.mock import patch, MagicMock
-from enum import IntEnum
 from itertools import product
 
 
