@@ -130,4 +130,13 @@ the following options were changed:
   This had some restrictions, so the a new methodology based on the `list` type was introduced in version 0.9.
   The old array based behaviour is no longer the default but can be turned on using the `legacy_block_access`
 
+## 4.0.0
+
+some legacy features from the early versions were removed in release 4.0.0, the following options were changed:
+- Version 1.2 introduced a new custom enumeration type (rather than using `IntEnum`) in order to allow
+  the content to `name` and `desc` systemRDL properties in be accessible. Version 4.0.0 removed the option to use `IntEnum`
+- The first versions of PeakRDL Python used the built-in `Array` type for accessing blocks of data efficiently.
+  This had some restrictions, so a new methodology based on the `list` type was introduced in version 0.9.
+  The old array based behaviour was removed in this version
+
 
