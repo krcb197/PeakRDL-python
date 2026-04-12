@@ -194,7 +194,6 @@ class PythonExporter:
                            legacy_block_access: bool,
                            udp_include_func: ShowUDPCallback,
                            hide_node_func: HideNodeCallback,
-                           legacy_enum_type: bool,
                            skip_systemrdl_name_and_desc_properties: bool,
                            skip_systemrdl_name_and_desc_in_docstring: bool,
                            register_class_per_generated_file: int,
@@ -264,7 +263,6 @@ class PythonExporter:
                 self._get_dependent_property_enum(unique_component_walker),
             'hide_node_func': hide_node_func,
             'visible_nonsignal_node' : visible_nonsignal_node,
-            'legacy_enum_type': legacy_enum_type,
             'skip_systemrdl_name_and_desc_properties': skip_systemrdl_name_and_desc_properties,
         }
         if legacy_block_access is True:
@@ -291,7 +289,6 @@ class PythonExporter:
                 asyncoutput=asyncoutput,
                 legacy_block_access=legacy_block_access,
                 hide_node_func=hide_node_func,
-                legacy_enum_type=legacy_enum_type,
                 skip_systemrdl_name_and_desc_properties=skip_systemrdl_name_and_desc_properties,
                 skip_systemrdl_name_and_desc_in_docstring=
                    skip_systemrdl_name_and_desc_in_docstring,
@@ -307,7 +304,6 @@ class PythonExporter:
             asyncoutput=asyncoutput,
             legacy_block_access=legacy_block_access,
             hide_node_func=hide_node_func,
-            legacy_enum_type=legacy_enum_type,
             skip_systemrdl_name_and_desc_properties=skip_systemrdl_name_and_desc_properties,
             skip_systemrdl_name_and_desc_in_docstring=skip_systemrdl_name_and_desc_in_docstring,
             unique_component_walker=unique_component_walker,
@@ -320,7 +316,6 @@ class PythonExporter:
             package=package,
             skip_lib_copy=skip_lib_copy,
             asyncoutput=asyncoutput,
-            legacy_enum_type=legacy_enum_type,
             skip_systemrdl_name_and_desc_properties=skip_systemrdl_name_and_desc_properties,
             skip_systemrdl_name_and_desc_in_docstring=skip_systemrdl_name_and_desc_in_docstring,
             unique_component_walker=unique_component_walker,
@@ -332,7 +327,6 @@ class PythonExporter:
                 top_block=top_block,
                 package=package,
                 skip_lib_copy=skip_lib_copy,
-                legacy_enum_type=legacy_enum_type,
                 skip_systemrdl_name_and_desc_properties=skip_systemrdl_name_and_desc_properties,
                 unique_component_walker=unique_component_walker,
                 enum_field_class_per_generated_file=enum_field_class_per_generated_file)
@@ -342,8 +336,7 @@ class PythonExporter:
             'top_node': top_block,
             'unique_property_enums':
                 self._get_dependent_property_enum(unique_component_walker),
-            'skip_lib_copy': skip_lib_copy,
-            'legacy_enum_type': legacy_enum_type,
+            'skip_lib_copy': skip_lib_copy
         }
 
         self.__stream_jinja_template(template_name="property_enums.py.jinja",
@@ -359,7 +352,6 @@ class PythonExporter:
                                      asyncoutput: bool,
                                      legacy_block_access: bool,
                                      hide_node_func: HideNodeCallback,
-                                     legacy_enum_type: bool,
                                      skip_systemrdl_name_and_desc_properties: bool,
                                      skip_systemrdl_name_and_desc_in_docstring: bool,
                                      unique_component_walker: UniqueComponents,
@@ -440,7 +432,6 @@ class PythonExporter:
                     'get_field_default_value': get_field_default_value,
                     'skip_lib_copy': skip_lib_copy,
                     'uses_enum': uses_enum(top_block),
-                    'legacy_enum_type': legacy_enum_type,
                     'legacy_block_access': legacy_block_access,
                     'skip_systemrdl_name_and_desc_properties':
                         skip_systemrdl_name_and_desc_properties,
@@ -469,7 +460,6 @@ class PythonExporter:
                                     asyncoutput: bool,
                                     legacy_block_access: bool,
                                     hide_node_func: HideNodeCallback,
-                                    legacy_enum_type: bool,
                                     skip_systemrdl_name_and_desc_properties: bool,
                                     skip_systemrdl_name_and_desc_in_docstring: bool,
                                     unique_component_walker: UniqueComponents,
@@ -541,7 +531,6 @@ class PythonExporter:
                     'get_field_default_value': get_field_default_value,
                     'skip_lib_copy': skip_lib_copy,
                     'uses_enum': uses_enum(top_block),
-                    'legacy_enum_type': legacy_enum_type,
                     'legacy_block_access': legacy_block_access,
                     'skip_systemrdl_name_and_desc_properties':
                         skip_systemrdl_name_and_desc_properties,
@@ -567,7 +556,6 @@ class PythonExporter:
                                   package: GeneratedPackage,
                                   skip_lib_copy: bool,
                                   asyncoutput: bool,
-                                  legacy_enum_type: bool,
                                   skip_systemrdl_name_and_desc_properties: bool,
                                   skip_systemrdl_name_and_desc_in_docstring: bool,
                                   unique_component_walker: UniqueComponents,
@@ -612,7 +600,6 @@ class PythonExporter:
                                                skip_systemrdl_name_and_desc_in_docstring),
                     'skip_lib_copy': skip_lib_copy,
                     'uses_enum': uses_enum(top_block),
-                    'legacy_enum_type': legacy_enum_type,
                     'skip_systemrdl_name_and_desc_properties':
                         skip_systemrdl_name_and_desc_properties,
                     'raise_template_error': self._raise_template_error,
@@ -632,7 +619,6 @@ class PythonExporter:
                                        top_block: AddrmapNode,
                                        package: GeneratedPackage,
                                        skip_lib_copy: bool,
-                                       legacy_enum_type: bool,
                                        skip_systemrdl_name_and_desc_properties: bool,
                                        unique_component_walker: UniqueComponents,
                                        enum_field_class_per_generated_file: int) -> None:
@@ -658,7 +644,6 @@ class PythonExporter:
                     'top_node': top_block,
                     'unique_enums': unique_enums_subset,
                     'skip_lib_copy': skip_lib_copy,
-                    'legacy_enum_type': legacy_enum_type,
                     'skip_systemrdl_name_and_desc_properties':
                         skip_systemrdl_name_and_desc_properties
                 }
@@ -757,15 +742,13 @@ class PythonExporter:
                             package: GeneratedPackage,
                             skip_lib_copy: bool,
                             asyncoutput: bool,
-                            legacy_block_access: bool,
-                            legacy_enum_type: bool) -> None:
+                            legacy_block_access: bool) -> None:
 
         context = {
             'top_node': top_block,
             'asyncoutput': asyncoutput,
             'skip_lib_copy': skip_lib_copy,
-            'legacy_block_access': legacy_block_access,
-            'legacy_enum_type': legacy_enum_type
+            'legacy_block_access': legacy_block_access
         }
 
         self.__stream_jinja_template(template_name="baseclass_tb.py.jinja",
@@ -787,7 +770,6 @@ class PythonExporter:
                        legacy_block_access: bool,
                        udp_include_func: ShowUDPCallback,
                        hide_node_func: HideNodeCallback,
-                       legacy_enum_type: bool,
                        skip_systemrdl_name_and_desc_properties: bool,
                        ) -> None:
 
@@ -882,7 +864,6 @@ class PythonExporter:
                 'udp_include_func': udp_include_func,
                 'get_properties_to_include': get_properties_to_include,
                 'hide_node_func': hide_node_func,
-                'legacy_enum_type': legacy_enum_type,
                 'skip_systemrdl_name_and_desc_properties': skip_systemrdl_name_and_desc_properties,
                 'node_iterator_entry': node_iterator_entry,
             }
@@ -973,7 +954,6 @@ class PythonExporter:
                user_defined_properties_to_include: Optional[list[str]] = None,
                user_defined_properties_to_include_regex: Optional[str] = None,
                hidden_inst_name_regex: Optional[str] = None,
-               legacy_enum_type: bool = False,
                skip_systemrdl_name_and_desc_properties: bool = False,
                skip_systemrdl_name_and_desc_in_docstring: bool = False,
                register_class_per_generated_file: int =
@@ -1025,10 +1005,6 @@ class PythonExporter:
             hidden_inst_name_regex: A regular expression which will hide any fully
                                     qualified instance name that matches, set to None to
                                     for this to have no effect
-            legacy_enum_type: version 1.2 introduced a new Enum type that allows system
-                              rdl ``name`` and ``desc`` properties on field encoding
-                              to be included. The legacy mode uses python IntEnum.
-                              .. version-deprecated:: 3.0
             skip_systemrdl_name_and_desc_properties (bool) : version 1.2 introduced new properties
                                                              that include the systemRDL name and
                                                              desc as properties of the built
@@ -1071,11 +1047,6 @@ class PythonExporter:
         Returns:
             modules that have been exported:
         """
-        if legacy_enum_type:
-            warnings.warn('legacy_enum_type is deprecated and '
-                          'will be removed from a future version please try the new mode',
-                          category=DeprecationWarning)
-
         if legacy_block_access:
             warnings.warn('legacy_block_access is deprecated and '
                           'will be removed from a future version please try the new mode',
@@ -1125,7 +1096,6 @@ class PythonExporter:
             legacy_block_access=legacy_block_access,
             udp_include_func=udp_include_func,
             hide_node_func=hide_node_func,
-            legacy_enum_type=legacy_enum_type,
             skip_systemrdl_name_and_desc_properties=skip_systemrdl_name_and_desc_properties,
             skip_systemrdl_name_and_desc_in_docstring=skip_systemrdl_name_and_desc_in_docstring,
             register_class_per_generated_file=register_class_per_generated_file,
@@ -1147,8 +1117,7 @@ class PythonExporter:
             # export the baseclasses for the tests
             self.__export_base_tests(top_block=top_block, package=package, asyncoutput=asyncoutput,
                                      skip_lib_copy=skip_library_copy,
-                                     legacy_block_access=legacy_block_access,
-                                     legacy_enum_type=legacy_enum_type)
+                                     legacy_block_access=legacy_block_access)
             # export the tests themselves, these are broken down to one file per addressmap
             self.__export_tests(
                 top_block=top_block, package=package, asyncoutput=asyncoutput,
@@ -1156,7 +1125,6 @@ class PythonExporter:
                 legacy_block_access=legacy_block_access,
                 udp_include_func=udp_include_func,
                 hide_node_func=hide_node_func,
-                legacy_enum_type=legacy_enum_type,
                 skip_systemrdl_name_and_desc_properties=skip_systemrdl_name_and_desc_properties)
 
         return top_block.inst_name

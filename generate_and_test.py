@@ -97,11 +97,6 @@ CommandLineParser.add_argument('--full_inst_file', dest='full_inst_file',
                                type=pathlib.Path, required=False,
                                help='export a text file with a list of the all qualified instance'
                                     'names in the systemRDL')
-CommandLineParser.add_argument('--legacy_enum_type', action='store_true',
-                               dest='legacy_enum_type',
-                               help='peakrdl python has ways to define field encoding as enums a '
-                                    'a new method and an old method based on IntEnum. Setting '
-                                    'this to true will restore the old behaviour')
 CommandLineParser.add_argument('--skip_systemrdl_name_and_desc_properties',
                                action='store_true',
                                dest='skip_systemrdl_name_and_desc_properties',
@@ -224,7 +219,6 @@ if __name__ == '__main__':
         user_defined_properties_to_include=CommandLineArgs.udp,
         user_defined_properties_to_include_regex=CommandLineArgs.udp_regex,
         hidden_inst_name_regex=CommandLineArgs.hide_regex,
-        legacy_enum_type=CommandLineArgs.legacy_enum_type,
         skip_systemrdl_name_and_desc_properties=
         CommandLineArgs.skip_systemrdl_name_and_desc_properties,
         skip_systemrdl_name_and_desc_in_docstring=

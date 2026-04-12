@@ -36,9 +36,8 @@ from unittest.mock import patch, call
 import random
 from itertools import combinations, chain
 import math
-{% if legacy_enum_type %}
 from enum import IntEnum
-{% endif %}
+
 
 from {{ peakrdl_python_lib(depth=lib_depth) }} import UnsupportedWidthError
 
@@ -68,9 +67,8 @@ from {{ peakrdl_python_lib(depth=lib_depth) }} import Memory
 from {{ peakrdl_python_lib(depth=lib_depth) }} import NodeArray
 from {{ peakrdl_python_lib(depth=lib_depth) }} import Field
 from {{ peakrdl_python_lib(depth=lib_depth) }} import Reg
-{% if not legacy_enum_type %}
 from {{ peakrdl_python_lib(depth=lib_depth) }} import SystemRDLEnum, SystemRDLEnumEntry
-{% endif %}
+
 from {{ peakrdl_python_lib_test(depth=lib_depth) }} import reverse_bits
 from {{ peakrdl_python_lib_test(depth=lib_depth) }} import NodeIterators
 
@@ -159,7 +157,7 @@ class {{fq_block_name}}_single_access({{top_node.inst_name}}_TestCase): # type: 
             {% if asyncoutput %}await {%endif %}self._single_int_field_read_and_write_test(fut=self.dut.{{'.'.join(get_python_path_segments(node))}}, is_sw_readable={{node.is_sw_readable}}, is_sw_writable={{node.is_sw_writable}})
             {%- else %}
             {% if asyncoutput %}await {%endif %}self._single_enum_field_read_and_write_test(fut=self.dut.{{'.'.join(get_python_path_segments(node))}}, # type: ignore[arg-type]
-                                                                                            is_sw_readable={{node.is_sw_readable}}, is_sw_writable={{node.is_sw_writable}}, full_enum_def={ {% for enum_entry in node.get_property('encode') %}'{{enum_entry.name.upper()}}':({{enum_entry.value}}, {% if enum_entry.rdl_name is none or legacy_enum_type or skip_systemrdl_name_and_desc_properties %}None{% else %}{{enum_entry.rdl_name | tojson}}{% endif %}, {% if enum_entry.rdl_desc is none or legacy_enum_type or skip_systemrdl_name_and_desc_properties %}None{% else %}{{enum_entry.rdl_desc | tojson}}{% endif %}),{% endfor %} })
+                                                                                            is_sw_readable={{node.is_sw_readable}}, is_sw_writable={{node.is_sw_writable}}, full_enum_def={ {% for enum_entry in node.get_property('encode') %}'{{enum_entry.name.upper()}}':({{enum_entry.value}}, {% if enum_entry.rdl_name is none or skip_systemrdl_name_and_desc_properties %}None{% else %}{{enum_entry.rdl_name | tojson}}{% endif %}, {% if enum_entry.rdl_desc is none or skip_systemrdl_name_and_desc_properties %}None{% else %}{{enum_entry.rdl_desc | tojson}}{% endif %}),{% endfor %} })
             {%- endif %}
         {%- endfor %}
 
