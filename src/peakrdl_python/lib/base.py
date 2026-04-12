@@ -31,7 +31,7 @@ import re
 from .callbacks import CallbackSet, CallbackSetLegacy
 
 UDPStruct = dict[str, 'UDPType']
-UDPType = Union[str, int, bool, IntEnum, UDPStruct]
+UDPType = Union[str, int, bool, IntEnum, UDPStruct, list['UDPType']]
 
 array_instance_re = re.compile(r'(?P<root_name>[A-Za-z_0-9]*)\[(?P<index>\d+)\]')
 

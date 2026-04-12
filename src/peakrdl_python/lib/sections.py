@@ -25,7 +25,6 @@ from typing import Optional, Union, TYPE_CHECKING,overload, Literal
 from collections.abc import Iterator, Iterable
 from abc import ABC, abstractmethod
 import sys
-from enum import IntEnum
 
 from .base import Node, NodeArray, IterationClassification
 
@@ -47,9 +46,6 @@ if TYPE_CHECKING:
     from .async_register_and_field import ReadableAsyncRegister, WritableAsyncRegister
     from .register_and_field import ReadableRegisterArray, WriteableRegisterArray
     from .async_register_and_field import ReadableAsyncRegisterArray, WriteableAsyncRegisterArray
-
-UDPStruct = dict[str, 'UDPType']
-UDPType = Union[str, int, bool, IntEnum, UDPStruct]
 
 class BaseSection(Node, Iterable[Union[Node, NodeArray]], ABC):
     """
