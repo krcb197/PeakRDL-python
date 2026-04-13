@@ -19,7 +19,6 @@ This module is intended to distributed as part of automatically generated code b
 peakrdl-python tool. It provides the base types for fields that are shared by non-async and async
 fields
 """
-from enum import IntEnum
 from typing import cast, Optional, TypeVar, Generic
 from abc import ABC
 import warnings
@@ -156,7 +155,7 @@ class FieldMiscProps:
 
 
 # The following line should be:
-# FieldType = TypeVar('FieldType', bound=int|IntEnum|SystemRDLEnum)
+# FieldType = TypeVar('FieldType', bound=int|SystemRDLEnum)
 # However, python 3.9 does not support the combination so the binding was removed
 # pylint: disable-next=invalid-name
 FieldType = TypeVar('FieldType')
@@ -214,7 +213,7 @@ class Field(Generic[FieldType], Base, ABC):
 
         self.__bitmask = calculate_bitmask(high=self.high, low=self.low)
 
-        if not issubclass(field_type, (int, IntEnum, SystemRDLEnum)):
+        if not issubclass(field_type, (int, SystemRDLEnum)):
             raise TypeError(f'Unsupported field type: {field_type}')
         self.__field_type = field_type
 
@@ -340,7 +339,7 @@ class Field(Generic[FieldType], Base, ABC):
         - if the field is not reset.
         - if the register resets to a signal value that can not be determined
         """
-        if issubclass(self._field_type, (SystemRDLEnum, IntEnum)):
+        if issubclass(self._field_type, (SystemRDLEnum)):
             int_default = self.__misc_props.default
 
             if int_default is not None:
@@ -413,7 +412,7 @@ class _FieldReadOnlyFramework(Field[FieldType], ABC):
             return_int_value = swap_msb_lsb_ordering(value=(value & self.bitmask) >> self.low,
                                                  width=self.width)
 
-        if issubclass(self._field_type, (SystemRDLEnum, IntEnum)):
+        if issubclass(self._field_type, (SystemRDLEnum)):
             return self._field_type(return_int_value) # type: ignore[return-value]
         if issubclass(self._field_type, int):
             return return_int_value # type: ignore[return-value]
@@ -470,7 +469,7 @@ class _FieldWriteOnlyFramework(Field[FieldType], ABC):
             raise TypeError(f'Field type is not as expected, got {type(value)},'
                             f' expected {self._field_type}')
 
-        if isinstance(value, (SystemRDLEnum, IntEnum)):
+        if isinstance(value, (SystemRDLEnum)):
             int_value = value.value
         elif isinstance(value, int):
             int_value = value

@@ -21,23 +21,17 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 {% from 'template_ultilities.py.jinja' import peakrdl_python_lib with context %}
 {# the following defining the number relative steps up to the lib and sim_lib packages from the current file #}
 {% set lib_depth = 3 %}
-
-{% if legacy_enum_type %}
-from enum import IntEnum
-{% endif %}
 from enum import unique
 
-{% if not legacy_enum_type %}
 from {{ peakrdl_python_lib(depth=lib_depth) }} import SystemRDLEnum, SystemRDLEnumEntry
-{% endif %}
 
 # root level enum definitions
 {%- for enum_needed in unique_enums %}
 @unique
-class {{enum_needed.python_class_name}}({% if legacy_enum_type %}IntEnum{% else %}SystemRDLEnum{% endif %}):
+class {{enum_needed.python_class_name}}(SystemRDLEnum):
 
     {% for value_of_enum_needed in enum_needed.instance -%}
-    {{ value_of_enum_needed.name.upper() }} = {% if legacy_enum_type %}{{ value_of_enum_needed.value }}{% else %}SystemRDLEnumEntry(int_value={{value_of_enum_needed.value}}, name={%- if value_of_enum_needed.rdl_name is not none and not skip_systemrdl_name_and_desc_properties -%}{{value_of_enum_needed.rdl_name | tojson}}{% else %}None{% endif %}, desc={%- if value_of_enum_needed.rdl_desc is not none and not skip_systemrdl_name_and_desc_properties -%}{{value_of_enum_needed.rdl_desc | tojson}}{% else %}None{% endif %}){% endif %}  {%- if value_of_enum_needed.rdl_desc is not none %}  # {{ value_of_enum_needed.rdl_desc }} {%- endif %}
+    {{ value_of_enum_needed.name.upper() }} = SystemRDLEnumEntry(int_value={{value_of_enum_needed.value}}, name={%- if value_of_enum_needed.rdl_name is not none and not skip_systemrdl_name_and_desc_properties -%}{{value_of_enum_needed.rdl_name | tojson}}{% else %}None{% endif %}, desc={%- if value_of_enum_needed.rdl_desc is not none and not skip_systemrdl_name_and_desc_properties -%}{{value_of_enum_needed.rdl_desc | tojson}}{% else %}None{% endif %}) {%- if value_of_enum_needed.rdl_desc is not none %}  # {{ value_of_enum_needed.rdl_desc }} {% endif %}
     {% endfor %}
 {% endfor -%}
 
