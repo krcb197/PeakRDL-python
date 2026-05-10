@@ -77,11 +77,6 @@ class Exporter(ExporterSubcommandPlugin):
                                     'However, if additional python files are added by the user '
                                     '(not recommended) this cleanup will need to be suppressed '
                                     'and managed by the user')
-        arg_group.add_argument('--legacy_block_access', action='store_true',
-                               dest='legacy_block_access',
-                               help='peakrdl python has two methods to hold blocks of data, the '
-                                    'legacy mode based on array.array or the new mode using '
-                                    'lists. This option will be removed in version 4.0')
         arg_group.add_argument('--show_hidden', action='store_true',
                                dest='show_hidden',
                                help='show addrmap, regfile, memory, register and fields that '
@@ -178,7 +173,6 @@ class Exporter(ExporterSubcommandPlugin):
             asyncoutput=options.is_async,
             skip_test_case_generation=options.skip_test_case_generation,
             delete_existing_package_content=not options.suppress_cleanup,
-            legacy_block_access=options.legacy_block_access,
             show_hidden=options.show_hidden,
             user_defined_properties_to_include=options.udp,
             user_defined_properties_to_include_regex=options.udp_regex,

@@ -26,13 +26,11 @@ from abc import ABC
 from typing import Union
 from unittest.mock import patch,  call
 from itertools import product
-from array import array as Array
-
-from ..lib import MemoryAsyncReadOnly, MemoryAsyncReadOnlyLegacy
-from ..lib import MemoryAsyncWriteOnly, MemoryAsyncWriteOnlyLegacy
-from ..lib import MemoryAsyncReadWrite, MemoryAsyncReadWriteLegacy
 
 from ..sim_lib.memory import Memory as SimMemory
+from ..lib import MemoryAsyncReadOnly
+from ..lib import MemoryAsyncWriteOnly
+from ..lib import MemoryAsyncReadWrite
 
 from .utilities import random_memory_entry,random_memory_entry_value
 
@@ -45,11 +43,8 @@ class AsyncLibTestMemory(AsyncLibTestCommon, ABC):
     """
     async def _single_memory_read_and_write_test(self, *,
                                                  mut: Union[MemoryAsyncReadOnly,
-                                                            MemoryAsyncReadOnlyLegacy,
                                                             MemoryAsyncWriteOnly,
-                                                            MemoryAsyncWriteOnlyLegacy,
-                                                            MemoryAsyncReadWrite,
-                                                            MemoryAsyncReadWriteLegacy],
+                                                            MemoryAsyncReadWrite],
                                                  is_sw_readable: bool,
                                                  is_sw_writable: bool,
                                                  readable_registers: NodeIterators,
@@ -62,8 +57,8 @@ class AsyncLibTestMemory(AsyncLibTestCommon, ABC):
                                       writeable_registers=writeable_registers)
 
         if is_sw_readable:
-            if not isinstance(mut, (MemoryAsyncReadOnly, MemoryAsyncReadOnlyLegacy,
-                                    MemoryAsyncReadWrite, MemoryAsyncReadWriteLegacy)):
+            if not isinstance(mut, (MemoryAsyncReadOnly,
+                                    MemoryAsyncReadWrite)):
                 raise TypeError('Test can not proceed as the mut is not a readable memory')
             await self.__single_memory_read_test(mut=mut)
             await self.__single_memory_simulator_read_test(mut=mut)
@@ -74,8 +69,8 @@ class AsyncLibTestMemory(AsyncLibTestCommon, ABC):
                 _= await mut.read(0)  # type: ignore[union-attr,call-arg]
 
         if is_sw_writable:
-            if not isinstance(mut, (MemoryAsyncWriteOnly, MemoryAsyncWriteOnlyLegacy,
-                                    MemoryAsyncReadWrite, MemoryAsyncReadWriteLegacy)):
+            if not isinstance(mut, (MemoryAsyncWriteOnly,
+                                    MemoryAsyncReadWrite)):
                 raise TypeError('Test can not proceed as the mut is not a writable memory')
             await self.__single_memory_write_test(mut=mut)
             await self.__single_memory_simulator_write_test(mut=mut)
@@ -87,8 +82,8 @@ class AsyncLibTestMemory(AsyncLibTestCommon, ABC):
 
     async def __single_memory_read_test(
             self,
-            mut: Union[MemoryAsyncReadOnly, MemoryAsyncReadOnlyLegacy,
-                       MemoryAsyncReadWrite, MemoryAsyncReadWriteLegacy]
+            mut: Union[MemoryAsyncReadOnly,
+                       MemoryAsyncReadWrite]
         ) -> None:
 
         with patch.object(self, 'write_callback') as write_callback_mock, \
@@ -100,15 +95,7 @@ class AsyncLibTestMemory(AsyncLibTestCommon, ABC):
                     [0, mut.max_entry_value, random_memory_entry_value(mut)]):
                 read_callback_mock.return_value = value
 
-                if self.legacy_block_access:
-                    if not isinstance(mut, (MemoryAsyncReadOnlyLegacy, MemoryAsyncReadWriteLegacy)):
-                        raise TypeError(f'Memory should be legacy type but got {type(mut)}')
-                    self.assertEqual(await mut.read(start_entry=entry, number_entries=1),
-                                     Array(mut.array_typecode, [value]))
-                else:
-                    if not isinstance(mut, (MemoryAsyncReadOnly, MemoryAsyncReadWrite)):
-                        raise TypeError(f'Memory should be non-legacy type but got {type(mut)}')
-                    self.assertEqual(await mut.read(start_entry=entry, number_entries=1),[value])
+                self.assertEqual(await mut.read(start_entry=entry, number_entries=1),[value])
 
                 read_callback_mock.assert_called_once_with(
                     addr=mut.address + (entry * mut.width_in_bytes),
@@ -129,28 +116,16 @@ class AsyncLibTestMemory(AsyncLibTestCommon, ABC):
                 return rand_data_list[mem_entry]
             read_callback_mock.side_effect = read_data_mock
 
-            if self.legacy_block_access:
-                if not isinstance(mut, (MemoryAsyncReadOnlyLegacy, MemoryAsyncReadWriteLegacy)):
-                    raise TypeError(f'Memory should be legacy type but got {type(mut)}')
-                self.assertEqual(await mut.read(start_entry=0,number_entries=entries_to_test),
-                                 Array(mut.array_typecode, rand_data_list))
-            else:
-                if not isinstance(mut, (MemoryAsyncReadOnly, MemoryAsyncReadWrite)):
-                    raise TypeError(f'Memory should be non-legacy type but got {type(mut)}')
-                self.assertEqual(await mut.read(start_entry=0, number_entries=entries_to_test),
-                                 rand_data_list)
+            self.assertEqual(await mut.read(start_entry=0, number_entries=entries_to_test),
+                             rand_data_list)
 
             write_callback_mock.assert_not_called()
 
     async def __single_memory_write_test(
             self,
-            mut: Union[MemoryAsyncWriteOnly, MemoryAsyncWriteOnlyLegacy,
-                       MemoryAsyncReadWrite, MemoryAsyncReadWriteLegacy]
+            mut: Union[MemoryAsyncWriteOnly,
+                       MemoryAsyncReadWrite]
         ) -> None:
-
-        # this function will simplify once all the legacy modes are removed later so we have
-        # allowed more branches for now
-        # pylint:disable=too-many-branches
 
         with patch.object(self, 'write_callback') as write_callback_mock, \
             patch.object(self, 'read_callback', return_value=0) as read_callback_mock:
@@ -160,15 +135,7 @@ class AsyncLibTestMemory(AsyncLibTestCommon, ABC):
                     [0, mut.entries - 1, random_memory_entry(mut)],
                     [0, mut.max_entry_value, random_memory_entry_value(mut)]):
 
-                if self.legacy_block_access:
-                    if not isinstance(mut, (MemoryAsyncWriteOnlyLegacy,
-                                            MemoryAsyncReadWriteLegacy)):
-                        raise TypeError(f'Memory should be legacy type but got {type(mut)}')
-                    await mut.write(start_entry=entry, data = Array(mut.array_typecode, [value]))
-                else:
-                    if not isinstance(mut, (MemoryAsyncWriteOnly, MemoryAsyncReadWrite)):
-                        raise TypeError(f'Memory should be non-legacy type but got {type(mut)}')
-                    await mut.write(start_entry=entry, data = [value])
+                await mut.write(start_entry=entry, data = [value])
 
                 write_callback_mock.assert_called_once_with(
                     addr=mut.address + (entry * mut.width_in_bytes),
@@ -183,14 +150,7 @@ class AsyncLibTestMemory(AsyncLibTestCommon, ABC):
             entries_to_test = mut.entries if mut.entries < 10 else 10
             rand_data_list = [random_memory_entry_value(mut) for _ in range(entries_to_test)]
 
-            if self.legacy_block_access:
-                if not isinstance(mut, (MemoryAsyncWriteOnlyLegacy, MemoryAsyncReadWriteLegacy)):
-                    raise TypeError(f'Memory should be legacy type but got {type(mut)}')
-                await mut.write(start_entry=0, data=Array(mut.array_typecode, rand_data_list))
-            else:
-                if not isinstance(mut, (MemoryAsyncWriteOnly, MemoryAsyncReadWrite)):
-                    raise TypeError(f'Memory should be non-legacy type but got {type(mut)}')
-                await mut.write(start_entry=0, data=rand_data_list)
+            await mut.write(start_entry=0, data=rand_data_list)
 
             calls = [call(addr=mut.address + (entry * mut.width_in_bytes),
                           width=mut.width,
@@ -199,37 +159,16 @@ class AsyncLibTestMemory(AsyncLibTestCommon, ABC):
             write_callback_mock.assert_has_calls(calls, any_order=False)
 
             # check invalid write values bounce
-            if self.legacy_block_access:
-                if not isinstance(mut, (MemoryAsyncWriteOnlyLegacy, MemoryAsyncReadWriteLegacy)):
-                    raise TypeError(f'Memory should be legacy type but got {type(mut)}')
-                # depending the hardware array sizes the error may be at the point the array is
-                # constructed on internal
-                dummy_array = Array(mut.array_typecode,[0])
-                if dummy_array.itemsize > mut.width_in_bytes:
-                    with self.assertRaises(ValueError):
-                        await mut.write(start_entry=0, data=Array(mut.array_typecode,
-                                                                  [mut.max_entry_value + 1]))
-                else:
-                    with self.assertRaises(OverflowError):
-                        await mut.write(start_entry=0, data=Array(mut.array_typecode,
-                                                                  [mut.max_entry_value + 1]))
-                with self.assertRaises(OverflowError):
-                    await mut.write(start_entry=0, data=Array(mut.array_typecode,
-                                                              [-1]))
-            else:
-                if not isinstance(mut, (MemoryAsyncWriteOnly, MemoryAsyncReadWrite)):
-                    raise TypeError(f'Memory should be non-legacy type but got {type(mut)}')
-                with self.assertRaises(ValueError):
-                    await mut.write(start_entry=0, data=[mut.max_entry_value + 1])
-                with self.assertRaises(ValueError):
-                    await mut.write(start_entry=0, data=[-1])
+            with self.assertRaises(ValueError):
+                await mut.write(start_entry=0, data=[mut.max_entry_value + 1])
+            with self.assertRaises(ValueError):
+                await mut.write(start_entry=0, data=[-1])
 
             read_callback_mock.assert_not_called()
 
     async def __single_memory_simulator_read_test(
             self,
-            mut: Union[MemoryAsyncReadOnly, MemoryAsyncReadOnlyLegacy,
-                       MemoryAsyncReadWrite, MemoryAsyncReadWriteLegacy],
+            mut: Union[MemoryAsyncReadOnly, MemoryAsyncReadWrite],
         ) -> None:
 
         sim_memory = self.simulator_instance.memory_by_full_name(mut.full_inst_name)
@@ -242,15 +181,7 @@ class AsyncLibTestMemory(AsyncLibTestCommon, ABC):
 
             sim_memory.value[entry] = value
 
-            if self.legacy_block_access:
-                if not isinstance(mut, (MemoryAsyncReadOnlyLegacy, MemoryAsyncReadWriteLegacy)):
-                    raise TypeError(f'Memory should be legacy type but got {type(mut)}')
-                self.assertEqual(await mut.read(start_entry=entry, number_entries=1),
-                                 Array(mut.array_typecode, [value]))
-            else:
-                if not isinstance(mut, (MemoryAsyncReadOnly, MemoryAsyncReadWrite)):
-                    raise TypeError(f'Memory should be non-legacy type but got {type(mut)}')
-                self.assertEqual(await mut.read(start_entry=entry, number_entries=1), [value])
+            self.assertEqual(await mut.read(start_entry=entry, number_entries=1), [value])
 
         # multi-entry read
         # check a multi-entry read, if the memory is small do the entire memory, however, if
@@ -260,21 +191,12 @@ class AsyncLibTestMemory(AsyncLibTestCommon, ABC):
         for entry in range(entries_to_test):
             sim_memory.value[entry] = rand_data_list[entry]
 
-        if self.legacy_block_access:
-            if not isinstance(mut, (MemoryAsyncReadOnlyLegacy, MemoryAsyncReadWriteLegacy)):
-                raise TypeError(f'Memory should be legacy type but got {type(mut)}')
-            self.assertEqual(await mut.read(start_entry=0,number_entries=entries_to_test),
-                             Array(mut.array_typecode, rand_data_list))
-        else:
-            if not isinstance(mut, (MemoryAsyncReadOnly, MemoryAsyncReadWrite)):
-                raise TypeError(f'Memory should be non-legacy type but got {type(mut)}')
-            self.assertEqual(await mut.read(start_entry=0, number_entries=entries_to_test),
-                             rand_data_list)
+        self.assertEqual(await mut.read(start_entry=0, number_entries=entries_to_test),
+                         rand_data_list)
 
     async def __single_memory_simulator_write_test(
             self,
-            mut: Union[MemoryAsyncWriteOnly, MemoryAsyncWriteOnlyLegacy,
-                       MemoryAsyncReadWrite, MemoryAsyncReadWriteLegacy]
+            mut: Union[MemoryAsyncWriteOnly, MemoryAsyncReadWrite]
         ) -> None:
 
         sim_memory = self.simulator_instance.memory_by_full_name(mut.full_inst_name)
@@ -285,15 +207,10 @@ class AsyncLibTestMemory(AsyncLibTestCommon, ABC):
                 [0, mut.entries - 1, random_memory_entry(mut)],
                 [0, mut.max_entry_value, random_memory_entry_value(mut)]):
 
-            if self.legacy_block_access:
-                if not isinstance(mut, (MemoryAsyncWriteOnlyLegacy, MemoryAsyncReadWriteLegacy)):
-                    raise TypeError(f'Memory should be legacy type but got {type(mut)}')
-                await mut.write(start_entry=entry, data=Array(mut.array_typecode, [value]))
-            else:
-                if not isinstance(mut, (MemoryAsyncWriteOnly, MemoryAsyncReadWrite)):
-                    raise TypeError(
-                        f'Memory should be non-legacy type but got {type(mut)}')
-                await mut.write(start_entry=entry, data=[value])
+            if not isinstance(mut, (MemoryAsyncWriteOnly, MemoryAsyncReadWrite)):
+                raise TypeError(
+                    f'Memory should be non-legacy type but got {type(mut)}')
+            await mut.write(start_entry=entry, data=[value])
 
             self.assertEqual(sim_memory.value[entry], value)
 
@@ -303,14 +220,7 @@ class AsyncLibTestMemory(AsyncLibTestCommon, ABC):
         entries_to_test = mut.entries if mut.entries < 10 else 10
         rand_data_list = [random_memory_entry_value(mut) for _ in range(entries_to_test)]
 
-        if self.legacy_block_access:
-            if not isinstance(mut, (MemoryAsyncWriteOnlyLegacy, MemoryAsyncReadWriteLegacy)):
-                raise TypeError(f'Memory should be legacy type but got {type(mut)}')
-            await mut.write(start_entry=0, data=Array(mut.array_typecode, rand_data_list))
-        else:
-            if not isinstance(mut, (MemoryAsyncWriteOnly, MemoryAsyncReadWrite)):
-                raise TypeError(f'Memory should be non-legacy type but got {type(mut)}')
-            await mut.write(start_entry=0, data=rand_data_list)
+        await mut.write(start_entry=0, data=rand_data_list)
 
         for entry in range(entries_to_test):
             self.assertEqual(sim_memory.value[entry], rand_data_list[entry])

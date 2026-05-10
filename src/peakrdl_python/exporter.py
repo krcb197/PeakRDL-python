@@ -55,8 +55,6 @@ from .unique_component_iterator import PeakRDLPythonUniqueFieldEnum
 from .class_names import get_field_get_base_class_name
 from .systemrdl_node_hashes import NodeHashingMethod
 
-from .lib import get_array_typecode
-
 from .safe_name_utility import get_python_path_segments, safe_node_name
 
 from ._node_walkers import AddressMaps, OwnedbyAddressMap
@@ -191,7 +189,6 @@ class PythonExporter:
                            package: GeneratedPackage,
                            skip_lib_copy: bool,
                            asyncoutput: bool,
-                           legacy_block_access: bool,
                            udp_include_func: ShowUDPCallback,
                            hide_node_func: HideNodeCallback,
                            skip_systemrdl_name_and_desc_properties: bool,
@@ -257,7 +254,6 @@ class PythonExporter:
             'raise_template_error': self._raise_template_error,
             'safe_node_name': safe_node_name,
             'skip_lib_copy': skip_lib_copy,
-            'legacy_block_access': legacy_block_access,
             'get_properties_to_include': get_properties_to_include,
             'unique_property_enums':
                 self._get_dependent_property_enum(unique_component_walker),
@@ -265,8 +261,6 @@ class PythonExporter:
             'visible_nonsignal_node' : visible_nonsignal_node,
             'skip_systemrdl_name_and_desc_properties': skip_systemrdl_name_and_desc_properties,
         }
-        if legacy_block_access is True:
-            context['get_array_typecode'] = get_array_typecode
 
         module_name = top_block.inst_name
         self.__stream_jinja_template(template_name="addrmap.py.jinja",
@@ -287,7 +281,6 @@ class PythonExporter:
                 package=package,
                 skip_lib_copy=skip_lib_copy,
                 asyncoutput=asyncoutput,
-                legacy_block_access=legacy_block_access,
                 hide_node_func=hide_node_func,
                 skip_systemrdl_name_and_desc_properties=skip_systemrdl_name_and_desc_properties,
                 skip_systemrdl_name_and_desc_in_docstring=
@@ -302,7 +295,6 @@ class PythonExporter:
             package=package,
             skip_lib_copy=skip_lib_copy,
             asyncoutput=asyncoutput,
-            legacy_block_access=legacy_block_access,
             hide_node_func=hide_node_func,
             skip_systemrdl_name_and_desc_properties=skip_systemrdl_name_and_desc_properties,
             skip_systemrdl_name_and_desc_in_docstring=skip_systemrdl_name_and_desc_in_docstring,
@@ -350,7 +342,6 @@ class PythonExporter:
                                      package: GeneratedPackage,
                                      skip_lib_copy: bool,
                                      asyncoutput: bool,
-                                     legacy_block_access: bool,
                                      hide_node_func: HideNodeCallback,
                                      skip_systemrdl_name_and_desc_properties: bool,
                                      skip_systemrdl_name_and_desc_in_docstring: bool,
@@ -432,7 +423,6 @@ class PythonExporter:
                     'get_field_default_value': get_field_default_value,
                     'skip_lib_copy': skip_lib_copy,
                     'uses_enum': uses_enum(top_block),
-                    'legacy_block_access': legacy_block_access,
                     'skip_systemrdl_name_and_desc_properties':
                         skip_systemrdl_name_and_desc_properties,
                     'raise_template_error': self._raise_template_error,
@@ -458,7 +448,6 @@ class PythonExporter:
                                     package: GeneratedPackage,
                                     skip_lib_copy: bool,
                                     asyncoutput: bool,
-                                    legacy_block_access: bool,
                                     hide_node_func: HideNodeCallback,
                                     skip_systemrdl_name_and_desc_properties: bool,
                                     skip_systemrdl_name_and_desc_in_docstring: bool,
@@ -531,7 +520,6 @@ class PythonExporter:
                     'get_field_default_value': get_field_default_value,
                     'skip_lib_copy': skip_lib_copy,
                     'uses_enum': uses_enum(top_block),
-                    'legacy_block_access': legacy_block_access,
                     'skip_systemrdl_name_and_desc_properties':
                         skip_systemrdl_name_and_desc_properties,
                     'raise_template_error': self._raise_template_error,
@@ -662,8 +650,7 @@ class PythonExporter:
                            top_block: AddrmapNode,
                            package: GeneratedPackage,
                            skip_lib_copy: bool,
-                           asyncoutput: bool,
-                           legacy_block_access: bool) -> None:
+                           asyncoutput: bool) -> None:
 
         # as a result of issue 202, where two registers existed at that same address,
         # rather than iterating through the registers within the Jinja template
@@ -696,7 +683,6 @@ class PythonExporter:
             'isinstance': isinstance,
             'asyncoutput': asyncoutput,
             'skip_lib_copy': skip_lib_copy,
-            'legacy_block_access': legacy_block_access,
             'list': list,
             'simulator_field_definition': simulator_field_definition,
         }
@@ -718,8 +704,7 @@ class PythonExporter:
                          top_block: AddrmapNode,
                          package: GeneratedPackage,
                          skip_lib_copy: bool,
-                         asyncoutput: bool,
-                         legacy_block_access: bool) -> None:
+                         asyncoutput: bool) -> None:
 
         context = {
             'top_node': top_block,
@@ -727,8 +712,7 @@ class PythonExporter:
             'systemrdlMemNode': MemNode,
             'isinstance': isinstance,
             'asyncoutput': asyncoutput,
-            'skip_lib_copy': skip_lib_copy,
-            'legacy_block_access': legacy_block_access,
+            'skip_lib_copy': skip_lib_copy
         }
 
         self.__stream_jinja_template(template_name="example.py.jinja",
@@ -741,14 +725,12 @@ class PythonExporter:
                             top_block: AddrmapNode,
                             package: GeneratedPackage,
                             skip_lib_copy: bool,
-                            asyncoutput: bool,
-                            legacy_block_access: bool) -> None:
+                            asyncoutput: bool) -> None:
 
         context = {
             'top_node': top_block,
             'asyncoutput': asyncoutput,
-            'skip_lib_copy': skip_lib_copy,
-            'legacy_block_access': legacy_block_access
+            'skip_lib_copy': skip_lib_copy
         }
 
         self.__stream_jinja_template(template_name="baseclass_tb.py.jinja",
@@ -767,7 +749,6 @@ class PythonExporter:
                        package: GeneratedPackage,
                        skip_lib_copy: bool,
                        asyncoutput: bool,
-                       legacy_block_access: bool,
                        udp_include_func: ShowUDPCallback,
                        hide_node_func: HideNodeCallback,
                        skip_systemrdl_name_and_desc_properties: bool,
@@ -859,8 +840,6 @@ class PythonExporter:
                 'asyncoutput': asyncoutput,
                 'uses_enum': uses_enum(block),
                 'skip_lib_copy': skip_lib_copy,
-                'get_array_typecode': get_array_typecode,
-                'legacy_block_access': legacy_block_access,
                 'udp_include_func': udp_include_func,
                 'get_properties_to_include': get_properties_to_include,
                 'hide_node_func': hide_node_func,
@@ -949,7 +928,6 @@ class PythonExporter:
                skip_test_case_generation: bool = False,
                delete_existing_package_content: bool = True,
                skip_library_copy: bool = False,
-               legacy_block_access: bool = False,
                show_hidden: bool = False,
                user_defined_properties_to_include: Optional[list[str]] = None,
                user_defined_properties_to_include_regex: Optional[str] = None,
@@ -984,12 +962,6 @@ class PythonExporter:
                                potential licensing implications of package distribution,
                                However, this means the end-user is responsible for
                                installing the libraries.
-            legacy_block_access: version 0.8 changed the block access methods from using
-                                 arrays to lists. This allows memory widths of other
-                                 than 8, 16, 32, 64 to be supported which are legal in
-                                 systemRDL. The legacy mode with Arrays is still in
-                                 the tool and will be turned on by default for a few
-                                 releases.
             show_hidden: By default any item (Address Map, Regfile, Register, Memory or
                          Field) with the systemRDL User Defined Property (UDP)
                          ``python_hide`` set to true will not be included in the generated
@@ -1047,12 +1019,6 @@ class PythonExporter:
         Returns:
             modules that have been exported:
         """
-        if legacy_block_access:
-            warnings.warn('legacy_block_access is deprecated and '
-                          'will be removed from a future version please try the new mode',
-                          category=DeprecationWarning)
-
-
         # If it is the root node, skip to top addrmap
         if isinstance(node, RootNode):
             top_block = node.top
@@ -1093,7 +1059,6 @@ class PythonExporter:
         self.__export_reg_model(
             top_block=top_block, package=package, asyncoutput=asyncoutput,
             skip_lib_copy=skip_library_copy,
-            legacy_block_access=legacy_block_access,
             udp_include_func=udp_include_func,
             hide_node_func=hide_node_func,
             skip_systemrdl_name_and_desc_properties=skip_systemrdl_name_and_desc_properties,
@@ -1106,23 +1071,19 @@ class PythonExporter:
         )
 
         self.__export_simulator(top_block=top_block, package=package, asyncoutput=asyncoutput,
-                                skip_lib_copy=skip_library_copy,
-                                legacy_block_access=legacy_block_access)
+                                skip_lib_copy=skip_library_copy)
 
         self.__export_example(top_block=top_block, package=package, asyncoutput=asyncoutput,
-                              skip_lib_copy=skip_library_copy,
-                              legacy_block_access=legacy_block_access)
+                              skip_lib_copy=skip_library_copy)
 
         if not skip_test_case_generation:
             # export the baseclasses for the tests
             self.__export_base_tests(top_block=top_block, package=package, asyncoutput=asyncoutput,
-                                     skip_lib_copy=skip_library_copy,
-                                     legacy_block_access=legacy_block_access)
+                                     skip_lib_copy=skip_library_copy)
             # export the tests themselves, these are broken down to one file per addressmap
             self.__export_tests(
                 top_block=top_block, package=package, asyncoutput=asyncoutput,
                 skip_lib_copy=skip_library_copy,
-                legacy_block_access=legacy_block_access,
                 udp_include_func=udp_include_func,
                 hide_node_func=hide_node_func,
                 skip_systemrdl_name_and_desc_properties=skip_systemrdl_name_and_desc_properties)
