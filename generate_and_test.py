@@ -80,10 +80,6 @@ CommandLineParser.add_argument('--copy_libraries', action='store_true', dest='co
                                     'and debugging as multiple copies of the libraries can cause'
                                     'confusion. Therefore by default this script does not copy '
                                     'them over.')
-CommandLineParser.add_argument('--legacy_block_access', action='store_true',
-                               dest='legacy_block_access',
-                               help='peakrdl python has two methods to hold blocks of data, the '
-                                    'legacy mode based on Array or the new mode using lists')
 udp_group = CommandLineParser.add_mutually_exclusive_group(required=False)
 udp_group.add_argument('--udp', dest='udp', nargs='*',
                                type=str, help='any user defined properties to include in the '
@@ -215,7 +211,6 @@ if __name__ == '__main__':
         asyncoutput=CommandLineArgs.asyncoutput,
         delete_existing_package_content=not CommandLineArgs.suppress_cleanup,
         skip_library_copy=not CommandLineArgs.copy_libraries,
-        legacy_block_access=CommandLineArgs.legacy_block_access,
         user_defined_properties_to_include=CommandLineArgs.udp,
         user_defined_properties_to_include_regex=CommandLineArgs.udp_regex,
         hidden_inst_name_regex=CommandLineArgs.hide_regex,
@@ -253,15 +248,9 @@ if __name__ == '__main__':
                                                 globals(), locals(), ['CallbackSet'], 0)
 
         if CommandLineArgs.asyncoutput is True:
-            if CommandLineArgs.legacy_block_access is True:
-                callbackset_cls = getattr(peakrdl_python_package, 'AsyncCallbackSetLegacy')
-            else:
-                callbackset_cls = getattr(peakrdl_python_package, 'AsyncCallbackSet')
+            callbackset_cls = getattr(peakrdl_python_package, 'AsyncCallbackSet')
         else:
-            if CommandLineArgs.legacy_block_access is True:
-                callbackset_cls = getattr(peakrdl_python_package, 'NormalCallbackSetLegacy')
-            else:
-                callbackset_cls = getattr(peakrdl_python_package, 'NormalCallbackSet')
+            callbackset_cls = getattr(peakrdl_python_package, 'NormalCallbackSet')
 
         sim_cls = getattr(sim_module, 'Simulator')
         sim = sim_cls(address=0)

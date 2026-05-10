@@ -29,9 +29,9 @@ from {{ peakrdl_python_sim_lib(depth=lib_depth) }}.memory import Memory
 from {{ peakrdl_python_sim_lib(depth=lib_depth) }}.simulator import MemoryEntry
 from {{ peakrdl_python_sim_lib(depth=lib_depth) }}.field import FieldDefinition, FieldType
 {% if asyncoutput -%}
-from {{ peakrdl_python_sim_lib(depth=lib_depth) }}.simulator import AsyncSimulator{% if legacy_block_access %}Legacy{% endif %} as Simulator{% if legacy_block_access %}Legacy{% endif %}
+from {{ peakrdl_python_sim_lib(depth=lib_depth) }}.simulator import AsyncSimulator as Simulator
 {% else %}
-from {{ peakrdl_python_sim_lib(depth=lib_depth) }}.simulator import Simulator{% if legacy_block_access %}Legacy{% endif %}
+from {{ peakrdl_python_sim_lib(depth=lib_depth) }}.simulator import Simulator
 {%- endif %}
 
 {%- macro single_reg_entry(node) %}
@@ -44,7 +44,7 @@ from {{ peakrdl_python_sim_lib(depth=lib_depth) }}.simulator import Simulator{% 
                                                 ])
 {%- endmacro %}
 
-class {{top_node.inst_name}}_simulator_cls(Simulator{% if legacy_block_access %}Legacy{% endif %}):
+class {{top_node.inst_name}}_simulator_cls(Simulator):
 
     def _build_registers(self) -> dict[int, Union[list[Union[MemoryRegister, Register]], Union[MemoryRegister, Register]]]:
         return {

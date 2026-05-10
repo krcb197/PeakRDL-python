@@ -28,7 +28,7 @@ from enum import IntEnum, Enum, auto
 import math
 import re
 
-from .callbacks import CallbackSet, CallbackSetLegacy
+from .callbacks import CallbackSet
 
 UDPStruct = dict[str, 'UDPType']
 UDPType = Union[str, int, bool, IntEnum, UDPStruct]
@@ -206,7 +206,7 @@ class Node(Base ,ABC):
 
     @property
     @abstractmethod
-    def _callbacks(self) -> Union[CallbackSet, CallbackSetLegacy]:
+    def _callbacks(self) -> CallbackSet:
         ...
 
     @property
@@ -537,7 +537,7 @@ class NodeArray(Base, Sequence[NodeArrayElementType]):
         return self.__stride
 
     @property
-    def _callbacks(self) -> Union[CallbackSet, CallbackSetLegacy]:
+    def _callbacks(self) -> CallbackSet:
         if self.parent is None:
             raise RuntimeError('Parent must be set')
         # pylint: disable-next=protected-access

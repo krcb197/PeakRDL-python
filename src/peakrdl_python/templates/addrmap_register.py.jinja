@@ -41,22 +41,22 @@ from {{ peakrdl_python_lib(depth=lib_depth) }} import UDPStruct
 from {{ peakrdl_python_lib(depth=lib_depth) }} import AsyncMemory
 from {{ peakrdl_python_lib(depth=lib_depth) }} import AsyncAddressMap
 from {{ peakrdl_python_lib(depth=lib_depth) }} import AsyncRegFile
-from {{ peakrdl_python_lib(depth=lib_depth) }} import MemoryAsyncReadOnly{% if legacy_block_access %}Legacy{% endif %}, MemoryAsyncWriteOnly{% if legacy_block_access %}Legacy{% endif %}, MemoryAsyncReadWrite{% if legacy_block_access %}Legacy{% endif %}
+from {{ peakrdl_python_lib(depth=lib_depth) }} import MemoryAsyncReadOnly, MemoryAsyncWriteOnly, MemoryAsyncReadWrite
 from {{ peakrdl_python_lib(depth=lib_depth) }} import AsyncReg
 from {{ peakrdl_python_lib(depth=lib_depth) }} import RegAsyncReadOnly, RegAsyncWriteOnly, RegAsyncReadWrite
 from {{ peakrdl_python_lib(depth=lib_depth) }} import RegAsyncReadOnlyArray, RegAsyncWriteOnlyArray, RegAsyncReadWriteArray
-from {{ peakrdl_python_lib(depth=lib_depth) }} import ReadableAsyncMemory{% if legacy_block_access %}Legacy{% endif %}, WritableAsyncMemory{% if legacy_block_access %}Legacy{% endif %}
+from {{ peakrdl_python_lib(depth=lib_depth) }} import ReadableAsyncMemory, WritableAsyncMemory
 from {{ peakrdl_python_lib(depth=lib_depth) }} import FieldAsyncReadOnly, FieldAsyncWriteOnly, FieldAsyncReadWrite, Field
 {% if uses_enum %}from {{ peakrdl_python_lib(depth=lib_depth) }} import FieldEnumAsyncReadOnly, FieldEnumAsyncWriteOnly, FieldEnumAsyncReadWrite{% endif %}
 {%- else -%}
 from {{ peakrdl_python_lib(depth=lib_depth) }} import Memory
 from {{ peakrdl_python_lib(depth=lib_depth) }} import AddressMap
 from {{ peakrdl_python_lib(depth=lib_depth) }} import RegFile
-from {{ peakrdl_python_lib(depth=lib_depth) }} import MemoryReadOnly{% if legacy_block_access %}Legacy{% endif %}, MemoryWriteOnly{% if legacy_block_access %}Legacy{% endif %}, MemoryReadWrite{% if legacy_block_access %}Legacy{% endif %}
+from {{ peakrdl_python_lib(depth=lib_depth) }} import MemoryReadOnly, MemoryWriteOnly, MemoryReadWrite
 from {{ peakrdl_python_lib(depth=lib_depth) }} import Reg, RegArray
 from {{ peakrdl_python_lib(depth=lib_depth) }} import RegReadOnly, RegWriteOnly, RegReadWrite
 from {{ peakrdl_python_lib(depth=lib_depth) }} import RegReadOnlyArray, RegWriteOnlyArray, RegReadWriteArray
-from {{ peakrdl_python_lib(depth=lib_depth) }} import ReadableMemory{% if legacy_block_access %}Legacy{% endif %}, WritableMemory{% if legacy_block_access %}Legacy{% endif %}
+from {{ peakrdl_python_lib(depth=lib_depth) }} import ReadableMemory, WritableMemory
 from {{ peakrdl_python_lib(depth=lib_depth) }} import FieldReadOnly, FieldWriteOnly, FieldReadWrite, Field
 {% if uses_enum %}from {{ peakrdl_python_lib(depth=lib_depth) }} import FieldEnumReadOnly, FieldEnumWriteOnly, FieldEnumReadWrite{% endif %}
 {%- endif %}
@@ -90,11 +90,11 @@ class {{node.python_class_name}}({{node.base_class(asyncoutput)}}):
                  inst_name: str,
                  parent: Union[{% if asyncoutput -%}Async{%- endif -%}AddressMap,{%- if asyncoutput -%}Async{%- endif -%}RegFile,
                  {%- if node.read_write -%}
-                    Memory{% if asyncoutput %}Async{% endif -%}ReadWrite{% if legacy_block_access %}Legacy{% endif %}
+                    Memory{% if asyncoutput %}Async{% endif -%}ReadWrite
                  {%- elif node.read_only -%}
-                    Readable{% if asyncoutput %}Async{% endif -%}Memory{% if legacy_block_access %}Legacy{% endif %}
+                    Readable{% if asyncoutput %}Async{% endif -%}Memory
                  {%- elif node.write_only -%}
-                    Writable{% if asyncoutput %}Async{% endif -%}Memory{% if legacy_block_access %}Legacy{% endif %}
+                    Writable{% if asyncoutput %}Async{% endif -%}Memory
                  {%- endif -%}
                  ]):
 

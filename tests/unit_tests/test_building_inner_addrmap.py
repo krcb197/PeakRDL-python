@@ -70,7 +70,6 @@ class TestTopAndInner(unittest.TestCase):
                             delete_existing_package_content=False,
                             skip_library_copy=True,
                             skip_test_case_generation=True,
-                            legacy_block_access=False,
                             show_hidden=False)
             exporter.export(node=spec.top.get_child_by_name(inner_addr_map),
                             path=tmpdirname,
@@ -78,7 +77,6 @@ class TestTopAndInner(unittest.TestCase):
                             delete_existing_package_content=False,
                             skip_library_copy=True,
                             skip_test_case_generation=True,
-                            legacy_block_access=False,
                             show_hidden=False)
 
 

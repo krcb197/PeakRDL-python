@@ -74,7 +74,6 @@ class TestAlternativeTemplates(unittest.TestCase):
                             delete_existing_package_content=False,
                             skip_library_copy=False,
                             skip_test_case_generation=True,
-                            legacy_block_access=False,
                             show_hidden=False)
             # pylint: enable=duplicate-code
 

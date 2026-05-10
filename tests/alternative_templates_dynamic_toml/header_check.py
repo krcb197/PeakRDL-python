@@ -85,4 +85,3 @@ if __name__ == '__main__':
 
     assert module_doc_string == result, 'strings do not match'
     print('\n\n\n strings match \n *************** \n     PASS \n ***************')
-
