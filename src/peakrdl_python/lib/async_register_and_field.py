@@ -513,9 +513,6 @@ class AsyncRegArray(BaseRegArray[AsyncRegArrayElementType], ABC):
         """
         Read all the contents of the array in the most optimal way, ideally with a block operation
         """
-        if not isinstance(self._callbacks, AsyncCallbackSet):
-            raise RuntimeError('This function should only be used with non-legacy callbacks')
-
         read_block_callback = self._callbacks.read_block_callback
         read_callback = self._callbacks.read_callback
 
@@ -553,9 +550,6 @@ class AsyncRegArray(BaseRegArray[AsyncRegArrayElementType], ABC):
         """
         Write all the contents of the array in the most optimal way, ideally with a block operation
         """
-        if not isinstance(self._callbacks, AsyncCallbackSet):
-            raise RuntimeError('This function should only be used with non-legacy callbacks')
-
         write_block_callback = self._callbacks.write_block_callback
         write_callback = self._callbacks.write_callback
 
