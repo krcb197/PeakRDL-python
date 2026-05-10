@@ -140,8 +140,6 @@ jobs:
 
           python -m generate_and_test --RDL_source_file tests/testcases/accelera-generic_example.rdl --root_node some_register_map
           sleep 10
-          python -m generate_and_test --RDL_source_file tests/testcases/accelera-generic_example.rdl --root_node some_register_map --legacy_block_access
-          sleep 10
           python -m generate_and_test --RDL_source_file tests/testcases/accelera-generic_example.rdl --root_node some_register_map --copy_libraries
           sleep 10
           python -m generate_and_test --RDL_source_file tests/testcases/accelera-generic_example.rdl --root_node some_register_map --hashing_mode PYTHONHASH
@@ -212,9 +210,7 @@ jobs:
           peakrdl python tests/testcases/hidden_property.rdl -o peakrdl_out/raw_async/ --async
           peakrdl python tests/testcases/hidden_property.rdl -o peakrdl_out/raw_async/show_hidden/ --show_hidden --async
           python -m unittest discover -s peakrdl_out/raw_async
-          peakrdl python tests/testcases/basic.rdl -o peakrdl_out/raw_legacy_block/ --legacy_block_access
-          python -m unittest discover -s peakrdl_out/raw_legacy_block
-
+          
           peakrdl python tests/testcases/basic.rdl -o peakrdl_out/no_test/ --skip_test_case_generation
           
           peakrdl python tests/testcases/basic.rdl -o peakrdl_out/no_lib/ --skip_library_copy

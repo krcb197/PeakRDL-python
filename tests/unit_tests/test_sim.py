@@ -86,7 +86,6 @@ class TestSimCallback(unittest.TestCase):
                             asyncoutput=False,
                             delete_existing_package_content=False,
                             skip_test_case_generation=True,
-                            legacy_block_access=False,
                             skip_library_copy=True,)
 
             # add the temp directory to the python path so that it can be imported from

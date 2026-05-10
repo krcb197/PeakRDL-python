@@ -21,7 +21,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 {# the following defining the number relative steps up to the lib and sim_lib packages from the current file #}
 {% set lib_depth = 0 %}
 
-from {{ peakrdl_python_lib(depth=lib_depth) }} import {% if asyncoutput %}Async{% else %}Normal{% endif %}CallbackSet{% if legacy_block_access %}Legacy{% endif %}
+from {{ peakrdl_python_lib(depth=lib_depth) }} import {% if asyncoutput %}Async{% else %}Normal{% endif %}CallbackSet
 
 from .reg_model.{{top_node.inst_name}} import {{top_node.inst_name}}_cls
 from .sim.{{top_node.inst_name}} import {{top_node.inst_name}}_simulator_cls
@@ -31,5 +31,5 @@ if __name__ == '__main__':
     sim = {{top_node.inst_name}}_simulator_cls(address=0)
 
     # create an instance of the class
-    reg_model = {{top_node.inst_name}}_cls(callbacks={% if asyncoutput %}Async{% else %}Normal{% endif %}CallbackSet{% if legacy_block_access %}Legacy{% endif %}(read_callback=sim.read,
+    reg_model = {{top_node.inst_name}}_cls(callbacks={% if asyncoutput %}Async{% else %}Normal{% endif %}CallbackSet(read_callback=sim.read,
                                                                        write_callback=sim.write))

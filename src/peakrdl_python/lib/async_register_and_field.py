@@ -24,18 +24,13 @@ from typing import Union, Optional, TypeVar, cast
 from collections.abc import AsyncGenerator, Iterator, Iterable
 from abc import ABC, abstractmethod
 from contextlib import asynccontextmanager
-from array import array as Array
 import sys
 from warnings import warn
 
-from .utility_functions import get_array_typecode
 from .sections import AsyncAddressMap, AsyncRegFile
 from .async_memory import  MemoryAsyncReadOnly, MemoryAsyncWriteOnly, MemoryAsyncReadWrite, \
     AsyncMemory, ReadableAsyncMemory, WritableAsyncMemory
-from .async_memory import  MemoryAsyncReadOnlyLegacy, MemoryAsyncWriteOnlyLegacy, \
-    MemoryAsyncReadWriteLegacy
-from .async_memory import ReadableAsyncMemoryLegacy, WritableAsyncMemoryLegacy
-from .callbacks import AsyncCallbackSet, AsyncCallbackSetLegacy
+from .callbacks import AsyncCallbackSet
 from .base_register import BaseReg, BaseRegArray, RegisterWriteVerifyError
 from .base_field import FieldEnum, FieldSizeProps, FieldMiscProps, \
     _FieldReadOnlyFramework, _FieldWriteOnlyFramework, FieldType
@@ -80,24 +75,22 @@ class AsyncReg(BaseReg,
 
         if not isinstance(parent, (AsyncAddressMap, AsyncRegFile,
                                    MemoryAsyncReadOnly, MemoryAsyncWriteOnly,
-                                   MemoryAsyncReadWrite, AsyncRegArray, MemoryAsyncReadOnlyLegacy,
-                                   MemoryAsyncWriteOnlyLegacy,
-                                   MemoryAsyncReadWriteLegacy)):
+                                   MemoryAsyncReadWrite, AsyncRegArray)):
             raise TypeError(f'bad parent type got: {type(parent)}')
 
-        if not isinstance(parent._callbacks, (AsyncCallbackSet, AsyncCallbackSetLegacy)):
+        if not isinstance(parent._callbacks, (AsyncCallbackSet)):
             raise TypeError(f'callback set type is wrong, got {type(parent._callbacks)}')
 
         super().__init__(address=address, logger_handle=logger_handle,
                          inst_name=inst_name, parent=parent)
 
     @property
-    def _callbacks(self) -> Union[AsyncCallbackSet, AsyncCallbackSetLegacy]:
+    def _callbacks(self) -> Union[AsyncCallbackSet]:
         # pylint: disable=protected-access
         if self.parent is None:
             raise RuntimeError('Parent must be set')
 
-        if isinstance(self.parent._callbacks, (AsyncCallbackSet, AsyncCallbackSetLegacy)):
+        if isinstance(self.parent._callbacks, (AsyncCallbackSet)):
             return self.parent._callbacks
 
         raise TypeError(f'unhandled parent callback type: {type(self.parent._callbacks)}')
@@ -131,8 +124,7 @@ class RegAsyncReadOnly(AsyncReg, ABC):
                  address: int,
                  logger_handle: str,
                  inst_name: str,
-                 parent: Union[AsyncAddressMap, AsyncRegFile, ReadableAsyncMemory,
-                               ReadableAsyncMemoryLegacy]):
+                 parent: Union[AsyncAddressMap, AsyncRegFile, ReadableAsyncMemory]):
 
         super().__init__(address=address,
                          logger_handle=logger_handle,
@@ -236,7 +228,7 @@ class RegAsyncWriteOnly(AsyncReg, ABC):
                  logger_handle: str,
                  inst_name: str,
                  parent: Union[AsyncAddressMap, AsyncRegFile,
-                               WritableAsyncMemory, WritableAsyncMemoryLegacy]):
+                               WritableAsyncMemory]):
 
         super().__init__(address=address,
                          logger_handle=logger_handle,
@@ -272,18 +264,10 @@ class RegAsyncWriteOnly(AsyncReg, ABC):
 
         elif self._callbacks.write_block_callback is not None:
 
-            if isinstance(self._callbacks, AsyncCallbackSetLegacy):
-                data_as_array = Array(get_array_typecode(self.width), [data])
-                await self._callbacks.write_block_callback(addr=self.address,
-                                                           width=self.width,
-                                                           accesswidth=self.accesswidth,
-                                                           data=data_as_array)
-
-            if isinstance(self._callbacks, AsyncCallbackSet):
-                await self._callbacks.write_block_callback(addr=self.address,
-                                                           width=self.width,
-                                                           accesswidth=self.accesswidth,
-                                                           data=[data])
+            await self._callbacks.write_block_callback(addr=self.address,
+                                                       width=self.width,
+                                                       accesswidth=self.accesswidth,
+                                                       data=[data])
 
         else:
             # pylint: disable-next=duplicate-code
@@ -331,8 +315,7 @@ class RegAsyncReadWrite(RegAsyncReadOnly, RegAsyncWriteOnly, ABC):
                  address: int,
                  logger_handle: str,
                  inst_name: str,
-                 parent: Union[AsyncAddressMap, AsyncRegFile, MemoryAsyncReadWrite,
-                               MemoryAsyncReadWriteLegacy]):
+                 parent: Union[AsyncAddressMap, AsyncRegFile, MemoryAsyncReadWrite]):
 
         super().__init__(address=address,
                          logger_handle=logger_handle,
@@ -512,10 +495,10 @@ class AsyncRegArray(BaseRegArray[AsyncRegArrayElementType], ABC):
                                     tuple[AsyncRegArrayElementType, ...]]] = None):
 
         self.__in_context_manager: bool = False
-        self.__register_cache: Optional[Union[Array, list[int]]] = None
+        self.__register_cache: Optional[list[int]] = None
         self.__register_address_array: Optional[list[int]] = None
 
-        if not isinstance(parent._callbacks, (AsyncCallbackSet, AsyncCallbackSetLegacy)):
+        if not isinstance(parent._callbacks, AsyncCallbackSet):
             raise TypeError(f'callback set type is wrong, got {type(parent._callbacks)}')
 
         super().__init__(logger_handle=logger_handle, inst_name=inst_name,
@@ -523,89 +506,8 @@ class AsyncRegArray(BaseRegArray[AsyncRegArrayElementType], ABC):
                          stride=stride, dimensions=dimensions, elements=elements)
 
     @property
-    def __empty_array_cache(self) -> Array:
-        return Array(get_array_typecode(self.width), self.__empty_list_cache)
-
-    @property
-    def __empty_list_cache(self) -> list[int]:
+    def __empty_cache(self) -> list[int]:
         return [0 for _ in range(self.__number_cache_entries)]
-
-    async def __block_read_legacy(self) -> Array:
-        """
-        Read all the contents of the array in the most optimal way, ideally with a block operation
-        """
-        if not isinstance(self._callbacks, AsyncCallbackSetLegacy):
-            raise RuntimeError('This function should only be used with legacy callbacks')
-
-        read_block_callback = self._callbacks.read_block_callback
-        read_callback = self._callbacks.read_callback
-
-        if read_block_callback is not None:
-
-            data_read = await read_block_callback(addr=self.address,
-                                                  width=self.width,
-                                                  accesswidth=self.accesswidth,
-                                                  length=self.__number_cache_entries)
-
-            if not isinstance(data_read, Array):
-                raise TypeError('The read block callback is expected to return an array')
-
-            return data_read
-
-        if read_callback is not None:
-            # there is not read_block_callback defined so we must used individual read
-            data_array = self.__empty_array_cache
-
-            if self.__register_address_array is None:
-                raise RuntimeError('This address array has not be initialised')
-
-            for entry, address in enumerate(self.__register_address_array):
-                data_entry = await read_callback(addr=address,
-                                                 width=self.width,
-                                                 accesswidth=self.accesswidth)
-
-                data_array[entry] = data_entry
-
-            return data_array
-
-        raise RuntimeError('There is no usable callback')
-
-    async def __block_write_legacy(self, data: Array, verify: bool) -> None:
-        """
-        Write all the contents of the array in the most optimal way, ideally with a block operation
-        """
-        if not isinstance(self._callbacks, AsyncCallbackSetLegacy):
-            raise RuntimeError('This function should only be used with legacy callbacks')
-
-        write_block_callback = self._callbacks.write_block_callback
-        write_callback = self._callbacks.write_callback
-
-        if write_block_callback is not None:
-            await write_block_callback(addr=self.address,
-                                       width=self.width,
-                                       accesswidth=self.width,
-                                       data=data)
-
-        elif write_callback is not None:
-            # there is not write_block_callback defined so we must used individual write
-
-            if self.__register_address_array is None:
-                raise RuntimeError('This address array has not be initialised')
-
-            for entry_index, entry_data in enumerate(data):
-                entry_address = self.__register_address_array[entry_index]
-                await write_callback(addr=entry_address,
-                                     width=self.width,
-                                     accesswidth=self.accesswidth,
-                                     data=entry_data)
-
-        else:
-            raise RuntimeError('No suitable callback')
-
-        if verify:
-            read_back_verify_data = self.__block_read_legacy()
-            if read_back_verify_data != data:
-                raise RegisterWriteVerifyError('Read back block miss-match')
 
     async def __block_read(self) -> list[int]:
         """
@@ -618,12 +520,11 @@ class AsyncRegArray(BaseRegArray[AsyncRegArrayElementType], ABC):
         read_callback = self._callbacks.read_callback
 
         if read_block_callback is not None:
-            data_read = \
-                await read_block_callback(addr=self.address,
-                                          width=self.width,
-                                          accesswidth=self.accesswidth,
-                                          length=self.__number_cache_entries)
-
+            data_read = await read_block_callback(
+                addr=self.address,
+                width=self.width,
+                accesswidth=self.accesswidth,
+                length=self.__number_cache_entries)
 
             if not isinstance(data_read, list):
                 raise TypeError('The read block callback is expected to return an array')
@@ -632,7 +533,7 @@ class AsyncRegArray(BaseRegArray[AsyncRegArrayElementType], ABC):
 
         if read_callback is not None:
             # there is not read_block_callback defined so we must used individual read
-            data_list = self.__empty_list_cache
+            data_list = self.__empty_cache
 
             if self.__register_address_array is None:
                 raise RuntimeError('This address array has not be initialised')
@@ -765,18 +666,11 @@ class AsyncRegArray(BaseRegArray[AsyncRegArrayElementType], ABC):
     def __number_cache_entries(self) -> int:
         return self.size // (self.width >> 3)
 
-    async def __initialise_cache(self, skip_initial_read: bool) -> Union[Array, list[int]]:
-        if isinstance(self._callbacks, AsyncCallbackSet):
-            if skip_initial_read:
-                return self.__empty_list_cache
-            return await self.__block_read()
+    async def __initialise_cache(self, skip_initial_read: bool) -> list[int]:
+        if skip_initial_read:
+            return self.__empty_cache
+        return await self.__block_read()
 
-        if isinstance(self._callbacks, AsyncCallbackSetLegacy):
-            if skip_initial_read:
-                return self.__empty_array_cache
-            return await self.__block_read_legacy()
-
-        raise TypeError('Unhandled callback type')
 
     @asynccontextmanager
     async def _cached_access(self, verify: bool = False, skip_write: bool = False,
@@ -802,21 +696,17 @@ class AsyncRegArray(BaseRegArray[AsyncRegArrayElementType], ABC):
         finally:
             self.__in_context_manager = False
         if not skip_write:
-            if isinstance(self._callbacks, AsyncCallbackSet):
-                if not isinstance(self.__register_cache, list):
-                    raise TypeError('Register cache should be a list in non-legacy mode')
-                await self.__block_write(self.__register_cache, verify)
-            if isinstance(self._callbacks, AsyncCallbackSetLegacy):
-                if not isinstance(self.__register_cache, Array):
-                    raise TypeError('Register cache should be a Array in legacy mode')
-                await self.__block_write_legacy(self.__register_cache, verify)
+            if not isinstance(self.__register_cache, list):
+                raise TypeError('Register cache should be a list in non-legacy mode')
+            await self.__block_write(self.__register_cache, verify)
+
 
         # clear the register states at the end of the context manager
         self.__register_address_array = None
         self.__register_cache = None
 
     @property
-    def _callbacks(self) -> Union[AsyncCallbackSet, AsyncCallbackSetLegacy]:
+    def _callbacks(self) -> AsyncCallbackSet:
         # pylint: disable=protected-access
         if self.__in_context_manager:
             return self.__cache_callbacks
@@ -824,7 +714,7 @@ class AsyncRegArray(BaseRegArray[AsyncRegArrayElementType], ABC):
         if self.parent is None:
             raise RuntimeError('Parent must be set')
 
-        if isinstance(self.parent._callbacks, (AsyncCallbackSet, AsyncCallbackSetLegacy)):
+        if isinstance(self.parent._callbacks, AsyncCallbackSet):
             return self.parent._callbacks
 
         raise TypeError(f'unhandled parent callback type: {type(self.parent._callbacks)}')
@@ -839,8 +729,7 @@ class RegAsyncReadOnlyArray(AsyncRegArray[RegAsyncReadOnly], ABC):
     # pylint: disable=too-many-arguments,duplicate-code
     def __init__(self, *,
                  logger_handle: str, inst_name: str,
-                 parent: Union[AsyncRegFile, AsyncAddressMap, ReadableAsyncMemory,
-                               ReadableAsyncMemoryLegacy],
+                 parent: Union[AsyncRegFile, AsyncAddressMap, ReadableAsyncMemory],
                  address: int,
                  stride: int,
                  dimensions: tuple[int, ...],
@@ -848,8 +737,8 @@ class RegAsyncReadOnlyArray(AsyncRegArray[RegAsyncReadOnly], ABC):
                                           tuple[RegAsyncReadOnly, ...]]] = None):
 
         if not isinstance(parent, (AsyncRegFile, AsyncAddressMap,
-                                   MemoryAsyncReadOnly, MemoryAsyncReadOnlyLegacy,
-                                   MemoryAsyncReadWrite, MemoryAsyncReadWriteLegacy)):
+                                   MemoryAsyncReadOnly,
+                                   MemoryAsyncReadWrite)):
             raise TypeError('parent should be either AsyncRegFile, AsyncAddressMap, '
                             'MemoryAsyncReadOnly, MemoryAsyncReadWrite '
                             f'got {type(parent)}')
@@ -894,7 +783,7 @@ class RegAsyncWriteOnlyArray(AsyncRegArray[RegAsyncWriteOnly], ABC):
     def __init__(self, *,
                  logger_handle: str, inst_name: str,
                  parent: Union[AsyncRegFile, AsyncAddressMap,
-                               WritableAsyncMemory, WritableAsyncMemoryLegacy],
+                               WritableAsyncMemory],
                  address: int,
                  stride: int,
                  dimensions: tuple[int, ...],
@@ -902,8 +791,7 @@ class RegAsyncWriteOnlyArray(AsyncRegArray[RegAsyncWriteOnly], ABC):
                                           tuple[RegAsyncWriteOnly, ...]]] = None):
 
         if not isinstance(parent, (AsyncRegFile, AsyncAddressMap,
-                                   MemoryAsyncWriteOnly, MemoryAsyncReadWrite,
-                                   MemoryAsyncWriteOnlyLegacy, MemoryAsyncReadWriteLegacy)):
+                                   MemoryAsyncWriteOnly, MemoryAsyncReadWrite)):
             raise TypeError('parent should be either AsyncRegFile, AsyncAddressMap, '
                             'MemoryAsyncWriteOnly, MemoryAsyncReadWrite '
                             f'got {type(parent)}')
@@ -947,16 +835,14 @@ class RegAsyncReadWriteArray(AsyncRegArray[RegAsyncReadWrite], ABC):
     # pylint: disable=too-many-arguments,duplicate-code
     def __init__(self, *,
                  logger_handle: str, inst_name: str,
-                 parent: Union[AsyncRegFile, AsyncAddressMap,
-                               MemoryAsyncReadWrite, MemoryAsyncReadWriteLegacy],
+                 parent: Union[AsyncRegFile, AsyncAddressMap, MemoryAsyncReadWrite],
                  address: int,
                  stride: int,
                  dimensions: tuple[int, ...],
                  elements: Optional[tuple[tuple[tuple[int, ...]],
                                           tuple[RegAsyncReadWrite]]] = None):
 
-        if not isinstance(parent, (AsyncRegFile, AsyncAddressMap,
-                                   MemoryAsyncReadWrite, MemoryAsyncReadWriteLegacy)):
+        if not isinstance(parent, (AsyncRegFile, AsyncAddressMap, MemoryAsyncReadWrite)):
             raise TypeError('parent should be either AsyncRegFile, AsyncAddressMap, '
                             'MemoryAsyncReadWrite '
                             f'got {type(parent)}')

@@ -26,11 +26,9 @@ from typing import Union
 from unittest.mock import patch, call
 from itertools import product
 
-from array import array as Array
-
-from ..lib import MemoryReadOnly, MemoryReadOnlyLegacy
-from ..lib import MemoryWriteOnly, MemoryWriteOnlyLegacy
-from ..lib import MemoryReadWrite, MemoryReadWriteLegacy
+from ..lib import MemoryReadOnly
+from ..lib import MemoryWriteOnly
+from ..lib import MemoryReadWrite
 from ..sim_lib.memory import Memory as SimMemory
 
 from .utilities import random_memory_entry,random_memory_entry_value
@@ -44,11 +42,8 @@ class LibTestMemory(LibTestCommon, ABC):
     """
     def _single_memory_read_and_write_test(self, *,
                                            mut: Union[MemoryReadOnly,
-                                                      MemoryReadOnlyLegacy,
                                                       MemoryWriteOnly,
-                                                      MemoryWriteOnlyLegacy,
-                                                      MemoryReadWrite,
-                                                      MemoryReadWriteLegacy],
+                                                      MemoryReadWrite],
                                            is_sw_readable: bool,
                                            is_sw_writable: bool,
                                            readable_registers: NodeIterators,
@@ -63,8 +58,7 @@ class LibTestMemory(LibTestCommon, ABC):
 
 
         if is_sw_readable:
-            if not isinstance(mut, (MemoryReadOnly, MemoryReadOnlyLegacy,
-                                    MemoryReadWrite, MemoryReadWriteLegacy)):
+            if not isinstance(mut, (MemoryReadOnly,MemoryReadWrite, )):
                 raise TypeError('Test can not proceed as the mut is not a readable memory')
             self.__single_memory_read_test(mut=mut)
             self.__single_memory_simulator_read_test(mut=mut)
@@ -75,8 +69,7 @@ class LibTestMemory(LibTestCommon, ABC):
                 _= mut.read(0)  # type: ignore[union-attr,call-arg]
 
         if is_sw_writable:
-            if not isinstance(mut, (MemoryWriteOnly, MemoryWriteOnlyLegacy,
-                                    MemoryReadWrite, MemoryReadWriteLegacy)):
+            if not isinstance(mut, (MemoryWriteOnly, MemoryReadWrite)):
                 raise TypeError('Test can not proceed as the mut is not a writable memory')
             self.__single_memory_write_test(mut=mut)
             self.__single_memory_simulator_write_test(mut=mut)
@@ -88,8 +81,7 @@ class LibTestMemory(LibTestCommon, ABC):
 
     def __single_memory_read_test(
             self,
-            mut: Union[MemoryReadOnly, MemoryReadOnlyLegacy,
-                       MemoryReadWrite, MemoryReadWriteLegacy]
+            mut: Union[MemoryReadOnly, MemoryReadWrite]
         ) -> None:
 
         with patch.object(self, 'write_callback') as write_callback_mock, \
@@ -101,15 +93,9 @@ class LibTestMemory(LibTestCommon, ABC):
                     [0, mut.max_entry_value, random_memory_entry_value(mut)]):
                 read_callback_mock.return_value = value
 
-                if self.legacy_block_access:
-                    if not isinstance(mut, (MemoryReadOnlyLegacy, MemoryReadWriteLegacy)):
-                        raise TypeError(f'Memory should be legacy type but got {type(mut)}')
-                    self.assertEqual(mut.read(start_entry=entry, number_entries=1),
-                                     Array(mut.array_typecode, [value]))
-                else:
-                    if not isinstance(mut, (MemoryReadOnly, MemoryReadWrite)):
-                        raise TypeError(f'Memory should be non-legacy type but got {type(mut)}')
-                    self.assertEqual(mut.read(start_entry=entry, number_entries=1),[value])
+                if not isinstance(mut, (MemoryReadOnly, MemoryReadWrite)):
+                    raise TypeError(f'Memory should be non-legacy type but got {type(mut)}')
+                self.assertEqual(mut.read(start_entry=entry, number_entries=1),[value])
 
                 read_callback_mock.assert_called_once_with(
                     addr=mut.address + (entry * mut.width_in_bytes),
@@ -130,23 +116,16 @@ class LibTestMemory(LibTestCommon, ABC):
                 return rand_data_list[mem_entry]
             read_callback_mock.side_effect = read_data_mock
 
-            if self.legacy_block_access:
-                if not isinstance(mut, (MemoryReadOnlyLegacy, MemoryReadWriteLegacy)):
-                    raise TypeError(f'Memory should be legacy type but got {type(mut)}')
-                self.assertEqual(mut.read(start_entry=0,number_entries=entries_to_test),
-                                 Array(mut.array_typecode, rand_data_list))
-            else:
-                if not isinstance(mut, (MemoryReadOnly, MemoryReadWrite)):
-                    raise TypeError(f'Memory should be non-legacy type but got {type(mut)}')
-                self.assertEqual(mut.read(start_entry=0, number_entries=entries_to_test),
-                                 rand_data_list)
+            if not isinstance(mut, (MemoryReadOnly, MemoryReadWrite)):
+                raise TypeError(f'Memory should be non-legacy type but got {type(mut)}')
+            self.assertEqual(mut.read(start_entry=0, number_entries=entries_to_test),
+                             rand_data_list)
 
             write_callback_mock.assert_not_called()
 
     def __single_memory_write_test(
             self,
-            mut: Union[MemoryWriteOnly, MemoryWriteOnlyLegacy,
-                       MemoryReadWrite, MemoryReadWriteLegacy]
+            mut: Union[MemoryWriteOnly, MemoryReadWrite]
         ) -> None:
 
         # this function will simplify once all the legacy modes are removed later so we have
@@ -161,14 +140,10 @@ class LibTestMemory(LibTestCommon, ABC):
                     [0, mut.entries - 1, random_memory_entry(mut)],
                     [0, mut.max_entry_value, random_memory_entry_value(mut)]):
 
-                if self.legacy_block_access:
-                    if not isinstance(mut, (MemoryWriteOnlyLegacy, MemoryReadWriteLegacy)):
-                        raise TypeError(f'Memory should be legacy type but got {type(mut)}')
-                    mut.write(start_entry=entry, data = Array(mut.array_typecode, [value]))
-                else:
-                    if not isinstance(mut, (MemoryWriteOnly, MemoryReadWrite)):
-                        raise TypeError(f'Memory should be non-legacy type but got {type(mut)}')
-                    mut.write(start_entry=entry, data = [value])
+
+                if not isinstance(mut, (MemoryWriteOnly, MemoryReadWrite)):
+                    raise TypeError(f'Memory should be non-legacy type but got {type(mut)}')
+                mut.write(start_entry=entry, data = [value])
 
                 write_callback_mock.assert_called_once_with(
                     addr=mut.address + (entry * mut.width_in_bytes),
@@ -183,14 +158,9 @@ class LibTestMemory(LibTestCommon, ABC):
             entries_to_test = mut.entries if mut.entries < 10 else 10
             rand_data_list = [random_memory_entry_value(mut) for _ in range(entries_to_test)]
 
-            if self.legacy_block_access:
-                if not isinstance(mut, (MemoryWriteOnlyLegacy, MemoryReadWriteLegacy)):
-                    raise TypeError(f'Memory should be legacy type but got {type(mut)}')
-                mut.write(start_entry=0, data=Array(mut.array_typecode, rand_data_list))
-            else:
-                if not isinstance(mut, (MemoryWriteOnly, MemoryReadWrite)):
-                    raise TypeError(f'Memory should be non-legacy type but got {type(mut)}')
-                mut.write(start_entry=0, data=rand_data_list)
+            if not isinstance(mut, (MemoryWriteOnly, MemoryReadWrite)):
+                raise TypeError(f'Memory should be non-legacy type but got {type(mut)}')
+            mut.write(start_entry=0, data=rand_data_list)
 
             calls = [call(addr=mut.address + (entry * mut.width_in_bytes),
                           width=mut.width,
@@ -199,36 +169,18 @@ class LibTestMemory(LibTestCommon, ABC):
             write_callback_mock.assert_has_calls(calls, any_order=False)
 
             # check invalid write values bounce
-            if self.legacy_block_access:
-                if not isinstance(mut, (MemoryWriteOnlyLegacy, MemoryReadWriteLegacy)):
-                    raise TypeError(f'Memory should be legacy type but got {type(mut)}')
-                # depending the hardware array sizes the error may be at the point the array is
-                # constructed on internal
-                dummy_array = Array(mut.array_typecode, [0])
-                if dummy_array.itemsize > mut.width_in_bytes:
-                    with self.assertRaises(ValueError):
-                        mut.write(start_entry=0, data=Array(mut.array_typecode,
-                                                            [mut.max_entry_value + 1]))
-                else:
-                    with self.assertRaises(OverflowError):
-                        mut.write(start_entry=0, data=Array(mut.array_typecode,
-                                                            [mut.max_entry_value + 1]))
-                with self.assertRaises(OverflowError):
-                    mut.write(start_entry=0, data=Array(mut.array_typecode,[-1]))
-            else:
-                if not isinstance(mut, (MemoryWriteOnly, MemoryReadWrite)):
-                    raise TypeError(f'Memory should be non-legacy type but got {type(mut)}')
-                with self.assertRaises(ValueError):
-                    mut.write(start_entry=0, data=[mut.max_entry_value + 1])
-                with self.assertRaises(ValueError):
-                    mut.write(start_entry=0, data=[-1])
+            if not isinstance(mut, (MemoryWriteOnly, MemoryReadWrite)):
+                raise TypeError(f'Memory should be non-legacy type but got {type(mut)}')
+            with self.assertRaises(ValueError):
+                mut.write(start_entry=0, data=[mut.max_entry_value + 1])
+            with self.assertRaises(ValueError):
+                mut.write(start_entry=0, data=[-1])
 
             read_callback_mock.assert_not_called()
 
     def __single_memory_simulator_read_test(
             self,
-            mut: Union[MemoryReadOnly, MemoryReadOnlyLegacy,
-                       MemoryReadWrite, MemoryReadWriteLegacy],
+            mut: Union[MemoryReadOnly, MemoryReadWrite],
         ) -> None:
 
         sim_memory = self.simulator_instance.memory_by_full_name(mut.full_inst_name)
@@ -241,15 +193,9 @@ class LibTestMemory(LibTestCommon, ABC):
 
             sim_memory.value[entry] = value
 
-            if self.legacy_block_access:
-                if not isinstance(mut, (MemoryReadOnlyLegacy, MemoryReadWriteLegacy)):
-                    raise TypeError(f'Memory should be legacy type but got {type(mut)}')
-                self.assertEqual(mut.read(start_entry=entry, number_entries=1),
-                                 Array(mut.array_typecode, [value]))
-            else:
-                if not isinstance(mut, (MemoryReadOnly, MemoryReadWrite)):
-                    raise TypeError(f'Memory should be non-legacy type but got {type(mut)}')
-                self.assertEqual(mut.read(start_entry=entry, number_entries=1), [value])
+            if not isinstance(mut, (MemoryReadOnly, MemoryReadWrite)):
+                raise TypeError(f'Memory should be non-legacy type but got {type(mut)}')
+            self.assertEqual(mut.read(start_entry=entry, number_entries=1), [value])
 
         # multi-entry read
         # check a multi-entry read, if the memory is small do the entire memory, however, if
@@ -259,21 +205,14 @@ class LibTestMemory(LibTestCommon, ABC):
         for entry in range(entries_to_test):
             sim_memory.value[entry] = rand_data_list[entry]
 
-        if self.legacy_block_access:
-            if not isinstance(mut, (MemoryReadOnlyLegacy, MemoryReadWriteLegacy)):
-                raise TypeError(f'Memory should be legacy type but got {type(mut)}')
-            self.assertEqual(mut.read(start_entry=0,number_entries=entries_to_test),
-                             Array(mut.array_typecode, rand_data_list))
-        else:
-            if not isinstance(mut, (MemoryReadOnly, MemoryReadWrite)):
-                raise TypeError(f'Memory should be non-legacy type but got {type(mut)}')
-            self.assertEqual(mut.read(start_entry=0, number_entries=entries_to_test),
-                             rand_data_list)
+        if not isinstance(mut, (MemoryReadOnly, MemoryReadWrite)):
+            raise TypeError(f'Memory should be non-legacy type but got {type(mut)}')
+        self.assertEqual(mut.read(start_entry=0, number_entries=entries_to_test),
+                         rand_data_list)
 
     def __single_memory_simulator_write_test(
             self,
-            mut: Union[MemoryWriteOnly, MemoryWriteOnlyLegacy,
-                       MemoryReadWrite, MemoryReadWriteLegacy]
+            mut: Union[MemoryWriteOnly, MemoryReadWrite]
         ) -> None:
 
         sim_memory = self.simulator_instance.memory_by_full_name(mut.full_inst_name)
@@ -284,15 +223,11 @@ class LibTestMemory(LibTestCommon, ABC):
                 [0, mut.entries - 1, random_memory_entry(mut)],
                 [0, mut.max_entry_value, random_memory_entry_value(mut)]):
 
-            if self.legacy_block_access:
-                if not isinstance(mut, (MemoryWriteOnlyLegacy, MemoryReadWriteLegacy)):
-                    raise TypeError(f'Memory should be legacy type but got {type(mut)}')
-                mut.write(start_entry=entry, data=Array(mut.array_typecode, [value]))
-            else:
-                if not isinstance(mut, (MemoryWriteOnly, MemoryReadWrite)):
-                    raise TypeError(
-                        f'Memory should be non-legacy type but got {type(mut)}')
-                mut.write(start_entry=entry, data=[value])
+
+            if not isinstance(mut, (MemoryWriteOnly, MemoryReadWrite)):
+                raise TypeError(
+                    f'Memory should be non-legacy type but got {type(mut)}')
+            mut.write(start_entry=entry, data=[value])
 
             self.assertEqual(sim_memory.value[entry], value)
 
@@ -302,14 +237,10 @@ class LibTestMemory(LibTestCommon, ABC):
         entries_to_test = mut.entries if mut.entries < 10 else 10
         rand_data_list = [random_memory_entry_value(mut) for _ in range(entries_to_test)]
 
-        if self.legacy_block_access:
-            if not isinstance(mut, (MemoryWriteOnlyLegacy, MemoryReadWriteLegacy)):
-                raise TypeError(f'Memory should be legacy type but got {type(mut)}')
-            mut.write(start_entry=0, data=Array(mut.array_typecode, rand_data_list))
-        else:
-            if not isinstance(mut, (MemoryWriteOnly, MemoryReadWrite)):
-                raise TypeError(f'Memory should be non-legacy type but got {type(mut)}')
-            mut.write(start_entry=0, data=rand_data_list)
+
+        if not isinstance(mut, (MemoryWriteOnly, MemoryReadWrite)):
+            raise TypeError(f'Memory should be non-legacy type but got {type(mut)}')
+        mut.write(start_entry=0, data=rand_data_list)
 
         for entry in range(entries_to_test):
             self.assertEqual(sim_memory.value[entry], rand_data_list[entry])

@@ -24,16 +24,12 @@ from typing import Union, cast, Optional, TypeVar
 from collections.abc import Generator, Iterator, Iterable
 from abc import ABC, abstractmethod
 from contextlib import contextmanager
-from array import array as Array
 import sys
 
 from .sections import AddressMap, RegFile
-from .utility_functions import get_array_typecode
 from .memory import  MemoryReadOnly, MemoryWriteOnly, MemoryReadWrite, Memory, \
     ReadableMemory, WritableMemory
-from .memory import MemoryReadOnlyLegacy, MemoryWriteOnlyLegacy, MemoryReadWriteLegacy
-from .memory import ReadableMemoryLegacy, WritableMemoryLegacy
-from .callbacks import NormalCallbackSet, NormalCallbackSetLegacy
+from .callbacks import NormalCallbackSet
 from .base_register import BaseReg, BaseRegArray, RegisterWriteVerifyError
 from .base_field import FieldEnum, FieldSizeProps, FieldMiscProps, \
     _FieldReadOnlyFramework, _FieldWriteOnlyFramework, FieldType
@@ -74,25 +70,23 @@ class Reg(BaseReg, Iterable[Union['FieldReadOnly', 'FieldWriteOnly', 'FieldReadW
                  inst_name: str,
                  parent: Union[AddressMap, RegFile, Memory, 'RegArray']):
 
-        if not isinstance(parent, (AddressMap, RegFile,
-                                   MemoryReadOnly, MemoryWriteOnly, MemoryReadWrite, RegArray,
-                                   MemoryReadOnlyLegacy, MemoryWriteOnlyLegacy,
-                                   MemoryReadWriteLegacy)):
+        if not isinstance(parent, (AddressMap, RegFile, RegArray,
+                                   MemoryReadOnly, MemoryWriteOnly, MemoryReadWrite, )):
             raise TypeError(f'bad parent type got: {type(parent)}')
 
-        if not isinstance(parent._callbacks, (NormalCallbackSet, NormalCallbackSetLegacy)):
+        if not isinstance(parent._callbacks, NormalCallbackSet):
             raise TypeError(f'callback set type is wrong, got {type(parent._callbacks)}')
 
         super().__init__(address=address, logger_handle=logger_handle,
                          inst_name=inst_name, parent=parent)
 
     @property
-    def _callbacks(self) -> Union[NormalCallbackSet, NormalCallbackSetLegacy]:
+    def _callbacks(self) -> NormalCallbackSet:
         # pylint: disable=protected-access
         if self.parent is None:
             raise RuntimeError('Parent must be set')
 
-        if isinstance(self.parent._callbacks, (NormalCallbackSet, NormalCallbackSetLegacy)):
+        if isinstance(self.parent._callbacks, NormalCallbackSet):
             return self.parent._callbacks
 
         raise TypeError(f'unhandled parent callback type: {type(self.parent._callbacks)}')
@@ -132,10 +126,10 @@ class RegArray(BaseRegArray[RegArrayElementType], ABC):
                                           tuple[RegArrayElementType, ...]]] = None):
 
         self.__in_context_manager: bool = False
-        self.__register_cache: Optional[Union[Array, list[int]]] = None
+        self.__register_cache: Optional[list[int]] = None
         self.__register_address_array: Optional[list[int]] = None
 
-        if not isinstance(parent._callbacks, (NormalCallbackSet, NormalCallbackSetLegacy)):
+        if not isinstance(parent._callbacks, NormalCallbackSet):
             raise TypeError(f'callback set type is wrong, got {type(parent._callbacks)}')
 
         super().__init__(logger_handle=logger_handle, inst_name=inst_name,
@@ -143,95 +137,13 @@ class RegArray(BaseRegArray[RegArrayElementType], ABC):
                          stride=stride, dimensions=dimensions, elements=elements)
 
     @property
-    def __empty_array_cache(self) -> Array:
-        return Array(get_array_typecode(self.width), self.__empty_list_cache)
-
-    @property
-    def __empty_list_cache(self) -> list[int]:
+    def __empty_cache(self) -> list[int]:
         return [0 for _ in range(self.__number_cache_entries)]
-
-    def __block_read_legacy(self) -> Array:
-        """
-        Read all the contents of the array in the most optimal way, ideally with a block operation
-        """
-        if not isinstance(self._callbacks, NormalCallbackSetLegacy):
-            raise RuntimeError('This function should only be used with legacy callbacks')
-
-        read_block_callback = self._callbacks.read_block_callback
-        read_callback = self._callbacks.read_callback
-
-        if read_block_callback is not None:
-            data_read = read_block_callback(addr=self.address, width=self.width,
-                                            accesswidth=self.accesswidth,
-                                            length=self.__number_cache_entries)
-
-            if not isinstance(data_read, Array):
-                raise TypeError('The read block callback is expected to return an array')
-
-            return data_read
-
-        if read_callback is not None:
-            # there is not read_block_callback defined so we must used individual read
-            data_array = self.__empty_array_cache
-
-            if self.__register_address_array is None:
-                raise RuntimeError('This address array has not be initialised')
-
-            for entry, address in enumerate(self.__register_address_array):
-                data_entry = read_callback(addr=address,
-                                           width=self.width,
-                                           accesswidth=self.accesswidth)
-
-                data_array[entry] = data_entry
-
-            return data_array
-
-        raise RuntimeError('There is no usable callback')
-
-    def __block_write_legacy(self, data: Array, verify: bool) -> None:
-        """
-        Write all the contents of the array in the most optimal way, ideally with a block operation
-        """
-        if not isinstance(self._callbacks, NormalCallbackSetLegacy):
-            raise RuntimeError('This function should only be used with legacy callbacks')
-
-        write_block_callback = self._callbacks.write_block_callback
-        write_callback = self._callbacks.write_callback
-
-        if write_block_callback is not None:
-            write_block_callback(addr=self.address,
-                                 width=self.width,
-                                 accesswidth=self.width,
-                                 data=data)
-
-        elif write_callback is not None:
-            # there is not write_block_callback defined so we must used individual write
-
-            if self.__register_address_array is None:
-                raise RuntimeError('This address array has not be initialised')
-
-            for entry_index, entry_data in enumerate(data):
-                entry_address = self.__register_address_array[entry_index]
-                write_callback(addr=entry_address,
-                               width=self.width,
-                               accesswidth=self.accesswidth,
-                               data=entry_data)
-
-        else:
-            raise RuntimeError('No suitable callback')
-
-        if verify:
-            read_back_verify_data = self.__block_read_legacy()
-            if read_back_verify_data != data:
-                raise RegisterWriteVerifyError('Read back block miss-match')
 
     def __block_read(self) -> list[int]:
         """
         Read all the contents of the array in the most optimal way, ideally with a block operation
         """
-        if not isinstance(self._callbacks, NormalCallbackSet):
-            raise RuntimeError('This function should only be used with non-legacy callbacks')
-
         read_block_callback = self._callbacks.read_block_callback
         read_callback = self._callbacks.read_callback
 
@@ -243,16 +155,12 @@ class RegArray(BaseRegArray[RegArrayElementType], ABC):
                                     length=self.__number_cache_entries)
 
             if not isinstance(data_read, list):
-                if isinstance(data_read, Array):
-                    raise TypeError('The read block callback is expected to return an list, this '
-                                    'is likely to happen if you are using legacy callbacks without '
-                                    'NormalCallbackSetLegacy')
                 raise TypeError('The read block callback is expected to return an list')
             return data_read
 
         if read_callback is not None:
             # there is not read_block_callback defined so we must used individual read
-            data_list = self.__empty_list_cache
+            data_list = self.__empty_cache
 
             if self.__register_address_array is None:
                 raise RuntimeError('This address array has not be initialised')
@@ -272,9 +180,6 @@ class RegArray(BaseRegArray[RegArrayElementType], ABC):
         """
         Write all the contents of the array in the most optimal way, ideally with a block operation
         """
-        if not isinstance(self._callbacks, NormalCallbackSet):
-            raise RuntimeError('This function should only be used with non-legacy callbacks')
-
         write_block_callback = self._callbacks.write_block_callback
         write_callback = self._callbacks.write_callback
 
@@ -386,18 +291,10 @@ class RegArray(BaseRegArray[RegArrayElementType], ABC):
     def __number_cache_entries(self) -> int:
         return self.size // (self.width >> 3)
 
-    def __initialise_cache(self, skip_initial_read: bool) -> Union[Array, list[int]]:
-        if isinstance(self._callbacks, NormalCallbackSet):
-            if skip_initial_read:
-                return self.__empty_list_cache
-            return self.__block_read()
-
-        if isinstance(self._callbacks, NormalCallbackSetLegacy):
-            if skip_initial_read:
-                return self.__empty_array_cache
-            return self.__block_read_legacy()
-
-        raise TypeError('Unhandled callback type')
+    def __initialise_cache(self, skip_initial_read: bool) -> list[int]:
+        if skip_initial_read:
+            return self.__empty_cache
+        return self.__block_read()
 
     @contextmanager
     def _cached_access(self, verify: bool = False, skip_write: bool = False,
@@ -422,14 +319,9 @@ class RegArray(BaseRegArray[RegArrayElementType], ABC):
         finally:
             self.__in_context_manager = False
         if not skip_write:
-            if isinstance(self._callbacks, NormalCallbackSet):
-                if not isinstance(self.__register_cache, list):
-                    raise TypeError('Register cache should be a list in non-legacy mode')
-                self.__block_write(self.__register_cache, verify)
-            if isinstance(self._callbacks, NormalCallbackSetLegacy):
-                if not isinstance(self.__register_cache, Array):
-                    raise TypeError('Register cache should be a Array in legacy mode')
-                self.__block_write_legacy(self.__register_cache, verify)
+            if not isinstance(self.__register_cache, list):
+                raise TypeError('Register cache should be a list in non-legacy mode')
+            self.__block_write(self.__register_cache, verify)
 
         # clear the register states at the end of the context manager
         self.__register_address_array = None
@@ -468,7 +360,7 @@ class RegReadOnly(Reg, ABC):
                  address: int,
                  logger_handle: str,
                  inst_name: str,
-                 parent: Union[AddressMap, RegFile, ReadableMemory, ReadableMemoryLegacy ]):
+                 parent: Union[AddressMap, RegFile, ReadableMemory]):
 
         super().__init__(address=address,
                          logger_handle=logger_handle,
@@ -563,7 +455,7 @@ class RegWriteOnly(Reg, ABC):
                  address: int,
                  logger_handle: str,
                  inst_name: str,
-                 parent: Union[AddressMap, RegFile, WritableMemory, WritableMemoryLegacy]):
+                 parent: Union[AddressMap, RegFile, WritableMemory]):
 
         super().__init__(address=address,
                          logger_handle=logger_handle,
@@ -594,18 +486,10 @@ class RegWriteOnly(Reg, ABC):
                                            data=data)  #
 
         elif self._callbacks.write_block_callback is not None:
-            if isinstance(self._callbacks, NormalCallbackSetLegacy):
-                data_as_array = Array(get_array_typecode(self.width), [data])
-                self._callbacks.write_block_callback(addr=self.address,
-                                                     width=self.width,
-                                                     accesswidth=self.accesswidth,
-                                                     data=data_as_array)
-
-            if isinstance(self._callbacks, NormalCallbackSet):
-                self._callbacks.write_block_callback(addr=self.address,
-                                                     width=self.width,
-                                                     accesswidth=self.accesswidth,
-                                                     data=[data])
+            self._callbacks.write_block_callback(addr=self.address,
+                                                 width=self.width,
+                                                 accesswidth=self.accesswidth,
+                                                 data=[data])
 
         else:
             raise RuntimeError('This function does not have a useable callback')
@@ -652,7 +536,7 @@ class RegReadWrite(RegReadOnly, RegWriteOnly, ABC):
                  address: int,
                  logger_handle: str,
                  inst_name: str,
-                 parent: Union[AddressMap, RegFile, MemoryReadWrite, MemoryReadWriteLegacy]):
+                 parent: Union[AddressMap, RegFile, MemoryReadWrite]):
 
         super().__init__(address=address,
                          logger_handle=logger_handle,
@@ -804,20 +688,19 @@ class RegReadOnlyArray(RegArray[RegReadOnly], ABC):
     # pylint: disable=too-many-arguments,duplicate-code
     def __init__(self, *,
                  logger_handle: str, inst_name: str,
-                 parent: Union[RegFile, AddressMap, ReadableMemory, ReadableMemoryLegacy],
+                 parent: Union[RegFile, AddressMap, ReadableMemory],
                  address: int,
                  stride: int,
                  dimensions: tuple[int, ...],
                  elements: Optional[tuple[tuple[tuple[int, ...], ...],
                                     tuple[RegReadOnly, ...]]] = None):
 
-        if not isinstance(parent, (RegFile, AddressMap, MemoryReadOnly, MemoryReadWrite,
-                                   MemoryReadOnlyLegacy, MemoryReadWriteLegacy)):
+        if not isinstance(parent, (RegFile, AddressMap, MemoryReadOnly, MemoryReadWrite)):
             raise TypeError('parent should be either RegFile, AddressMap, '
                             'MemoryReadOnly, MemoryReadWrite '
                             f'got {type(parent)}')
 
-        if not isinstance(parent._callbacks, (NormalCallbackSet, NormalCallbackSetLegacy)):
+        if not isinstance(parent._callbacks, NormalCallbackSet):
             raise TypeError(f'callback set type is wrong, got {type(parent._callbacks)}')
 
         super().__init__(logger_handle=logger_handle, inst_name=inst_name,
@@ -855,20 +738,19 @@ class RegWriteOnlyArray(RegArray[RegWriteOnly], ABC):
     # pylint: disable=too-many-arguments,duplicate-code
     def __init__(self, *,
                  logger_handle: str, inst_name: str,
-                 parent: Union[RegFile, AddressMap, WritableMemory, WritableMemoryLegacy],
+                 parent: Union[RegFile, AddressMap, WritableMemory],
                  address: int,
                  stride: int,
                  dimensions: tuple[int, ...],
                  elements: Optional[tuple[tuple[tuple[int, ...], ...],
                                           tuple[RegWriteOnly, ...]]] = None):
 
-        if not isinstance(parent, (RegFile, AddressMap, MemoryWriteOnly, MemoryReadWrite,
-                                   MemoryWriteOnlyLegacy, MemoryReadWriteLegacy)):
+        if not isinstance(parent, (RegFile, AddressMap, MemoryWriteOnly, MemoryReadWrite)):
             raise TypeError('parent should be either RegFile, AddressMap, MemoryWriteOnly, '
                             'MemoryReadWrite '
                             f'got {type(parent)}')
 
-        if not isinstance(parent._callbacks, (NormalCallbackSet, NormalCallbackSetLegacy)):
+        if not isinstance(parent._callbacks, NormalCallbackSet):
             raise TypeError(f'callback set type is wrong, got {type(parent._callbacks)}')
 
         super().__init__(logger_handle=logger_handle, inst_name=inst_name,
@@ -906,18 +788,18 @@ class RegReadWriteArray(RegArray[RegReadWrite], ABC):
     # pylint: disable=too-many-arguments,duplicate-code
     def __init__(self, *,
                  logger_handle: str, inst_name: str,
-                 parent: Union[RegFile, AddressMap, MemoryReadWrite, MemoryReadWriteLegacy],
+                 parent: Union[RegFile, AddressMap, MemoryReadWrite],
                  address: int,
                  stride: int,
                  dimensions: tuple[int, ...],
                  elements: Optional[tuple[tuple[tuple[int, ...], ...],
                                           tuple[RegReadWrite, ...]]] = None):
 
-        if not isinstance(parent, (RegFile, AddressMap, MemoryReadWrite, MemoryReadWriteLegacy)):
+        if not isinstance(parent, (RegFile, AddressMap, MemoryReadWrite)):
             raise TypeError('parent should be either RegFile, AddressMap, MemoryReadWrite '
                             f'got {type(parent)}')
 
-        if not isinstance(parent._callbacks, (NormalCallbackSet, NormalCallbackSetLegacy)):
+        if not isinstance(parent._callbacks, NormalCallbackSet):
             raise TypeError(f'callback set type is wrong, got {type(parent._callbacks)}')
 
         super().__init__(logger_handle=logger_handle, inst_name=inst_name,
