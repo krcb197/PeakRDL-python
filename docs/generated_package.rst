@@ -187,6 +187,10 @@ Legacy Block Callback and Block Access
 
     The ``legacy_block_access`` will now default to ``False``
 
+.. versionchanged:: 4.0.0
+
+    The ``legacy_block_access`` was removed, the ``NormalCallbackSetLegacy`` and ``AsyncCallbackSetLegacy`` are no longer supported
+
 Using the Register Access Layer
 ===============================
 
