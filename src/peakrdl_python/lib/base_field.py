@@ -158,7 +158,7 @@ class FieldMiscProps:
 # FieldType = TypeVar('FieldType', bound=int|SystemRDLEnum)
 # However, python 3.9 does not support the combination so the binding was removed
 # pylint: disable-next=invalid-name
-FieldType = TypeVar('FieldType')
+FieldType = TypeVar('FieldType', bound=int|SystemRDLEnum)
 class Field(Generic[FieldType], Base, ABC):
     """
     base class of register field wrappers

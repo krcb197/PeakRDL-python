@@ -32,6 +32,7 @@ from ..lib.base_register import BaseReg
 from ..lib.utility_functions import calculate_bitmask
 from ..lib import FieldEnum
 from ..lib.memory import BaseMemory
+from ..lib import SystemRDLEnum
 
 def reverse_bits(value: int, number_bits: int) -> int:
     """
@@ -107,11 +108,11 @@ def random_int_field_value(fut: Field) -> int:
     return random.randint(0, fut.max_value)
 
 # The following line should be:
-# FieldType = TypeVar('FieldType', bound=int|IntEnum|SystemRDLEnum)
+# FieldType = TypeVar('FieldType', bound=int|SystemRDLEnum)
 # However, python 3.9 does not support the combination so the binding was removed
 # pylint: disable-next=invalid-name
-FieldType = TypeVar('FieldType')
-def random_encoded_field_value(fut: FieldEnum[FieldType]) -> FieldType:
+FieldType = TypeVar('FieldType', bound=int|SystemRDLEnum)
+def random_encoded_field_value(fut: FieldEnum[SystemRDLEnum]) -> SystemRDLEnum:
     """
     Return a random encoded values within the legal range for a field
     """
@@ -150,14 +151,14 @@ class RandomReg:
         self.value = end_value
 
     def _random_legal_values(self, initial_value:int ,field_iter: Iterable[Field]) -> tuple[
-        int, dict[str, Union[int, Enum]]]:
+        int, dict[str, Union[int, SystemRDLEnum]]]:
         """
         Returns a random register value, based on legal values for the fields within the register
         """
 
         # build up a register value, starting with a random register value
         reg_value = initial_value
-        reg_field_content: dict[str, Union[int, Enum]] = {}
+        reg_field_content: dict[str, Union[int, SystemRDLEnum]] = {}
         for field in field_iter:
             if isinstance(field, FieldEnum):
                 field_value_enum = random_encoded_field_value(field)
@@ -186,7 +187,7 @@ class RegWriteTestSequence(RandomReg):
     value: int = dataclass_field(init=False)
     fields: Iterable[Field]
     start_value: int = dataclass_field(init=False)
-    write_sequence: dict[str, Union[int, Enum]] = dataclass_field(init=False)
+    write_sequence: dict[str, Union[int, SystemRDLEnum]] = dataclass_field(init=False)
 
     def __post_init__(self) -> None:
         super().__post_init__()
@@ -201,7 +202,8 @@ class RegWriteZeroStartTestSequence(RandomReg):
     starting with a random register value.
     """
     fields: Iterable[Field]
-    write_sequence: dict[str, Union[int, Enum]] = dataclass_field(init=False)
+
+    write_sequence: dict[str, Union[int, SystemRDLEnum]] = dataclass_field(init=False)
 
     def __post_init__(self) -> None:
         self.value, self.write_sequence = self._random_legal_values(initial_value=0,

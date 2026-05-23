@@ -637,7 +637,7 @@ class RegReadWrite(RegReadOnly, RegWriteOnly, ABC):
 
         return super().read()
 
-    def write_fields(self, **kwargs) -> None:  # type: ignore[no-untyped-def]
+    def write_fields(self, **kwargs: Union[int, SystemRDLEnum]) -> None:
         """
         Do a read-modify-write to the register, updating any field included in
         the arguments
