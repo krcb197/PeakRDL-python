@@ -145,7 +145,7 @@ class {{node.python_class_name}}({% if asyncoutput %}Async{% endif %}RegFile):
     {{get_table_block(node.instance) | indent}}
     """
 
-    __slots__ : list[str] = [{%- for child_node in node.instance.children(unroll=False) -%}'__{{child_node.inst_name}}'{% if not loop.last %}, {% endif %}{%- endfor %}]
+    __slots__ : list[str] = [{%- for child_node in node.children(unroll=False) -%}'__{{child_node.inst_name}}'{% if not loop.last %}, {% endif %}{%- endfor %}]
 
     def __init__(self,
                  address: int,
@@ -159,7 +159,7 @@ class {{node.python_class_name}}({% if asyncoutput %}Async{% endif %}RegFile):
                          parent=parent)
 
         # instance of objects within the class
-        {% for child_node in node.instance.children(unroll=False) -%}
+        {% for child_node in node.children(unroll=False) -%}
             {{ regfile_or_addr_instance(child_node) | indent }}
         {% endfor %}
 
@@ -214,7 +214,7 @@ class {{node.python_class_name}}({% if asyncoutput %}Async{% endif %}AddressMap)
     {{get_table_block(node.instance) | indent}}
     """
 
-    __slots__ : list[str] = [{%- for child_node in node.instance.children(unroll=False) -%}{%- if isinstance(child_node, systemrdlRegNode) or isinstance(child_node, systemrdlRegfileNode) or isinstance(child_node, systemrdlAddrmapNode) or isinstance(child_node, systemrdlMemNode) -%}'__{{child_node.inst_name}}'{% if not loop.last %}, {% endif %}{% endif %}{%- endfor %}]
+    __slots__ : list[str] = [{%- for child_node in node.children(unroll=False) -%}{%- if isinstance(child_node, systemrdlRegNode) or isinstance(child_node, systemrdlRegfileNode) or isinstance(child_node, systemrdlAddrmapNode) or isinstance(child_node, systemrdlMemNode) -%}'__{{child_node.inst_name}}'{% if not loop.last %}, {% endif %}{% endif %}{%- endfor %}]
 
     def __init__(self, *,
                  address:int {%- if node.instance == top_node -%}={{top_node.absolute_address}}{%- endif -%},
@@ -233,7 +233,7 @@ class {{node.python_class_name}}({% if asyncoutput %}Async{% endif %}AddressMap)
                          inst_name=inst_name,
                          parent=parent)
 
-        {% for child_node in node.instance.children(unroll=False) -%}
+        {% for child_node in node.children(unroll=False) -%}
             {{ regfile_or_addr_instance(child_node) | indent }}
         {% endfor %}
 
