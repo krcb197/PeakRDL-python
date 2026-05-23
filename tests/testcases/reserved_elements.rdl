@@ -10,6 +10,13 @@ addrmap reserved_elements {
     };
 
     reg  {
+        default sw = w;
+        default hw = r;
+        field { fieldwidth=1; } RSVD;
+        field { fieldwidth=1; } field_a;
+    } write_only_register;
+
+    reg  {
         default sw = rw;
         default hw = r;
         field { fieldwidth=1; } reserved;
