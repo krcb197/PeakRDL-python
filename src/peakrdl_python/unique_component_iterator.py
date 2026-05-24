@@ -41,6 +41,7 @@ from .systemrdl_node_utility_functions import ShowUDPCallback
 from .systemrdl_node_utility_functions import get_properties_to_include
 from .systemrdl_node_utility_functions import get_reg_regwidth, get_reg_accesswidth
 from .systemrdl_node_utility_functions import get_memory_accesswidth
+from .systemrdl_node_utility_functions import get_reg_writable_fields
 from .class_names import get_base_class_name
 
 @dataclass(frozen=True)
@@ -206,10 +207,20 @@ class PeakRDLPythonUniqueRegisterComponents(PeakRDLPythonUniqueComponents):
 
     def fields(self) -> Iterator[FieldNode]:
         """
-        Iterator for all the systemRDL nodes which are not hidden
+        Iterator for all the systemRDL fields associated with the register which are not hidden
         """
         yield from filterfalse(self.parent_walker.hide_node_callback,
                                self.instance.fields())
+
+
+    def writable_fields(self) -> Iterator[FieldNode]:
+        """
+        Iterator for all the systemRDL writtable fields associated with the register which are not
+        hidden i.e. read only fields are filtered out
+        """
+        yield from get_reg_writable_fields(node=self.instance,
+                                           hide_node_callback=self.parent_walker.hide_node_callback)
+
 
 @dataclass(frozen=True)
 class PeakRDLPythonUniqueMemoryComponents(PeakRDLPythonUniqueComponents):

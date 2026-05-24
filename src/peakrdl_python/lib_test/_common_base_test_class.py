@@ -197,6 +197,8 @@ class CommonTestBase(unittest.TestCase, ABC):
                                    parent_full_inst_name=parent_full_inst_name,
                                    inst_name=inst_name)
 
+        self.assertEqual(rut.inverse_bitmask, rut.bitmask ^ rut.max_value)
+
         self.__bad_attribute_test(dut=rut)
 
     # pylint:disable-next=too-many-arguments

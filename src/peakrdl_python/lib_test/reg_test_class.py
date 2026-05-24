@@ -86,7 +86,9 @@ class LibTestRegister(LibTestCommon, ABC):
             else:
                 if not isinstance(rut, RegWriteOnly):
                     raise TypeError('Test can not proceed as the rut is not a writable register')
-                self.__single_reg_full_write_fields_test(rut)
+                self.__single_write_only_reg_full_write_fields_test(rut)
+                self.__single_reg_write_all_fields_test(rut)
+                self.__single_reg_single_write_context_test(rut)
 
         else:
             # test that a non-writable register has no write method and
@@ -238,7 +240,13 @@ class LibTestRegister(LibTestCommon, ABC):
                 write_callback_mock.reset_mock()
                 read_callback_mock.reset_mock()
 
-    def __single_reg_full_write_fields_test(self, rut: RegWriteOnly) -> None:
+    def __single_reg_write_all_fields_test(self, rut: RegReadWrite) -> None:
+        raise NotImplementedError('To be done later')
+
+    def __single_reg_single_write_context_test(self, rut: RegReadWrite) -> None:
+        raise NotImplementedError('To be done later')
+
+    def __single_write_only_reg_full_write_fields_test(self, rut: RegWriteOnly) -> None:
         """
         Test the `write_fields` method of a Write Only Register
         """

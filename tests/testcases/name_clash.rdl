@@ -53,7 +53,8 @@ addrmap name_clash {
 
     reg {
         field { fieldwidth=1; } msb = 1;
-        field { fieldwidth=1; python_inst_name="pass_field"; } pass = 1;
+        field { fieldwidth=1; python_inst_name="pass_field_renamed"; } pass = 1;
+        field { fieldwidth=1; } raise = 1;
     } msb;
 
     addrmap {

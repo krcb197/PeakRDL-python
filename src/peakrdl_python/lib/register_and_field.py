@@ -22,7 +22,7 @@ registers and fields
 from enum import Enum
 from typing import Union, cast, Optional, TypeVar
 from collections.abc import Generator, Iterator, Iterable
-from abc import ABC, abstractmethod
+from abc import ABC
 from contextlib import contextmanager
 import sys
 
@@ -33,6 +33,7 @@ from .callbacks import NormalCallbackSet
 from .base_register import BaseReg, BaseRegArray, RegisterWriteVerifyError
 from .base_field import FieldEnum, FieldSizeProps, FieldMiscProps, \
     _FieldReadOnlyFramework, _FieldWriteOnlyFramework, FieldType
+from .field_encoding import SystemRDLEnum
 
 # pylint: disable=duplicate-code
 if sys.version_info >= (3, 11):
@@ -55,10 +56,6 @@ else:
 class Reg(BaseReg, Iterable[Union['FieldReadOnly', 'FieldWriteOnly', 'FieldReadWrite']], ABC):
     """
         base class of non-async register wrappers
-
-        Note:
-            It is not expected that this class will be instantiated under normal
-            circumstances however, it is useful for type checking
         """
 
     __slots__: list[str] = []
@@ -98,6 +95,41 @@ class Reg(BaseReg, Iterable[Union['FieldReadOnly', 'FieldWriteOnly', 'FieldReadW
         """
         yield from iter(self)
 
+    @property
+    def bitmask(self) -> int:
+        bitmask = 0
+        for field in iter(self):
+            bitmask |= field.bitmask
+
+        return bitmask
+
+    def register_value(self, **kwargs: Union[int, SystemRDLEnum]) -> int:
+        self._check_kwargs_field_names(**kwargs)
+        register_value = 0
+        for field_name, field_value in kwargs.items():
+            field = getattr(self, field_name)
+            register_value &= field.inverse_bitmask
+            # pylint: disable=protected-access
+            int_value = field._int_value(field_value)
+            register_value |= field._register_bits(int_value)
+            # pylint: enable=protected-access
+
+        return register_value
+
+    def inferred_default_register_value(self) -> int:
+
+        register_value = 0
+        for field in self.fields:
+            default_value = field.default
+            if default_value is None:
+                continue
+            register_value &= field.inverse_bitmask
+            # pylint: disable=protected-access
+            int_default_value = field._int_value(default_value)
+            register_value |= field._register_bits(int_default_value)
+            # pylint: enable=protected-access
+
+        return register_value
 
 # pylint: disable-next=invalid-name
 RegArrayElementType= TypeVar('RegArrayElementType', bound=BaseReg)
@@ -106,10 +138,6 @@ RegArrayElementType= TypeVar('RegArrayElementType', bound=BaseReg)
 class RegArray(BaseRegArray[RegArrayElementType], ABC):
     """
     base class of register array wrappers
-
-    Note:
-        It is not expected that this class will be instantiated under normal
-        circumstances however, it is useful for type checking
     """
     # pylint: disable=too-many-arguments,duplicate-code
 
@@ -443,9 +471,9 @@ class RegReadOnly(Reg, ABC):
         return False
 
 
-class RegWriteOnly(Reg, ABC):
+class __RegWritable(Reg, ABC):
     """
-    class for a write only register
+    base class for a writable register (either RegWriteOnly or RegReadWrite)
     """
 
     __slots__: list[str] = []
@@ -505,12 +533,96 @@ class RegWriteOnly(Reg, ABC):
 
         return filter(is_writable, self.fields)
 
-    @abstractmethod
-    def write_fields(self, **kwargs) -> None:  # type: ignore[no-untyped-def]
+
+class RegWriteOnly(__RegWritable, ABC):
+    """
+    class for a write only register
+    """
+
+    __slots__: list[str] = ['__in_context_manager', '__register_state', '__write_initial_state']
+
+    # pylint: disable=too-many-arguments, duplicate-code, useless-parent-delegation
+    def __init__(self, *,
+                 address: int,
+                 logger_handle: str,
+                 inst_name: str,
+                 parent: Union[AddressMap, RegFile, WritableMemory]):
+
+        super().__init__(address=address,
+                         logger_handle=logger_handle,
+                         inst_name=inst_name,
+                         parent=parent)
+
+        self.__in_context_manager: bool = False
+        self.__register_state: int = 0
+        self.__write_initial_state: int = 0
+
+    # pylint: enable=too-many-arguments, duplicate-code
+
+    def write(self, data: int) -> None:
         """
-        Do a write to the register, updating any field included in
-        the arguments
+        Writes a value to the register
+
+        Args:
+            data: data to be written
+
+        Raises:
+            ValueError: if the value provided is outside the range of the
+                        permissible values for the register
+            TypeError: if the type of data is wrong
+            RegisterWriteVerifyError: the read back data after the write does not match the
+                                      expected value
+            RuntimeError: if the read verify after write is set when inside a context manager
         """
+
+
+        if self.__in_context_manager:
+            self.__register_state = data
+        else:
+            super().write(data)
+
+    @property
+    def write_initial_state(self) -> int:
+        """
+        This property defines the initial state of the register when using:
+        - the `write_fields` method
+        - the `write` method on any field in the register
+
+        By default this is initialised to `0`, however, advanced usages may include:
+        - A hidden field within the register which must not be set to `0`
+
+        This property behaves accessed when inside the `single_write` when it returns the shadowed
+        state of the register which has not yet been writen back (the initial state plus any write
+        that have occurred). However, setting the property will still update the initial state not
+        the shadowed state.
+        """
+        if self.__in_context_manager:
+            return self.__register_state
+        return self.__write_initial_state
+
+    @write_initial_state.setter
+    def write_initial_state(self, initial_state: int) -> None:
+        # this method check the types and range checks the data
+        self._validate_data(data=initial_state)
+        self.__write_initial_state = initial_state
+
+    def write_fields(self, **kwargs: Union[int,SystemRDLEnum]) -> None:
+        """
+        Do a single write to the register based on the fields provided, all fields must be
+        specified to use this method
+
+        Any parts of the register not set with this method will be based on the
+        `write_initial_state` property
+        """
+        self._check_kwargs_field_names(**kwargs)
+
+        with self.single_write(initial_state=self.write_initial_state) as reg:
+            for field_name, field_value in kwargs.items():
+                if field_name not in reg.systemrdl_python_child_name_map.values():
+                    raise ValueError(f'{field_name} is not a member of the register')
+
+                field = getattr(reg, field_name)
+                field.write(field_value)
 
     @property
     def _is_readable(self) -> bool:
@@ -522,14 +634,35 @@ class RegWriteOnly(Reg, ABC):
         # pylint: disable=duplicate-code
         return True
 
+    @contextmanager
+    def single_write(self, initial_state: int) -> Generator[Self]:
+        """
+        Context manager to allow multiple field write operations to be carried out with a
+        single write at the end, based on a specified initial state of the register.
+        """
+        # this method check the types and range checks the data
+        self._validate_data(data=initial_state)
 
-class RegReadWrite(RegReadOnly, RegWriteOnly, ABC):
+        self.__register_state = initial_state
+        self.__in_context_manager = True
+        # this try/finally is needed to make sure that in the event of an exception
+        # the state flags are not left incorrectly set
+        try:
+            yield self
+        finally:
+            self.__in_context_manager = False
+        self.write(self.__register_state)
+
+
+class RegReadWrite(RegReadOnly, __RegWritable, ABC):
     """
     class for a read and write only register
 
     """
-    __slots__: list[str] = ['__in_read_write_context_manager', '__in_read_context_manager',
-                            '__register_state']
+    __slots__: list[str] = ['__in_read_context_manager',
+                            '__in_write_context_manager',
+                            '__register_state',
+                            '__write_initial_state']
 
     # pylint: disable=too-many-arguments, duplicate-code
     def __init__(self, *,
@@ -543,53 +676,66 @@ class RegReadWrite(RegReadOnly, RegWriteOnly, ABC):
                          inst_name=inst_name,
                          parent=parent)
 
-        self.__in_read_write_context_manager: bool = False
         self.__in_read_context_manager: bool = False
+        self.__in_write_context_manager: bool = False
         self.__register_state: Optional[int] = None
+        self.__write_initial_state = 0
 
     # pylint: enable=too-many-arguments, duplicate-code
 
     @contextmanager
     def single_read_modify_write(self, verify: bool = False) -> Generator[Self]:
         """
-        Context manager to allow multiple field reads/write to be done with a single set of
-        field operations
+        Context manager to allow multiple field reads/write to be done with a single register read
+        and write
 
         Args:
             verify (bool): verify the write with a read afterwards
-
         """
-        if self.__in_read_context_manager:
-            raise RuntimeError('using the `single_read_modify_write` context manager within the '
-                               'single_read` is not permitted')
-
-        self.__register_state = self.read()
-        self.__in_read_write_context_manager = True
-        try:
-            yield self
-        finally:
-            # need to make sure the state flag is cleared even if an exception occurs within
-            # the context
-            self.__in_read_write_context_manager = False
-        self.write(self.__register_state, verify)
-
-        # clear the register states at the end of the context manager
-        self.__register_state = None
+        initial_state = self.read()
+        with self.single_write(initial_state=initial_state, verify=verify) as reg:
+            yield reg
 
     @contextmanager
     def single_read(self) -> Generator[Self]:
         """
         Context manager to allow multiple field reads with a single register read
         """
-        if self.__in_read_write_context_manager:
+        if self.__in_read_context_manager:
+            raise RuntimeError('using the `single_read` context manager double layered is '
+                               'not permitted')
+
+        if self.__in_write_context_manager:
             raise RuntimeError('using the `single_read` context manager within the '
-                               'single_read_modify_write` is not permitted')
+                               'single_read_modify_write` or `single_write` is not permitted')
         self.__in_read_context_manager = True
         try:
             with super().single_read() as reg:
                 yield reg
         finally:
             self.__in_read_context_manager = False
+
+    @contextmanager
+    def single_write(self, initial_state: int, verify: bool = False) -> Generator[Self]:
+        """
+        Context manager to allow multiple field updates with a single register write when the
+         context manager exits
+        """
+        if self.__in_write_context_manager or self.__in_read_context_manager:
+            raise RuntimeError('using the `single_write` context manager within the '
+                               'single_read_modify_write` or `single_read` is not permitted. '
+                               'Similarly, using the `single_write` context manager within itself '
+                               'is not permitted')
+        self.__in_write_context_manager = True
+        self.__register_state = initial_state
+        try:
+            yield self
+        finally:
+            self.__in_write_context_manager = False
+        self.write(self.__register_state, verify=verify)
+
+        # clear the register states at the end of the context manager
+        self.__register_state = None
 
     def write(self, data: int, verify: bool = False) -> None:  # pylint: disable=arguments-differ
         """
@@ -605,14 +751,19 @@ class RegReadWrite(RegReadOnly, RegWriteOnly, ABC):
             TypeError: if the type of data is wrong
             RegisterWriteVerifyError: the read back data after the write does not match the
                                       expected value
+            RuntimeError: if the read verify after write is set when inside a context manager
         """
         if self.__in_read_context_manager:
             raise RuntimeError('writes within the single read context manager are not permitted')
 
-        if self.__in_read_write_context_manager:
+        if self.__in_write_context_manager:
             if self.__register_state is None:
                 raise RuntimeError('The internal register state should never be None in the '
                                    'context manager')
+            if verify:
+                raise RuntimeError('Using the verify option is not permitted inside the '
+                                   '`single_write` or `single_read_modify_write` context manager')
+
             self.__register_state = data
         else:
             super().write(data)
@@ -625,8 +776,15 @@ class RegReadWrite(RegReadOnly, RegWriteOnly, ABC):
     def read(self) -> int:
         """
         Read value from the register
+
+        Note:
+            The `read` method behaves differently when used within the one of the context managers:
+            - when used within `single_read_modify_write` or `single_read` it will return the
+              register value read at the entry into the context manager
+            - when used within `single_write` it will return the register value based on the
+              `initial_state` argument provided with the context manager
         """
-        if self.__in_read_write_context_manager:
+        if self.__in_write_context_manager:
             if self.__register_state is None:
                 raise RuntimeError('The internal register state should never be None in the '
                                    'context manager')
@@ -673,6 +831,34 @@ class RegReadWrite(RegReadOnly, RegWriteOnly, ABC):
     def _is_writeable(self) -> bool:
         # pylint: disable=duplicate-code
         return True
+
+    def write_all_fields_without_read(self, **kwargs: int) -> None:
+        """
+        Do a write to all the fields in a register, updating any field included in
+        the arguments based on the starting state of `write_initial_state`
+        """
+        # add a check that everything is here
+        with self.single_write(initial_state=self.write_initial_state) as reg:
+            for field_name, field_value in kwargs.items():
+                if field_name not in reg.systemrdl_python_child_name_map.values():
+                    raise ValueError(f'{field_name} is not a member of the register')
+
+                field = getattr(reg, field_name)
+                field.write(field_value)
+
+    @property
+    def write_initial_state(self) -> int:
+        """
+        This property defines the initial state of the register when using the
+        `write_all_fields_without_read` method before any updates are applied.
+        """
+        return self.__write_initial_state
+
+    @write_initial_state.setter
+    def write_initial_state(self, initial_state: int) -> None:
+        # this method check the types and range checks the data
+        self._validate_data(data=initial_state)
+        self.__write_initial_state = initial_state
 
 
 ReadableRegister = Union[RegReadOnly, RegReadWrite]
@@ -929,19 +1115,25 @@ class FieldWriteOnly(_FieldWriteOnlyFramework[FieldType], ABC):
                          field_type=field_type)
         # pylint: enable=duplicate-code
 
-    def write(self, value: FieldType) -> None:
+    def write(self, value: FieldType, verify: bool = False, force_no_read: bool = False) -> None:
         """
         The behaviour of this method depends on whether the field is located in
         a readable register or not:
 
         If the register is readable, the method will perform a read-modify-write
-        on the register updating the field with the value provided
+        on the register updating the field with the value provided, unless force_no_read` is set
+        to `True` in which case the register `write_initial_state` is used
 
-        If the register is not writable all other field values will be written
-        with zero.
+        If the register is not writable, all other field values will be written
+        with based on the register `write_initial_state`.
 
         Args:
             value: field value to update to
+            verify: Read back the register value to confirm the write was successful
+            force_no_read: prevents a pre-write read in the case of a Read/Write Register
+
+        Raises:
+            ValueError: if verify is turned on for a Write Only register
 
         """
         encoded_value = self._encode_write_value(value)
@@ -952,16 +1144,25 @@ class FieldWriteOnly(_FieldWriteOnlyFramework[FieldType], ABC):
             new_reg_value = encoded_value
         else:
             # do a read, modify write
-            if isinstance(self.parent_register, RegReadWrite):
+            if isinstance(self.parent_register, RegReadWrite) and not force_no_read:
                 reg_value = self.parent_register.read()
                 masked_reg_value = reg_value & self.inverse_bitmask
                 new_reg_value = masked_reg_value | encoded_value
-            elif isinstance(self.parent_register, RegWriteOnly):
-                new_reg_value = encoded_value
+            elif (isinstance(self.parent_register, RegWriteOnly) or
+                  (isinstance(self.parent_register, RegReadWrite) and force_no_read)):
+                reg_value = self.parent_register.write_initial_state
+                masked_reg_value = reg_value & self.inverse_bitmask
+                new_reg_value = masked_reg_value | encoded_value
             else:
                 raise TypeError('Unhandled parent type')
 
-        self.parent_register.write(new_reg_value)
+        if isinstance(self.parent_register, RegReadWrite):
+            self.parent_register.write(new_reg_value, verify=verify)
+        elif isinstance(self.parent_register, RegWriteOnly):
+            if verify:
+                raise ValueError('A post-write verify (read) can not be performed on a write-only '
+                                 'register')
+            self.parent_register.write(new_reg_value)
 
     @property
     def parent_register(self) -> WritableRegister:

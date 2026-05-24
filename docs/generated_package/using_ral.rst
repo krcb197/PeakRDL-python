@@ -120,6 +120,8 @@ Both demonstrated in the following code example:
 Avoiding the Read on a Read/Write Register
 ------------------------------------------
 
+TBA
+
 
 Working with registers arrays
 -----------------------------

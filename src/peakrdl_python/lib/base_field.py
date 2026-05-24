@@ -162,10 +162,6 @@ FieldType = TypeVar('FieldType', bound=int|SystemRDLEnum)
 class Field(Generic[FieldType], Base, ABC):
     """
     base class of register field wrappers
-
-    Note:
-        It is not expected that this class will be instantiated under normal
-        circumstances however, it is useful for type checking
     """
 
     __slots__ = ['__size_props', '__misc_props',
@@ -339,7 +335,7 @@ class Field(Generic[FieldType], Base, ABC):
         - if the field is not reset.
         - if the register resets to a signal value that can not be determined
         """
-        if issubclass(self._field_type, (SystemRDLEnum)):
+        if issubclass(self._field_type, SystemRDLEnum):
             int_default = self.__misc_props.default
 
             if int_default is not None:
@@ -377,6 +373,32 @@ class Field(Generic[FieldType], Base, ABC):
     def _field_type(self) -> type[FieldType]:
         return self.__field_type  # type: ignore[return-value]
 
+    def _int_value(self, value: FieldType) -> int:
+        """
+        Convert the value of the field to an in calculating register values
+        """
+        if not isinstance(value, self._field_type):
+            raise TypeError(f'expected {self._field_type}, got {type(value)}')
+
+        if issubclass(self._field_type, SystemRDLEnum):
+            if not isinstance(value, SystemRDLEnum):
+                raise TypeError(f'expected SystemRDLEnum (or sub-type), got {type(value)}')
+            return value.value
+        if issubclass(self._field_type, int):
+            if not isinstance(value, int):
+                raise TypeError(f'expected int, got {type(value)}')
+            return value
+
+        raise RuntimeError('Unhandled type configuration')
+
+    def _register_bits(self, int_value: int) -> int:
+        """
+        Prepare the field value for being bitwise ORed ino the register
+        """
+        if self.msb0 is True:
+            return swap_msb_lsb_ordering(value=int_value, width=self.width) << self.low
+
+        return int_value << self.low
 
 class _FieldReadOnlyFramework(Field[FieldType], ABC):
     """
@@ -409,10 +431,11 @@ class _FieldReadOnlyFramework(Field[FieldType], ABC):
         if self.msb0 is False:
             return_int_value = (value & self.bitmask) >> self.low
         else:
-            return_int_value = swap_msb_lsb_ordering(value=(value & self.bitmask) >> self.low,
-                                                 width=self.width)
+            return_int_value = swap_msb_lsb_ordering(
+                value=(value & self.bitmask) >> self.low,
+                width=self.width)
 
-        if issubclass(self._field_type, (SystemRDLEnum)):
+        if issubclass(self._field_type, SystemRDLEnum):
             return self._field_type(return_int_value) # type: ignore[return-value]
         if issubclass(self._field_type, int):
             return return_int_value # type: ignore[return-value]
@@ -465,25 +488,12 @@ class _FieldWriteOnlyFramework(Field[FieldType], ABC):
             value which can be applied to the register to update the field
 
         """
-        if not isinstance(value, self._field_type):
-            raise TypeError(f'Field type is not as expected, got {type(value)},'
-                            f' expected {self._field_type}')
-
-        if isinstance(value, (SystemRDLEnum)):
-            int_value = value.value
-        elif isinstance(value, int):
-            int_value = value
-        else:
-            raise RuntimeError('Unhandled type configuration')
+        # no need to do a type check as that is part of `_int_value`
+        int_value = self._int_value(value=value)
 
         self._write_value_checks(value=int_value)
 
-        if self.msb0 is False:
-            return_value = int_value << self.low
-        else:
-            return_value = swap_msb_lsb_ordering(value=int_value,  width=self.width) << self.low
-
-        return return_value
+        return self._register_bits(int_value=int_value)
 
 
 class FieldEnum(Field[FieldType], ABC):

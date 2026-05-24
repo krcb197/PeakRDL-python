@@ -20,7 +20,7 @@ Python tool. It provide methods used by the tests
 """
 import random
 from typing import Union, TypeVar, TYPE_CHECKING
-from enum import Enum, EnumMeta
+from enum import EnumMeta
 from collections.abc import Iterable
 from dataclasses import dataclass
 from dataclasses import field as dataclass_field
