@@ -139,4 +139,14 @@ some legacy features from the early versions were removed in release 4.0.0, the 
   This had some restrictions, so a new methodology based on the `list` type was introduced in version 0.9.
   The old array based behaviour was removed in this version
 
+This release also improved the features for write-only register:
+- field write operations no longer have a hard-code base value of `0` in the register, the base register value is configurable via the `write_initial_state` property
+- the `write_fields` methods also uses the `write_initial_state` property to allow other bits in the register to be set if needed, rather than a hardcoded `0`
+- A new `single_write` context manager can be used to set multiple field values in a single write with a configurable initial register state
+
+The read/write register class has similar feature:
+- A new `single_write` context manager that does not use a read before the write to set multiple field values in a single write with a configurable initial register state
+- A new `write_all_fields_without_read` method tht will write all the writable fields with the `write_initial_state` property to allow other bits in the register to be set if needed
+
+
 
