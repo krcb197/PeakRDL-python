@@ -111,7 +111,7 @@ def random_int_field_value(fut: Field) -> int:
 # FieldType = TypeVar('FieldType', bound=int|SystemRDLEnum)
 # However, python 3.9 does not support the combination so the binding was removed
 # pylint: disable-next=invalid-name
-FieldType = TypeVar('FieldType', bound=int|SystemRDLEnum)
+FieldType = TypeVar('FieldType')
 def random_encoded_field_value(fut: FieldEnum[SystemRDLEnum]) -> SystemRDLEnum:
     """
     Return a random encoded values within the legal range for a field

@@ -470,7 +470,7 @@ class RegReadOnly(Reg, ABC):
         # pylint: disable=duplicate-code
         return False
 
-
+#pylint:disable-next=invalid-name
 class __RegWritable(Reg, ABC):
     """
     base class for a writable register (either RegWriteOnly or RegReadWrite)
@@ -492,7 +492,8 @@ class __RegWritable(Reg, ABC):
     # pylint: enable=too-many-arguments, duplicate-code
 
     def write(self, data: int) -> None:
-        """Writes a value to the register
+        """
+        Writes a value to the register
 
         Args:
             data: data to be written
@@ -593,7 +594,7 @@ class RegWriteOnly(__RegWritable, ABC):
 
         This property behaves accessed when inside the `single_write` when it returns the shadowed
         state of the register which has not yet been writen back (the initial state plus any write
-        that have occurred). However, setting the property will still update the initial state not
+        that has occurred). However, setting the property will still update the initial state not
         the shadowed state.
         """
         if self.__in_context_manager:
