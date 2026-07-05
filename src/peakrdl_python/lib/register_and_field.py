@@ -837,7 +837,12 @@ class RegReadWrite(RegReadOnly, __RegWritable, ABC):
         Do a write to all the fields in a register, updating any field included in
         the arguments based on the starting state of `write_initial_state`
         """
-        # add a check that everything is here
+        # This method should only be called with a complete set of fields specified
+        called_keys = set(kwargs.keys())
+        expected_keys = set(self.systemrdl_python_child_name_map.values())
+        if called_keys != expected_keys:
+            raise RuntimeError(f'{called_keys} mismatches the set of '
+                               f'expected keys: {expected_keys}')
         with self.single_write(initial_state=self.write_initial_state) as reg:
             for field_name, field_value in kwargs.items():
                 if field_name not in reg.systemrdl_python_child_name_map.values():

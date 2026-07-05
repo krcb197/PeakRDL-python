@@ -407,58 +407,6 @@ class TestReadWrite(RegTestBase):
                                                width=self.dut.width,
                                                accesswidth=self.dut.accesswidth, data=1)
 
-        # check the `skip_write` works as expected, this will however raise an deprecation warning
-        # and the feature will be removed at some point in the future
-        with patch.object(self.callbacks, 'read_callback',
-                          side_effect=self.read_addr_space) as read_patch, \
-                patch.object(self.callbacks, 'write_callback',
-                             side_effect=self.write_addr_space) as write_patch:
-
-            with self.dut.single_read() as reg:
-                _ = reg.field.read()
-                _ = reg.field.read()
-
-            read_patch.assert_called_once_with(addr=0,
-                                               width=self.dut.width,
-                                               accesswidth=self.dut.accesswidth)
-            write_patch.assert_not_called()
-
-        # check that a write within the `skip_write` works still does not result in a write
-        with patch.object(self.callbacks, 'read_callback',
-                          side_effect=self.read_addr_space) as read_patch, \
-                patch.object(self.callbacks, 'write_callback',
-                             side_effect=self.write_addr_space) as write_patch:
-
-            with self.dut.single_read() as reg:
-                self.assertEqual(reg.field.read(), False)
-                with self.assertRaises(RuntimeError):
-                    reg.field.write(True)
-
-            read_patch.assert_called_once_with(addr=0,
-                                               width=self.dut.width,
-                                               accesswidth=self.dut.accesswidth)
-            write_patch.assert_not_called()
-
-        # attempting to use the `single_read` inside the `single_read_modify_write` context
-        # should cause an exception
-        with patch.object(self.callbacks, 'read_callback',
-                          side_effect=self.read_addr_space) as read_patch, \
-                patch.object(self.callbacks, 'write_callback',
-                             side_effect=self.write_addr_space) as write_patch:
-
-            with self.dut.single_read_modify_write() as reg:
-                _ = reg.field.read()
-                with self.assertRaises(RuntimeError):
-                    with reg.single_read() as alt_reg:
-                        _ = alt_reg.field.read()
-
-            read_patch.assert_called_once_with(addr=0,
-                                               width=self.dut.width,
-                                               accesswidth=self.dut.accesswidth)
-            write_patch.assert_called_once_with(addr=0,
-                                                width=self.dut.width,
-                                                accesswidth=self.dut.accesswidth, data=0)
-
         # check the context manager cleans itself up properly even if an exception occurs within
         # the context
         with patch.object(self.callbacks, 'read_callback',
@@ -493,7 +441,7 @@ class TestReadWrite(RegTestBase):
 
             result = self.dut.read_fields()
 
-            self.assertDictEqual(result, {'field': False})
+            self.assertDictEqual(result, {'field': False, 'another_field': False})
 
             read_patch.assert_called_once_with(addr=0,
                                                width=self.dut.width,
@@ -504,20 +452,19 @@ class TestReadWrite(RegTestBase):
         """
         Check the read fields methods reads the fields
         """
-        raise NotImplementedError('Need to do this')
         with patch.object(self.callbacks, 'read_callback',
                           side_effect=self.read_addr_space) as read_patch, \
                 patch.object(self.callbacks, 'write_callback',
                              side_effect=self.write_addr_space) as write_patch:
 
-            result = self.dut.read_fields()
-
-            self.assertDictEqual(result, {'field': False})
+            self.dut.write_fields(field=True)
 
             read_patch.assert_called_once_with(addr=0,
                                                width=self.dut.width,
                                                accesswidth=self.dut.accesswidth)
-            write_patch.assert_not_called()
+            write_patch.assert_called_once_with(addr=0,
+                                                width=self.dut.width,
+                                                accesswidth=self.dut.accesswidth, data=1)
 
     def test_context_manager_read(self) -> None:
         """
@@ -573,6 +520,24 @@ class TestReadWrite(RegTestBase):
                                                accesswidth=self.dut.accesswidth)
             write_patch.assert_not_called()
 
+        # attempting to use the `single_write` inside the `single_read` context
+        # should cause an exception
+        with patch.object(self.callbacks, 'read_callback',
+                          side_effect=self.read_addr_space) as read_patch, \
+                patch.object(self.callbacks, 'write_callback',
+                             side_effect=self.write_addr_space) as write_patch:
+
+            with self.dut.single_read() as reg:
+                _ = reg.field.read()
+                with self.assertRaises(RuntimeError):
+                    with reg.single_write(initial_state=0) as alt_reg:
+                        _ = alt_reg.field.read()
+
+            read_patch.assert_called_once_with(addr=0,
+                                               width=self.dut.width,
+                                               accesswidth=self.dut.accesswidth)
+            write_patch.assert_not_called()
+
         # an exception within the `single_read` context must not leave the register in a bad
         # state
         with patch.object(self.callbacks, 'read_callback',
@@ -609,14 +574,118 @@ class TestReadWrite(RegTestBase):
         Check the write back has occurred, this happens by default even if nothing has changed in
         the register
         """
-        raise NotImplementedError('Need to do this')
+        with patch.object(self.callbacks, 'read_callback',
+                          side_effect=self.read_addr_space) as read_patch, \
+                patch.object(self.callbacks, 'write_callback',
+                             side_effect=self.write_addr_space) as write_patch:
+            with self.dut.single_write(initial_state=0) as reg:
+                assert reg.field.read() == 0x0
+                assert reg.read() == 0x0
+                reg.field.write(True)
+                reg.field.write(True)
+                assert reg.field.read() == 0x01
+                assert reg.read() == 0x1
+
+            read_patch.assert_not_called()
+            write_patch.assert_called_once_with(addr=0,
+                                                width=self.dut.width,
+                                                accesswidth=self.dut.accesswidth, data=1)
+
+        with patch.object(self.callbacks, 'read_callback',
+                          side_effect=self.read_addr_space) as read_patch, \
+                patch.object(self.callbacks, 'write_callback',
+                             side_effect=self.write_addr_space) as write_patch:
+            with self.dut.single_write(initial_state=0xAAAA_AAAA) as reg:
+                # the field write_initial_state takes on a different function inside the context manager
+                assert reg.read() == 0xAAAA_AAAA
+                assert reg.field.read() == 0x0
+                reg.field.write(True)
+                assert reg.read() == 0x1 | 0xAAAA_AAAA
+                assert reg.field.read() == 0x01
+                reg.field.write(True)
+
+            read_patch.assert_not_called()
+            write_patch.assert_called_once_with(addr=0,
+                                                width=self.dut.width,
+                                                accesswidth=self.dut.accesswidth,
+                                                data=0x1 | 0xAAAA_AAAA)
+
+        # attempting to use the `single_read` inside the `single_write` context
+        # should cause an exception. However the write back should
+        with patch.object(self.callbacks, 'read_callback',
+                          side_effect=self.read_addr_space) as read_patch, \
+                patch.object(self.callbacks, 'write_callback',
+                             side_effect=self.write_addr_space) as write_patch:
+
+            with self.dut.single_write(initial_state=0xCAFEF00D) as reg:
+                _ = reg.field.read()
+                with self.assertRaises(RuntimeError):
+                    with reg.single_read() as alt_reg:
+                        _ = alt_reg.field.read()
+
+            read_patch.assert_not_called()
+            write_patch.assert_called_once_with(addr=0,
+                                                width=self.dut.width,
+                                                accesswidth=self.dut.accesswidth,
+                                                data=0xCAFEF00D)
+
+        # attempting to use the `single_read_modify_write` inside the `single_write` context
+        # should cause an exception. However, the writeback at the end of the context manager
+        # should still occur
+        with patch.object(self.callbacks, 'read_callback',
+                          side_effect=self.read_addr_space) as read_patch, \
+                patch.object(self.callbacks, 'write_callback',
+                             side_effect=self.write_addr_space) as write_patch:
+            with self.dut.single_write(initial_state=0xF00DF00D) as reg:
+                _ = reg.field.read()
+                with self.assertRaises(RuntimeError):
+                    with reg.single_read_modify_write() as alt_reg:
+                        _ = alt_reg.field.read()
+
+            read_patch.assert_not_called()
+            write_patch.assert_called_once_with(addr=0,
+                                                width=self.dut.width,
+                                                accesswidth=self.dut.accesswidth,
+                                                data=0xF00DF00D)
 
     def test_write_all_fields_without_read(self) -> None:
         """
         Check the read fields methods reads the fields
         """
-        raise NotImplementedError('Need to do this')
+        self.dut.write_initial_state = 0x0
+        self.assertEqual(self.dut.write_initial_state, 0x0)
 
+        with patch.object(self.callbacks, 'read_callback',
+                          side_effect=self.read_addr_space) as read_patch, \
+                patch.object(self.callbacks, 'write_callback',
+                             side_effect=self.write_addr_space) as write_patch:
+            # check that calling with an incomplete set of arguments causes an error
+            with self.assertRaises(RuntimeError):
+                self.dut.write_all_fields_without_read(field=True)
+
+            self.dut.write_all_fields_without_read(field=True, another_field=False)
+
+            read_patch.assert_not_called()
+            write_patch.assert_called_once_with(addr=0,
+                                                width=self.dut.width,
+                                                accesswidth=self.dut.accesswidth, data=1)
+
+        self.assertEqual(self.dut.write_initial_state, 0x0)
+        self.dut.write_initial_state = 0xAAAA_AAAA
+        self.assertEqual(self.dut.write_initial_state, 0xAAAA_AAAA)
+
+        with patch.object(self.callbacks, 'read_callback',
+                          side_effect=self.read_addr_space) as read_patch, \
+                patch.object(self.callbacks, 'write_callback',
+                             side_effect=self.write_addr_space) as write_patch:
+            self.dut.write_all_fields_without_read(field=True, another_field=False)
+
+            read_patch.assert_not_called()
+            write_patch.assert_called_once_with(
+                addr=0,
+                width=self.dut.width,
+                accesswidth=self.dut.accesswidth,
+                data=0x1 | (0xAAAA_AAAA & self.dut.another_field.inverse_bitmask))
 
 class TestRegWidthUtility(unittest.TestCase):
     """

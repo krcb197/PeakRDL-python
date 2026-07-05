@@ -267,7 +267,7 @@ class ReadWriteRegisterToTest(RegReadWrite):
         return self.__another_field
 
     def write_fields(self,  **kwargs: Any) -> None:
-        raise NotImplementedError('Not implemented for the purpose of tests')
+        return super().write_fields(**kwargs)
 
     @property
     def systemrdl_python_child_name_map(self) -> dict[str, str]:
