@@ -266,10 +266,6 @@ class ReadWriteRegisterToTest(RegReadWrite):
         """
         return self.__another_field
 
-    # pylint: disable-next=arguments-differ
-    def write_fields(self,  field: bool, another_field: bool) -> None:
-        return super().write_fields(field=field, another_field=another_field)
-
     @property
     def systemrdl_python_child_name_map(self) -> dict[str, str]:
         """
