@@ -832,6 +832,17 @@ class RegReadWrite(RegReadOnly, __RegWritable, ABC):
         # pylint: disable=duplicate-code
         return True
 
+    @property
+    def __writable_fields_names(self) -> list[str]:
+        """
+        Provide a list of field names that are writable
+        """
+        all_field_names = list(self.systemrdl_python_child_name_map.keys())
+        def is_writable_field_name(name: str) -> bool:
+            field = getattr(self, name)
+            return isinstance(field, (FieldWriteOnly, FieldReadWrite))
+        return list(filter(is_writable_field_name, all_field_names))
+
     def write_all_fields_without_read(self, **kwargs: Union[bool, SystemRDLEnum, int]) -> None:
         """
         Do a write to all the fields in a register, updating any field included in
@@ -839,8 +850,7 @@ class RegReadWrite(RegReadOnly, __RegWritable, ABC):
         """
         # This method should only be called with a complete set of fields specified
         called_keys = set(kwargs.keys())
-        # BUG: this should only be the writable keys
-        expected_keys = set(self.systemrdl_python_child_name_map.values())
+        expected_keys = set(self.__writable_fields_names)
         if called_keys != expected_keys:
             raise RuntimeError(f'{called_keys} mismatches the set of '
                                f'expected keys: {expected_keys}')
