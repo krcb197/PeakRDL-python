@@ -78,17 +78,17 @@ class LibTestRegister(LibTestCommon, ABC):
             if not isinstance(rut, (RegWriteOnly, RegReadWrite)):
                 raise TypeError('Test can not proceed as the rut is not a writable register')
             self.__single_reg_write_test(rut=rut)
+            self.__single_reg_single_write_context_test(rut=rut)
             if has_sw_readable:
                 if not isinstance(rut, RegReadWrite):
                     raise TypeError('Test can not proceed as the rut is not a read '
                                     'and writable register')
                 self.__single_reg_write_fields_and_context_test(rut)
+                self.__single_reg_write_all_fields_test(rut)
             else:
                 if not isinstance(rut, RegWriteOnly):
                     raise TypeError('Test can not proceed as the rut is not a writable register')
                 self.__single_write_only_reg_full_write_fields_test(rut)
-                self.__single_reg_write_all_fields_test(rut)
-                self.__single_reg_single_write_context_test(rut)
 
         else:
             # test that a non-writable register has no write method and
@@ -241,9 +241,25 @@ class LibTestRegister(LibTestCommon, ABC):
                 read_callback_mock.reset_mock()
 
     def __single_reg_write_all_fields_test(self, rut: RegReadWrite) -> None:
-        raise NotImplementedError('To be done later')
+        with patch.object(self, 'write_callback') as write_callback_mock, \
+            patch.object(self, 'read_callback', return_value=0) as read_callback_mock:
 
-    def __single_reg_single_write_context_test(self, rut: RegReadWrite) -> None:
+            reg_sequence = RegWriteTestSequence(rut, fields=rut.writable_fields)
+            kwargs = {rut.systemrdl_python_child_name_map[unsafe_name]: value
+                      for unsafe_name, value in reg_sequence.write_sequence.items()}
+            rut.write_all_fields_without_read(**kwargs)
+            write_callback_mock.assert_called_once_with(
+                addr=rut.address,
+                width=rut.width,
+                accesswidth=rut.accesswidth,
+                data=reg_sequence.value)
+            read_callback_mock.assert_not_called()
+            write_callback_mock.reset_mock()
+            read_callback_mock.reset_mock()
+
+
+    def __single_reg_single_write_context_test(self,
+                                               rut: Union[RegWriteOnly, RegReadWrite]) -> None:
         raise NotImplementedError('To be done later')
 
     def __single_write_only_reg_full_write_fields_test(self, rut: RegWriteOnly) -> None:
