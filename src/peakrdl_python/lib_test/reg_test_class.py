@@ -26,6 +26,7 @@ from typing import Union
 from unittest.mock import patch, Mock
 from itertools import chain, combinations
 from collections.abc import Iterable
+import random
 
 from ..lib import RegReadOnly, RegReadWrite, RegWriteOnly
 
@@ -257,6 +258,13 @@ class LibTestRegister(LibTestCommon, ABC):
             write_callback_mock.reset_mock()
             read_callback_mock.reset_mock()
 
+            # attempting to perform a write operation without all the entries populated should
+            # generate exception
+            if len(kwargs) > 1:
+                key = random.choice(list(kwargs))
+                kwargs.pop(key)
+                with self.assertRaises(TypeError):
+                    rut.write_all_fields_without_read(**kwargs)
 
     def __single_reg_single_write_context_test(self,
                                                rut: Union[RegWriteOnly, RegReadWrite]) -> None:
