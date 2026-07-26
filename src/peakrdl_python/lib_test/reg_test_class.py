@@ -26,6 +26,7 @@ from typing import Union
 from unittest.mock import patch, Mock
 from itertools import chain, combinations
 from collections.abc import Iterable
+import random
 
 from ..lib import RegReadOnly, RegReadWrite, RegWriteOnly
 
@@ -78,15 +79,17 @@ class LibTestRegister(LibTestCommon, ABC):
             if not isinstance(rut, (RegWriteOnly, RegReadWrite)):
                 raise TypeError('Test can not proceed as the rut is not a writable register')
             self.__single_reg_write_test(rut=rut)
+            self.__single_reg_single_write_context_test(rut=rut)
             if has_sw_readable:
                 if not isinstance(rut, RegReadWrite):
                     raise TypeError('Test can not proceed as the rut is not a read '
                                     'and writable register')
                 self.__single_reg_write_fields_and_context_test(rut)
+                self.__single_reg_write_all_fields_test(rut)
             else:
                 if not isinstance(rut, RegWriteOnly):
                     raise TypeError('Test can not proceed as the rut is not a writable register')
-                self.__single_reg_full_write_fields_test(rut)
+                self.__single_write_only_reg_full_write_fields_test(rut)
 
         else:
             # test that a non-writable register has no write method and
@@ -238,7 +241,56 @@ class LibTestRegister(LibTestCommon, ABC):
                 write_callback_mock.reset_mock()
                 read_callback_mock.reset_mock()
 
-    def __single_reg_full_write_fields_test(self, rut: RegWriteOnly) -> None:
+    def __single_reg_write_all_fields_test(self, rut: RegReadWrite) -> None:
+        with patch.object(self, 'write_callback') as write_callback_mock, \
+            patch.object(self, 'read_callback', return_value=0) as read_callback_mock:
+
+            reg_sequence = RegWriteTestSequence(rut, fields=rut.writable_fields)
+            kwargs = {rut.systemrdl_python_child_name_map[unsafe_name]: value
+                      for unsafe_name, value in reg_sequence.write_sequence.items()}
+            rut.write_all_fields_without_read(**kwargs)
+            write_callback_mock.assert_called_once_with(
+                addr=rut.address,
+                width=rut.width,
+                accesswidth=rut.accesswidth,
+                data=reg_sequence.value)
+            read_callback_mock.assert_not_called()
+            write_callback_mock.reset_mock()
+            read_callback_mock.reset_mock()
+
+            # attempting to perform a write operation without all the entries populated should
+            # generate exception
+            if len(kwargs) > 1:
+                key = random.choice(list(kwargs))
+                kwargs.pop(key)
+                with self.assertRaises(TypeError):
+                    rut.write_all_fields_without_read(**kwargs)
+
+    def __single_reg_single_write_context_test(self,
+                                               rut: Union[RegWriteOnly, RegReadWrite]) -> None:
+
+        writeable_fields = list(rut.writable_fields)
+        # if there is more than one field reduce the total by 1
+        if len(writeable_fields) > 1:
+            writeable_fields = random.sample(writeable_fields, len(writeable_fields) - 1)
+
+        random_write_sequence = RegWriteTestSequence(rut, fields=writeable_fields)
+        with patch.object(self, 'write_callback') as write_callback_mock, \
+                patch.object(self, 'read_callback') as read_callback_mock:
+            with rut.single_write(initial_state=random_write_sequence.start_value) as reg_session:
+                for field_name, field_value in random_write_sequence.write_sequence.items():
+                    field_prop = reg_session.get_child_by_system_rdl_name(field_name)
+                    field_prop.write(field_value)
+            write_callback_mock.assert_called_once_with(
+                addr=rut.address,
+                width=rut.width,
+                accesswidth=rut.accesswidth,
+                data=random_write_sequence.value)
+            read_callback_mock.assert_not_called()
+            write_callback_mock.reset_mock()
+            read_callback_mock.reset_mock()
+
+    def __single_write_only_reg_full_write_fields_test(self, rut: RegWriteOnly) -> None:
         """
         Test the `write_fields` method of a Write Only Register
         """

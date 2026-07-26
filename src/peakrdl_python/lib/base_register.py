@@ -22,12 +22,12 @@ registers
 from typing import Union, Optional, TypeVar
 from abc import ABC, abstractmethod
 
-
 from .base import Node, NodeArray, IterationClassification
 from .sections import AddressMap, RegFile
 from .utility_functions import legal_register_width
 from .sections import AsyncAddressMap, AsyncRegFile
 from .memory import BaseMemory
+from .field_encoding import SystemRDLEnum
 
 
 class RegisterWriteVerifyError(Exception):
@@ -129,6 +129,51 @@ class BaseReg(Node, ABC):
     @abstractmethod
     def _is_writeable(self) -> bool:
         ...
+
+    @property
+    @abstractmethod
+    def bitmask(self) -> int:
+        """
+        The bit mask needed to for all the fields in the register
+        """
+
+    @property
+    def inverse_bitmask(self) -> int:
+        """
+        The bitwise inverse of the bitmask needed to extract the field from its
+        register
+
+        For example a register field occupying bits 7 to 4 in a 16-bit register
+        will have an inverse bit mask of 0xFF0F
+        """
+        return self.max_value ^ self.bitmask
+
+    def _check_kwargs_field_names(self, **kwargs: Union[int, SystemRDLEnum]) -> None:
+        """
+        Check the kwargs to make sure:
+        1. Every field is specified
+        2. There are no extra entries
+        """
+        # the expected names are in reg.systemrdl_python_child_name_map.values()
+        expected_keys = set(self.systemrdl_python_child_name_map.values())
+        kwargs_keys = set(kwargs.keys())
+
+        if expected_keys != kwargs_keys:
+            raise KeyError('The provided arguments for the fields in the register '
+                           'do not match the expected ones')
+
+    @abstractmethod
+    def register_value(self, **kwargs: Union[int, SystemRDLEnum]) -> int:
+        """
+        Make the register state from a dictionary of key value pairs for which must represent
+        every field the register
+        """
+
+    @abstractmethod
+    def inferred_default_register_value(self) -> int:
+        """
+        Make the register state the inferred default value of each field
+        """
 
 
 # pylint: disable-next=invalid-name
