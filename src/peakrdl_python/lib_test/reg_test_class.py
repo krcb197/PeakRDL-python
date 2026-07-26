@@ -268,7 +268,27 @@ class LibTestRegister(LibTestCommon, ABC):
 
     def __single_reg_single_write_context_test(self,
                                                rut: Union[RegWriteOnly, RegReadWrite]) -> None:
-        raise NotImplementedError('To be done later')
+
+        writeable_fields = list(rut.writable_fields)
+        # if there is more than one field reduce the total by 1
+        if len(writeable_fields) > 1:
+            writeable_fields = random.sample(writeable_fields, len(writeable_fields) - 1)
+
+        random_write_sequence = RegWriteTestSequence(rut, fields=writeable_fields)
+        with patch.object(self, 'write_callback') as write_callback_mock, \
+                patch.object(self, 'read_callback') as read_callback_mock:
+            with rut.single_write(initial_state=random_write_sequence.start_value) as reg_session:
+                for field_name, field_value in random_write_sequence.write_sequence.items():
+                    field_prop = reg_session.get_child_by_system_rdl_name(field_name)
+                    field_prop.write(field_value)
+            write_callback_mock.assert_called_once_with(
+                addr=rut.address,
+                width=rut.width,
+                accesswidth=rut.accesswidth,
+                data=random_write_sequence.value)
+            read_callback_mock.assert_not_called()
+            write_callback_mock.reset_mock()
+            read_callback_mock.reset_mock()
 
     def __single_write_only_reg_full_write_fields_test(self, rut: RegWriteOnly) -> None:
         """
