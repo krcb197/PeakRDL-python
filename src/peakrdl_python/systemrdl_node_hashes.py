@@ -173,7 +173,8 @@ def __node_hash_components(node: Node,
                 udp_replace_for_hashing(child_udp_value)
         elif issubclass(type(item), UserStruct):
             for key, value in item.members.items():
-                value_to_hash.append(tuple([key, udp_replace_for_hashing(value)]))
+                value_to_hash.append(key)
+                udp_replace_for_hashing(value)
         elif isinstance(item, Node):
             value_to_hash.append('.'.join(item.get_path_segments()))
         else:
