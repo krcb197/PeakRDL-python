@@ -24,7 +24,6 @@ from typing import Any, Union, Optional
 from enum import Enum, auto
 import hashlib
 import json
-from collections import OrderedDict
 
 from systemrdl.node import Node
 from systemrdl.node import FieldNode
