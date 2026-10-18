@@ -24,6 +24,7 @@ from typing import Any, Union, Optional
 from enum import Enum, auto
 import hashlib
 import json
+from collections import OrderedDict
 
 from systemrdl.node import Node
 from systemrdl.node import FieldNode
@@ -33,7 +34,7 @@ from systemrdl.node import AddrmapNode
 from systemrdl.node import MemNode
 from systemrdl.node import SignalNode
 from systemrdl.rdltypes.user_enum import UserEnumMeta, UserEnum
-from systemrdl.rdltypes import AccessType
+from systemrdl.rdltypes import AccessType, UserStruct
 
 from .systemrdl_node_utility_functions import get_properties_to_include
 from .systemrdl_node_utility_functions import HideNodeCallback
@@ -171,6 +172,9 @@ def __node_hash_components(node: Node,
         if isinstance(item, list):
             for child_udp_value in item:
                 udp_replace_for_hashing(child_udp_value)
+        elif issubclass(type(item), UserStruct):
+            for key, value in item.members.items():
+                value_to_hash.append(tuple([key, udp_replace_for_hashing(value)]))
         elif isinstance(item, Node):
             value_to_hash.append('.'.join(item.get_path_segments()))
         else:
