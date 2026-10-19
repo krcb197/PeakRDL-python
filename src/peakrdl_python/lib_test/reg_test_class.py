@@ -248,24 +248,30 @@ class LibTestRegister(LibTestCommon, ABC):
             reg_sequence = RegWriteTestSequence(rut, fields=rut.writable_fields)
             kwargs = {rut.systemrdl_python_child_name_map[unsafe_name]: value
                       for unsafe_name, value in reg_sequence.write_sequence.items()}
-            rut.write_initial_state = reg_sequence.start_value
-            rut.write_all_fields_without_read(**kwargs)
-            write_callback_mock.assert_called_once_with(
-                addr=rut.address,
-                width=rut.width,
-                accesswidth=rut.accesswidth,
-                data=reg_sequence.value)
-            read_callback_mock.assert_not_called()
-            write_callback_mock.reset_mock()
-            read_callback_mock.reset_mock()
-
-            # attempting to perform a write operation without all the entries populated should
-            # generate exception
-            if len(kwargs) > 1:
-                key = random.choice(list(kwargs))
-                kwargs.pop(key)
-                with self.assertRaises(TypeError):
+            if len(kwargs) == 0:
+                # this is a special case if all the register fields has been hidden, and the result
+                # is there is not be any fields to write, so this operation raises an error
+                with self.assertRaises(NotImplementedError):
                     rut.write_all_fields_without_read(**kwargs)
+            else:
+                rut.write_initial_state = reg_sequence.start_value
+                rut.write_all_fields_without_read(**kwargs)
+                write_callback_mock.assert_called_once_with(
+                    addr=rut.address,
+                    width=rut.width,
+                    accesswidth=rut.accesswidth,
+                    data=reg_sequence.value)
+                read_callback_mock.assert_not_called()
+                write_callback_mock.reset_mock()
+                read_callback_mock.reset_mock()
+
+                # attempting to perform a write operation without all the entries populated should
+                # generate exception
+                if len(kwargs) > 1:
+                    key = random.choice(list(kwargs))
+                    kwargs.pop(key)
+                    with self.assertRaises(TypeError):
+                        rut.write_all_fields_without_read(**kwargs)
 
     def __single_reg_single_write_context_test(self,
                                                rut: Union[RegWriteOnly, RegReadWrite]) -> None:
