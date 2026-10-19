@@ -248,6 +248,7 @@ class LibTestRegister(LibTestCommon, ABC):
             reg_sequence = RegWriteTestSequence(rut, fields=rut.writable_fields)
             kwargs = {rut.systemrdl_python_child_name_map[unsafe_name]: value
                       for unsafe_name, value in reg_sequence.write_sequence.items()}
+            rut.write_initial_state = reg_sequence.start_value
             rut.write_all_fields_without_read(**kwargs)
             write_callback_mock.assert_called_once_with(
                 addr=rut.address,
