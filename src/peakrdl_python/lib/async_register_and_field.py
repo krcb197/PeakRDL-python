@@ -630,7 +630,8 @@ class RegAsyncReadWrite(RegAsyncReadOnly, __RegWritable, ABC):
 
         return return_dict
 
-    async def write_all_fields_without_read(self, **kwargs: int) -> None:
+    async def write_all_fields_without_read(self,
+                                            **kwargs:  Union[bool, SystemRDLEnum, int]) -> None:
         """
         Do a write to all the fields in a register, updating any field included in
         the arguments based on the starting state of `write_initial_state`
