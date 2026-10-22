@@ -32,15 +32,16 @@ from ..sim_lib.register import Register as SimRegister
 from ..sim_lib.register import MemoryRegister as SimMemoryRegister
 
 from .utilities import random_reg_value, RandomReg
-from .utilities import RegWriteTestSequence,RegWriteZeroStartTestSequence
-
+from .utilities import RegWriteTestSequence, RegWriteZeroStartTestSequence
 
 from ._base_test_class import LibTestCommon
+
 
 class LibTestRegister(LibTestCommon, ABC):
     """
     Tests for registers in an non-async access
     """
+
     def _single_register_read_and_write_test(self, *,
                                              rut: Union[RegReadOnly, RegReadWrite, RegWriteOnly],
                                              has_sw_readable: bool,
@@ -56,21 +57,21 @@ class LibTestRegister(LibTestCommon, ABC):
                                    readable_fields=readable_fields,
                                    writeable_fields=writeable_fields)
 
-        self.__single_register_simulator_read_and_write_test(rut=rut,
-                                                             has_sw_readable=has_sw_readable,
-                                                             has_sw_writable=has_sw_writable)
+        self.__single_register_simulator_read_and_write_test(
+            rut=rut,
+            has_sw_readable=has_sw_readable,
+            has_sw_writable=has_sw_writable)
 
         if has_sw_readable:
             if not isinstance(rut, (RegReadOnly, RegReadWrite)):
                 raise TypeError('Test can not proceed as the rut is not a readable register')
             self.__single_reg_read_test(rut=rut)
-            # check the read fields and read context manager
             self.__single_reg_read_fields_and_context_test(rut=rut)
         else:
             # test that a non-readable register has no read method and
             # attempting one generates and error
             with self.assertRaises(AttributeError):
-                _= rut.read(0)  # type: ignore[union-attr,call-arg]
+                _ = rut.read(0)  # type: ignore[union-attr,call-arg]
 
         if has_sw_writable:
             if not isinstance(rut, (RegWriteOnly, RegReadWrite)):
@@ -87,7 +88,6 @@ class LibTestRegister(LibTestCommon, ABC):
                 if not isinstance(rut, RegWriteOnly):
                     raise TypeError('Test can not proceed as the rut is not a writable register')
                 self.__single_write_only_reg_full_write_fields_test(rut)
-
         else:
             # test that a non-writable register has no write method and
             # attempting one generates and error
@@ -108,7 +108,8 @@ class LibTestRegister(LibTestCommon, ABC):
                     accesswidth=rut.accesswidth)
             write_callback_mock.assert_not_called()
 
-    def __single_reg_write_test(self, rut: Union[RegWriteOnly, RegReadWrite]) -> None:
+    def __single_reg_write_test(self,
+                                rut: Union[RegWriteOnly, RegReadWrite]) -> None:
         with patch.object(self, 'write_callback') as write_callback_mock, \
                 patch.object(self, 'read_callback', return_value=0) as read_callback_mock:
             for reg_value in [0, 1, rut.max_value, random_reg_value(rut)]:
@@ -130,20 +131,20 @@ class LibTestRegister(LibTestCommon, ABC):
             with self.assertRaises(ValueError):
                 rut.write(rut.max_value + 1)
 
-    def __single_reg_read_fields_and_context_test(self,
-                                                  rut: Union[RegReadOnly, RegReadWrite]) -> None:
+    def __single_reg_read_fields_and_context_test(
+            self,
+            rut: Union[RegReadOnly, RegReadWrite]) -> None:
         """
         Check the `read_fields` and `single_read` methods
         """
-
         # build up a register value, starting with a random register value
         reg_value = RandomReg(rut).value
 
         with patch.object(self, 'write_callback') as write_callback_mock, \
-            patch.object(self, 'read_callback', return_value=reg_value) as read_callback_mock:
-
+                patch.object(self, 'read_callback', return_value=reg_value) as read_callback_mock:
             # build the expected return structure
-            ref_read_fields = { field.inst_name: field.read() for field in rut.readable_fields }
+            ref_read_fields = { field.inst_name: field.read()
+                                for field in rut.readable_fields }
             read_callback_mock.reset_mock()
 
             self.assertDictEqual(rut.read_fields(), ref_read_fields)
@@ -226,8 +227,8 @@ class LibTestRegister(LibTestCommon, ABC):
                 # check the write_fields
                 read_callback_mock.return_value = reg_sequence.start_value
                 # make the kwargs by replacing the field names with the safe versions
-                kwargs = { rut.systemrdl_python_child_name_map[unsafe_name] : value
-                           for unsafe_name, value in reg_sequence.write_sequence.items() }
+                kwargs = {rut.systemrdl_python_child_name_map[unsafe_name]: value
+                          for unsafe_name, value in reg_sequence.write_sequence.items()}
                 rut.write_fields(**kwargs)
                 write_callback_mock.assert_called_once_with(
                     addr=rut.address,
@@ -240,7 +241,7 @@ class LibTestRegister(LibTestCommon, ABC):
 
     def __single_reg_write_all_fields_test(self, rut: RegReadWrite) -> None:
         with patch.object(self, 'write_callback') as write_callback_mock, \
-            patch.object(self, 'read_callback', return_value=0) as read_callback_mock:
+                patch.object(self, 'read_callback', return_value=0) as read_callback_mock:
 
             reg_sequence = RegWriteTestSequence(rut, fields=rut.writable_fields)
             kwargs = {rut.systemrdl_python_child_name_map[unsafe_name]: value
@@ -305,8 +306,8 @@ class LibTestRegister(LibTestCommon, ABC):
             reg_sequence = RegWriteZeroStartTestSequence(rut, fields=rut.writable_fields)
 
             # make the kwargs by replacing the field names with the safe versions
-            kwargs = { rut.systemrdl_python_child_name_map[unsafe_name] : value
-                       for unsafe_name, value in reg_sequence.write_sequence.items() }
+            kwargs = {rut.systemrdl_python_child_name_map[unsafe_name]: value
+                      for unsafe_name, value in reg_sequence.write_sequence.items()}
             rut.write_fields(**kwargs)
             write_callback_mock.assert_called_once_with(
                 addr=rut.address,

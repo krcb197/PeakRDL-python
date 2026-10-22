@@ -45,9 +45,7 @@ class AsyncLibTestRegister(AsyncLibTestCommon, ABC):
     """
     Tests for registers in an async access
     """
-
-    async def _single_register_read_and_write_test(
-            self, *,
+    async def _single_register_read_and_write_test(self, *,
             rut: Union[RegAsyncReadOnly, RegAsyncReadWrite, RegAsyncWriteOnly],
             has_sw_readable: bool,
             has_sw_writable: bool,
@@ -139,13 +137,14 @@ class AsyncLibTestRegister(AsyncLibTestCommon, ABC):
     async def __single_reg_read_fields_and_context_test(
             self,
             rut: Union[RegAsyncReadOnly, RegAsyncReadWrite]) -> None:
-
+        """
+        Check the `read_fields` and `single_read` methods
+        """
         # build up a register value, starting with a random register value
         reg_value = RandomReg(rut).value
 
         with patch.object(self, 'write_callback') as write_callback_mock, \
             patch.object(self, 'read_callback', return_value=reg_value) as read_callback_mock:
-
             # build the expected return structure
             ref_read_fields = { field.inst_name: await field.read()
                                 for field in rut.readable_fields }
