@@ -288,7 +288,8 @@ class AsyncLibTestRegister(AsyncLibTestCommon, ABC):
         random_write_sequence = RegWriteTestSequence(rut, fields=writeable_fields)
         with patch.object(self, 'write_callback') as write_callback_mock, \
                 patch.object(self, 'read_callback') as read_callback_mock:
-            async with rut.single_write(initial_state=random_write_sequence.start_value) as reg_session:
+            async with rut.single_write(
+                    initial_state=random_write_sequence.start_value) as reg_session:
                 for field_name, field_value in random_write_sequence.write_sequence.items():
                     field_prop = reg_session.get_child_by_system_rdl_name(field_name)
                     await field_prop.write(field_value)
