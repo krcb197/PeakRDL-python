@@ -837,7 +837,7 @@ class RegReadWrite(RegReadOnly, __RegWritable, ABC):
         """
         Provide a list of field names that are writable
         """
-        all_field_names = list(self.systemrdl_python_child_name_map.keys())
+        all_field_names = list(self.systemrdl_python_child_name_map.values())
         def is_writable_field_name(name: str) -> bool:
             field = getattr(self, name)
             return isinstance(field, (FieldWriteOnly, FieldReadWrite))
