@@ -146,12 +146,12 @@ class {{node.python_class_name}}({{node.base_class(asyncoutput)}}):
     {% if node.read_write %}
         {% if node.all_writable_fields_hidden  %}
         {# Special case for the all_writable_fields_hidden field when all the fields are hidden  #}
-    {% if asyncoutput %}async {% endif %}def write_all_fields_without_read(self, ) -> None:
+    {% if asyncoutput %}async {% endif %}def write_all_fields_without_read(self, ) -> None: # type: ignore[override]
         raise NotImplementedError('There are no writeable fields')
         return None
         {% else %} {# if node.all_writable_fields_hidden #}
             {# for read/write registers a method that forces all field to be written as one #}
-    {% if asyncoutput %}async {% endif %}def write_all_fields_without_read(self, *, {%- for child_node in node.writable_fields() -%} {{safe_node_name(child_node)}} : {{node.lookup_field_data_python_class(child_node)}},{%- endfor -%}) -> None:
+    {% if asyncoutput %}async {% endif %}def write_all_fields_without_read(self, *, {%- for child_node in node.writable_fields() -%} {{safe_node_name(child_node)}} : {{node.lookup_field_data_python_class(child_node)}},{%- endfor -%}) -> None: # type: ignore[override]
         return{% if asyncoutput %} await{% endif %} super().write_all_fields_without_read({%- for child_node in node.writable_fields() -%} {{safe_node_name(child_node)}}={{safe_node_name(child_node)}},{%- endfor -%})
         {% endif %} {# if node.all_writable_fields_hidden #}
     {% endif %}
