@@ -38,14 +38,23 @@ In the folder structure above:
 Top Level Classes
 =================
 
+In order to use the generated packages, the Top Level Class needs to be imported.
+
 .. versionchanged:: 2.0.0
 
     A new class aliases were added to the ``reg_model`` and ``sim`` packages to allow the register
     model and simulator to be imported more easily. See the example below using ``RegModel`` and
     ``Simulator``.
 
+.. warning:: It is not recommended to import the child classes. If a sub-section of the register
+             model is all that is needed, it is better to only build the section needed.
+
 Class Names
 ===========
+
+PeakRDL Python generates python classes to model the parts of the register model. These can not
+always map to the names in the code, especially if attributes are overridden. Therefore PeakRDL
+Python generates new names.
 
 .. versionchanged:: 2.0.0
 
