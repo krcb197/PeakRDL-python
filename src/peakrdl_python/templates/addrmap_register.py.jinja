@@ -133,13 +133,15 @@ class {{node.python_class_name}}({{node.base_class(asyncoutput)}}):
         return 0
     {% else %}
     {# Special case for the register_value field when all the fields are hidden  #}
-    def register_value(self, *,{%- for child_node in node.fields() -%} {{safe_node_name(child_node)}} : {{node.lookup_field_data_python_class(child_node)}},{%- endfor -%}) -> int: # type: ignore[override]
+    def register_value( # type: ignore[override]
+        self, *,{%- for child_node in node.fields() -%} {{safe_node_name(child_node)}} : {{node.lookup_field_data_python_class(child_node)}},{%- endfor -%}) -> int:
         return super().register_value({%- for child_node in node.fields() -%} {{safe_node_name(child_node)}}={{safe_node_name(child_node)}},{%- endfor -%})
     {% endif %}
 
     {% if node.write_only %}
     {# if the register has no readable components, all the fields must be writen as one #}
-    {% if asyncoutput %}async {% endif %}def write_fields(self, *,{%- for child_node in node.fields() -%} {{safe_node_name(child_node)}} : {{node.lookup_field_data_python_class(child_node)}},{%- endfor -%}) -> None: # type: ignore[override]
+    {% if asyncoutput %}async {% endif %}def write_fields(    # type: ignore[override]
+        self, *,{%- for child_node in node.fields() -%} {{safe_node_name(child_node)}} : {{node.lookup_field_data_python_class(child_node)}},{%- endfor -%}) -> None:
         return{% if asyncoutput %} await{% endif %} super().write_fields({%- for child_node in node.fields() -%} {{safe_node_name(child_node)}}={{safe_node_name(child_node)}},{%- endfor -%})
     {% endif %}
 
@@ -151,7 +153,8 @@ class {{node.python_class_name}}({{node.base_class(asyncoutput)}}):
         return None
         {% else %} {# if node.all_writable_fields_hidden #}
             {# for read/write registers a method that forces all field to be written as one #}
-    {% if asyncoutput %}async {% endif %}def write_all_fields_without_read(self, *, {%- for child_node in node.writable_fields() -%} {{safe_node_name(child_node)}} : {{node.lookup_field_data_python_class(child_node)}},{%- endfor -%}) -> None: # type: ignore[override]
+    {% if asyncoutput %}async {% endif %}def write_all_fields_without_read( # type: ignore[override]
+        self, *, {%- for child_node in node.writable_fields() -%} {{safe_node_name(child_node)}} : {{node.lookup_field_data_python_class(child_node)}},{%- endfor -%}) -> None:
         return{% if asyncoutput %} await{% endif %} super().write_all_fields_without_read({%- for child_node in node.writable_fields() -%} {{safe_node_name(child_node)}}={{safe_node_name(child_node)}},{%- endfor -%})
         {% endif %} {# if node.all_writable_fields_hidden #}
     {% endif %}
