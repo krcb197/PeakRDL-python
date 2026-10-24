@@ -32,10 +32,10 @@ addrmap basic {
     reg {
         default sw = rw;
         default hw = r;
-        field { fieldwidth=8; } basicfield_h;
-        field { fieldwidth=8; } basicfield_i;
-        field { fieldwidth=8; } basicfield_j;
-        field { fieldwidth=8; } basicfield_k;
+        field { fieldwidth=8; } basicfield_h = 1;
+        field { fieldwidth=8; } basicfield_i = 2;
+        field { fieldwidth=8; } basicfield_j = 4;
+        field { fieldwidth=8; } basicfield_k = 8;
     } basicreg_e;
 
     reg {

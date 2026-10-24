@@ -133,10 +133,9 @@ attempts to set the output state.
 .. toctree::
    :hidden:
    :maxdepth: 2
-   :caption: usage
+   :caption: Usage
 
    installation
-   generated_package
    api_components
    api
    command_line
@@ -145,14 +144,23 @@ attempts to set the output state.
 .. toctree::
    :hidden:
    :maxdepth: 2
-   :caption: developer notes
+   :caption: Generated Package
+
+   generated_package/output_structure
+   generated_package/callbacks
+   generated_package/using_ral
+
+.. toctree::
+   :hidden:
+   :maxdepth: 2
+   :caption: Developer notes
 
    design_decisions
    design_tools
 
 .. toctree::
    :hidden:
-   :caption: other
+   :caption: Other
 
    genindex
 
