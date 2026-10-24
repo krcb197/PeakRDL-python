@@ -583,6 +583,8 @@ class RegAsyncReadWrite(RegAsyncReadOnly, __RegWritable, ABC):
 
         Note:
             The `read` method behaves differently when used within the one of the context managers:
+
+
             - when used within `single_read_modify_write` or `single_read` it will return the
               register value read at the entry into the context manager
             - when used within `single_write` it will return the register value based on the
