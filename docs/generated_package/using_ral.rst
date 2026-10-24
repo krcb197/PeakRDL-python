@@ -116,8 +116,8 @@ Working with individual registers
 ---------------------------------
 
 Each time the ``read`` or ``write`` method for a register field is accessed the hardware is read
-and or written (a write to a field will normally require a preceding read). When accessing multiple
-fields in the same register, it may be desirable to use one of the optimised access methods.
+and then written (if the write is required). In the case of a control register this is so-called Read-Modify-Write is normally desirable.
+When accessing multiple fields in the same register, it may be desirable to use one of the optimised access methods to avoid multiple read events
 
 Consider the following example of an GPIO block with 4 GPIO pins (configured in a single register):
 
@@ -139,7 +139,27 @@ Both demonstrated in the following code example:
 Avoiding the Read on a Read/Write Register
 ------------------------------------------
 
-TBA
+In some cases the implicit read is undesirable. For example if reading from the register triggers
+a behaviour.
+
+Consider the following example with a FIFO that is accessed by reading and writing to the same
+register.
+
+.. literalinclude :: ../../example/fifo_register_example/fifo_register_example.rdl
+   :language: systemrdl
+
+If the ``push`` register field is accessed in the simple way with a direct field write, an implicit
+read happens. This can be avoided in a couple of ways:
+
+* using the ``write_all_fields_without_read`` method of the register, writes fields without a read
+* using the ``single_write`` register context manager
+
+This demonstration also shows that reading one field causes the whole register to be read, so
+accessing the field individually can be undesirable and the methods of optimising to a single read
+should be used.
+
+.. literalinclude :: ../../example/fifo_register_example/demo_fifo_register_example.py
+   :language: python
 
 
 Working with registers arrays

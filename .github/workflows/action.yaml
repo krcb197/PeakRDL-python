@@ -292,6 +292,12 @@ jobs:
 
           cd ../..
           
+          cd example/fifo_register_example/
+          peakrdl python fifo_register_example.rdl -o .
+          python -m demo_fifo_register_example
+
+          cd ../..
+          
   identical_code:
     needs:
       - mypy
