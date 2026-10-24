@@ -88,7 +88,26 @@ a file called ``array_access.rdl``):
 Write Only Registers
 ====================
 
-TBA
+Write only registers are commonly used within hardware designs, in update fields in a register
+the other fields must be assumed
+
+.. versionchanged:: 4.0.0
+
+    Previous versions had an implicit default register value of 0x0, version 4.0.0 provides new
+    methods to provide better control over this behaviour
+
+Consider the following example status register that can show multiple event have occured, with another
+register that allows the statuses to be cleared one at a time. However the clear register uses
+invert logic, 0 to clear and 1 to leave unchanged
+
+.. literalinclude :: ../../example/write_only_registers/write_only_registers.rdl
+   :language: systemrdl
+
+The following code shows all the methods to access the clear bits without inadvertently clearing other
+statuses
+
+.. literalinclude :: ../../example/write_only_registers/demo_write_only_registers.py
+   :language: python
 
 Optimised Access
 ================
