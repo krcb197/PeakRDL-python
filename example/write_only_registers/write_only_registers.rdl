@@ -1,0 +1,27 @@
+addrmap write_only_registers {
+
+    field status_event_def { fieldwidth=1; sw=r; hw=w;};
+    field status_event_clear_def { fieldwidth=1;
+                                   sw=w;
+                                   hw=r;
+                                   name="status clear";
+                                   desc="write a 0 to this value to clear the status event"; };
+
+    reg {
+        default sw = r;
+        default hw = rw;
+
+        status_event_def status_event_0;
+        status_event_def status_event_1;
+
+    } status;
+
+    reg {
+        default sw = w;
+        default hw = r;
+
+        status_event_clear_def n_status_event_0 = 1;
+        status_event_clear_def n_status_event_1 = 1;
+
+    } status_clear;
+};

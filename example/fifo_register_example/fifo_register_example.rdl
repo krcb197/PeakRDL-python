@@ -1,0 +1,13 @@
+addrmap fifo_register_example {
+
+    reg {
+        default sw = r;
+        default hw = rw;
+
+        field { fieldwidth=8; sw=r; hw=w; desc="determines the amount of data still to read"; } fill_count;
+        field { fieldwidth=8; sw=r; hw=w; desc="when read takes one item from the FIFO";} pop;
+        field { fieldwidth=8; sw=w; hw=r; desc="When writtrn put data onto the FIFO";} push;
+
+    } access_reg;
+
+};

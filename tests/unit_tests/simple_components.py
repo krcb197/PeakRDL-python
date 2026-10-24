@@ -76,13 +76,6 @@ class ReadOnlyRegisterToTest(RegReadOnly):
     def accesswidth(self) -> int:
         return 32
 
-    @property
-    def readable_fields(self) -> Iterator[FieldReadOnly]:
-        """
-        generator that produces has all the readable fields within the register
-        """
-        yield self.field
-
     def __iter__(self) -> Iterator[FieldReadOnly]:
         """
         generator that produces has all the readable fields within the register
@@ -158,13 +151,6 @@ class WriteOnlyRegisterToTest(RegWriteOnly):
     def accesswidth(self) -> int:
         return 32
 
-    @property
-    def writable_fields(self) -> Iterator[FieldWriteOnly]:
-        """
-        generator that produces has all the readable fields within the register
-        """
-        yield self.field
-
     def __iter__(self) -> Iterator[FieldWriteOnly]:
         """
         generator that produces has all the readable fields within the register
@@ -200,7 +186,7 @@ class ReadWriteRegisterToTest(RegReadWrite):
     """
     Class to represent a register in the register model
     """
-    __slots__: list[str] = ['__field']
+    __slots__: list[str] = ['__field', '__another_field']
 
     # pylint: disable=duplicate-code,too-many-arguments
     class FieldToTest(FieldReadWrite):
@@ -235,6 +221,21 @@ class ReadWriteRegisterToTest(RegReadWrite):
             inst_name='field',
             field_type=int)
 
+        self.__another_field = self.FieldToTest(
+            parent_register=self,
+            size_props=FieldSizeProps(
+                width=2,
+                lsb=4,
+                msb=5,
+                low=4,
+                high=5),
+            misc_props=FieldMiscProps(
+                default=None,
+                is_volatile=False),
+            logger_handle=logger_handle + '.another_field',
+            inst_name='another_field',
+            field_type=int)
+
     @property
     def width(self) -> int:
         return 32
@@ -243,25 +244,12 @@ class ReadWriteRegisterToTest(RegReadWrite):
     def accesswidth(self) -> int:
         return 32
 
-    @property
-    def readable_fields(self) -> Iterator[FieldReadOnly]:
-        """
-        generator that produces has all the readable fields within the register
-        """
-        yield self.field
-
     def __iter__(self) -> Iterator[FieldReadOnly]:
         """
         generator that produces has all the readable fields within the register
         """
         yield self.field
-
-    @property
-    def writable_fields(self) -> Iterator[Union['FieldWriteOnly', 'FieldReadWrite']]:
-        """
-        generator that produces has all the readable fields within the register
-        """
-        yield self.field
+        yield self.another_field
 
     # build the properties for the fields
     @property
@@ -271,8 +259,12 @@ class ReadWriteRegisterToTest(RegReadWrite):
         """
         return self.__field
 
-    def write_fields(self,  **kwargs: Any) -> None:
-        raise NotImplementedError('Not implemented for the purpose of tests')
+    @property
+    def another_field(self) -> FieldToTest:
+        """
+        Property to access another_field of the register
+        """
+        return self.__another_field
 
     @property
     def systemrdl_python_child_name_map(self) -> dict[str, str]:
@@ -285,6 +277,7 @@ class ReadWriteRegisterToTest(RegReadWrite):
         """
         return {
             'field': 'field',
+            'another_field': 'another_field'
         }
 
 

@@ -77,11 +77,6 @@ class Exporter(ExporterSubcommandPlugin):
                                     'However, if additional python files are added by the user '
                                     '(not recommended) this cleanup will need to be suppressed '
                                     'and managed by the user')
-        arg_group.add_argument('--legacy_block_access', action='store_true',
-                               dest='legacy_block_access',
-                               help='peakrdl python has two methods to hold blocks of data, the '
-                                    'legacy mode based on array.array or the new mode using '
-                                    'lists. This option will be removed in version 4.0')
         arg_group.add_argument('--show_hidden', action='store_true',
                                dest='show_hidden',
                                help='show addrmap, regfile, memory, register and fields that '
@@ -97,12 +92,6 @@ class Exporter(ExporterSubcommandPlugin):
                                     'be hidden')
         arg_group.add_argument('--skip_library_copy', action='store_true',
                                help='skip the copy of the library code into the generated package')
-        arg_group.add_argument('--legacy_enum_type', action='store_true',
-                               dest='legacy_enum_type',
-                               help='peakrdl python has two ways to define field encoding as '
-                                     'enums new method and an old method based on IntEnum. '
-                                     'Setting this to true will restore the old behaviour.'
-                                     ' This option will be removed in version 4.0')
         arg_group.add_argument('--skip_systemrdl_name_and_desc_properties', action='store_true',
                                dest='skip_systemrdl_name_and_desc_properties',
                                help='peakrdl python includes the system RDL name and desc '
@@ -184,13 +173,11 @@ class Exporter(ExporterSubcommandPlugin):
             asyncoutput=options.is_async,
             skip_test_case_generation=options.skip_test_case_generation,
             delete_existing_package_content=not options.suppress_cleanup,
-            legacy_block_access=options.legacy_block_access,
             show_hidden=options.show_hidden,
             user_defined_properties_to_include=options.udp,
             user_defined_properties_to_include_regex=options.udp_regex,
             hidden_inst_name_regex=options.hide_regex,
             skip_library_copy=options.skip_library_copy,
-            legacy_enum_type=options.legacy_enum_type,
             skip_systemrdl_name_and_desc_properties=
                 options.skip_systemrdl_name_and_desc_properties,
             skip_systemrdl_name_and_desc_in_docstring=

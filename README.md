@@ -130,4 +130,23 @@ the following options were changed:
   This had some restrictions, so the a new methodology based on the `list` type was introduced in version 0.9.
   The old array based behaviour is no longer the default but can be turned on using the `legacy_block_access`
 
+## 4.0.0
+
+some legacy features from the early versions were removed in release 4.0.0, the following options were changed:
+- Version 1.2 introduced a new custom enumeration type (rather than using `IntEnum`) in order to allow
+  the content to `name` and `desc` systemRDL properties in be accessible. Version 4.0.0 removed the option to use `IntEnum`
+- The first versions of PeakRDL Python used the built-in `Array` type for accessing blocks of data efficiently.
+  This had some restrictions, so a new methodology based on the `list` type was introduced in version 0.9.
+  The old array based behaviour was removed in this version
+
+This release also improved the features for write-only register:
+- field write operations no longer have a hard-code base value of `0` in the register, the base register value is configurable via the `write_initial_state` property
+- the `write_fields` methods also uses the `write_initial_state` property to allow other bits in the register to be set if needed, rather than a hardcoded `0`
+- A new `single_write` context manager can be used to set multiple field values in a single write with a configurable initial register state
+
+The read/write register class has similar feature:
+- A new `single_write` context manager that does not use a read before the write to set multiple field values in a single write with a configurable initial register state
+- A new `write_all_fields_without_read` method tht will write all the writable fields with the `write_initial_state` property to allow other bits in the register to be set if needed
+
+
 

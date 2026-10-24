@@ -40,34 +40,6 @@ class UnsupportedWidthError(Exception):
     Exception for width that can not be supported in the legacy array based API
     """
 
-
-def get_array_typecode(width: int) -> str:
-    """
-        python array typecode
-
-        Args:
-            width: in bits
-
-        Returns:
-            string to pass into the array generator
-
-        """
-    if width == 32:
-        return 'L'
-
-    if width == 64:
-        return 'Q'
-
-    if width == 16:
-        return 'H'
-
-    if width == 8:
-        return 'B'
-
-    raise UnsupportedWidthError(f'unhandled width {width:d}, consider using the new new list '
-                                f'based API and callbacks rather than the legacy Array versions')
-
-
 def is_power_two(value: int) -> bool:
     """
     efficient algorithm for checking if something is a power of two
