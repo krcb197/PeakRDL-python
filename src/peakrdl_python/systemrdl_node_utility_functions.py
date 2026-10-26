@@ -1,6 +1,6 @@
 """
 peakrdl-python is a tool to generate Python Register Access Layer (RAL) from SystemRDL
-Copyright (C) 2021 - 2025
+Copyright (C) 2021 - 2026
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU Lesser General Public License as 
@@ -18,24 +18,18 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 A set of utility functions that perform supplementary processing on a node in a compiled
 system RDL dataset.
 """
-from typing import Optional, Protocol
+import textwrap
 from collections.abc import Iterable
 from itertools import filterfalse
+from typing import Optional, Protocol
 
-import textwrap
-
-from systemrdl.node import Node
-from systemrdl.node import RegNode
-
-from systemrdl.node import AddressableNode
-from systemrdl.node import FieldNode
-from systemrdl.node import MemNode
-from systemrdl.node import SignalNode
-
+from systemrdl.node import (AddressableNode, FieldNode, MemNode, Node, RegNode,
+                            SignalNode)
 from systemrdl.rdltypes.user_enum import UserEnumMeta
 
 from .lib.utility_functions import calculate_bitmask
 from .sim_lib.field import FieldType
+
 
 class HideNodeCallback(Protocol):
     """

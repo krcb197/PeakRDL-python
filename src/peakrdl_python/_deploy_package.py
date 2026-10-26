@@ -1,6 +1,6 @@
 """
 peakrdl-python is a tool to generate Python Register Access Layer (RAL) from SystemRDL
-Copyright (C) 2021 - 2025
+Copyright (C) 2021 - 2026
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU Lesser General Public License as 
@@ -18,11 +18,12 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 Classes to represent the package that is generated
 """
 import os
+from collections.abc import Generator
+from contextlib import contextmanager
 from pathlib import Path
 from shutil import copy
 from typing import TextIO
-from contextlib import contextmanager
-from collections.abc import Generator
+
 
 class PythonPackage:
     """

@@ -1,6 +1,6 @@
 """
 peakrdl-python is a tool to generate Python Register Access Layer (RAL) from SystemRDL
-Copyright (C) 2021 - 2025
+Copyright (C) 2021 - 2026
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU Lesser General Public License as
@@ -17,25 +17,24 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 Test the simulator callbacks
 """
-import unittest
-from unittest.mock import Mock
 import os
-import tempfile
 import random
 import sys
+import tempfile
+import unittest
+from collections import namedtuple
 from contextlib import contextmanager
 from pathlib import Path
-from collections import namedtuple
 from typing import Union
+from unittest.mock import Mock
 
-from peakrdl_python import PythonExporter
-from peakrdl_python import compiler_with_udp_registers
+from peakrdl_python import PythonExporter, compiler_with_udp_registers
 from peakrdl_python.lib import NormalCallbackSet
-from peakrdl_python.sim_lib.register import Register as SimRegister
 from peakrdl_python.sim_lib.field import Field as SimField
 from peakrdl_python.sim_lib.field import ReadOnlyField as SimReadOnlyField
-from peakrdl_python.sim_lib.field import WriteOnlyField as SimWriteOnlyField
 from peakrdl_python.sim_lib.field import ReadWriteField as SimReadWriteField
+from peakrdl_python.sim_lib.field import WriteOnlyField as SimWriteOnlyField
+from peakrdl_python.sim_lib.register import Register as SimRegister
 
 # this assumes the current file is in the unit_test folder under tests
 test_path = Path(__file__).parent.parent
@@ -86,7 +85,6 @@ class TestSimCallback(unittest.TestCase):
                             asyncoutput=False,
                             delete_existing_package_content=False,
                             skip_test_case_generation=True,
-                            legacy_block_access=False,
                             skip_library_copy=True,)
 
             # add the temp directory to the python path so that it can be imported from

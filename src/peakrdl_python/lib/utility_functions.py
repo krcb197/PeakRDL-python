@@ -1,6 +1,6 @@
 """
 peakrdl-python is a tool to generate Python Register Access Layer (RAL) from SystemRDL
-Copyright (C) 2021 - 2025
+Copyright (C) 2021 - 2026
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU Lesser General Public License as 
@@ -39,34 +39,6 @@ class UnsupportedWidthError(Exception):
     """
     Exception for width that can not be supported in the legacy array based API
     """
-
-
-def get_array_typecode(width: int) -> str:
-    """
-        python array typecode
-
-        Args:
-            width: in bits
-
-        Returns:
-            string to pass into the array generator
-
-        """
-    if width == 32:
-        return 'L'
-
-    if width == 64:
-        return 'Q'
-
-    if width == 16:
-        return 'H'
-
-    if width == 8:
-        return 'B'
-
-    raise UnsupportedWidthError(f'unhandled width {width:d}, consider using the new new list '
-                                f'based API and callbacks rather than the legacy Array versions')
-
 
 def is_power_two(value: int) -> bool:
     """

@@ -1,6 +1,6 @@
 """
 peakrdl-python is a tool to generate Python Register Access Layer (RAL) from SystemRDL
-Copyright (C) 2021 - 2025
+Copyright (C) 2021 - 2026
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU Lesser General Public License as 
@@ -18,30 +18,27 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 The methods for building the main iterator that is used in the templates for building the
 code.
 """
-from typing import Optional
-from dataclasses import dataclass, field
 from collections.abc import Iterator
+from dataclasses import dataclass, field
 from itertools import filterfalse
-
 from logging import getLogger
+from typing import Optional
 
-from systemrdl.node import Node
-from systemrdl.node import RegNode
-from systemrdl.node import FieldNode
-from systemrdl.node import MemNode
-from systemrdl.node import AddrmapNode
-from systemrdl.node import RegfileNode
-from systemrdl.node import SignalNode
 from systemrdl import RDLListener, WalkerAction
+from systemrdl.node import (AddrmapNode, FieldNode, MemNode, Node, RegfileNode,
+                            RegNode, SignalNode)
 from systemrdl.rdltypes.user_enum import UserEnumMeta
 
-from .systemrdl_node_hashes import node_hash, enum_hash, NodeHashingMethod
-from .systemrdl_node_utility_functions import HideNodeCallback
-from .systemrdl_node_utility_functions import ShowUDPCallback
-from .systemrdl_node_utility_functions import get_properties_to_include
-from .systemrdl_node_utility_functions import get_reg_regwidth, get_reg_accesswidth
-from .systemrdl_node_utility_functions import get_memory_accesswidth
 from .class_names import get_base_class_name
+from .systemrdl_node_hashes import NodeHashingMethod, enum_hash, node_hash
+from .systemrdl_node_utility_functions import (HideNodeCallback,
+                                               ShowUDPCallback,
+                                               get_memory_accesswidth,
+                                               get_properties_to_include,
+                                               get_reg_accesswidth,
+                                               get_reg_regwidth,
+                                               get_reg_writable_fields)
+
 
 @dataclass(frozen=True)
 class PeakRDLPythonUniqueComponents:
@@ -153,6 +150,10 @@ class PeakRDLPythonUniqueRegisterComponents(PeakRDLPythonUniqueComponents):
     def read_write(self) -> bool:
         """
         Determine if the register is read-write
+
+        Note:
+            The fields is defined as read write even if the underlying fields that are readable
+            or writable are hidden.
         """
         return self.instance.has_sw_readable and self.instance.has_sw_writable
 
@@ -206,10 +207,37 @@ class PeakRDLPythonUniqueRegisterComponents(PeakRDLPythonUniqueComponents):
 
     def fields(self) -> Iterator[FieldNode]:
         """
-        Iterator for all the systemRDL nodes which are not hidden
+        Iterator for all the systemRDL fields associated with the register which are not hidden
         """
         yield from filterfalse(self.parent_walker.hide_node_callback,
                                self.instance.fields())
+
+
+    def writable_fields(self) -> Iterator[FieldNode]:
+        """
+        Iterator for all the systemRDL writtable fields associated with the register which are not
+        hidden i.e. read only fields are filtered out
+        """
+        yield from get_reg_writable_fields(
+            node=self.instance,
+            hide_node_callback=self.parent_walker.hide_node_callback)
+
+    @property
+    def all_fields_hidden(self) -> bool:
+        """
+        It is mandatory to have at least one field in a systemRDL register, however, PeakRDL allows
+        that to be hidden creating a special case of a register with no accessible fields
+        """
+        return len(tuple(self.fields())) == 0
+
+    @property
+    def all_writable_fields_hidden(self) -> bool:
+        """
+        It is mandatory to have at least one field in a systemRDL register, however, PeakRDL allows
+        that to be hidden creating a special case of a register with no accessible fields
+        """
+        return len(tuple(self.writable_fields())) == 0
+
 
 @dataclass(frozen=True)
 class PeakRDLPythonUniqueMemoryComponents(PeakRDLPythonUniqueComponents):

@@ -1,6 +1,6 @@
 """
 peakrdl-python is a tool to generate Python Register Access Layer (RAL) from SystemRDL
-Copyright (C) 2021 - 2025
+Copyright (C) 2021 - 2026
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU Lesser General Public License as
@@ -20,30 +20,24 @@ Python tool. It provide the base class common to both the async and non-async ve
 """
 import unittest
 from abc import ABC, abstractmethod
-from typing import Union, Optional
 from itertools import product
+from typing import Optional, Union
 
-from ..lib import FieldReadWrite, FieldReadOnly, FieldWriteOnly
-from ..lib import FieldEnumReadWrite, FieldEnumReadOnly, FieldEnumWriteOnly
-from ..lib import FieldAsyncReadOnly, FieldAsyncWriteOnly, FieldAsyncReadWrite
-from ..lib import FieldEnumAsyncReadOnly, FieldEnumAsyncWriteOnly, FieldEnumAsyncReadWrite
-from ..lib import RegReadOnly, RegReadWrite, RegWriteOnly
-from ..lib import RegAsyncReadOnly, RegAsyncReadWrite, RegAsyncWriteOnly
-from ..lib import AddressMap, AsyncAddressMap
-from ..lib import RegFile, AsyncRegFile
-from ..lib.memory import BaseMemory
-from ..lib import MemoryReadOnly, MemoryReadOnlyLegacy
-from ..lib import MemoryWriteOnly, MemoryWriteOnlyLegacy
-from ..lib import MemoryReadWrite, MemoryReadWriteLegacy
-from ..lib import MemoryAsyncReadOnly, MemoryAsyncReadOnlyLegacy
-from ..lib import MemoryAsyncWriteOnly, MemoryAsyncWriteOnlyLegacy
-from ..lib import MemoryAsyncReadWrite, MemoryAsyncReadWriteLegacy
+from ..lib import (AddressMap, AsyncAddressMap, AsyncRegFile, Base,
+                   FieldAsyncReadOnly, FieldAsyncReadWrite,
+                   FieldAsyncWriteOnly, FieldEnumAsyncReadOnly,
+                   FieldEnumAsyncReadWrite, FieldEnumAsyncWriteOnly,
+                   FieldEnumReadOnly, FieldEnumReadWrite, FieldEnumWriteOnly,
+                   FieldReadOnly, FieldReadWrite, FieldWriteOnly,
+                   MemoryAsyncReadOnly, MemoryAsyncReadWrite,
+                   MemoryAsyncWriteOnly, MemoryReadOnly, MemoryReadWrite,
+                   MemoryWriteOnly, Node, RegAsyncReadOnly, RegAsyncReadWrite,
+                   RegAsyncWriteOnly, RegFile, RegReadOnly, RegReadWrite,
+                   RegWriteOnly, SystemRDLEnum)
 from ..lib.base_register import BaseReg
-from ..lib import Node
-from ..lib import Base
-from ..lib import SystemRDLEnum
-from .utilities import get_field_bitmask_int, get_field_inv_bitmask
+from ..lib.memory import BaseMemory
 from ..sim_lib.simulator import BaseSimulator
+from .utilities import get_field_bitmask_int, get_field_inv_bitmask
 
 
 class NodeIterators:
@@ -99,13 +93,6 @@ class CommonTestBase(unittest.TestCase, ABC):
     def simulator_instance(self) -> BaseSimulator:
         """
         Simulator configured for the DUT
-        """
-
-    @property
-    @abstractmethod
-    def legacy_block_access(self) -> bool:
-        """
-        Whether the register model has been configured for legacy block access or not
         """
 
     # pylint:disable-next=too-many-arguments
@@ -204,6 +191,8 @@ class CommonTestBase(unittest.TestCase, ABC):
                                    parent_full_inst_name=parent_full_inst_name,
                                    inst_name=inst_name)
 
+        self.assertEqual(rut.inverse_bitmask, rut.bitmask ^ rut.max_value)
+
         self.__bad_attribute_test(dut=rut)
 
     # pylint:disable-next=too-many-arguments
@@ -213,7 +202,6 @@ class CommonTestBase(unittest.TestCase, ABC):
                                      width: int,
                                      entries: int,
                                      accesswidth: Optional[int],
-                                     array_typecode: Optional[str],
                                      size: int,
                                      rdl_name: Optional[str],
                                      rdl_desc: Optional[str],
@@ -227,10 +215,6 @@ class CommonTestBase(unittest.TestCase, ABC):
             self.assertEqual(mut.accesswidth, accesswidth)
         else:
             self.assertEqual(mut.accesswidth, width)
-        if self.legacy_block_access:
-            self.assertEqual(mut.array_typecode, array_typecode)
-        else:
-            self.assertIsNone(array_typecode)
         self.assertEqual(mut.size, size)
 
         self.__single_node_rdl_name_and_desc_test(dut=mut,
@@ -390,20 +374,20 @@ class CommonTestBase(unittest.TestCase, ABC):
 
     def _test_register_iterators(self,
                                  dut: Union[AddressMap, AsyncAddressMap, RegFile, AsyncRegFile,
-                                 MemoryReadOnly, MemoryReadOnlyLegacy,
-                                 MemoryWriteOnly, MemoryWriteOnlyLegacy,
-                                 MemoryReadWrite, MemoryReadWriteLegacy,
-                                 MemoryAsyncReadOnly, MemoryAsyncReadOnlyLegacy,
-                                 MemoryAsyncWriteOnly, MemoryAsyncWriteOnlyLegacy,
-                                 MemoryAsyncReadWrite, MemoryAsyncReadWriteLegacy],
+                                 MemoryReadOnly,
+                                 MemoryWriteOnly,
+                                 MemoryReadWrite,
+                                 MemoryAsyncReadOnly,
+                                 MemoryAsyncWriteOnly,
+                                 MemoryAsyncReadWrite],
                                  readable_registers: NodeIterators,
                                  writeable_registers: NodeIterators) -> None:
 
         if isinstance(dut, (AddressMap, AsyncAddressMap, RegFile, AsyncRegFile,
-                            MemoryReadOnly, MemoryReadOnlyLegacy,
-                            MemoryReadWrite, MemoryReadWriteLegacy,
-                            MemoryAsyncReadOnly, MemoryAsyncReadOnlyLegacy,
-                            MemoryAsyncReadWrite, MemoryAsyncReadWriteLegacy)):
+                            MemoryReadOnly,
+                            MemoryReadWrite,
+                            MemoryAsyncReadOnly,
+                            MemoryAsyncReadWrite)):
             child_readable_reg_names = {reg.inst_name for reg in
                                         dut.get_readable_registers(unroll=True)}
             self.assertEqual(readable_registers.unrolled, child_readable_reg_names)
@@ -414,10 +398,10 @@ class CommonTestBase(unittest.TestCase, ABC):
             self.assertFalse(hasattr(dut, 'get_readable_registers'))
 
         if isinstance(dut, (AddressMap, AsyncAddressMap, RegFile, AsyncRegFile,
-                            MemoryWriteOnly, MemoryWriteOnlyLegacy,
-                            MemoryReadWrite, MemoryReadWriteLegacy,
-                            MemoryAsyncWriteOnly, MemoryAsyncWriteOnlyLegacy,
-                            MemoryAsyncReadWrite, MemoryAsyncReadWriteLegacy)):
+                            MemoryWriteOnly,
+                            MemoryReadWrite,
+                            MemoryAsyncWriteOnly,
+                            MemoryAsyncReadWrite)):
             child_writable_reg_names = {reg.inst_name for reg in
                                         dut.get_writable_registers(unroll=True)}
             self.assertEqual(writeable_registers.unrolled, child_writable_reg_names)
@@ -436,12 +420,12 @@ class CommonTestBase(unittest.TestCase, ABC):
 
         # The register file and addrmap have other items in their child map so it has to be
         # tested at the next level up, however, a memory only has child registers
-        if isinstance(dut, (MemoryReadOnly, MemoryReadOnlyLegacy,
-                            MemoryWriteOnly, MemoryWriteOnlyLegacy,
-                            MemoryReadWrite, MemoryReadWriteLegacy,
-                            MemoryAsyncReadOnly, MemoryAsyncReadOnlyLegacy,
-                            MemoryAsyncWriteOnly, MemoryAsyncWriteOnlyLegacy,
-                            MemoryAsyncReadWrite, MemoryAsyncReadWriteLegacy)):
+        if isinstance(dut, (MemoryReadOnly,
+                            MemoryWriteOnly,
+                            MemoryReadWrite,
+                            MemoryAsyncReadOnly,
+                            MemoryAsyncWriteOnly,
+                            MemoryAsyncReadWrite)):
             # Check the child name map
             self.__test_name_map(dut=dut,
                                  child_names=readable_registers.rolled |

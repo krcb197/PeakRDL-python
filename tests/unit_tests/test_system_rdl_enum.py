@@ -1,6 +1,6 @@
 """
 peakrdl-python is a tool to generate Python Register Access Layer (RAL) from SystemRDL
-Copyright (C) 2021 - 2025
+Copyright (C) 2021 - 2026
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU Lesser General Public License as 
@@ -19,7 +19,9 @@ Test the extension to an Enum that is used in the for an systemRDL encoding, whi
 meta data in addition to a value
 """
 import unittest
+
 from peakrdl_python.lib.field_encoding import SystemRDLEnum, SystemRDLEnumEntry
+
 
 class TestGoodEncoding(unittest.TestCase):
     """

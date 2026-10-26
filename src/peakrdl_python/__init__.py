@@ -1,6 +1,6 @@
 """
 peakrdl-python is a tool to generate Python Register Access Layer (RAL) from SystemRDL
-Copyright (C) 2021 - 2025
+Copyright (C) 2021 - 2026
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU Lesser General Public License as 
@@ -16,8 +16,7 @@ You should have received a copy of the GNU Lesser General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 """
+from .compiler_udp import (PythonHideUDP, PythonInstNameUDP,
+                           compiler_with_udp_registers)
 from .exporter import PythonExporter
 from .systemrdl_node_hashes import NodeHashingMethod
-
-from .compiler_udp import PythonHideUDP, PythonInstNameUDP
-from .compiler_udp import compiler_with_udp_registers

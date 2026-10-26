@@ -1,6 +1,6 @@
 """
 peakrdl-python is a tool to generate Python Register Access Layer (RAL) from SystemRDL
-Copyright (C) 2021 - 2025
+Copyright (C) 2021 - 2026
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU Lesser General Public License as 
@@ -20,28 +20,24 @@ A set of utility functions that determine the class hash, for a systemRDL node.
 This can be used to determine if it needs a unique class definition in the generated python or
 not
 """
-from typing import Any, Union, Optional
-from enum import Enum, auto
 import hashlib
 import json
+from enum import Enum, auto
+from typing import Any, Optional, Union
 
-from systemrdl.node import Node
-from systemrdl.node import FieldNode
-from systemrdl.node import RegNode
-from systemrdl.node import RegfileNode
-from systemrdl.node import AddrmapNode
-from systemrdl.node import MemNode
-from systemrdl.node import SignalNode
-from systemrdl.rdltypes.user_enum import UserEnumMeta, UserEnum
+from systemrdl.node import (AddrmapNode, FieldNode, MemNode, Node, RegfileNode,
+                            RegNode, SignalNode)
 from systemrdl.rdltypes import AccessType, UserStruct
+from systemrdl.rdltypes.user_enum import UserEnum, UserEnumMeta
 
-from .systemrdl_node_utility_functions import get_properties_to_include
-from .systemrdl_node_utility_functions import HideNodeCallback
-from .systemrdl_node_utility_functions import ShowUDPCallback
-from .systemrdl_node_utility_functions import get_field_default_value
-from .systemrdl_node_utility_functions import get_reg_regwidth
-from .systemrdl_node_utility_functions import get_reg_accesswidth
-from .systemrdl_node_utility_functions import get_memory_accesswidth
+from .systemrdl_node_utility_functions import (HideNodeCallback,
+                                               ShowUDPCallback,
+                                               get_field_default_value,
+                                               get_memory_accesswidth,
+                                               get_properties_to_include,
+                                               get_reg_accesswidth,
+                                               get_reg_regwidth)
+
 
 class NodeHashingMethod(Enum):
     """

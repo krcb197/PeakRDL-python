@@ -1,6 +1,6 @@
 """
 peakrdl-python is a tool to generate Python Register Access Layer (RAL) from SystemRDL
-Copyright (C) 2021 - 2025
+Copyright (C) 2021 - 2026
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU Lesser General Public License as
@@ -18,9 +18,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 This package is intended to distributed as part of automatically generated code by the PeakRDL
 Python tool. It provides a set of base test classes to reduce the size of the auto generated code
 """
-from .test_class import LibTestBase
-from .async_test_class import AsyncLibTestBase
-
-from .utilities import reverse_bits
-
 from ._common_base_test_class import NodeIterators
+from .async_test_class import AsyncLibTestBase
+from .test_class import LibTestBase
+from .utilities import reverse_bits

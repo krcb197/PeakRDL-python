@@ -1,8 +1,6 @@
 # This is a basic workflow to help you get started with Actions
 
 name: CI
-permissions:
-  contents: read
 
 # Controls when the action will run.
 on:
@@ -21,6 +19,10 @@ on:
 
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
 
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
@@ -74,7 +76,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: [ 3.9, "3.10", "3.11", "3.12", "3.13", "3.14" ]
+        python-version: [ 3.9, "3.10", "3.11", "3.12", "3.13", "3.14", "3.15" ]
 
     steps:
       - uses: actions/checkout@v5
@@ -104,7 +106,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: [ 3.9, "3.10", "3.11", "3.12", "3.13", "3.14" ]
+        python-version: [ 3.9, "3.10", "3.11", "3.12", "3.13", "3.14", "3.15" ]
 
     steps:
       - uses: actions/checkout@v5
@@ -139,10 +141,6 @@ jobs:
           sleep 10
 
           python -m generate_and_test --RDL_source_file tests/testcases/accelera-generic_example.rdl --root_node some_register_map
-          sleep 10
-          python -m generate_and_test --RDL_source_file tests/testcases/accelera-generic_example.rdl --root_node some_register_map --legacy_block_access
-          sleep 10
-          python -m generate_and_test --RDL_source_file tests/testcases/accelera-generic_example.rdl --root_node some_register_map --legacy_enum_type
           sleep 10
           python -m generate_and_test --RDL_source_file tests/testcases/accelera-generic_example.rdl --root_node some_register_map --copy_libraries
           sleep 10
@@ -181,7 +179,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: [ 3.9, "3.10", "3.11", "3.12", "3.13", "3.14" ]
+        python-version: [ 3.9, "3.10", "3.11", "3.12", "3.13", "3.14", "3.15"  ]
 
     steps:
       - uses: actions/checkout@v5
@@ -214,16 +212,11 @@ jobs:
           peakrdl python tests/testcases/hidden_property.rdl -o peakrdl_out/raw_async/ --async
           peakrdl python tests/testcases/hidden_property.rdl -o peakrdl_out/raw_async/show_hidden/ --show_hidden --async
           python -m unittest discover -s peakrdl_out/raw_async
-          peakrdl python tests/testcases/basic.rdl -o peakrdl_out/raw_legacy_block/ --legacy_block_access
-          python -m unittest discover -s peakrdl_out/raw_legacy_block
-
+          
           peakrdl python tests/testcases/basic.rdl -o peakrdl_out/no_test/ --skip_test_case_generation
           
           peakrdl python tests/testcases/basic.rdl -o peakrdl_out/no_lib/ --skip_library_copy
           python -m unittest discover -s peakrdl_out/no_lib
-          
-          peakrdl python tests/testcases/enum_example.rdl -o peakrdl_out/raw_legacy_enum/ --legacy_enum_type
-          python -m unittest discover -s peakrdl_out/raw_legacy_enum
 
           # test a TOMl file that passes in overridden templates
           peakrdl python tests/testcases/basic.rdl -o peakrdl_out/simple_user_template/ --peakrdl-cfg tests/alternative_templates_toml/peakrdl.toml
@@ -295,6 +288,18 @@ jobs:
           
           cd ../..
           
+          cd example/write_only_registers/
+          peakrdl python write_only_registers.rdl -o .
+          python -m demo_write_only_registers
+
+          cd ../..
+          
+          cd example/fifo_register_example/
+          peakrdl python fifo_register_example.rdl -o .
+          python -m demo_fifo_register_example
+
+          cd ../..
+          
   identical_code:
     needs:
       - mypy
@@ -304,7 +309,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: [ 3.9, "3.10", "3.11", "3.12", "3.13", "3.14" ]
+        python-version: [ 3.9, "3.10", "3.11", "3.12", "3.13", "3.14", "3.15" ]
 
     steps:
       - uses: actions/checkout@v5
@@ -338,7 +343,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: [3.9, "3.10", "3.11", "3.12", "3.13", "3.14"]
+        python-version: [3.9, "3.10", "3.11", "3.12", "3.13", "3.14", "3.15"]
         lib_copy: [true, false]
 
     steps:
@@ -388,7 +393,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: [3.9, "3.10", "3.11", "3.12", "3.13", "3.14"]
+        python-version: [3.9, "3.10", "3.11", "3.12", "3.13", "3.14", "3.15"]
 
     steps:
     - uses: actions/checkout@v5
@@ -480,16 +485,16 @@ jobs:
 
       - name: Install dependencies
         run: |
-          python -m pip install -U build
+          python -m pip install --upgrade pip build
 
       - name: Build
-        run: python -m build
+        run: python -m build --sdist --wheel --outdir dist
 
       - uses: actions/upload-artifact@v4
         with:
-          path: |
-            dist/*.tar.gz
-            dist/*.whl
+          name: python-package
+          path: dist/*
+          if-no-files-found: error
 
   #-------------------------------------------------------------------------------
   deploy:
@@ -498,15 +503,19 @@ jobs:
 
     runs-on: ubuntu-latest
 
+    permissions:
+      contents: read
+      id-token: write
+
     # Only publish when a GitHub Release is created.
     if: github.event_name == 'release'
     steps:
       - uses: actions/download-artifact@v4
         with:
-          name: artifact
+          name: python-package
           path: dist
 
       - uses: pypa/gh-action-pypi-publish@release/v1
         with:
-          user: __token__
-          password: ${{ secrets.PYPI_API_TOKEN }}
+          packages-dir: dist/
+          skip-existing: true

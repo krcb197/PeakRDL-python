@@ -1,6 +1,6 @@
 """
 peakrdl-python is a tool to generate Python Register Access Layer (RAL) from SystemRDL
-Copyright (C) 2021 - 2025
+Copyright (C) 2021 - 2026
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU Lesser General Public License as 
@@ -18,21 +18,17 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 Test that it is possible to build an addrmap inside the compiled structure and compare it to
 a result of the top level
 """
-import unittest
 import os
-import tempfile
 import sys
-
+import tempfile
+import unittest
+from contextlib import contextmanager
 from pathlib import Path
 
-from contextlib import contextmanager
-
-from peakrdl_python import PythonExporter
-from peakrdl_python.lib import NormalCallbackSet
-from peakrdl_python.lib import AddressMap
-from peakrdl_python.sim_lib.dummy_callbacks import dummy_write_block, dummy_read_block
-from peakrdl_python import compiler_with_udp_registers
-
+from peakrdl_python import PythonExporter, compiler_with_udp_registers
+from peakrdl_python.lib import AddressMap, NormalCallbackSet
+from peakrdl_python.sim_lib.dummy_callbacks import (dummy_read_block,
+                                                    dummy_write_block)
 
 # this assumes the current file is in the unit_test folder under tests
 test_path = Path(__file__).parent.parent
@@ -70,7 +66,6 @@ class TestTopAndInner(unittest.TestCase):
                             delete_existing_package_content=False,
                             skip_library_copy=True,
                             skip_test_case_generation=True,
-                            legacy_block_access=False,
                             show_hidden=False)
             exporter.export(node=spec.top.get_child_by_name(inner_addr_map),
                             path=tmpdirname,
@@ -78,7 +73,6 @@ class TestTopAndInner(unittest.TestCase):
                             delete_existing_package_content=False,
                             skip_library_copy=True,
                             skip_test_case_generation=True,
-                            legacy_block_access=False,
                             show_hidden=False)
 
 

@@ -1,6 +1,6 @@
 """
 peakrdl-python is a tool to generate Python Register Access Layer (RAL) from SystemRDL
-Copyright (C) 2021 - 2025
+Copyright (C) 2021 - 2026
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU Lesser General Public License as 
@@ -18,22 +18,21 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 Test for basic field functionality
 """
 import unittest
-from typing import Optional, Union, TypeVar
 from collections.abc import Iterator
-from unittest.mock import patch, MagicMock
-from enum import IntEnum
 from itertools import product
+from typing import Optional, TypeVar, Union
+from unittest.mock import MagicMock, patch
 
-
+from peakrdl_python.lib import (AddressMap, CallbackSet, FieldEnumReadOnly,
+                                FieldEnumReadWrite, FieldEnumWriteOnly,
+                                FieldMiscProps, FieldReadOnly, FieldReadWrite,
+                                FieldSizeProps, FieldWriteOnly, Node,
+                                NodeArray, Reg, RegReadOnly, RegReadWrite,
+                                RegWriteOnly, SystemRDLEnum,
+                                SystemRDLEnumEntry)
 from peakrdl_python.lib.base_field import FieldType
-from peakrdl_python.lib import FieldReadOnly, FieldWriteOnly, FieldReadWrite
-from peakrdl_python.lib import FieldEnumReadOnly, FieldEnumWriteOnly, FieldEnumReadWrite
-from peakrdl_python.lib import RegReadOnly, RegWriteOnly, RegReadWrite, Reg
-from peakrdl_python.lib import FieldSizeProps
-from peakrdl_python.lib.utility_functions import swap_msb_lsb_ordering, calculate_bitmask
-from peakrdl_python.lib import AddressMap, CallbackSet, FieldMiscProps
-from peakrdl_python.lib import SystemRDLEnum, SystemRDLEnumEntry
-from peakrdl_python.lib import Node, NodeArray
+from peakrdl_python.lib.utility_functions import (calculate_bitmask,
+                                                  swap_msb_lsb_ordering)
 
 from .simple_components import CallBackTestWrapper
 
@@ -389,17 +388,17 @@ class TestField(CallBackTestWrapper):
         """
         Test are Read/Write Enumerated Field
         """
-        for enum_type, msb_high in product([IntEnum, SystemRDLEnum], [True, False]):
-            with self.subTest(test_case=f'{enum_type=}, {msb_high}'):
+        for msb_high in product([True, False]):
+            with self.subTest(test_case=f'{msb_high}'):
                 # pylint: disable-next=too-few-public-methods
-                class DUTEnumType(enum_type):
+                class DUTEnumType(SystemRDLEnum):
                     """
                     Enumeration to use in the test
                     """
-                    VALUE1 = 0x1 if enum_type is IntEnum else SystemRDLEnumEntry(0x1, None, None)
-                    VALUE2 = 0x2 if enum_type is IntEnum else SystemRDLEnumEntry(0x2, None, None)
-                    VALUE3 = 0x4 if enum_type is IntEnum else SystemRDLEnumEntry(0x3, None, None)
-                    VALUE4 = 0x8 if enum_type is IntEnum else SystemRDLEnumEntry(0x8, None, None)
+                    VALUE1 = SystemRDLEnumEntry(0x1, None, None)
+                    VALUE2 = SystemRDLEnumEntry(0x2, None, None)
+                    VALUE3 = SystemRDLEnumEntry(0x3, None, None)
+                    VALUE4 = SystemRDLEnumEntry(0x8, None, None)
 
                 for low in range(0, 4, 4):
                     dut = self.generate_dut(
@@ -464,19 +463,17 @@ class TestField(CallBackTestWrapper):
         """
         Test are Read Only Enumerated Field
         """
-        for enum_type, msb_high, register_type in product([IntEnum, SystemRDLEnum],
-                                                          [True, False],
-                                                          [RegReadWrite, RegReadOnly]):
-            with self.subTest(test_case=f'{enum_type=}, {msb_high}, {register_type=}'):
+        for msb_high, register_type in product([True, False], [RegReadWrite, RegReadOnly]):
+            with self.subTest(test_case=f'{msb_high}, {register_type=}'):
                 # pylint: disable-next=too-few-public-methods
-                class DUTEnumType(enum_type):
+                class DUTEnumType(SystemRDLEnum):
                     """
                     Enumeration to use in the test
                     """
-                    VALUE1 = 0x1 if enum_type is IntEnum else SystemRDLEnumEntry(0x1, None, None)
-                    VALUE2 = 0x2 if enum_type is IntEnum else SystemRDLEnumEntry(0x2, None, None)
-                    VALUE3 = 0x4 if enum_type is IntEnum else SystemRDLEnumEntry(0x3, None, None)
-                    VALUE4 = 0x8 if enum_type is IntEnum else SystemRDLEnumEntry(0x8, None, None)
+                    VALUE1 = SystemRDLEnumEntry(0x1, None, None)
+                    VALUE2 = SystemRDLEnumEntry(0x2, None, None)
+                    VALUE3 = SystemRDLEnumEntry(0x3, None, None)
+                    VALUE4 = SystemRDLEnumEntry(0x8, None, None)
 
                 for low in range(0, 4, 4):
                     dut = self.generate_dut(
@@ -515,19 +512,17 @@ class TestField(CallBackTestWrapper):
         """
         Test are Write Only Enumerated Field
         """
-        for enum_type, msb_high, register_type in product([IntEnum, SystemRDLEnum],
-                                                          [True, False],
-                                                          [RegReadWrite, RegWriteOnly]):
-            with self.subTest(test_case=f'{enum_type=}, {msb_high}, {register_type=}'):
+        for msb_high, register_type in product([True, False], [RegReadWrite, RegWriteOnly]):
+            with self.subTest(test_case=f'{msb_high}, {register_type=}'):
                 # pylint: disable-next=too-few-public-methods
-                class DUTEnumType(enum_type):
+                class DUTEnumType(SystemRDLEnum):
                     """
                     Enumeration to use in the test
                     """
-                    VALUE1 = 0x1 if enum_type is IntEnum else SystemRDLEnumEntry(0x1, None, None)
-                    VALUE2 = 0x2 if enum_type is IntEnum else SystemRDLEnumEntry(0x2, None, None)
-                    VALUE3 = 0x4 if enum_type is IntEnum else SystemRDLEnumEntry(0x3, None, None)
-                    VALUE4 = 0x8 if enum_type is IntEnum else SystemRDLEnumEntry(0x8, None, None)
+                    VALUE1 = SystemRDLEnumEntry(0x1, None, None)
+                    VALUE2 = SystemRDLEnumEntry(0x2, None, None)
+                    VALUE3 = SystemRDLEnumEntry(0x3, None, None)
+                    VALUE4 = SystemRDLEnumEntry(0x8, None, None)
 
                 for low in range(0, 4, 4):
                     dut = self.generate_dut(

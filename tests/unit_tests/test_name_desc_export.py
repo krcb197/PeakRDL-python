@@ -1,6 +1,6 @@
 """
 peakrdl-python is a tool to generate Python Register Access Layer (RAL) from SystemRDL
-Copyright (C) 2021 - 2025
+Copyright (C) 2021 - 2026
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU Lesser General Public License as 
@@ -19,21 +19,15 @@ Test the export with name and desc, this unit test is needed so that the string 
 the SystemRDL can be cross-checked back to exported code, this can not be done with the
 integration tests
 """
-import unittest
 import os
-import tempfile
-import sys
 import re
-
+import sys
+import tempfile
+import unittest
+from contextlib import contextmanager
 from pathlib import Path
 
-
-
-from contextlib import contextmanager
-
-from peakrdl_python import PythonExporter
-from peakrdl_python import compiler_with_udp_registers
-
+from peakrdl_python import PythonExporter, compiler_with_udp_registers
 
 # this assumes the current file is in the unit_test folder under tests
 test_path = Path(__file__).parent.parent
@@ -74,7 +68,6 @@ class TestAlternativeTemplates(unittest.TestCase):
                             delete_existing_package_content=False,
                             skip_library_copy=False,
                             skip_test_case_generation=True,
-                            legacy_block_access=False,
                             show_hidden=False)
             # pylint: enable=duplicate-code
 

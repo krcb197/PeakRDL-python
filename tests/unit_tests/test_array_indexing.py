@@ -1,6 +1,6 @@
 """
 peakrdl-python is a tool to generate Python Register Access Layer (RAL) from SystemRDL
-Copyright (C) 2021 - 2025
+Copyright (C) 2021 - 2026
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU Lesser General Public License as 
@@ -19,16 +19,16 @@ Tests for the array indexing in the base library
 """
 
 import unittest
-from typing import Optional, Union
-from collections.abc import Iterator
 from abc import ABC, abstractmethod
+from collections.abc import Iterator
 from itertools import product
+from typing import Optional, Union
 
 # pylint: disable-next=unused-wildcard-import, wildcard-import
 from peakrdl_python.lib import *
 
-from .simple_components import ReadOnlyRegisterArrayToTest, ReadOnlyMemoryArrayToTest
-from .simple_components import CallBackTestWrapper
+from .simple_components import (CallBackTestWrapper, ReadOnlyMemoryArrayToTest,
+                                ReadOnlyRegisterArrayToTest)
 
 # pylint: disable=logging-not-lazy,logging-fstring-interpolation
 

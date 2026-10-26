@@ -1,6 +1,6 @@
 {#
 peakrdl-python is a tool to generate Python Register Access Layer (RAL) from SystemRDL
-Copyright (C) 2021 - 2025
+Copyright (C) 2021 - 2026
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU Lesser General Public License as
@@ -41,22 +41,22 @@ from {{ peakrdl_python_lib(depth=lib_depth) }} import UDPStruct
 from {{ peakrdl_python_lib(depth=lib_depth) }} import AsyncMemory
 from {{ peakrdl_python_lib(depth=lib_depth) }} import AsyncAddressMap
 from {{ peakrdl_python_lib(depth=lib_depth) }} import AsyncRegFile
-from {{ peakrdl_python_lib(depth=lib_depth) }} import MemoryAsyncReadOnly{% if legacy_block_access %}Legacy{% endif %}, MemoryAsyncWriteOnly{% if legacy_block_access %}Legacy{% endif %}, MemoryAsyncReadWrite{% if legacy_block_access %}Legacy{% endif %}
+from {{ peakrdl_python_lib(depth=lib_depth) }} import MemoryAsyncReadOnly, MemoryAsyncWriteOnly, MemoryAsyncReadWrite
 from {{ peakrdl_python_lib(depth=lib_depth) }} import AsyncReg
 from {{ peakrdl_python_lib(depth=lib_depth) }} import RegAsyncReadOnly, RegAsyncWriteOnly, RegAsyncReadWrite
 from {{ peakrdl_python_lib(depth=lib_depth) }} import RegAsyncReadOnlyArray, RegAsyncWriteOnlyArray, RegAsyncReadWriteArray
-from {{ peakrdl_python_lib(depth=lib_depth) }} import ReadableAsyncMemory{% if legacy_block_access %}Legacy{% endif %}, WritableAsyncMemory{% if legacy_block_access %}Legacy{% endif %}
+from {{ peakrdl_python_lib(depth=lib_depth) }} import ReadableAsyncMemory, WritableAsyncMemory
 from {{ peakrdl_python_lib(depth=lib_depth) }} import FieldAsyncReadOnly, FieldAsyncWriteOnly, FieldAsyncReadWrite, Field
 {% if uses_enum %}from {{ peakrdl_python_lib(depth=lib_depth) }} import FieldEnumAsyncReadOnly, FieldEnumAsyncWriteOnly, FieldEnumAsyncReadWrite{% endif %}
 {%- else -%}
 from {{ peakrdl_python_lib(depth=lib_depth) }} import Memory
 from {{ peakrdl_python_lib(depth=lib_depth) }} import AddressMap
 from {{ peakrdl_python_lib(depth=lib_depth) }} import RegFile
-from {{ peakrdl_python_lib(depth=lib_depth) }} import MemoryReadOnly{% if legacy_block_access %}Legacy{% endif %}, MemoryWriteOnly{% if legacy_block_access %}Legacy{% endif %}, MemoryReadWrite{% if legacy_block_access %}Legacy{% endif %}
+from {{ peakrdl_python_lib(depth=lib_depth) }} import MemoryReadOnly, MemoryWriteOnly, MemoryReadWrite
 from {{ peakrdl_python_lib(depth=lib_depth) }} import Reg, RegArray
 from {{ peakrdl_python_lib(depth=lib_depth) }} import RegReadOnly, RegWriteOnly, RegReadWrite
 from {{ peakrdl_python_lib(depth=lib_depth) }} import RegReadOnlyArray, RegWriteOnlyArray, RegReadWriteArray
-from {{ peakrdl_python_lib(depth=lib_depth) }} import ReadableMemory{% if legacy_block_access %}Legacy{% endif %}, WritableMemory{% if legacy_block_access %}Legacy{% endif %}
+from {{ peakrdl_python_lib(depth=lib_depth) }} import ReadableMemory, WritableMemory
 from {{ peakrdl_python_lib(depth=lib_depth) }} import FieldReadOnly, FieldWriteOnly, FieldReadWrite, Field
 {% if uses_enum %}from {{ peakrdl_python_lib(depth=lib_depth) }} import FieldEnumReadOnly, FieldEnumWriteOnly, FieldEnumReadWrite{% endif %}
 {%- endif %}
@@ -90,11 +90,11 @@ class {{node.python_class_name}}({{node.base_class(asyncoutput)}}):
                  inst_name: str,
                  parent: Union[{% if asyncoutput -%}Async{%- endif -%}AddressMap,{%- if asyncoutput -%}Async{%- endif -%}RegFile,
                  {%- if node.read_write -%}
-                    Memory{% if asyncoutput %}Async{% endif -%}ReadWrite{% if legacy_block_access %}Legacy{% endif %}
+                    Memory{% if asyncoutput %}Async{% endif -%}ReadWrite
                  {%- elif node.read_only -%}
-                    Readable{% if asyncoutput %}Async{% endif -%}Memory{% if legacy_block_access %}Legacy{% endif %}
+                    Readable{% if asyncoutput %}Async{% endif -%}Memory
                  {%- elif node.write_only -%}
-                    Writable{% if asyncoutput %}Async{% endif -%}Memory{% if legacy_block_access %}Legacy{% endif %}
+                    Writable{% if asyncoutput %}Async{% endif -%}Memory
                  {%- endif -%}
                  ]):
 
@@ -127,20 +127,36 @@ class {{node.python_class_name}}({{node.base_class(asyncoutput)}}):
     def accesswidth(self) -> int:
         return {{node.accesswidth}}
 
+    {% if node.all_fields_hidden  %}
+    {# Special case for the register_value field when all the fields are hidden  #}
+    def register_value(self) -> int: # type: ignore[override]
+        return 0
+    {% else %}
+    {# Special case for the register_value field when all the fields are hidden  #}
+    def register_value( # type: ignore[override]
+        self, *,{%- for child_node in node.fields() -%} {{safe_node_name(child_node)}} : {{node.lookup_field_data_python_class(child_node)}},{%- endfor -%}) -> int:
+        return super().register_value({%- for child_node in node.fields() -%} {{safe_node_name(child_node)}}={{safe_node_name(child_node)}},{%- endfor -%})
+    {% endif %}
+
     {% if node.write_only %}
     {# if the register has no readable components, all the fields must be writen as one #}
-    {% if asyncoutput %}async {% endif %}def write_fields(self, {%- for child_node in node.fields() -%} {{safe_node_name(child_node)}} : {{node.lookup_field_data_python_class(child_node)}}{%- if not loop.last -%},{%- endif -%}{%- endfor -%}) -> None: # type: ignore[override]
-        """
-        Do a write to the register, updating all fields
-        """
-        reg_value = 0
-        {%- for child_node in node.fields() %}
-        reg_value &= self.{{safe_node_name(child_node)}}.inverse_bitmask
-        reg_value |= self.{{safe_node_name(child_node)}}._encode_write_value({{safe_node_name(child_node)}})
-        {% endfor %}
+    {% if asyncoutput %}async {% endif %}def write_fields(    # type: ignore[override]
+        self, *,{%- for child_node in node.fields() -%} {{safe_node_name(child_node)}} : {{node.lookup_field_data_python_class(child_node)}},{%- endfor -%}) -> None:
+        return{% if asyncoutput %} await{% endif %} super().write_fields({%- for child_node in node.fields() -%} {{safe_node_name(child_node)}}={{safe_node_name(child_node)}},{%- endfor -%})
+    {% endif %}
 
-        {% if asyncoutput %}await {% endif %}self.write(reg_value)
-
+    {% if node.read_write %}
+        {% if node.all_writable_fields_hidden  %}
+        {# Special case for the all_writable_fields_hidden field when all the fields are hidden  #}
+    {% if asyncoutput %}async {% endif %}def write_all_fields_without_read(self, ) -> None: # type: ignore[override]
+        raise NotImplementedError('There are no writeable fields')
+        return None
+        {% else %} {# if node.all_writable_fields_hidden #}
+            {# for read/write registers a method that forces all field to be written as one #}
+    {% if asyncoutput %}async {% endif %}def write_all_fields_without_read( # type: ignore[override]
+        self, *, {%- for child_node in node.writable_fields() -%} {{safe_node_name(child_node)}} : {{node.lookup_field_data_python_class(child_node)}},{%- endfor -%}) -> None:
+        return{% if asyncoutput %} await{% endif %} super().write_all_fields_without_read({%- for child_node in node.writable_fields() -%} {{safe_node_name(child_node)}}={{safe_node_name(child_node)}},{%- endfor -%})
+        {% endif %} {# if node.all_writable_fields_hidden #}
     {% endif %}
 
     # build the properties for the fields

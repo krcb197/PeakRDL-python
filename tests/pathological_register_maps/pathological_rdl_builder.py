@@ -1,6 +1,6 @@
 """
 peakrdl-python is a tool to generate Python Register Access Layer (RAL) from SystemRDL
-Copyright (C) 2021 - 2025
+Copyright (C) 2021 - 2026
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU Lesser General Public License as 
@@ -19,11 +19,11 @@ The file is used for making pathological system RDL files for stress testing the
 """
 import argparse
 import os
-from typing import Optional
-from pathlib import Path
+import random
 import string
 from dataclasses import dataclass, field
-import random
+from pathlib import Path
+from typing import Optional
 
 import jinja2 as jj
 
@@ -85,9 +85,10 @@ class _PathologicalInstanceWithRegistersAndRegFiles(_PathologicalInstanceWithReg
         name = name_generator()
         reg_file_instances = random.randint(0, self.regfile_recursion_depth)
         for _ in range(reg_file_instances):
-            yield PathologicalRegFileInstance(name=next(name),
-                                               name_prefix=self.child_prefix,
-                                              regfile_recursion_depth=self.regfile_recursion_depth-1)
+            yield PathologicalRegFileInstance(
+                name=next(name),
+                name_prefix=self.child_prefix,
+                regfile_recursion_depth=self.regfile_recursion_depth - 1)
 
 @dataclass
 class PathologicalRegFileInstance(_PathologicalInstanceWithRegistersAndRegFiles):
@@ -158,9 +159,10 @@ class PathologicalAddrmapInstance(_PathologicalInstanceWithRegistersAndRegFiles)
         name = name_generator()
         reg_file_instances = random.randint(0, self.addrmap_recursion_depth)
         for _ in range(reg_file_instances):
-            yield PathologicalAddrmapInstance(name=next(name),
-                                              name_prefix=self.child_prefix,
-                                              addrmap_recursion_depth=self.addrmap_recursion_depth - 1)
+            yield PathologicalAddrmapInstance(
+                name=next(name),
+                name_prefix=self.child_prefix,
+                addrmap_recursion_depth=self.addrmap_recursion_depth - 1)
 
     @property
     def memories(self):

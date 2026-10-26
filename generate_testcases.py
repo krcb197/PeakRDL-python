@@ -83,8 +83,6 @@ def compile_rdl(infile: str,
 
 def generate(root: Node, outdir: str,
              asyncoutput: bool = False,
-             legacy_block_access: bool = True,
-             legacy_enum_type: bool = True,
              copy_library: bool = False,
              skip_systemrdl_name_and_desc_in_docstring: bool = False,
              hashing_mode: NodeHashingMethod = NodeHashingMethod.PYTHONHASH) -> List[str]:
@@ -96,8 +94,6 @@ def generate(root: Node, outdir: str,
         outdir: directory to store the result in
         legacy_block_access: If set to True the code build a register model the legacy array block
                              access as opposed to the newer list based
-        legacy_enum_type: If set to True the code with build with the old style IntEnum rather than
-                          the new style SystemRDLEnum
 
     Returns:
         List of strings with the module names generated
@@ -107,8 +103,6 @@ def generate(root: Node, outdir: str,
     modules = PythonExporter().export(
         root, outdir,  # type: ignore[no-untyped-call]
         asyncoutput=asyncoutput,
-        legacy_block_access=legacy_block_access,
-        legacy_enum_type=legacy_enum_type,
         skip_library_copy=not copy_library,
         skip_systemrdl_name_and_desc_in_docstring=
         skip_systemrdl_name_and_desc_in_docstring,
@@ -147,34 +141,24 @@ if __name__ == '__main__':
 
         options = {
             'asyncoutput': [True, False],
-            'legacy': [True, False],
             'skip_systemrdl_name_and_desc_in_docstring': [True, False],
             'hashing': list(NodeHashingMethod)
         }
 
-        for asyncoutput, legacy, skip_name_and_desc_in_docstring, hashing_method in product(
-                options['asyncoutput'], options['legacy'],
+        for asyncoutput, skip_name_and_desc_in_docstring, hashing_method in product(
+                options['asyncoutput'],
                 options['skip_systemrdl_name_and_desc_in_docstring'],
                 options['hashing']):
-
-            # test cases that use the extended widths an not be tested in the non-legacy modes
-            if (testcase_name in ['extended_memories', 'extended_sizes_registers_array']) and \
-                    (legacy is True):
-                continue
 
             folder_parts = 'raw_'
             folder_parts += hashing_method.name
             if asyncoutput:
                 folder_parts += '_async'
-            if legacy:
-                folder_parts += '_legacy'
             if skip_name_and_desc_in_docstring:
                 folder_parts += '_skip_name_and_desc_in_docstring'
 
             _ = generate(root, str(output_path / folder_parts),
                          asyncoutput=asyncoutput,
-                         legacy_block_access=legacy,
-                         legacy_enum_type=legacy,
                          copy_library=CommandLineArgs.copy_libraries,
                          skip_systemrdl_name_and_desc_in_docstring=skip_name_and_desc_in_docstring,
                          hashing_mode=hashing_method)
