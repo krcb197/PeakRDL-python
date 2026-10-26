@@ -19,17 +19,19 @@ Tests for the array indexing in the base library
 """
 
 import unittest
-from typing import Optional, Union, cast
-from collections.abc import Iterator
 from abc import ABC, abstractmethod
-from unittest.mock import patch
 from array import array as Array
+from collections.abc import Iterator
+from typing import Optional, Union, cast
+from unittest.mock import patch
 
 # pylint: disable-next=unused-wildcard-import, wildcard-import
 from peakrdl_python.lib import *
 
-from .simple_components import ReadWriteRegisterArrayToTest, ReadOnlyRegisterArrayToTest, \
-    WriteOnlyRegisterArrayToTest, CallBackTestWrapper
+from .simple_components import (CallBackTestWrapper,
+                                ReadOnlyRegisterArrayToTest,
+                                ReadWriteRegisterArrayToTest,
+                                WriteOnlyRegisterArrayToTest)
 
 # pylint: disable=logging-not-lazy,logging-fstring-interpolation
 

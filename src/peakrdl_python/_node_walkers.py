@@ -17,11 +17,12 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 Node walkers to be used in the generated of the output code
 """
-from typing import Optional, Union
 from collections.abc import Iterator
+from typing import Optional, Union
 
 from systemrdl import RDLListener, WalkerAction
-from systemrdl.node import RegNode, MemNode, FieldNode, AddrmapNode, RegfileNode
+from systemrdl.node import (AddrmapNode, FieldNode, MemNode, RegfileNode,
+                            RegNode)
 
 from .systemrdl_node_utility_functions import HideNodeCallback
 

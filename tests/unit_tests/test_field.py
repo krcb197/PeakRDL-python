@@ -18,21 +18,21 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 Test for basic field functionality
 """
 import unittest
-from typing import Optional, Union, TypeVar
 from collections.abc import Iterator
-from unittest.mock import patch, MagicMock
 from itertools import product
+from typing import Optional, TypeVar, Union
+from unittest.mock import MagicMock, patch
 
-
+from peakrdl_python.lib import (AddressMap, CallbackSet, FieldEnumReadOnly,
+                                FieldEnumReadWrite, FieldEnumWriteOnly,
+                                FieldMiscProps, FieldReadOnly, FieldReadWrite,
+                                FieldSizeProps, FieldWriteOnly, Node,
+                                NodeArray, Reg, RegReadOnly, RegReadWrite,
+                                RegWriteOnly, SystemRDLEnum,
+                                SystemRDLEnumEntry)
 from peakrdl_python.lib.base_field import FieldType
-from peakrdl_python.lib import FieldReadOnly, FieldWriteOnly, FieldReadWrite
-from peakrdl_python.lib import FieldEnumReadOnly, FieldEnumWriteOnly, FieldEnumReadWrite
-from peakrdl_python.lib import RegReadOnly, RegWriteOnly, RegReadWrite, Reg
-from peakrdl_python.lib import FieldSizeProps
-from peakrdl_python.lib.utility_functions import swap_msb_lsb_ordering, calculate_bitmask
-from peakrdl_python.lib import AddressMap, CallbackSet, FieldMiscProps
-from peakrdl_python.lib import SystemRDLEnum, SystemRDLEnumEntry
-from peakrdl_python.lib import Node, NodeArray
+from peakrdl_python.lib.utility_functions import (calculate_bitmask,
+                                                  swap_msb_lsb_ordering)
 
 from .simple_components import CallBackTestWrapper
 

@@ -18,11 +18,12 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 Classes to represent the package that is generated
 """
 import os
+from collections.abc import Generator
+from contextlib import contextmanager
 from pathlib import Path
 from shutil import copy
 from typing import TextIO
-from contextlib import contextmanager
-from collections.abc import Generator
+
 
 class PythonPackage:
     """

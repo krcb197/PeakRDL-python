@@ -19,20 +19,17 @@ This package is intended to distributed as part of automatically generated code 
 Python tool. It provide methods used by the tests
 """
 import random
-from typing import Union, TypeVar, TYPE_CHECKING
-from enum import EnumMeta
 from collections.abc import Iterable
 from dataclasses import dataclass
 from dataclasses import field as dataclass_field
+from enum import EnumMeta
+from typing import TYPE_CHECKING, TypeVar, Union
 
-
-from ..lib import Field
-from ..lib import AsyncReg, Reg
+from ..lib import AsyncReg, Field, FieldEnum, Reg, SystemRDLEnum
 from ..lib.base_register import BaseReg
-from ..lib.utility_functions import calculate_bitmask
-from ..lib import FieldEnum
 from ..lib.memory import BaseMemory
-from ..lib import SystemRDLEnum
+from ..lib.utility_functions import calculate_bitmask
+
 
 def reverse_bits(value: int, number_bits: int) -> int:
     """

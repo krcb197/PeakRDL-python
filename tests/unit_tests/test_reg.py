@@ -18,17 +18,18 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 Test for basic register reading
 """
 import unittest
-from typing import Optional, cast, Union
-from collections.abc import Iterator
 from abc import ABC, abstractmethod
+from collections.abc import Iterator
+from typing import Optional, Union, cast
 from unittest.mock import patch
 
 # pylint: disable-next=unused-wildcard-import,wildcard-import
 from peakrdl_python.lib import *
 from peakrdl_python.lib.utility_functions import legal_register_width
 
-from .simple_components import ReadOnlyRegisterToTest, WriteOnlyRegisterToTest, \
-    ReadWriteRegisterToTest, CallBackTestWrapper
+from .simple_components import (CallBackTestWrapper, ReadOnlyRegisterToTest,
+                                ReadWriteRegisterToTest,
+                                WriteOnlyRegisterToTest)
 
 # pylint: disable=logging-not-lazy,logging-fstring-interpolation
 

@@ -18,9 +18,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 This package is intended to distributed as part of automatically generated code by the PeakRDL
 Python tool. It provides a set of base test classes to reduce the size of the auto generated code
 """
-from .test_class import LibTestBase
-from .async_test_class import AsyncLibTestBase
-
-from .utilities import reverse_bits
-
 from ._common_base_test_class import NodeIterators
+from .async_test_class import AsyncLibTestBase
+from .test_class import LibTestBase
+from .utilities import reverse_bits

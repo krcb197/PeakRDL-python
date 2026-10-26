@@ -18,21 +18,17 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 Test that it is possible to build an addrmap inside the compiled structure and compare it to
 a result of the top level
 """
-import unittest
 import os
-import tempfile
 import sys
-
+import tempfile
+import unittest
+from contextlib import contextmanager
 from pathlib import Path
 
-from contextlib import contextmanager
-
-from peakrdl_python import PythonExporter
-from peakrdl_python.lib import NormalCallbackSet
-from peakrdl_python.lib import AddressMap
-from peakrdl_python.sim_lib.dummy_callbacks import dummy_write_block, dummy_read_block
-from peakrdl_python import compiler_with_udp_registers
-
+from peakrdl_python import PythonExporter, compiler_with_udp_registers
+from peakrdl_python.lib import AddressMap, NormalCallbackSet
+from peakrdl_python.sim_lib.dummy_callbacks import (dummy_read_block,
+                                                    dummy_write_block)
 
 # this assumes the current file is in the unit_test folder under tests
 test_path = Path(__file__).parent.parent

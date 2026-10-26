@@ -20,30 +20,27 @@ Test exporting this tests a couple of different things:
 2. tests some of the export options that would not other be checked with the integration tests get
    checked (notably the show_hidden)
 """
-import unittest
+import inspect
 import os
-import tempfile
-import sys
 import re
+import sys
+import tempfile
+import unittest
+from contextlib import contextmanager
 from itertools import chain, combinations
 from pathlib import Path
-import inspect
 from typing import Optional
 
-from contextlib import contextmanager
-
 import jinja2 as jj
-from systemrdl import RDLCompileError
 from peakrdl.config import schema
+from systemrdl import RDLCompileError
 
-from peakrdl_python import PythonExporter
-from peakrdl_python import compiler_with_udp_registers
+from peakrdl_python import PythonExporter, compiler_with_udp_registers
 from peakrdl_python.__about__ import __version__ as peakrdl_version
 from peakrdl_python.__peakrdl__ import Exporter as PeakRDLPythonExported
-from peakrdl_python.lib import Node, FieldReadWrite, NodeArray
-from peakrdl_python.lib import NormalCallbackSet
+from peakrdl_python.lib import (FieldReadWrite, Node, NodeArray,
+                                NormalCallbackSet)
 from peakrdl_python.sim_lib.dummy_callbacks import dummy_read
-
 
 if sys.version_info[0:2] < (3, 11):
     # Prior to py3.11, tomllib is a 3rd party package

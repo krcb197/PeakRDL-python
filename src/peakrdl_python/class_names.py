@@ -17,11 +17,10 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 A module for determining the classes names to use
 """
-from systemrdl.node import Node
-from systemrdl.node import FieldNode
-from systemrdl.node import RegNode
-from systemrdl.node import MemNode
+from systemrdl.node import FieldNode, MemNode, Node, RegNode
+
 from .systemrdl_node_utility_functions import is_encoded_field
+
 
 def get_field_get_base_class_name(node: FieldNode, async_library_classes: bool) -> str:
     """

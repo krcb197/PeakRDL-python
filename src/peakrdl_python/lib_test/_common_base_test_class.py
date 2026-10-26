@@ -20,30 +20,24 @@ Python tool. It provide the base class common to both the async and non-async ve
 """
 import unittest
 from abc import ABC, abstractmethod
-from typing import Union, Optional
 from itertools import product
+from typing import Optional, Union
 
-from ..lib import FieldReadWrite, FieldReadOnly, FieldWriteOnly
-from ..lib import FieldEnumReadWrite, FieldEnumReadOnly, FieldEnumWriteOnly
-from ..lib import FieldAsyncReadOnly, FieldAsyncWriteOnly, FieldAsyncReadWrite
-from ..lib import FieldEnumAsyncReadOnly, FieldEnumAsyncWriteOnly, FieldEnumAsyncReadWrite
-from ..lib import RegReadOnly, RegReadWrite, RegWriteOnly
-from ..lib import RegAsyncReadOnly, RegAsyncReadWrite, RegAsyncWriteOnly
-from ..lib import AddressMap, AsyncAddressMap
-from ..lib import RegFile, AsyncRegFile
-from ..lib.memory import BaseMemory
-from ..lib import MemoryReadOnly
-from ..lib import MemoryWriteOnly
-from ..lib import MemoryReadWrite
-from ..lib import MemoryAsyncReadOnly
-from ..lib import MemoryAsyncWriteOnly
-from ..lib import MemoryAsyncReadWrite
+from ..lib import (AddressMap, AsyncAddressMap, AsyncRegFile, Base,
+                   FieldAsyncReadOnly, FieldAsyncReadWrite,
+                   FieldAsyncWriteOnly, FieldEnumAsyncReadOnly,
+                   FieldEnumAsyncReadWrite, FieldEnumAsyncWriteOnly,
+                   FieldEnumReadOnly, FieldEnumReadWrite, FieldEnumWriteOnly,
+                   FieldReadOnly, FieldReadWrite, FieldWriteOnly,
+                   MemoryAsyncReadOnly, MemoryAsyncReadWrite,
+                   MemoryAsyncWriteOnly, MemoryReadOnly, MemoryReadWrite,
+                   MemoryWriteOnly, Node, RegAsyncReadOnly, RegAsyncReadWrite,
+                   RegAsyncWriteOnly, RegFile, RegReadOnly, RegReadWrite,
+                   RegWriteOnly, SystemRDLEnum)
 from ..lib.base_register import BaseReg
-from ..lib import Node
-from ..lib import Base
-from ..lib import SystemRDLEnum
-from .utilities import get_field_bitmask_int, get_field_inv_bitmask
+from ..lib.memory import BaseMemory
 from ..sim_lib.simulator import BaseSimulator
+from .utilities import get_field_bitmask_int, get_field_inv_bitmask
 
 
 class NodeIterators:

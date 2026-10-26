@@ -19,14 +19,14 @@ This module is intended to distributed as part of automatically generated code b
 peakrdl-python tool. It provides the base types for fields that are shared by non-async and async
 fields
 """
-from typing import cast, Optional, TypeVar, Generic
-from abc import ABC
 import warnings
+from abc import ABC
+from typing import Generic, Optional, TypeVar, cast
 
 from .base import Base
-from .utility_functions import swap_msb_lsb_ordering, calculate_bitmask
 from .base_register import BaseReg
 from .field_encoding import SystemRDLEnum
+from .utility_functions import calculate_bitmask, swap_msb_lsb_ordering
 
 
 class FieldSizeProps:

@@ -18,10 +18,10 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 This module is intended to distributed as part of automatically generated code by the
 peakrdl-python tool. It provides the base types of field enumerations
 """
-from enum import Enum
-from typing import Optional
 from collections import namedtuple
+from enum import Enum
 from json import JSONEncoder
+from typing import Optional
 
 SystemRDLEnumEntry = namedtuple('SystemRDLEnumEntry', ['int_value', 'name', 'desc'])
 

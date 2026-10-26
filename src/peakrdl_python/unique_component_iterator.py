@@ -18,31 +18,27 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 The methods for building the main iterator that is used in the templates for building the
 code.
 """
-from typing import Optional
-from dataclasses import dataclass, field
 from collections.abc import Iterator
+from dataclasses import dataclass, field
 from itertools import filterfalse
-
 from logging import getLogger
+from typing import Optional
 
-from systemrdl.node import Node
-from systemrdl.node import RegNode
-from systemrdl.node import FieldNode
-from systemrdl.node import MemNode
-from systemrdl.node import AddrmapNode
-from systemrdl.node import RegfileNode
-from systemrdl.node import SignalNode
 from systemrdl import RDLListener, WalkerAction
+from systemrdl.node import (AddrmapNode, FieldNode, MemNode, Node, RegfileNode,
+                            RegNode, SignalNode)
 from systemrdl.rdltypes.user_enum import UserEnumMeta
 
-from .systemrdl_node_hashes import node_hash, enum_hash, NodeHashingMethod
-from .systemrdl_node_utility_functions import HideNodeCallback
-from .systemrdl_node_utility_functions import ShowUDPCallback
-from .systemrdl_node_utility_functions import get_properties_to_include
-from .systemrdl_node_utility_functions import get_reg_regwidth, get_reg_accesswidth
-from .systemrdl_node_utility_functions import get_memory_accesswidth
-from .systemrdl_node_utility_functions import get_reg_writable_fields
 from .class_names import get_base_class_name
+from .systemrdl_node_hashes import NodeHashingMethod, enum_hash, node_hash
+from .systemrdl_node_utility_functions import (HideNodeCallback,
+                                               ShowUDPCallback,
+                                               get_memory_accesswidth,
+                                               get_properties_to_include,
+                                               get_reg_accesswidth,
+                                               get_reg_regwidth,
+                                               get_reg_writable_fields)
+
 
 @dataclass(frozen=True)
 class PeakRDLPythonUniqueComponents:

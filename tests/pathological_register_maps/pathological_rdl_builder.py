@@ -19,11 +19,11 @@ The file is used for making pathological system RDL files for stress testing the
 """
 import argparse
 import os
-from typing import Optional
-from pathlib import Path
+import random
 import string
 from dataclasses import dataclass, field
-import random
+from pathlib import Path
+from typing import Optional
 
 import jinja2 as jj
 

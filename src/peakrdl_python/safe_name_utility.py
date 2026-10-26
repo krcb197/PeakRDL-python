@@ -18,29 +18,16 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 utility functions for turning potentially unsafe names from the system RDL and making them safe
 """
 import keyword
-from typing import Union, Optional
 from collections.abc import Callable
 from dataclasses import dataclass
+from typing import Optional, Union
 
-from systemrdl.node import RegNode
-from systemrdl.node import FieldNode
-from systemrdl.node import AddrmapNode
-from systemrdl.node import RegfileNode
-from systemrdl.node import MemNode
-from systemrdl.node import RootNode
-from systemrdl.node import Node
+from systemrdl.node import (AddrmapNode, FieldNode, MemNode, Node, RegfileNode,
+                            RegNode, RootNode)
 
-from .lib import RegReadOnly
-from .lib import RegWriteOnly
-from .lib import RegReadWrite
-
-from .lib.memory import MemoryReadOnly
-from .lib.memory import MemoryWriteOnly
-from .lib.memory import MemoryReadWrite
-
-from .lib import RegFile
-from .lib import AddressMap
+from .lib import AddressMap, RegFile, RegReadOnly, RegReadWrite, RegWriteOnly
 from .lib.base import Base
+from .lib.memory import MemoryReadOnly, MemoryReadWrite, MemoryWriteOnly
 
 
 def _build_class_method_list(peakrld_python_class: type[Base]) -> list[str]:

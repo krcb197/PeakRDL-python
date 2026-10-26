@@ -20,48 +20,38 @@ Main Classes for the peakrdl-python
 # pylint:disable=too-many-lines
 import os
 import re
-
-from typing import NoReturn, Any, Optional, Union, TextIO
-from collections.abc import Callable
-
-from functools import partial
 import sys
-from itertools import filterfalse, chain
 import warnings
+from collections.abc import Callable
+from functools import partial
+from itertools import chain, filterfalse
+from typing import Any, NoReturn, Optional, TextIO, Union
 
 import jinja2 as jj
 from systemrdl import RDLWalker
-
-from systemrdl.node import RootNode, Node, RegNode, AddrmapNode, RegfileNode
-from systemrdl.node import FieldNode, MemNode, AddressableNode
-from systemrdl.node import SignalNode
+from systemrdl.node import (AddressableNode, AddrmapNode, FieldNode, MemNode,
+                            Node, RegfileNode, RegNode, RootNode, SignalNode)
 from systemrdl.rdltypes.user_enum import UserEnum, UserEnumMeta
 from systemrdl.rdltypes.user_struct import UserStruct
 
-from .systemrdl_node_utility_functions import get_reg_writable_fields, \
-    get_table_block, \
-    get_field_bitmask_hex_string, get_field_inv_bitmask_hex_string, \
-    get_field_max_value_hex_string, get_reg_max_value_hex_string, \
-    uses_enum, uses_memory, \
-    get_memory_max_entry_value_hex_string, get_memory_width_bytes, \
-    get_field_default_value, get_enum_values, get_properties_to_include, \
-    HideNodeCallback, hide_based_on_property, \
-    full_slice_accessor, ShowUDPCallback, \
-    node_iterator_entry, simulator_field_definition
-from .unique_component_iterator import UniqueComponents
-from .unique_component_iterator import PeakRDLPythonUniqueRegisterComponents
-from .unique_component_iterator import PeakRDLPythonUniqueMemoryComponents
-from .unique_component_iterator import PeakRDLPythonUniqueFieldEnum
-from .class_names import get_field_get_base_class_name
-from .systemrdl_node_hashes import NodeHashingMethod
-
-from .safe_name_utility import get_python_path_segments, safe_node_name
-
-from ._node_walkers import AddressMaps, OwnedbyAddressMap
-
-from ._deploy_package import GeneratedPackage, PythonPackage
-
 from .__about__ import __version__
+from ._deploy_package import GeneratedPackage, PythonPackage
+from ._node_walkers import AddressMaps, OwnedbyAddressMap
+from .class_names import get_field_get_base_class_name
+from .safe_name_utility import get_python_path_segments, safe_node_name
+from .systemrdl_node_hashes import NodeHashingMethod
+from .systemrdl_node_utility_functions import (
+    HideNodeCallback, ShowUDPCallback, full_slice_accessor, get_enum_values,
+    get_field_bitmask_hex_string, get_field_default_value,
+    get_field_inv_bitmask_hex_string, get_field_max_value_hex_string,
+    get_memory_max_entry_value_hex_string, get_memory_width_bytes,
+    get_properties_to_include, get_reg_max_value_hex_string,
+    get_reg_writable_fields, get_table_block, hide_based_on_property,
+    node_iterator_entry, simulator_field_definition, uses_enum, uses_memory)
+from .unique_component_iterator import (PeakRDLPythonUniqueFieldEnum,
+                                        PeakRDLPythonUniqueMemoryComponents,
+                                        PeakRDLPythonUniqueRegisterComponents,
+                                        UniqueComponents)
 
 file_path = os.path.dirname(__file__)
 

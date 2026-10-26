@@ -17,12 +17,12 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 Components to use in unit tests
 """
+import logging
 import unittest
-from unittest.mock import NonCallableMagicMock
+from abc import ABC
 from collections.abc import Iterator
 from typing import Any, Union
-from abc import ABC
-import logging
+from unittest.mock import NonCallableMagicMock
 
 # pylint: disable-next=unused-wildcard-import, wildcard-import
 from peakrdl_python.lib import *
