@@ -20,12 +20,12 @@ refer to the peakrdl documentation
 """
 from typing import TYPE_CHECKING
 
-from peakrdl.config import schema  # type: ignore[import]
 # depending on whether peakrdl is installed or not you get a slightly different pylint error
 # from the following line, therefore two errors have to be suppressed
 #pylint: disable=no-name-in-module,import-error
-from peakrdl.plugins.exporter import \
-    ExporterSubcommandPlugin  # type: ignore[import]
+from peakrdl.config import schema  # type: ignore[import]
+from peakrdl.plugins.exporter import ExporterSubcommandPlugin  # type: ignore[import]
+#pylint: enable=no-name-in-module,import-error
 
 from .compiler_udp import PythonHideUDP, PythonInstNameUDP
 from .exporter import (DEFAULT_ENUM_FIELD_CLASS_PER_GENERATED_FILE,
@@ -34,8 +34,6 @@ from .exporter import (DEFAULT_ENUM_FIELD_CLASS_PER_GENERATED_FILE,
                        DEFAULT_REGISTER_CLASS_PER_GENERATED_FILE,
                        PythonExporter)
 from .systemrdl_node_hashes import NodeHashingMethod
-
-#pylint: enable=no-name-in-module,import-error
 
 
 if TYPE_CHECKING:
